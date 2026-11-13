@@ -277,8 +277,8 @@ async def _max_model(feature: str, models_for: ModelsFor) -> tuple[str, Optional
 
 
 async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
-                      router: Optional[Router] = None) -> tuple[Optional[float], bool, str]:
-    """(line amount, approx, model id to show). Unknown prices use the dearest model of that type.
+                      router: Optional[Router] = None) -> tuple[Optional[float], bool, str, Optional[dict]]:
+    """(line amount, approx, model id to show, optional param-block). Unknown prices use the dearest model of that type.
     #910: with a router, the step is shown and priced as the model it is routed to (Auto included), with its
     reference images counted, so the card's model and price are the ones that will run."""
     tool, args, model = step["tool"], step["arguments"], step["model"]
@@ -286,9 +286,16 @@ async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
     units = units_of(tool, args)
     feature = feature_of_step(tool, args)
     routed = router(tool, args) if router is not None and not step.get("svg_blocked") else None
+    if routed and isinstance(routed, tuple) and (routed[1] or {}).get("param_blocked"):
+        # #956 / #957: do not price a silent text-to-image fallback when required params are missing.
+        return None, True, "", routed[1]["param_blocked"]
     if routed and routed[0]:
         model = routed[0]
-        inputs = {**inputs, **{k: v for k, v in (routed[1] or {}).items() if k in _PRICE_KEYS or k in ("images", "width", "height")}}
+        routed_inputs = routed[1] or {}
+        inputs = {**inputs, **{k: v for k, v in routed_inputs.items() if k in _PRICE_KEYS or k in ("images", "width", "height")}}
+        # #956 / #957: units follow the validated args (e.g. packaging/portrait lock count to 1).
+        if "count" in routed_inputs or "n" in routed_inputs:
+            units = units_of(tool, {**args, **{k: routed_inputs[k] for k in ("count", "n") if k in routed_inputs}})
     approx = False
     show = model
     unit: Optional[float] = None
@@ -302,8 +309,8 @@ async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
         approx = True
         show, unit = await _max_model(feature, models_for)
     if unit is None:
-        return None, True, show
-    return round(float(unit) * units, 6), approx, show
+        return None, True, show, None
+    return round(float(unit) * units, 6), approx, show, None
 
 
 def _needs_ask(total: float, threshold: float, force: bool) -> bool:
@@ -328,7 +335,14 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
                 unpriced=True, key=canon_key(step["tool"], step["arguments"], step["model"]),
             ))
             continue
-        amount, approx, show = await _price_step(step, pricer, models_for, router)
+        amount, approx, show, blocked = await _price_step(step, pricer, models_for, router)
+        if blocked:
+            lines.append(Line(
+                text=str(blocked.get("error") or blocked.get("user_message") or ""),
+                price=ABOUT[lang], amount=0.0, approx=True, unpriced=True,
+                key=canon_key(step["tool"], step["arguments"], ""),
+            ))
+            continue
         unpriced = amount is None
         name = step["text"] or step["tool"]
         label = model_label(show) if show else AUTO_LABEL[lang]
