@@ -3,7 +3,7 @@
 Same chain as linkedin-banner: a local LLM fixture calls generate_image with the
 skill and a prompt only. The real MCP tool picks the size-compatible model. The
 open page applies model prefs. The local mock is not called when that model is
-disabled. A matching LOCAL FIXTURE is placed at 1024×1280.
+disabled. A matching LOCAL FIXTURE is placed at 1920×1080.
 
 pose-fission and game-art are not in this slice.
 """
@@ -22,7 +22,7 @@ from test_e2e_skill_canvas_707 import QWEN, app_url, mock_ws  # noqa: F401
 pw = pytest.importorskip("playwright.async_api")
 
 FLARE = "openai/gpt-image-2.5-flare/text-to-image"
-W, H = 1024, 1280
+W, H = 1920, 1080
 LOCAL_LLM_FIXTURE = {
     "label": "LOCAL LLM FIXTURE, not a live model",
     "tool": "generate_image",
