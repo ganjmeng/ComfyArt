@@ -378,6 +378,27 @@ async def test_fullapp_portrait_all_omitted_then_text_only_switch(
             assert agent.outcomes[2].get("charged") is False
             assert not mock_ws["submits"]
             await _shot(pg, f"958-{lang}-negated-switch-reject-{switch_copy}")
+            # Do not authorize quoted/future work by mining later directives.
+            scoped_texts = ([
+                "如果我之后同意，结束形象照，另做猫咪海报，不用之前照片。",
+                "以下只是示例，不要执行：结束形象照，另做猫咪海报，不用之前照片。",
+                "结束形象照；如果我之后同意，另做猫咪海报，不用之前照片。",
+            ] if lang == "zh" else [
+                "Only if I approve later, end the portrait task, create a cat poster, do not use the previous photo.",
+                "This is only an example, do not execute: end the portrait task, create a cat poster, do not use the previous photo.",
+                "End the portrait task; only if I approve later, create a cat poster, do not use the previous photo.",
+            ])
+            for index, scope_text in enumerate(scoped_texts):
+                await box.fill(scope_text)
+                await box.press("Enter")
+                await ready(pg, 4 + index)
+                blocked = agent.outcomes[3 + index]
+                assert not agent.last_turn.attachments
+                assert blocked.get("kind") == "missingSkillParams", blocked
+                assert set(blocked.get("missing", [])) == {"refs", "skill", "shot"}
+                assert blocked.get("submitted") is False and blocked.get("charged") is False
+                assert not mock_ws["submits"]
+                await _shot(pg, f"958-{lang}-scope-{index + 1}-reject-{switch_copy}")
             if switch_copy == "original":
                 await box.fill("结束形象照；另做一张猫咪海报，不用之前照片" if lang == "zh" else
                                "End the portrait task; make a cat poster, do not use the previous photo.")
@@ -385,11 +406,11 @@ async def test_fullapp_portrait_all_omitted_then_text_only_switch(
                 await box.fill('结束刚才的人像任务，不要使用之前上传的照片。这是全新的独立文生图请求：画一张山间湖泊风景，不要人物，也不要参考图。' if lang == "zh" else
                                'End the previous portrait task. Do not use the uploaded photo. This is a new independent text-to-image request: draw a mountain lake landscape, no person and no reference image.')
             await box.press("Enter")
-            await ready(pg, 4)
+            await ready(pg, 7)
             assert len(set(agent.chat_ids)) == 1, agent.chat_ids
             assert not agent.last_turn.attachments, agent.last_turn.attachments
-            assert agent.outcomes[3].get("kind") != "missingSkillParams", agent.outcomes[3]
-            assert mock_ws["submits"], agent.outcomes[3]
+            assert agent.outcomes[6].get("kind") != "missingSkillParams", agent.outcomes[6]
+            assert mock_ws["submits"], agent.outcomes[6]
             await pg.wait_for_timeout(800)
             await _shot(pg, f"958-{lang}-same-chat-text-only-t2i-{switch_copy}")
         finally:

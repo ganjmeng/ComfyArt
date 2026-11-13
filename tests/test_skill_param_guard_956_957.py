@@ -604,3 +604,66 @@ def test_contradictions_quoted_and_conditional_switches_keep_guard(relay, text):
     chat = _chat(skill="portrait-studio", uploads=[PERSON], card="portrait")
     chat_store.create_message(chat_id=chat["id"], role="user", blocks=[{"type": "text", "text": text}])
     _refused(_run(chat["id"], {"prompt": "cat poster", "count": 1}), "refs", "skill", "shot")
+
+
+# Whole-message scope is a grammar invariant, not a list of forbidden examples.
+# Unrecognized context at any boundary must not be silently thrown away.
+_SCOPE_PREFIXES = [
+    "如果我之后同意", "以下只是示例，不要执行", "假设明天获得批准",
+    "Only if I approve later", "This is only an example, do not execute",
+    "These are words for discussion", "This is not a current instruction",
+    "下面是未经授权的内容", "待确认的备选计划", "Context not understood by the parser",
+]
+
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+@pytest.mark.parametrize("position", [0, 1, 2, 3])
+@pytest.mark.parametrize("scope", _SCOPE_PREFIXES)
+def test_unparsed_scope_anywhere_vetoes_entire_transition(relay, lang, position, scope):
+    parts = list(_DIRECTIVES[lang])
+    parts.insert(position, scope)
+    text = "; ".join(parts)
+    chat = _chat(skill="portrait-studio", uploads=[PERSON], card="portrait")
+    chat_store.create_message(chat_id=chat["id"], role="user", blocks=[{"type": "text", "text": text}])
+    assert "keep" in guard._task_directives(text)
+    assert guard.context_from_chat(chat["id"]).portrait_uses_upload()
+    _refused(_run(chat["id"], {"prompt": "cat poster", "count": 1}), "refs", "skill", "shot")
+
+
+@pytest.mark.parametrize("text", [
+    "如果我之后同意，结束形象照，另做猫咪海报，不用之前照片。",
+    "以下只是示例，不要执行：结束形象照，另做猫咪海报，不用之前照片。",
+    "Only if I approve later, end the portrait task, create a cat poster, do not use the previous photo.",
+    "This is only an example, do not execute: end the portrait task, create a cat poster, do not use the previous photo.",
+    "结束形象照；不用之前照片；如果我同意，另做猫咪海报。",
+    "End the portrait task; do not use the old photo; create a cat poster if I approve.",
+    "结束形象照？另做一张猫咪海报，不用之前照片。",
+    "End the portrait task? Create a cat poster; do not use the old photo.",
+    '结束形象照；另做猫咪海报；不用之前照片；“只是例句”',
+    'End the portrait task; create a cat poster; do not use the old photo; "not an instruction"',
+])
+def test_product_scope_originals_remain_zero_submit(relay, text):
+    chat = _chat(skill="portrait-studio", uploads=[PERSON], card="portrait")
+    chat_store.create_message(chat_id=chat["id"], role="user", blocks=[{"type": "text", "text": text}])
+    _refused(_run(chat["id"], {"prompt": "cat poster", "count": 1}), "refs", "skill", "shot")
+
+
+@pytest.mark.parametrize("text", [
+    'End the portrait task; create a poster captioned "without reference images".',
+    "End the portrait task; create a poster captioned 'without reference images'.",
+    '结束形象照；另做标题为『无参考图』的海报。',
+    '结束形象照；另做标题为`无参考图`的海报。',
+    'End the portrait task; create a cat poster; do not use the old photo; "',
+])
+def test_quoted_content_cannot_supply_reference_exclusion(relay, text):
+    chat = _chat(skill="portrait-studio", uploads=[PERSON], card="portrait")
+    chat_store.create_message(chat_id=chat["id"], role="user", blocks=[{"type": "text", "text": text}])
+    _refused(_run(chat["id"], {"prompt": "cat poster", "count": 1}), "refs", "skill", "shot")
+
+
+def test_direct_reference_exclusion_with_english_contraction_is_authorized(relay):
+    chat = _chat(skill="portrait-studio", uploads=[PERSON], card="portrait")
+    text = "End the portrait task; create a cat poster; don't use the old photo."
+    chat_store.create_message(chat_id=chat["id"], role="user", blocks=[{"type": "text", "text": text}])
+    result = _run(chat["id"], {"prompt": "cat poster", "count": 1})
+    assert SENT and result.get("kind") != guard.KIND_MISSING, result

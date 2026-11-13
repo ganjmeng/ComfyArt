@@ -193,8 +193,9 @@ class GenContext:
 
 
 
-# Narrow, clause-scoped directives, not a bag of words from the whole message.
-# Inconclusive / contradictory language keeps the current upload protection.
+# Closed direct-instruction grammar, not a bag of matches extracted from text.
+# Every nonempty clause must be consumed; unknown context fails closed, even
+# when three otherwise valid directives appear elsewhere in the message.
 _REF_ZH = r"(?:(?:之前|先前|刚才|上传|原来|原|旧|任何|这张|那张|这些)(?:的)?)*(?:参考图|照片|图片|原照|上传照)"
 _REF_EN = r"(?:(?:the|any|a|an|previous|old|uploaded|original|reference|portrait|this|that|my|these|her|his|our|their)\s+)*(?:photos?|images?|references?)\b"
 _END_ZH = (r"(?:结束|停止|取消)(?:当前|这个|这次|这组|之前的|刚才的)?"
@@ -204,20 +205,32 @@ _END_EN = (r"(?:end|stop|cancel)\s+(?:(?:the|this)\s+)?(?:(?:current|previous)\s
 
 
 def _task_directives(text: str) -> set[str]:
-    """Recognize affirmative/negative user clauses with local negation scope.
+    """Parse a complete direct-instruction chain, or retain protection.
 
-    Never mine directives from quoted examples, subordinate conditions, or
-    agent output. All three affirmative facts are needed; a conflicting
-    continuation or negated new-task directive vetoes the transition.
-    This deliberately does not claim general natural-language understanding.
+    Recognition is deliberately closed: an unconsumed clause invalidates the
+    *whole* transition. In particular, do not discard an unknown preamble,
+    question, quotation, or suffix and promote its embedded instructions to
+    current authorization. Ambiguity goes through the existing clarification
+    error, not a growing blacklist of hypothetical/example introductions.
     """
-    text = re.sub(r'```.*?```|`[^`]*`|“[^”]*”|「[^」]*」|『[^』]*』|"[^"\n]*"', '', text, flags=re.S)
+    # Preserve quoted spans as opaque data, rather than deleting them or
+    # extracting permission from an image caption / example inside a request.
+    # A standalone opaque span remains unconsumed and therefore vetoes release.
+    quoted = (r'```.*?```|`[^`]*`|“[^”]*”|「[^」]*」|『[^』]*』|"[^"\n]*"|'
+              r"(?<!\w)'[^'\n]+'(?!\w)")
+    text = re.sub(quoted, "⟦quoted-data⟧", text, flags=re.S)
     evidence: set[str] = set()
+    # Unclosed quotation is ambiguous; apostrophes inside words (don't) are not.
+    if re.search(r'["`“”「」『』]|(?<!\w)\'|\'(?!\w)', text):
+        evidence.add("keep")
     # Split only clause boundaries, not arbitrary spans inside a directive.
     clauses = re.split(r"[\n，,。；;！!：:]|(?<!\w)\.(?!\w)|(?<=\w)\.(?=\s|$)|\b(?:but|however|and)\b|但(?:是)?|不过|然而|并且|同时", text, flags=re.I)
     for clause in clauses:
         c = re.sub(r"^(?:(?:请|现在|先|我们|也)\s*|please\s+)+", "", clause.strip(), flags=re.I)
-        if not c or re.search(r"[？?]", c):
+        if not c:
+            continue
+        if re.search(r"[？?]", c):
+            evidence.add("keep")
             continue
         ended = bool(re.fullmatch(_END_ZH + "|" + _END_EN, c, re.I))
         if ended:
@@ -248,12 +261,15 @@ def _task_directives(text: str) -> set[str]:
             r"(?:另(?:做|开|生成)|重新(?:做|生成)|生成|画一|(?:这是)?全新的独立文生图请求|"
             r"(?:create|generate|draw|make)\b|(?:this is a )?(?:new|separate) (?:independent )?text[ -]to[ -]image request)", c, re.I)
         reference_free_new = False
+        # A request containing negated/subordinate control language is not a
+        # direct creation clause, regardless of where no_ref was established.
+        if new and re.search(r"(?:不是|并非|不要|不需要|如果|\bnot\b|\bif\b)", c, re.I):
+            new = None
         if new:
             evidence.add("new")
             # Reference-free modifiers count only inside an affirmative request;
             # embedded negations/conditions are ambiguous, not permission.
-            if (not re.search(r"(?:不是|并非|不要|不需要|如果|\bnot\b|\bif\b)", c, re.I)
-                    and re.search(r"无参考图|纯文生图|without\s+(?:using\s+)?" + _REF_EN, c, re.I)):
+            if re.search(r"无参考图|纯文生图|without\s+(?:using\s+)?" + _REF_EN, c, re.I):
                 evidence.add("no_ref")
                 reference_free_new = True
         # An unparsed reference/continuation clause is not permission. In
@@ -267,6 +283,14 @@ def _task_directives(text: str) -> set[str]:
         if (not ended and not excluded and not reference_free_new and
                 (re.search(reference_mention + r"|形象照|人像|肖像|\bportrait\b", c, re.I)
                  or re.match(r"继续|沿用|(?:continue|reuse|keep using)\b|use\s+(?:it|them|her|him)\b", c, re.I))):
+            evidence.add("keep")
+        # Image-content exclusions are a distinct, non-authorizing grammar
+        # production. They can describe the requested output but never supply
+        # end/new/no_ref permission. All other unparsed language stays protected.
+        content_only = bool(re.fullmatch(
+            r"(?:不要|不含|无)(?:人物|人像|文字|背景)|"
+            r"(?:no|without)\s+(?:persons?|people|text|background)", c, re.I))
+        if not (ended or excluded or new or content_only):
             evidence.add("keep")
     return evidence
 
