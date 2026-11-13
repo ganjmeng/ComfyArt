@@ -401,7 +401,12 @@ def test_relay_every_auto_models_pin_is_honoured_with_refs(relay, monkeypatch):
     seen = []
     for skill, pin in sorted(pins.items()):
         SENT.clear()
-        out = _run("generate_image", prompt=f"{skill} pin honour", skill=skill, refs=["shape:base"])
+        # #957: portrait-studio with refs requires an explicit valid shot.
+        # This fixture only supplies that contract; pin assertions stay unchanged.
+        kwargs = dict(prompt=f"{skill} pin honour", skill=skill, refs=["shape:base"])
+        if skill == "portrait-studio":
+            kwargs["shot"] = "closeup"
+        out = _run("generate_image", **kwargs)
         assert SENT, f"{skill}: expected a submit of the pinned model, nothing was sent"
         sent = SENT[-1][1]
         submitted = sent.get("edit_model") or sent.get("model")
