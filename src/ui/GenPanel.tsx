@@ -17,6 +17,7 @@ import { ColorPicker } from './ColorPicker'
 import { AdvancedPill } from './GenAdvanced'
 import { ModelPill, SettingsPill } from './GenSettings'
 import { Icons } from './icons'
+import { manualModelChoice, type ModelChoice } from '../autoPill'
 import { StoryboardEditor } from './StoryboardEditor'
 import { Popover } from './Popover'
 import { useElementSize, useSelectedGenerator, useSelectionRect } from './selection'
@@ -76,6 +77,9 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
       if (!live) return
       setEstDetail(e); setEstimate(e?.price ?? null); setEstimated(e?.source === 'estimate'); setUnpriced(e?.source === 'unpriced')
       // #825: same model_choice estimate quotes → confirm → card
+      // #953: the backend now derives the source from the current pick and the card's Auto
+      // state, so the estimate is authoritative even for the same model id. Writing it keeps
+      // a stale Auto record from surviving a manual pick.
       if (e?.model_choice && shape) {
         editor.updateShape<GeneratorShape>({ id: shape.id, type: shape.type, meta: { ...editor.getShape(shape.id)?.meta, modelChoice: e.model_choice } as GeneratorShape['meta'] })
       }
@@ -91,6 +95,15 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
       Object.assign(next, { w, h })
     }
     editor.updateShape<GeneratorShape>({ id: shape.id, type: shape.type, props: next })
+  }
+  // #953: the source follows the user's action, not the model id. A model-menu pick or Auto
+  // off is a manual pick even when the id equals the earlier Auto pick; Auto on drops the
+  // cached record so the next estimate derives Auto again. The submitted model is unchanged.
+  const choiceAfter = (props: Partial<GeneratorShape['props']> = {}, meta: Record<string, unknown> = {}): ModelChoice | null => {
+    const next = { ...shape, props: { ...p, ...props }, meta: { ...shape.meta, ...meta } } as GeneratorShape
+    const inputs = estimateInputsOf(next)
+    const model = inputs && typeof inputs.model === 'string' && inputs.model ? inputs.model : ''
+    return model ? manualModelChoice(model) : null
   }
   const video = isVideo(p.workflow)
   const refs = refsOf(shape)
@@ -322,17 +335,27 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
         <div className="ca-gen__spacer" />
         <ModelPill video={video} model={model} picks={featureModelsOf(shape)}
           onPick={(f, id) => {
-            if (f !== 'text_to_image' && f !== 'text_to_video') return setMeta({ featureModels: { ...featureModelsOf(shape), [f]: id } })
+            if (f !== 'text_to_image' && f !== 'text_to_video') {
+              const featureModels = { ...featureModelsOf(shape), [f]: id }
+              setMeta({ featureModels, modelChoice: choiceAfter({}, { featureModels }) })
+              return
+            }
             const patch = adjustForModel(p, modelOf(id), video)
             setAdjusted(Object.keys(patch).length > 0)
             update({ workflow: id, ...patch })
+            // #953: the user picked this model: drop the old Auto/skill record and record a manual source.
+            setMeta({ modelChoice: choiceAfter({ workflow: id, ...patch }) })
           }}
           onAuto={(on) => {
-            if (on) setMeta({ featureModels: {} })
             const id = on ? (video ? AUTO_VIDEO : AUTO_IMAGE) : agentModels(video)[0].id
             const patch = adjustForModel(p, modelOf(id), video)
             setAdjusted(Object.keys(patch).length > 0)
             update({ workflow: id, ...patch })
+            // #953: Auto on re-derives the source from the estimate; Auto off makes the shown model manual.
+            setMeta({
+              ...(on ? { featureModels: {} } : {}),
+              modelChoice: on ? null : choiceAfter({ workflow: id, ...patch }),
+            })
           }} />
         {unpriced && estimate == null && <span className="ca-gen__est" data-testid="ws-estimate" title={t('wsKey.unpriced')}>{t('wsKey.unpricedTag')}</span>}
         {estimate != null && <span className="ca-gen__est" data-testid="ws-estimate" title={[estDetail?.provider && estDetail?.model ? `${estDetail.provider}/${estDetail.model}` : estDetail?.model, estimated ? t('wsKey.estimated', `$${estimate}`) : t('wsKey.estimate', `$${estimate}`), estDetail?.tier].filter(Boolean).join(' · ')}>{`${estimated ? `${t('wsKey.estimatedTag')} ` : ''}≈$${usd(estimate)}${estDetail?.tier ? ` · ${estDetail.tier}` : ''}`}</span>}

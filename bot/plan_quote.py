@@ -5,6 +5,7 @@ tests never reach WaveSpeed. External agents do not use this module (#238).
 """
 from __future__ import annotations
 
+import inspect
 import json
 import math
 from dataclasses import dataclass
@@ -30,7 +31,7 @@ ModelsFor = Callable[[str], Awaitable[list[tuple[str, Optional[float]]]]]
 # api.mcp_tools.canvas.quote_route, so an Auto step is named and priced as the model it will run on.
 # #959: the third argument is the step's 0-based place in the quoted plan, so a per-image skill
 # previews image 1..n instead of pricing every step as image 1.
-Router = Callable[[str, dict, int], Optional[tuple[str, dict]]]
+Router = Callable[..., Optional[tuple[str, dict]]]
 
 QUOTE_TOOL = "quote_plan"
 
@@ -298,6 +299,19 @@ def normalize_steps(raw: object) -> list[dict]:
     return out
 
 
+def _quote_choice(step: dict, router: Optional[Router]) -> Optional[dict]:
+    """#953: model_choice for quote-card copy (skill / Auto / user-named). Display only."""
+    args = step.get("arguments") if isinstance(step.get("arguments"), dict) else {}
+    tool = str(step.get("tool") or "")
+    if not tool:
+        return None
+    try:
+        from ..api.mcp_tools.canvas import select_model
+        return select_model(tool, dict(args))
+    except Exception:
+        return None
+
+
 async def _max_model(feature: str, models_for: ModelsFor) -> tuple[str, Optional[float]]:
     rows = await models_for(feature) if feature else []
     best_id, best = "", None
@@ -307,6 +321,15 @@ async def _max_model(feature: str, models_for: ModelsFor) -> tuple[str, Optional
         if best is None or float(price) > best:
             best_id, best = str(mid), float(price)
     return best_id, best
+
+
+def _route(router: Router, tool: str, args: dict, position: int):
+    """Call a router with the step's plan position; older routers take (tool, args) only."""
+    try:
+        takes = "position" in inspect.signature(router).parameters
+    except (TypeError, ValueError):
+        takes = False
+    return router(tool, args, position=position) if takes else router(tool, args)
 
 
 def _plan_positions(steps: list[dict]) -> list[int]:
@@ -329,8 +352,9 @@ def _plan_positions(steps: list[dict]) -> list[int]:
 
 
 async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
-                      router: Optional[Router] = None, position: int = 0) -> tuple[Optional[float], bool, str, Optional[dict]]:
-    """(line amount, approx, model id to show, optional param-block). Unknown prices use the dearest model of that type.
+                      router: Optional[Router] = None, position: int = 0) -> tuple[Optional[float], bool, str, Optional[dict], Optional[dict]]:
+    """(line amount, approx, model id to show, optional model_choice for the quote copy,
+    optional param-block). Unknown prices use the dearest model of that type.
     #910: with a router, the step is shown and priced as the model it is routed to (Auto included), with its
     reference images counted, so the card's model and price are the ones that will run.
     #959: `position` is the step's place in the quoted plan (see _plan_positions)."""
@@ -338,17 +362,22 @@ async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
     inputs = price_inputs(args)
     units = units_of(tool, args)
     feature = feature_of_step(tool, args)
-    routed = router(tool, args, position) if router is not None and not step.get("svg_blocked") else None
+    routed = _route(router, tool, args, position) if router is not None and not step.get("svg_blocked") else None
+    choice = None
     if routed and isinstance(routed, tuple) and (routed[1] or {}).get("param_blocked"):
         # #956 / #957: do not price a silent text-to-image fallback when required params are missing.
-        return None, True, "", routed[1]["param_blocked"]
+        return None, True, "", None, routed[1]["param_blocked"]
     if routed and routed[0]:
         model = routed[0]
-        routed_inputs = routed[1] or {}
-        inputs = {**inputs, **{k: v for k, v in routed_inputs.items() if k in _PRICE_KEYS or k in ("images", "width", "height")}}
+        payload = dict(routed[1] or {})
+        # #953: the routed choice carries the quote-card source (skill / Auto / user-named).
+        maybe = payload.pop("_model_choice", None)
+        if isinstance(maybe, dict):
+            choice = maybe
+        inputs = {**inputs, **{k: v for k, v in payload.items() if k in _PRICE_KEYS or k in ("images", "width", "height")}}
         # #956 / #957: units follow the validated args (e.g. packaging/portrait lock count to 1).
-        if "count" in routed_inputs or "n" in routed_inputs:
-            units = units_of(tool, {**args, **{k: routed_inputs[k] for k in ("count", "n") if k in routed_inputs}})
+        if "count" in payload or "n" in payload:
+            units = units_of(tool, {**args, **{k: payload[k] for k in ("count", "n") if k in payload}})
     approx = False
     show = model
     unit: Optional[float] = None
@@ -362,8 +391,8 @@ async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
         approx = True
         show, unit = await _max_model(feature, models_for)
     if unit is None:
-        return None, True, show, None
-    return round(float(unit) * units, 6), approx, show, None
+        return None, True, show, choice, None
+    return round(float(unit) * units, 6), approx, show, choice, None
 
 
 def _needs_ask(total: float, threshold: float, force: bool) -> bool:
@@ -389,8 +418,9 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
                 unpriced=True, key=canon_key(step["tool"], step["arguments"], step["model"], plan=True),
             ))
             continue
-        amount, approx, show, blocked = await _price_step(step, pricer, models_for, router, position)
+        amount, approx, show, routed_choice, blocked = await _price_step(step, pricer, models_for, router, position)
         if blocked:
+            # #956 / #957: required params are missing; name the real refusal and price nothing.
             lines.append(Line(
                 text=str(blocked.get("error") or blocked.get("user_message") or ""),
                 price=ABOUT[lang], amount=0.0, approx=True, unpriced=True,
@@ -400,6 +430,13 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         unpriced = amount is None
         name = step["text"] or step["tool"]
         label = model_label(show) if show else AUTO_LABEL[lang]
+        choice = routed_choice or _quote_choice(step, router)
+        routed_id = str((choice or {}).get("edit_model") or (choice or {}).get("model") or "")
+        if choice and (not show or routed_id == str(show)):
+            from ..api.auto_models import quote_model_copy
+            copied = quote_model_copy(choice, show or "", lang)
+            if copied:
+                label = copied
         text = f"{name} · {label}" if label else name
         if step["tool"] == "generate_image" and _gif().requests_gif(step["arguments"]):
             text = f"{text} · {_gif().gif_quote_label(step['arguments'].get('frame_count'), step['arguments'].get('frame_duration_ms'))}"

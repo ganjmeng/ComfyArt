@@ -159,7 +159,7 @@ def _quote(chat_id: str, steps: list[dict]):
     priced: list[tuple[str, dict]] = []
 
     def router(tool, args, position):
-        model, inputs = canvas.quote_route(tool, args, position)
+        model, inputs = canvas.quote_route(tool, args, position=position)
         routed.append({"position": position, "model": model, "inputs": copy.deepcopy(inputs)})
         return model, inputs
 

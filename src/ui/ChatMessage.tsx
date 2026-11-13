@@ -21,7 +21,7 @@ import { readLocal, writeLocal } from '../localPrefs'
 import { attachSkill, loadSkills, skillCreatorAtom } from '../skills'
 import { openSkillEditor } from './SkillsDialog'
 import { Tip } from './Tip'
-import { autoPillLabel, autoPillTooltip, inputIsAuto, modelChoiceOfResult } from '../autoPill'
+import { autoPillLabel, autoPillTooltip, inputIsAuto, modelChoiceOfResult, skillPinReason } from '../autoPill'
 
 function CustomLlmFailNotice({ text, action }: { text?: string; action?: string }) {
   return (
@@ -1296,13 +1296,25 @@ export function AssistantBlocks({ editor, m, dockAsks }: { editor: Editor; m: Bo
           // Legacy done cards without model_choice / model → leave model unset (tool fallback label; never empty Auto).
           const fromResult = modelChoiceOfResult(result?.text)
           const named = processModelName(b.input)
-          const autoIn = inputIsAuto(b.input as Record<string, unknown> | undefined)
-          let choice = fromResult
+          const input = (b.input || {}) as Record<string, unknown>
+          const autoIn = inputIsAuto(input)
+          const fromInput = input.model_choice && typeof input.model_choice === 'object'
+            ? input.model_choice as import('../autoPill').ModelChoice
+            : null
+          const skill = typeof input.skill === 'string' ? input.skill : ''
+          let choice = fromResult || fromInput
           if (!choice && stepLiveProbe && autoIn) choice = { auto: true as const, ...(named ? { model: named } : {}) }
           if (!choice && named) {
-            choice = autoIn
-              ? { auto: true as const, model: named }
-              : { auto: false as const, model: named, reason: { zh: '你指定了这个模型', en: 'you named this model' } }
+            // #953: a model in the tool input is not "you named this model" when Auto
+            // or a skill routed it (agent-filled / skill-fixed). Only a bare non-skill
+            // manual pick keeps the user-named reason.
+            if (autoIn || skill) {
+              choice = skill
+                ? { auto: true as const, model: named, skill, category: 'skill', reason: skillPinReason(skill) }
+                : { auto: true as const, model: named }
+            } else {
+              choice = { auto: false as const, model: named, reason: { zh: '你指定了这个模型', en: 'you named this model' } }
+            }
           }
           if (choice) {
             const labelChoice = stepLiveProbe && choice.auto && !choice.model ? { auto: true as const } : choice

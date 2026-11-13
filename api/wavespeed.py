@@ -283,6 +283,12 @@ async def _fetch_models(session: aiohttp.ClientSession) -> dict:
     return {m["model_id"]: m for m in data or [] if isinstance(m, dict) and "model_id" in m}
 
 
+def cached_models() -> dict:
+    """The in-process catalog snapshot, or {} if it has not been fetched yet."""
+    models = _catalog.get("models")
+    return models if isinstance(models, dict) else {}
+
+
 async def catalog(refresh: bool = False) -> dict:
     """WaveSpeed model metadata (price, schema), cached 24h; falls back to the stale cache on failure."""
     if refresh or not _catalog["models"] or time.time() - _catalog["at"] > CATALOG_TTL:
@@ -594,8 +600,13 @@ def resolve_model(feature: str, model: str | None, *, size_lock: bool = False) -
 def resolve_model_choice(feature: str, inputs: dict) -> tuple[str, dict | None]:
     """#825: Auto / omitted model → table choose(); named model → user choice with backend reason.
     Returns (model_id, model_choice_dict_or_None). structure_control / custom keep prior resolve_model path.
+
+    #953: honor an already-routed model_choice (and auto_model) so an estimate/submit
+    does not relabel a skill/Auto pick as「你指定了这个模型」just because the model id
+    was filled in. The model that will run is unchanged.
     """
-    from .auto_models import choose, named_or_none, note
+    from .auto_models import (AUTO_PICKED_REASON, choose, is_user_named_reason, named_or_none,
+                              note, relabel_agent_filled_choice, skill_pin, skill_pin_reason)
     picked = inputs.get("model")
     if feature == "structure_control" and not picked:
         picked = _structure_pick(inputs)
@@ -606,14 +617,60 @@ def resolve_model_choice(feature: str, inputs: dict) -> tuple[str, dict | None]:
     if feature not in load_table():
         model = resolve_model(feature, picked, size_lock=bool(inputs.get("size_lock")))
         return model, None
+    incoming = inputs.get("model_choice") if isinstance(inputs.get("model_choice"), dict) else None
+    size_lock = bool(inputs.get("size_lock"))
     named = named_or_none(picked if isinstance(picked, str) else None)
+    incoming_mid = named_or_none(str(incoming.get("model") or "") if incoming else None)
+    # Stale display metadata (a previous Auto pick still sitting on the shape) must not
+    # override the model the user just selected. This is a PR routing fix, not #910.
+    stale = bool(incoming and named and incoming_mid and named != incoming_mid)
+    if stale:
+        incoming = None
+    # #953: comparing ids is not enough -- Auto off + picking the same id keeps the id but
+    # changes the source. A cached Auto record is display metadata: unless the caller also
+    # says Auto routed this request (auto_model), an explicit model is the user's current
+    # pick and its source is manual. The model that runs is unchanged.
+    if incoming and incoming.get("auto") is True and named and inputs.get("auto_model") is not True:
+        incoming = None
+    if incoming and (incoming.get("model") or incoming.get("auto") is not None):
+        mid = incoming.get("model") or (picked if isinstance(picked, str) else None)
+        model = resolve_model(feature, mid, size_lock=size_lock)
+        choice = {**incoming, "model": model}
+        if not choice.get("note"):
+            try:
+                choice = {**choice, "note": note(choice) if choice.get("model") else ""}
+            except Exception:
+                pass
+        return model, choice
+    # A model already filled in by Auto / a skill must keep auto copy, not the user-named reason.
+    # Ignore auto_model when it arrived with a stale, mismatched model_choice.
+    if named and (inputs.get("auto_model") is True) and not stale:
+        model = resolve_model(feature, named, size_lock=size_lock)
+        skill = str(inputs.get("skill") or "")
+        if skill and skill_pin(skill):
+            choice = {"model": model, "auto": True, "category": "skill", "skill": skill,
+                      "reason": skill_pin_reason(skill)}
+        elif skill:
+            choice = {"model": model, "auto": True, "category": "skill_size", "skill": skill,
+                      "reason": skill_pin_reason(skill)}
+        else:
+            choice = {"model": model, "auto": True, "category": "default",
+                      "reason": dict(AUTO_PICKED_REASON)}
+        choice = {**choice, "note": note(choice)}
+        return model, choice
     masked = bool(inputs.get("mask") or inputs.get("mask_image") or inputs.get("region"))
     prompt = str(inputs.get("prompt") or "")
     choice = choose(feature, prompt, named, load_config(), masked=masked)
     # resolve_model validates / applies size_lock; prefer choice model id
-    model = resolve_model(feature, choice.get("model"), size_lock=bool(inputs.get("size_lock")))
+    model = resolve_model(feature, choice.get("model"), size_lock=size_lock)
     if model != choice.get("model"):
         choice = {**choice, "model": model}
+    user_text = inputs.get("user_text") if isinstance(inputs.get("user_text"), str) else None
+    if named:
+        choice = relabel_agent_filled_choice(choice, inputs, user_text) or choice
+        if is_user_named_reason(choice.get("reason")) and not user_text and inputs.get("skill"):
+            # skill call without user text: agent-filled, not a user pick
+            choice = relabel_agent_filled_choice(choice, inputs, "") or choice
     choice = {**choice, "note": note(choice)}
     return model, choice
 

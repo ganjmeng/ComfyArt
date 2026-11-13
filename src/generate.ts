@@ -4,7 +4,7 @@ import { defaultTarget, refKind, uploadImage, validTarget, viewUrl, type PromptG
 import { supportsLora, type LoraPick } from './loras'
 import { freeSpot, spawnHolder, startJob, type ErrorSink, type GenInfo } from './jobs'
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
-import { agentModels, AUTO_IMAGE, AUTO_VIDEO, defaultOf, FEATURE_MODELS, featurePicks, hasNegative, isCloudModel, isVideo, modelOf, refCap, type ModelDef } from './models'
+import { agentModels, AUTO_IMAGE, AUTO_VIDEO, defaultOf, FEATURE_MODELS, featurePicks, hasNegative, isAuto, isCloudModel, isVideo, modelOf, refCap, type ModelDef } from './models'
 import { CUSTOM_GENERATE } from './customWorkflows'
 import { modelIn, WS_NODE, wsBuilt } from './wavespeed'
 import { t } from './i18n'
@@ -271,7 +271,60 @@ export function estimateInputsOf(shape: GeneratorShape): Record<string, unknown>
   const inputs = estimateBase(shape)
   const loras = lorasOf(shape)
   // #202: quoted with the LoRAs it is submitted with, so the quote is the charge
-  return inputs && loras.length ? { ...inputs, loras } : inputs
+  const priced = inputs && loras.length ? { ...inputs, loras } : inputs
+  return priced ? attachModelChoice(shape, priced) : priced
+}
+
+/** #953: the routed model_choice record cached on a card (Auto / skill / user pick). */
+type ModelChoice = import('./autoPill').ModelChoice
+
+/** Skill pins, exact size locks and reference routes own their source, so they keep Auto copy. */
+const SKILL_CATEGORIES = new Set(['skill', 'skill_fallback', 'skill_size', 'references', 'fallback'])
+const skillRouted = (choice: ModelChoice) => !!choice.skill || SKILL_CATEGORIES.has(String(choice.category || ''))
+
+/** #953: an Auto-table record only proves Auto while the card is on Auto; a skill route keeps its source.
+ *  A pure Auto record on a manual card is leftover display metadata (Studio: Auto off, then pick). */
+function autoProvenance(shape: GeneratorShape, choice: ModelChoice): boolean {
+  return choice.auto === true && (isAuto(shape.props.workflow) || skillRouted(choice))
+}
+
+/** The record belongs to the model this job runs: comparing ids alone would let a leftover
+ *  record of the same id keep its old source after the user changed Auto / the feature. */
+function choiceMatchesCurrent(choice: ModelChoice, current?: unknown): boolean {
+  if (typeof current !== 'string' || !current || !choice.model) return false
+  return choice.model === current || (choice as { edit_model?: string }).edit_model === current
+}
+
+/** #953: pass the already-routed model_choice (and auto_model) so estimate/submit
+ *  do not relabel a skill/Auto pick as a user-named model. Only the model this card
+ *  actually runs uses its record; when the card leaves the pick to Auto (no model in
+ *  the inputs) the backend derives both the model and its source. */
+function attachModelChoice(shape: GeneratorShape, inputs: Record<string, unknown>): Record<string, unknown> {
+  const choice = shape.meta?.modelChoice as ModelChoice | undefined
+  if (!choice || typeof choice !== 'object') return inputs
+  if (!choiceMatchesCurrent(choice, inputs.model)) return inputs
+  // A pure Auto-table record on a manual card is stale: the backend derives the source from the pick.
+  if (choice.auto === true && !autoProvenance(shape, choice)) return inputs
+  return {
+    ...inputs,
+    model_choice: choice,
+    ...(autoProvenance(shape, choice) ? { auto_model: true } : {}),
+  }
+}
+
+function applyModelChoice(graph: PromptGraph, shape: GeneratorShape) {
+  const choice = shape.meta?.modelChoice as ModelChoice | undefined
+  if (!choice || typeof choice !== 'object') return
+  // A manual record must never pick the model on an Auto card.
+  if (isAuto(shape.props.workflow) && choice.auto !== true) return
+  for (const node of Object.values(graph)) {
+    if (node.class_type !== WS_NODE) continue
+    // Only a record for the model this node runs: when the node leaves the model to Auto the
+    // backend resolves it, and a leftover T2I record must not land on an edit node (#953).
+    if (!choiceMatchesCurrent(choice, node.inputs.model)) continue
+    node.inputs.model_choice = choice
+    if (choice.auto) node.inputs.auto_model = true
+  }
 }
 
 function estimateBase(shape: GeneratorShape): Record<string, unknown> | null {
@@ -328,7 +381,7 @@ export function generate(editor: Editor, shape: GeneratorShape, onError: ErrorSi
   const kind = isVideo(shape.props.workflow) ? 'video' : 'image'
   const name = shape.props.prompt || scenesOf(shape)[0]?.prompt || ''
   const seed = seedOf(shape) ?? randomSeed()
-  const built = generateGraph(shape).then((b) => { applySeed(b.graph, seed); applyLoras(b.graph, shape); return b })
+  const built = generateGraph(shape).then((b) => { applySeed(b.graph, seed); applyLoras(b.graph, shape); applyModelChoice(b.graph, shape); return b })
   return startJob(editor, shape.id, built, { name: name.slice(0, 32), kind, extra: { seed }, runOn: runOnOf(shape) }, onError)
 }
 

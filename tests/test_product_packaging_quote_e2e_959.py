@@ -203,7 +203,7 @@ def local_agent(monkeypatch):
         return quote
 
     def route_capture(tool, args, position=0):
-        routed = real_route(tool, args, position)
+        routed = real_route(tool, args, position=position)
         if routed is None:
             return None
         model, inputs = routed

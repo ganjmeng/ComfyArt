@@ -126,3 +126,12 @@ export function inputIsAuto(input?: Record<string, unknown> | null): boolean {
   if (typeof m === 'string' && ['auto', 'auto:video'].includes(m.trim().toLowerCase())) return true
   return false
 }
+
+/** #953: the reason a Studio model-menu pick keeps on the record (UI shows no popup for manual). */
+const NAMED_REASON = { zh: '你指定了这个模型', en: 'you named this model' } as const
+
+/** #953: a user model-menu action is a manual source, even when the id equals a previous Auto pick.
+ *  The caller uses it to replace stale Auto display metadata; the submitted model is unchanged. */
+export function manualModelChoice(model: string): ModelChoice {
+  return { model, auto: false, category: 'user', reason: { ...NAMED_REASON } }
+}
