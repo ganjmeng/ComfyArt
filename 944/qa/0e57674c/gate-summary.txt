@@ -1,0 +1,14 @@
+qa9440e57674c TSC_OK
+qa9440e57674c UNIT: collected=4199 collect_exit=0
+qa9440e57674c UNIT node-unit: 430 tests (node v22.23.3)
+qa9440e57674c UNIT: duration=487s
+qa9440e57674c UNIT: 5 failed, 4170 passed, 24 skipped, 517 deselected in 484.46s (0:08:04)
+qa9440e57674c UNIT: exit=1
+qa9440e57674c GATE_FAIL: UNIT pytest exit 1
+qa9440e57674c BUILD_OK(local, not committed)
+qa9440e57674c E2E: collected=171 collect_exit=0
+qa9440e57674c E2E: duration=365s
+qa9440e57674c E2E: 171 passed, 4545 deselected in 363.60s (0:06:03)
+qa9440e57674c E2E: exit=0
+qa9440e57674c FAILURE_LOGS: /tmp/gate_qa9440e57674c_4R8D.failure.tar.gz (tracebacks in /tmp/gate_qa9440e57674c_4R8D)
+qa9440e57674c GATE_EXIT=1
