@@ -120,7 +120,8 @@ def test_poster_flare_failure_has_no_registered_retry(catalog):
 
 
 @pytest.mark.asyncio
-async def test_timeout_cap_running_fails_logs_id_no_flare(ws, monkeypatch, caplog):
+async def test_timeout_cap_running_keeps_polling_no_flare(ws, monkeypatch, caplog):
+    """Past the local cap a still-running submitted job stays processing; no Flare, no resubmit."""
     from ComfyArt.bot.local_llm import model_call_failed
     ws["status"] = "processing"
     task = await wavespeed.submit({"feature": "text_to_image", "prompt": POSTER, "confirmed": True})
@@ -131,21 +132,20 @@ async def test_timeout_cap_running_fails_logs_id_no_flare(ws, monkeypatch, caplo
     with caplog.at_level("WARNING"):
         hist = await wavespeed.poll(task)
     entry = hist[f"ws:{task}"]
-    assert entry["status"]["completed"]
-    assert entry["generation_succeeded"] is False
-    info = entry["status"]["messages"][0][1]
-    assert info["ws_kind"] == "timeout" and info["ws_task_id"] == task
-    assert info["fallback_blocked"] is True
+    assert entry["status"]["completed"] is False
+    assert entry["status"]["status_str"] == "processing"
+    assert not entry["status"]["messages"]
+    assert wavespeed._jobs[task]["fallback_blocked"] is True
     assert task in caplog.text and "no Flare" in caplog.text and "timeout=" in caplog.text
-    # Tool-result shaped payload carrying the poll failure info
-    tool = {"status": "error", "error": {"kind": "timeout", "fallback_blocked": True, "task_id": task},
-            "model": SUN_T2I}
-    assert model_call_failed("generate_image", {"prompt": POSTER}, json.dumps(tool)) is None
+    # A later completion on the same id is delivered; never a second submit.
+    ws["status"] = "completed"
+    wavespeed._jobs[task]["next_poll"] = 0
+    later = await wavespeed.poll(task)
+    assert later[f"ws:{task}"]["generation_succeeded"] is True
+    assert later[f"ws:{task}"]["outputs"]["ws"]["images"]
     assert model_call_failed("generate_image", {"prompt": POSTER}, json.dumps(hist)) is None
     assert len(ws["submits"]) == 1
     assert wavespeed._jobs[task]["started"] == started
-    assert await wavespeed.poll(task) == hist
-    assert len(ws["submits"]) == 1
 
 
 @pytest.mark.asyncio
@@ -190,8 +190,8 @@ async def test_failed_prediction_no_extra_submit(ws, monkeypatch):
 
 
 def test_image_vs_video_job_timeout_constants():
-    """#873: image jobs 10 min; video/other keep 30 min (split from the old shared 30 min)."""
-    assert wavespeed.IMAGE_JOB_TIMEOUT == 10 * 60
+    """Image and non-image jobs both default to 30 min; feature routing still uses the two constants."""
+    assert wavespeed.IMAGE_JOB_TIMEOUT == 30 * 60
     assert wavespeed.JOB_TIMEOUT == 30 * 60
     assert wavespeed._job_timeout_for({"feature": "text_to_image"}) == wavespeed.IMAGE_JOB_TIMEOUT
     assert wavespeed._job_timeout_for({"feature": "image_edit"}) == wavespeed.IMAGE_JOB_TIMEOUT

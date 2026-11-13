@@ -43,8 +43,9 @@ CURATED = os.path.join(os.path.dirname(__file__), "curated_models.json")
 CATALOG_TTL = 24 * 3600
 POLL_MIN = 2.0
 POLL_MAX_BACKOFF = 15.0
-# #873: image jobs cap at 10 min total; video/audio/3d keep the longer window.
-IMAGE_JOB_TIMEOUT = float(os.environ.get("WAVESPEED_IMAGE_JOB_TIMEOUT") or 10 * 60)
+# Image and non-image jobs share a 30 min wall-clock cap (env can still override each).
+# Past the cap a submitted job is not failed: polling continues until WaveSpeed completes or fails.
+IMAGE_JOB_TIMEOUT = float(os.environ.get("WAVESPEED_IMAGE_JOB_TIMEOUT") or 30 * 60)
 JOB_TIMEOUT = float(os.environ.get("WAVESPEED_JOB_TIMEOUT") or 30 * 60)
 
 
@@ -2431,7 +2432,9 @@ async def poll(task: str) -> dict:
     now = time.time()
     limit = _job_timeout_for(job)
     if now - job["started"] > limit:
-        # Total lifetime for this prediction (image = IMAGE_JOB_TIMEOUT, else JOB_TIMEOUT).
+        # Total lifetime cap (image and non-image both default to 30 min). A job already
+        # submitted to WaveSpeed is never judged failed at this cap (#924): one free status
+        # GET, no Flare, then keep polling so a late image can still be delivered to the canvas.
         if job.get("model") and not job.get("recovery_tried"):
             job["recovery_tried"] = True
             try:
@@ -2442,15 +2445,15 @@ async def poll(task: str) -> dict:
                 log.warning("#873: final status check for prediction %s failed (%s)", task, type(e).__name__)
         if job.get("result"):
             return job["result"]
-        # Still running / unresolved at the cap: fail with NO Flare; log id for reconciliation.
+        # Still running / unresolved at the cap: do not fail; block Flare; keep fetching.
         job["fallback_blocked"] = True
-        log.warning(
-            "#873: prediction %s reached timeout=%ss (feature=%s) while unresolved; no Flare; reconcile this id",
-            task, int(limit), job.get("feature") or "",
-        )
-        if job.get("model"):
-            return _fail(task, await _timeout_error(task))
-        return _fail(task, WaveSpeedError(f"WaveSpeed task timed out after {int(limit)}s", 504, kind="timeout"))
+        if not job.get("past_cap_logged"):
+            job["past_cap_logged"] = True
+            log.warning(
+                "#873: prediction %s reached timeout=%ss (feature=%s) while unresolved; "
+                "keep polling, no Flare; reconcile this id",
+                task, int(limit), job.get("feature") or "",
+            )
     if now < job["next_poll"]:
         return _history(task, "processing", [], {})
     job["next_poll"] = now + POLL_MIN

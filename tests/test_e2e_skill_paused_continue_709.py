@@ -136,20 +136,34 @@ def test_stuck_plain_reason_and_primary_continue_resumes_same_run(monkeypatch, s
     resume_to_done(monkeypatch, store, rid)
 
 
-def test_stuck_timeout_plain_reason_and_primary_continue_resumes_same_run(monkeypatch, store, page):
+def test_stuck_timeout_shows_still_generating_copy_without_continue(monkeypatch, store, page):
+    """HOLD 6840583182: past 30 min, still-generating copy, no stuck card, no 继续生成."""
     clk = Clock()   # the run's own (monotonic-style) clock drives wait_timeout, not time.time()
+    ZH = "图片还在生成，生成好后会自动出现在画布上，不会重复扣费。"
 
     def mcp(name, a, i):
         clk.t += 330
-        return json.dumps({"status": "pending"})
+        return json.dumps({"status": "running"})
     r = Rig(monkeypatch, lambda m, n: calls(("wait_generation", {"ids": ["job1"]})), store=store, clock=clk, mcp=mcp,
             policy={"wall_time_s": 10**6})
     res, ev = arun(r.send("加字", goal=""))
     s, rid = stop_of(res), res.run["run_id"]
     assert (s["reason"], s["sub"]) == ("stuck", "timeout") and store.get_run(rid)["status"] == "paused"
-    shot = str(Path(SHOT) / "paused_wait_timeout_zh.png") if SHOT else None
-    assert ui_continue(page, card(ev), "等待生成结果超过 11 分钟。", shot, title="已暂停")[1] == rid
-    resume_to_done(monkeypatch, store, rid)
+    b = card(ev)
+    assert b["copy"]["key"] == "stuck:timeout"
+    assert b["copy"]["zh"]["title"] == ZH
+    assert b["copy"]["zh"]["primary"] is None and b.get("can_continue") is False
+    page.evaluate("([b]) => { window.__calls = []; window.__render(b, 'zh', 'light') }", [[b]])
+    page.wait_for_selector("[data-testid=run-stop-still-generating]")
+    r_el = page.locator(".ca-run").first
+    text = r_el.inner_text()
+    assert ZH in text
+    assert "任务卡住了" not in text and "已暂停" not in text and "继续生成" not in text
+    assert r_el.locator("button").count() == 0
+    if SHOT:
+        path = Path(SHOT) / "paused_wait_timeout_zh.png"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        r_el.screenshot(path=str(path))
 
 
 def test_hard_cap_unified_title_plain_body_primary_continue(monkeypatch, store, page):

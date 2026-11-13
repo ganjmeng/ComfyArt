@@ -290,11 +290,31 @@ class RunBudget:
         self._clock = clock
         self._t0 = clock()
         self._wall0 = self.used.wall_s
+        self._paused = False
         self._step_start = (self.used.tokens, self.used.credits, self.used.wall_s)
 
     # -- charging ------------------------------------------------------------------
     def tick(self) -> None:
+        # While a submitted, charged generation is being waited on, freeze the run clock
+        # so the 15 min cap cannot stop the run before the image lands.
+        if self._paused:
+            return
         self.used.wall_s = self._wall0 + (self._clock() - self._t0)
+
+    def pause_wall(self) -> None:
+        """Stop accumulating wall time (e.g. during wait_generation)."""
+        if self._paused:
+            return
+        self.tick()
+        self._paused = True
+
+    def resume_wall(self) -> None:
+        """Resume the run clock from the frozen used.wall_s."""
+        if not self._paused:
+            return
+        self._wall0 = self.used.wall_s
+        self._t0 = self._clock()
+        self._paused = False
 
     def charge_request(self, *, usage: Optional[dict], request_tokens: int, output_tokens: int) -> int:
         """#391: one model request costs its INPUT (the whole re-sent context) + output + reasoning
@@ -381,12 +401,16 @@ class RunBudget:
     def snapshot(self) -> dict:
         self.tick()
         return {"limits": asdict(self.limits), "used": asdict(self.used),
-                "history": self.history, "soft_used": self.soft_used}
+                "history": self.history, "soft_used": self.soft_used,
+                "wall_paused": self._paused}
 
     @classmethod
     def restore(cls, data: dict, **kw) -> "RunBudget":
-        return cls(BudgetLimits(**data["limits"]), used=BudgetUsed(**data["used"]),
-                   history=data.get("history") or [], soft_used=bool(data.get("soft_used")), **kw)
+        b = cls(BudgetLimits(**data["limits"]), used=BudgetUsed(**data["used"]),
+                history=data.get("history") or [], soft_used=bool(data.get("soft_used")), **kw)
+        if data.get("wall_paused"):
+            b._paused = True
+        return b
 
     def ui(self) -> dict:
         self.tick()
@@ -602,8 +626,8 @@ class ProgressTracker:
     plan_items: list[str] = field(default_factory=list)
     total_calls: int = 0
     gen_calls: int = 0
-    # #705: wait_generation is outside the 30 cap but each task gets max 10 min OR 120 polls -> stuck:timeout
-    wait_max_s: float = 600.0
+    # wait_generation is outside the 30-call cap; each task may wait up to 30 min or 120 polls.
+    wait_max_s: float = 30 * 60
     wait_max_polls: int = 120
     wait_first: dict = field(default_factory=dict)   # task id -> run-clock time of first poll
     wait_waited_s: float = 0.0                       # #709: longest wait so far (run clock), for the card copy
@@ -642,10 +666,15 @@ class ProgressTracker:
         # Fingerprint = canvas state + normalized tool results + new artifact ids.
         fp = _h(canvas_fp, *(normalize_result(o.result) for o in obs), *sorted(new_ids))
         if all_ro:
-            self.readonly_run += 1
-            # Read-only steps never count as "no progress"; they have their own cap.
-            if self.readonly_run > self.readonly_max:
-                return self._stall(step, "readonly_limit")
+            bases = {re.sub(r"^mcp__\w+__", "", o.tool or "") for o in obs}
+            # Waiting on a live generation is not a read-only stall or nudge.
+            if bases and bases <= {"wait_generation"}:
+                pass
+            else:
+                self.readonly_run += 1
+                # Read-only steps never count as "no progress"; they have their own cap.
+                if self.readonly_run > self.readonly_max:
+                    return self._stall(step, "readonly_limit")
         else:
             self.readonly_run = 0
             self.unchanged = self.unchanged + 1 if fp == self.last_fp else 1
