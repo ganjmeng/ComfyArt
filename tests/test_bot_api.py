@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 
+from aiohttp import web
 from conftest import SENT, wait_bot_done, write_settings
 
 from ComfyArt.api import bot_asks, chat_store
@@ -144,6 +145,56 @@ async def test_settings_validate_keys_and_types(bot_client):
     assert (await bot_client.put("/comfyart/settings", json={"ocr-engine": "cloud"})).status == 400
     saved = await (await bot_client.put("/comfyart/settings", json={"ocr-engine": "agent"})).json()
     assert saved["ocr-engine"] == "agent"
+
+
+_LOCAL_ONLY_PATCHES = ({"enable-mcp": True}, {"enable-bot": True}, {"bot-enable-comfy-mcp": True},
+                       {"bot-comfy-mcp-command": "calc"}, {"bot-hermes-ssh-host": "evil"})
+
+
+async def test_lan_clients_cannot_change_what_the_agent_runs(bot_client, monkeypatch):
+    # #937: port of upstream 54b6a377
+    write_settings(**{"enable-mcp": False, "enable-bot": False})
+    monkeypatch.setattr(web.BaseRequest, "remote", "192.168.0.50")
+    for patch in _LOCAL_ONLY_PATCHES:
+        resp = await bot_client.put("/comfyart/settings", json=patch)
+        assert resp.status == 403 and next(iter(patch)) in (await resp.json())["error"]
+    # echoing an unchanged value is fine, and every other setting still saves from the LAN
+    saved = await (await bot_client.put("/comfyart/settings", json={"enable-bot": False, "ocr-engine": "agent"})).json()
+    assert saved["ocr-engine"] == "agent" and saved["enable-bot"] is False
+    from ComfyArt.api.settings import all_settings
+    stored = all_settings()
+    assert stored["enable-mcp"] is False and stored["enable-bot"] is False
+    assert stored["bot-comfy-mcp-command"] == "" and stored["bot-hermes-ssh-host"] == ""
+
+
+async def test_forwarded_headers_do_not_make_a_lan_client_local(bot_client, monkeypatch):
+    # #937: local detection uses the TCP peer only; a spoofed X-Forwarded-For / X-Real-IP is ignored
+    write_settings(**{"enable-mcp": False})
+    monkeypatch.setattr(web.BaseRequest, "remote", "10.0.0.7")
+    resp = await bot_client.put("/comfyart/settings", json={"enable-mcp": True},
+                                headers={"X-Forwarded-For": "127.0.0.1", "X-Real-IP": "127.0.0.1",
+                                         "Forwarded": "for=127.0.0.1"})
+    assert resp.status == 403
+
+
+async def test_localhost_can_change_what_the_agent_runs(bot_client, monkeypatch):
+    # #937: the machine running ComfyUI (IPv4, IPv6 and IPv4-mapped loopback) still changes them
+    for peer in ("127.0.0.1", "::1", "::ffff:127.0.0.1"):
+        write_settings(**{"enable-mcp": False, "enable-bot": False, "bot-enable-comfy-mcp": False,
+                          "bot-comfy-mcp-command": "", "bot-hermes-ssh-host": ""})
+        monkeypatch.setattr(web.BaseRequest, "remote", peer)
+        for patch in _LOCAL_ONLY_PATCHES:
+            resp = await bot_client.put("/comfyart/settings", json=patch)
+            assert resp.status == 200, (peer, patch)
+            key, value = next(iter(patch.items()))
+            assert (await resp.json())[key] == value
+
+
+async def test_unknown_peer_is_not_treated_as_local(bot_client, monkeypatch):
+    # #937: no peer address (e.g. a unix socket) is refused instead of crashing
+    write_settings(**{"enable-mcp": False})
+    monkeypatch.setattr(web.BaseRequest, "remote", None)
+    assert (await bot_client.put("/comfyart/settings", json={"enable-mcp": True})).status == 403
 
 
 async def test_float_settings_accept_int_and_reject_bool(bot_client):
