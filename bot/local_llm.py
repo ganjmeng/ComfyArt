@@ -1354,7 +1354,9 @@ class _PlanGate:
     def blocks(self, name: str, args: dict) -> bool:
         if not self.strict or name not in PAID_TOOLS:
             return False
-        return canon_key(name, args) not in self.keys
+        # #963: plan keys compare a packaging anchor slot semantically (the quote cannot
+        # name the future anchor). Everything else stays strict; dedupe keeps the exact key.
+        return canon_key(name, args, plan=True) not in self.keys
 
 
 TEST_TIMEOUT_S = 10.0

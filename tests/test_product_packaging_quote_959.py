@@ -15,16 +15,19 @@ from __future__ import annotations
 
 import asyncio
 import copy
+import json
 import os
 
 import pytest
 
-from ComfyArt.api import chat_store, paid_guard, portrait_studio as ps, product_packaging as pk
+from ComfyArt.api import chat_store, mcp, paid_guard, portrait_studio as ps, product_packaging as pk
 from ComfyArt.api import skill_param_guard as guard
 from ComfyArt.api.auto_models import skill_pin
 from ComfyArt.api.mcp_tools import canvas
-from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
+from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID, GUARD_CHAT_ID
+from ComfyArt.bot.local_llm import _PLAN_REFUSE, _PlanGate, LocalLlmProvider
 from ComfyArt.bot.plan_quote import build_quote
+from tests.test_agent_budget_391 import Rig, calls, reply
 
 SKILL = pk.SKILL
 PRODUCT = "/api/view?filename=product-959.png&type=input"
@@ -280,3 +283,158 @@ def test_quote_still_refuses_missing_refs_without_a_price(relay):
     assert quote is not None and all(line.unpriced for line in quote.lines)
     assert all("param_blocked" in (r["inputs"] or {}) for r in routed if r["model"] == "")
     assert SENT == []
+
+
+# --- #963: the built-in agent's plan gate must accept the real anchor ---------------------
+
+def test_plan_gate_accepts_the_real_anchor_and_stays_strict_on_the_rest():
+    """The quote names a future anchor; the submit names the placed shape. Same slot, same step.
+
+    Everything else must stay a strict comparison: a different prompt, model, ratio,
+    resolution, count, reference count/order or product photo is still refused.
+    """
+    chat, answers = _chat()
+    _seed(chat["id"], answers)
+    quote, _, _ = _quote(chat["id"], _steps())
+    assert quote is not None
+
+    gate = _PlanGate()
+    gate.allow(quote, True)
+    assert [gate.blocks("generate_image", a) for a in _actual_calls()] == [False, False, False, False]
+    assert [gate.blocks("generate_image", s["arguments"]) for s in _steps()] == [False, False, False, False]
+
+    def blocked(**changes):
+        args = copy.deepcopy(_actual_calls()[1])
+        args.update(changes)
+        return gate.blocks("generate_image", args)
+
+    assert blocked(prompt="a different extension")
+    assert blocked(count=2)
+    assert blocked(ratio="3:4")
+    assert blocked(resolution="1k")
+    assert blocked(model="openai/gpt-image-2.6-sunburst/text-to-image")
+    assert blocked(skill="studio-model")
+    assert blocked(refs=[PRODUCT])                              # ref count
+    assert blocked(refs=[PRODUCT, ANCHOR, "shape:third"])       # ref count
+    assert blocked(refs=[ANCHOR, PRODUCT])                      # order: product first
+    assert blocked(refs=["/api/view?filename=other.png", ANCHOR])  # the product photo itself
+    assert not gate.blocks("generate_image", {**_steps()[0]["arguments"]})  # anchor image: 1 ref, strict
+    assert gate.blocks("generate_image", {**_steps()[0]["arguments"], "refs": [PRODUCT, ANCHOR]})
+
+
+def test_agent_loop_plan_gate_submits_all_four_with_the_real_anchor(monkeypatch):
+    """Full built-in agent path ($0): quote_plan → Start → four real generate_image submits.
+
+    Goes through LocalLlmProvider.send → agent_loop.run → _dispatch_tools → _PlanGate →
+    the real MCP tool handler (lock_request / select_model / _pin_args) with submit mocked,
+    not through the handler directly. Before #963 the gate refused images 2-4.
+    """
+    chat, answers = _chat()
+    sent: list[dict] = []
+
+    async def submit(action, args, project, timeout, chat=""):
+        sent.append(copy.deepcopy(dict(args)))
+        anchor = ANCHOR if len(sent) == 1 else f"shape:ext{len(sent)}"
+        return {"ids": [anchor], "model": args.get("edit_model") or args.get("model")}
+
+    async def approval(label):
+        return None
+
+    monkeypatch.setattr(canvas, "submit_command", submit)
+    monkeypatch.setattr(canvas, "maybe_ask_run_approval", approval)
+
+    async def real_mcp(session, endpoint, name, arguments):
+        """The MCP tool call with the bot chat in context (what api/mcp.py does per request)."""
+        token = BOT_CHAT_ID.set(chat["id"])
+        guard_token = GUARD_CHAT_ID.set(chat["id"])
+        try:
+            out = await mcp._tools_call({"name": name, "arguments": arguments})
+        finally:
+            BOT_CHAT_ID.reset(token)
+            GUARD_CHAT_ID.reset(guard_token)
+        content = out.get("content") or []
+        text = next((b["text"] for b in content if b.get("type") == "text"), "")
+        images = [b["data"] for b in content if b.get("type") == "image"]
+        return text, images
+
+    rig = Rig(monkeypatch, lambda messages, n: reply("好"), policy={"credits_usd": 5.0})
+    monkeypatch.setattr(rig.p, "_mcp_call_tool", real_mcp)
+
+    async def price_call(name, args):
+        return 0.05
+
+    async def price_one(model, inputs):
+        return _mock_price(inputs)
+
+    async def no_models(feature):
+        raise AssertionError(f"a pinned packaging quote must not price the dearest {feature}")
+
+    async def confirm_plan(spec, turn, handle, *, run=None, messages=None):
+        return "start"
+
+    monkeypatch.setattr(rig.p, "_price_call", price_call)
+    monkeypatch.setattr(rig.p, "_price_one", price_one)
+    monkeypatch.setattr(rig.p, "_models_for", no_models)
+    monkeypatch.setattr(rig.p, "_threshold", lambda: 0.0)
+    monkeypatch.setattr(rig.p, "_confirm_plan", confirm_plan)
+
+    captured: dict = {"quote": None, "routed": []}
+    real_quote = rig.p._quote_steps
+    real_route = LocalLlmProvider._quote_route
+
+    async def quote_capture(steps, lang):
+        quote = await real_quote(steps, lang)
+        captured["quote"] = quote
+        return quote
+
+    def route_capture(tool, args, position=0):
+        model, inputs = real_route(tool, args, position)
+        captured["routed"].append({"position": position, "model": model, "inputs": copy.deepcopy(inputs)})
+        return model, inputs
+
+    monkeypatch.setattr(rig.p, "_quote_steps", quote_capture)
+    monkeypatch.setattr(rig.p, "_quote_route", route_capture)
+
+    plan = _steps()
+    submissions = _actual_calls()
+
+    def script(messages, n):
+        if n == 0:
+            return calls(("quote_plan", {"steps": plan}))
+        if 1 <= n <= 4:
+            return calls(("generate_image", submissions[n - 1]))
+        return reply("好")
+
+    rig.script = script
+    res, events = asyncio.run(rig.send(goal=""))
+
+    quote = captured["quote"]
+    assert quote is not None and quote.total == 0.29
+    assert [line.amount for line in quote.lines] == [0.05, 0.08, 0.08, 0.08]
+    # The gate let every step through and the real handler submitted it.
+    assert len(sent) == 4
+    assert len(captured["routed"]) == 4
+    refuse = _PLAN_REFUSE["zh"]
+    for event in events:
+        text = str(getattr(event, "text", "") or "")
+        if event.t == "tool_result":
+            assert refuse not in text, text
+    assert res.error is None or "quote_plan" not in str(res.error)
+
+    for i, (index, role, ratio, resolution, refs, price) in enumerate(EXPECTED):
+        routed = captured["routed"][i]
+        got = routed["inputs"]
+        submitted = sent[i]
+        assert routed["position"] == i
+        assert (got["image_index"], got["image_role"]) == (index, role)
+        assert (got["ratio"], got["resolution"]) == (ratio, resolution) == (submitted["ratio"], submitted["edit_resolution"])
+        assert len(got["images"]) == refs == len(submitted["refs"])
+        assert routed["model"] == submitted["edit_model"] == SUNBURST_EDIT
+        assert submitted["count"] == 1
+        assert submitted["refs"][0] == PRODUCT
+        assert _mock_price({"ratio": submitted["ratio"], "resolution": submitted["edit_resolution"],
+                            "images": submitted["refs"]}) == price == quote.lines[i].amount
+    # The plan placeholder is never sent to a supplier; the placed anchor replaces it.
+    assert all(a["refs"] == [PRODUCT] if i == 0 else a["refs"] == [PRODUCT, ANCHOR]
+               for i, a in enumerate(sent))
+    assert all(ANCHOR_PLAN not in json.dumps(a) for a in sent)

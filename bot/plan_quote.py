@@ -138,14 +138,45 @@ def price_inputs(args: dict) -> dict:
     return out
 
 
-def canon_key(tool: str, args: dict, model: str = "") -> tuple:
-    """Identity of one authorized paid call: tool + selected model + arguments, without fallback fields."""
+PLANNED_ANCHOR = "<planned-anchor>"  # #963: semantic slot for the packaging anchor a quote cannot name yet
+
+
+def _planned_args(tool: str, args: dict) -> dict:
+    """#963: compare a quoted step with its submit even when a ref is a future image.
+
+    product-to-packaging images 2-4 take [product photo, anchor]. A quote made
+    before image 1 exists can only name a placeholder for the anchor; the submit
+    names the placed shape. Both are the same slot, so canon compares the slot
+    semantically. Only this skill and only exactly two refs: the ref count and
+    order stay strict, the product photo must match, and every other field of the
+    call (model, prompt, ratio, resolution, count, ...) is still compared as-is.
+    """
+    if tool != "generate_image":
+        return args
+    from ..api.product_packaging import SKILL as packaging_skill
+    if str(args.get("skill") or "") != packaging_skill:
+        return args
+    refs = args.get("refs")
+    if not (isinstance(refs, list) and len(refs) == 2):
+        return args
+    return {**args, "refs": [refs[0], PLANNED_ANCHOR]}
+
+
+def canon_key(tool: str, args: dict, model: str = "", *, plan: bool = False) -> tuple:
+    """Identity of one authorized paid call: tool + selected model + arguments, without fallback fields.
+
+    `plan=True` is the plan-gate comparison (#963): a packaging anchor slot that
+    cannot exist yet is compared as a slot, the same on both sides. Dedupe
+    (`paid_key`) keeps the strict default so two different anchors stay distinct.
+    """
     clean = {}
     if isinstance(args, dict):
         for k, v in args.items():
             if k in _DROP_ARG:
                 continue
             clean[k] = v
+    if plan:
+        clean = _planned_args(str(tool), clean)
     picked = str(model or (args.get("model") if isinstance(args, dict) else "") or "")
     blob = json.dumps(clean, sort_keys=True, ensure_ascii=False, default=str)
     return (str(tool), picked, blob)
@@ -355,7 +386,7 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         if step.get("svg_blocked"):
             lines.append(Line(
                 text=step["svg_blocked"]["message"], price=ABOUT[lang], amount=0.0, approx=True,
-                unpriced=True, key=canon_key(step["tool"], step["arguments"], step["model"]),
+                unpriced=True, key=canon_key(step["tool"], step["arguments"], step["model"], plan=True),
             ))
             continue
         amount, approx, show, blocked = await _price_step(step, pricer, models_for, router, position)
@@ -363,7 +394,7 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
             lines.append(Line(
                 text=str(blocked.get("error") or blocked.get("user_message") or ""),
                 price=ABOUT[lang], amount=0.0, approx=True, unpriced=True,
-                key=canon_key(step["tool"], step["arguments"], ""),
+                key=canon_key(step["tool"], step["arguments"], "", plan=True),
             ))
             continue
         unpriced = amount is None
@@ -382,7 +413,7 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
             amount_n = float(amount or 0)
         lines.append(Line(
             text=text, price=price, amount=amount_n, approx=approx or unpriced,
-            unpriced=unpriced, key=canon_key(step["tool"], step["arguments"], step["model"]),
+            unpriced=unpriced, key=canon_key(step["tool"], step["arguments"], step["model"], plan=True),
         ))
     total = round(sum(ln.amount for ln in lines), 4)
     ask = _needs_ask(total, threshold, any(ln.unpriced for ln in lines))
