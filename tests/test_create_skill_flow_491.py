@@ -345,7 +345,7 @@ def test_r3_creator_chip_not_truncated() -> None:
     r = _rule(shell, CREATOR_SEL)
     assert r and "flex-shrink: 0" in r and "max-width: none" in r
     r = _rule(shell, ".ca-chat__bubble--skill > " + CREATOR_SEL)
-    assert r and "flex: 0 0 auto" in r and "overflow: visible" in r
+    assert r and "overflow: visible" in r and "max-width: none" in r
     r = _rule(shell, CREATOR_SEL + " .ca-chip__name")
     assert r and "overflow: visible" in r and "text-overflow: clip" in r
 
@@ -355,7 +355,8 @@ def test_r3_user_skill_chips_keep_ellipsis() -> None:
     shell = (ROOT / "src/styles/shell.css").read_text()
     assert _rule(shell, ".ca-chip--skill") is not None and "max-width: 160px" in _rule(shell, ".ca-chip--skill")
     assert re.search(r"\.ca-chip__name \{[^}]*text-overflow: ellipsis", shell)
-    assert _rule(shell, ".ca-chat__bubble--skill > .ca-chip--skill") is not None and "flex: 0 999 auto" in _rule(shell, ".ca-chat__bubble--skill > .ca-chip--skill")
+    skill_in_bubble = _rule(shell, ".ca-chat__bubble--skill > .ca-chip--skill")
+    assert skill_in_bubble is not None and "display: inline-flex" in skill_in_bubble and "max-width: 160px" in skill_in_bubble and "flex: 0 999 auto" not in skill_in_bubble
     for sel, body in re.findall(r"([^{}]+)\{([^}]*)\}", re.sub(r"/\*.*?\*/", "", shell, flags=re.S)):
         if "ca-chip" not in sel:
             continue

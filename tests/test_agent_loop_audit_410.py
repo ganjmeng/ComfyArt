@@ -180,9 +180,14 @@ def _user_skill(browser, bundle, lang, name, text=""):
       const tx = bub.querySelector('[data-testid=user-bubble-text]')
       const lh = parseFloat(getComputedStyle(tx).lineHeight) || 20
       const c = chip.getBoundingClientRect(), t = tx.getBoundingClientRect()
-      return { inBubble: chip.parentElement === bub, chipLeft: c.right <= t.left + 1, sameRow: Math.abs((c.top + c.bottom) - (t.top + t.bottom)) < 4,
+      const padL = parseFloat(getComputedStyle(bub).paddingLeft) || 0
+      const b = bub.getBoundingClientRect()
+      const cs = getComputedStyle(chip)
+      return { inBubble: chip.parentElement === bub, firstLine: Math.abs(c.top - t.top) < 8,
+               sameLine: t.top < c.bottom && t.left >= c.right - 2,
+               wrapFromLeft: t.height < lh * 1.5 ? true : (t.left <= b.left + padL + 2),
                textLines: t.height < lh * 1.5 ? 1 : Math.round(t.height / lh), truncated: nm.scrollWidth > nm.clientWidth, chipW: c.width,
-               ellipsis: getComputedStyle(nm).textOverflow, chipMin: parseFloat(getComputedStyle(chip).minWidth) }
+               ellipsis: getComputedStyle(nm).textOverflow, chipDisplay: cs.display, chipMax: cs.maxWidth }
     }""")
     page.close()
     return m
@@ -190,19 +195,20 @@ def _user_skill(browser, bundle, lang, name, text=""):
 
 @pytest.mark.parametrize("lang", ["zh", "en"])
 def test_harness_user_skill_chip_shrinks_first_text_one_line(browser, bundle, lang):
-    """#462: chip inside the bubble, left of the text, same row; a long name truncates with … and the text stays on one line."""
-    short = _user_skill(browser, bundle, lang, "早安咖啡店海报生成器")
-    assert short["inBubble"] and short["chipLeft"] and short["sameRow"] and short["textLines"] == 1, short
-    long = _user_skill(browser, bundle, lang, "早安咖啡店海报生成器·门店社媒竖版暖色调超长名称版本二")
-    assert long["inBubble"] and long["sameRow"] and long["textLines"] == 1, long
-    assert long["truncated"] and long["ellipsis"] == "ellipsis" and long["chipW"] <= 160, long
-    # a prompt too long for one line may wrap, but the chip keeps its minimum (icon + …) instead of vanishing
+    """#940: chip is inline at the start of the first line; a long name truncates at 160px; wrapped text starts at the left edge and the chip does not shrink."""
+    short = _user_skill(browser, bundle, lang, "早安咖啡店海报生成器", "改标题" if lang == "zh" else "Edit it")
+    assert short["inBubble"] and short["firstLine"] and short["sameLine"] and short["textLines"] == 1, short
+    assert short["chipDisplay"] == "inline-flex" and short["chipW"] <= 160, short
+    long = _user_skill(browser, bundle, lang, "早安咖啡店海报生成器·门店社媒竖版暖色调超长名称版本二", "改标题" if lang == "zh" else "Edit it")
+    assert long["inBubble"] and long["firstLine"] and long["textLines"] == 1, long
+    assert long["truncated"] and long["ellipsis"] == "ellipsis" and 140 <= long["chipW"] <= 160, long
     para = _user_skill(browser, bundle, lang, "早安咖啡店海报生成器", "把标题改成「周末早安」，画幅改为 9:16，并在底部加上门店地址与营业时间，配色更暖一些")
-    assert para["inBubble"] and para["textLines"] >= 2 and para["chipW"] >= para["chipMin"] - 0.5, para
+    assert para["inBubble"] and para["textLines"] >= 2 and para["wrapFromLeft"], para
+    assert abs(para["chipW"] - short["chipW"]) < 2, (para, short)
 
 
 def test_harness_user_skill_with_refs_uses_wrap_modifier_and_caps_chip(browser, bundle):
-    """A bubble with reference images keeps the #710 wrap modifier; the skill chip is at most 160px."""
+    """#940: a bubble with reference chips stays inline (not a wrapping flex row); unnamed refs still say image-N; skill chip ≤ 160px."""
     from urllib.parse import quote
     name = "早安咖啡店海报生成器·门店社媒竖版暖色调超长名称版本二"
     page = browser.new_page(viewport={"width": 420, "height": 720}, device_scale_factor=2)
@@ -218,19 +224,31 @@ def test_harness_user_skill_with_refs_uses_wrap_modifier_and_caps_chip(browser, 
       const chip = bub.querySelector('[data-testid=user-skill-chip]')
       const refs = [...bub.querySelectorAll('[data-testid=user-ref-chip]')]
       const cs = getComputedStyle(bub)
+      const padL = parseFloat(cs.paddingLeft) || 0
+      const b = bub.getBoundingClientRect()
+      const tx = bub.querySelector('[data-testid=user-bubble-text]')
+      const t = tx.getBoundingClientRect()
       return {
         cls: bub.className,
-        flexWrap: cs.flexWrap,
+        display: cs.display,
         chipW: chip.getBoundingClientRect().width,
-        refLabels: refs.map((el) => el.textContent),
+        chipDisplay: getComputedStyle(chip).display,
+        refLabels: refs.map((el) => (el.querySelector('.ca-chip__name') || el).textContent),
+        wrapFromLeft: t.left <= b.left + padL + 2,
+        refImgs: refs.map((el) => el.querySelectorAll('img').length),
       }
     }""")
+    page.wait_for_function("""() => [...document.querySelectorAll('[data-testid=user-ref-chip]')]
+      .every((el) => el.querySelectorAll('img').length === 0)""")
+    m["refImgs"] = page.evaluate("() => [...document.querySelectorAll('[data-testid=user-ref-chip]')].map((el) => el.querySelectorAll('img').length)")
     page.close()
     assert "ca-chat__bubble--refs" in m["cls"].split(), m
     assert "ca-chat__bubble--skill" in m["cls"].split(), m
-    assert m["flexWrap"] == "wrap", m
+    assert m["display"] == "block", m
+    assert m["chipDisplay"] == "inline-flex", m
     assert m["refLabels"] == ["image-1", "image-2"], m
-    assert m["chipW"] <= 160, m
+    assert m["refImgs"] == [0, 0], m  # blob: urls fail to load → filename only, no empty thumb box
+    assert 140 <= m["chipW"] <= 160, m
 
 
 def test_harness_renders_memory_done(browser, bundle):
