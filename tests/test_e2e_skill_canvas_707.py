@@ -323,8 +323,14 @@ async def _case(page, mock_ws, skill, width, height, ratio, rgb, match: bool):
         await _until(lambda: _toast(page, expected), 10)
         # #905: with the notice toast showing, the generator panel input and send button stay clickable.
         assert await page.get_by_role("button", name="关闭").count() > 0
+        # The finished generator was replaced by its image. Open another panel
+        # while the notice is still visible; test real actionability, not a stale node.
+        await page.get_by_role("button", name="图像生成").first.click()
+        await page.locator(".ca-gen__prompt").fill("next local fixture")
+        assert await page.get_by_role("button", name="关闭").count() > 0
         await page.locator(".ca-gen__prompt").click(trial=True, timeout=5000)
         await page.locator(".ca-gen__send").click(trial=True, timeout=5000)
+        assert len(mock_ws["submits"]) == before + 1  # trial clicks submit nothing
         await _close_toasts(page)
         await page.screenshot(path=str(SHOTS / f"{skill}-placed-with-notice.png"))
 
