@@ -138,10 +138,15 @@ async def put_settings(request: web.Request) -> web.Response:
         return error(f"unknown settings: {', '.join(unknown)}", 400)
     writable = {k: v for k, v in body.items() if k not in _READ_ONLY_SETTINGS}
     for key, value in writable.items():
-        if type(value) is not type(SETTINGS_SPEC[key]):
-            return error(f"{key} must be a {type(SETTINGS_SPEC[key]).__name__}", 400)
+        expected = type(SETTINGS_SPEC[key])
+        # JSON has no 5.0 vs 5: the browser sends an int for a whole-number float (e.g. agent-credits-usd).
+        # Accept int/float and store float; bool is an int subclass and must still be rejected.
+        if expected is float and isinstance(value, (int, float)) and not isinstance(value, bool):
+            writable[key] = float(value)
+        elif type(value) is not expected:
+            return error(f"{key} must be a {expected.__name__}", 400)
         # The SETTINGS_SPEC default remains valid even when it is not in CHOICES (llm_mode="" = not chosen yet).
-        if key in CHOICES and value not in CHOICES[key] and value != SETTINGS_SPEC[key]:
+        if key in CHOICES and writable[key] not in CHOICES[key] and writable[key] != SETTINGS_SPEC[key]:
             return error(f"{key} must be one of {', '.join(CHOICES[key])}", 400)
     current = all_settings()
     old_host = _host(current["bot-local-llm-url"])
