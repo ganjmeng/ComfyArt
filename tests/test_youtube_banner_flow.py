@@ -161,6 +161,26 @@ def test_skill_text_matches_card_skeleton_and_flow():
     assert "pass channel_name, tagline and schedule" in instr
 
 
+def test_skill_locks_card1_banner_text_punctuation_rule():
+    """#945: live card-1 copy options use · and /; rolling the instruction back fails this test."""
+    instr = _instructions()
+    assert "Join two descriptive phrases with a middle dot · instead of 和/与/、" in instr
+    assert "「AI 绘画教程·创意工作流」" in instr
+    assert "每周X/Y更新" in instr
+    assert "「每周二/五更新」" in instr
+    assert 'Join the lines with " ＋ "' in instr
+    assert "tightening their phrases into designed banner copy" in instr
+    assert "word for word, punctuation included" in instr
+    # Spaced or 周五 forms are not the locked lovart.ai punctuation (product 6840756336).
+    assert "AI 绘画教程 · 创意工作流" not in instr
+    assert "每周二 / 周五更新" not in instr
+    assert "每周二 / 五更新" not in instr
+    # Options stay live from the user's words — do not hard-code a full A/B/C label list.
+    assert 'label:"Loomi Studio ＋ AI 绘画教程·创意工作流 ＋ 每周二/五更新"' not in instr
+    # Pre-#945 wording must not return.
+    assert "from the full text down to the channel name only" not in instr
+
+
 # --- request bodies ($0) -----------------------------------------------------------------------------
 
 SENT: list = []
