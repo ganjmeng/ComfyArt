@@ -360,7 +360,8 @@ class TestLoopGuard:
         reads = [a["name"] for n, a in mcp if n == "skill"]
         assert reads == ["poster", "social"]
         results = [e.text for e in events if e.t == "tool_result"]
-        assert results[2] == "ok skill"  # cached result reused
+        # #960: a cached re-read keeps the content and now leads with the recovery note.
+        assert results[2].startswith("[cached]") and results[2].endswith("ok skill")
         assert events[-1].text == "done"
 
 

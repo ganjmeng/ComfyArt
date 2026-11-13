@@ -1,8 +1,12 @@
 import asyncio
+import json
+import logging
 
 from .. import bot_asks, chat_store
 from ..bot_turns import ACTIVE_TURNS, broadcast
 from ._context import BOT_CHAT_ID
+
+log = logging.getLogger("comfyart")
 
 
 def bot_turn_state():
@@ -60,7 +64,13 @@ async def ask_user(args: dict) -> dict:
         raise ValueError("ask_user is only available inside ComfyArt Agent chats")
     if state is None:
         raise ValueError("no active Agent turn for this chat")
-    spec = bot_asks.validate_spec(args)
+    try:
+        spec = bot_asks.validate_spec(args)
+    except ValueError as e:
+        # #960: keep the raw arguments and the reason for QA; nothing was rendered or recorded.
+        log.warning("[ComfyArt/ask] ask_user rejected, no card rendered: args=%s error=%s",
+                    json.dumps(args, ensure_ascii=False, default=str)[:800], e)
+        raise
     outcome = await _await_ask(chat_id, state, spec)
     if outcome["status"] != "answered":
         return {"status": outcome["status"],
@@ -242,7 +252,9 @@ TOOLS: dict[str, dict] = {
             "prompt+options (legacy) or questions[] for one card with several "
             "questions (text / single-select / multi-select can mix) and "
             "optional page/page_count for in-card paging (Next advances the "
-            "local page; Submit resolves). Blocks until they answer, skip, or "
+            "local page; Submit resolves). Required: non-empty questions[] or "
+            "prompt+options — a call with neither is rejected with a fixable "
+            "error and renders no card. Blocks until they answer, skip, or "
             "a few minutes pass. Use when a required parameter or creative "
             "choice is missing. options are choices (A–E); min/max_selections "
             "for multi-select; allow_other for free text; allow_skip (default "

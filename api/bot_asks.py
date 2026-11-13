@@ -594,8 +594,51 @@ def normalize_youtube_banner_card(args: dict) -> dict:
     return args
 
 
+_ASK_USER_RECOVERY = {
+    "zh": (
+        "ask_user 没有执行：没有渲染卡片，也没有记录任何回答。"
+        "必须传非空 questions[] 或 prompt + options（2..12 项）；每题都要有 id 和 prompt，"
+        "选项不足 2 个时用 allow_other 自由文本，不要传空数组或空 prompt。最小示例："
+        '{"questions":[{"id":"q1","prompt":"问题？","options":[{"id":"A","label":"A"},{"id":"B","label":"B"}],'
+        '"allow_other":true}],"allow_skip":true,"page_count":1}。'
+        "如果技能原文要求卡 1／卡 2，请按技能里的 questions[]（id、prompt、options、placeholder）原样传入。"
+        "修正参数后立即在同一个回合重新调用 ask_user；不要用文字代替问询，也不要跳过。"
+    ),
+    "en": (
+        "ask_user did not run: no card was shown and no answer was recorded. "
+        "Pass a non-empty questions[] or prompt + options (2..12); every question needs id and prompt, "
+        "and a question with fewer than 2 options needs allow_other for free text. Never send an empty array or an empty prompt. Minimal example: "
+        '{"questions":[{"id":"q1","prompt":"Your question?","options":[{"id":"A","label":"A"},{"id":"B","label":"B"}],'
+        '"allow_other":true}],"allow_skip":true,"page_count":1}. '
+        "When a skill asks for card 1 / card 2, pass that skill's questions[] (id, prompt, options, placeholder) verbatim. "
+        "Fix the arguments and call ask_user again in the same turn; do not replace the question with prose and do not skip it."
+    ),
+}
+_ASK_USER_RECOVERY_TAGS = ("ask_user 没有执行", "ask_user did not run")
+
+
+def ask_user_recovery_text() -> str:
+    """#960: the actionable suffix for a rejected ask_user spec, in the ask-card language."""
+    return _ASK_USER_RECOVERY["zh" if card_lang() == "zh" else "en"]
+
+
 def validate_spec(args: dict) -> dict:
-    """Accept legacy single-question OR questions[] multi form."""
+    """Accept legacy single-question OR questions[] multi form.
+
+    #960: a rejected spec never renders a card and never records an answer; the
+    ValueError says what to send instead (and in which language) so the agent can
+    fix the call and retry in the same turn.
+    """
+    try:
+        return _validate_spec(args)
+    except ValueError as e:
+        message = str(e)
+        if any(tag in message for tag in _ASK_USER_RECOVERY_TAGS):
+            raise
+        raise ValueError(f"{message}. {ask_user_recovery_text()}") from None
+
+
+def _validate_spec(args: dict) -> dict:
     from .portrait_studio import normalize_card as normalize_portrait_studio_card
     args = normalize_portrait_studio_card(args)  # portrait-studio (reference run 7fc60c86)
     from .product_packaging import normalize_card as normalize_product_packaging_card
