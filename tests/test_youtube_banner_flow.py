@@ -164,14 +164,14 @@ def test_skill_text_matches_card_skeleton_and_flow():
 def test_skill_locks_card1_banner_text_punctuation_rule():
     """#945: live card-1 copy options use · and /; rolling the instruction back fails this test."""
     instr = _instructions()
-    assert "Join two descriptive phrases with a middle dot · instead of 和/与/、" in instr
+    assert "Join two descriptive phrases the agent writes itself with a middle dot · instead of 和/与/、" in instr
     assert "「AI 绘画教程·创意工作流」" in instr
     assert "每周X/Y更新" in instr
     assert "「每周二/五更新」" in instr
     assert 'Join the lines with " ＋ "' in instr
     assert "tightening their phrases into designed banner copy" in instr
     assert "word for word, punctuation included" in instr
-    # Spaced or 周五 forms are not the locked lovart.ai punctuation (product 6840756336).
+    # Spaced or 周五 forms are not the locked punctuation for agent-written descriptions (product 6840756336).
     assert "AI 绘画教程 · 创意工作流" not in instr
     assert "每周二 / 周五更新" not in instr
     assert "每周二 / 五更新" not in instr
@@ -179,6 +179,48 @@ def test_skill_locks_card1_banner_text_punctuation_rule():
     assert 'label:"Loomi Studio ＋ AI 绘画教程·创意工作流 ＋ 每周二/五更新"' not in instr
     # Pre-#945 wording must not return.
     assert "from the full text down to the channel name only" not in instr
+
+
+def test_skill_locks_user_typed_banner_text_verbatim():
+    """#945: user-typed input-box text stays verbatim; · and 每周X/Y更新 are only for agent-written descriptions.
+
+    Deleting the new verbatim-user rule sentence must fail this test.
+    """
+    instr = _instructions()
+    # The new rule sentence (mutation target).
+    assert (
+        "Any text the user typed in the input box, including 和, spaces and punctuation, "
+        "must be copied verbatim wherever it appears in an option or the image prompt"
+    ) in instr
+    assert "never convert the user-typed wording to ·" in instr
+    assert "the user writes 「AI 绘画教程和创意工作流」 → the option keeps 「AI 绘画教程和创意工作流」" in instr
+    # Separator / schedule forms are limited to descriptions the agent writes itself.
+    assert "Join two descriptive phrases the agent writes itself with a middle dot ·" in instr
+    assert "write a two-day schedule the agent writes itself as 每周X/Y更新" in instr
+    assert "applies to English equivalents the agent writes" in instr
+
+
+USER_TYPED_TAGLINE = "AI 绘画教程和创意工作流"
+
+
+def test_picked_option_with_user_he_and_spaces_reaches_prompt_byte_for_byte(relay):
+    """Server stage_args must pass a picked option containing 「和」 and spaces through to the prompt unchanged."""
+    picked = f"Loomi Studio ＋ {USER_TYPED_TAGLINE} ＋ 每周二、周五更新"
+    prompt = f'Bright watercolor brand world, brand blue #2F6BFF, copy 「{picked}」'
+    for stage in ("board", "direct"):
+        SENT.clear()
+        out = _run(prompt=prompt, skill="youtube-channel-banner", banner_stage=stage)
+        assert out.get("status") != "failed", out
+        sent_prompt = SENT[0][1]["prompt"]
+        # Byte-for-byte: the user-typed tagline (和 + spaces) and the full picked option survive.
+        assert USER_TYPED_TAGLINE.encode("utf-8") in sent_prompt.encode("utf-8")
+        assert picked.encode("utf-8") in sent_prompt.encode("utf-8")
+        assert "AI 绘画教程·创意工作流" not in sent_prompt
+        staged = bc.stage_args({
+            "prompt": prompt, "skill": "youtube-channel-banner", "banner_stage": stage,
+        })
+        assert staged["prompt"].encode("utf-8").find(USER_TYPED_TAGLINE.encode("utf-8")) != -1
+        assert staged["prompt"].encode("utf-8").find(picked.encode("utf-8")) != -1
 
 
 # --- request bodies ($0) -----------------------------------------------------------------------------
