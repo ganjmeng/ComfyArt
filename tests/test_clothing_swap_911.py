@@ -109,7 +109,11 @@ def test_rule6_and_708_detached_from_clothing_swap_only():
     assert "const PORTRAIT_SHOTS_708 =" in SKILLS
 
     # Other skill entries stay byte-identical to the branch base.
+    # before-after is rewritten by #905/#908 (Rule 2 wording + typography/camera);
+    # locked in tests/test_before_after_905.py and tests/test_ref_orientation_905.py.
     for sid in OTHER_SKILL_IDS:
+        if sid == "before-after":
+            continue
         assert _skill_entry(SKILLS, sid) == _skill_entry(main, sid), sid
 
 
@@ -643,6 +647,10 @@ def test_qa4_clothing_swap_drops_rule6_and_708_others_unchanged():
             continue
         # portrait-studio flow: rewritten by the portrait-studio flow PR; locked in tests/test_portrait_studio_flow.py.
         if sid == "portrait-studio":
+            continue
+        # #905/#908 before-after Rule 2 wording + typography/camera; locked in
+        # tests/test_before_after_905.py and tests/test_ref_orientation_905.py.
+        if sid == "before-after":
             continue
         # product-to-packaging flow: rewritten by the product-to-packaging flow PR; locked in tests/test_product_packaging_flow.py.
         if sid == "product-to-packaging":

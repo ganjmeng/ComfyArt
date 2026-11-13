@@ -9,7 +9,7 @@ Question 1's product noun and the options of questions 1 and 2 are written from 
 locks everything else.
 
 $0: no WaveSpeed call. submit_command and the run approval are mocked. Pins, api/auto_models.json,
-api/skill_size.py and bot/skill_output.py are compared byte for byte with main e8c4a855.
+api/skill_size.py is compared byte for byte with main e8c4a855; bot/skill_output.py is pinned to the #905 revision.
 """
 from __future__ import annotations
 
@@ -495,7 +495,7 @@ def _main_bytes(path: str) -> bytes:
 
 
 @pytest.mark.parametrize("path", ["api/auto_models.json", "api/skill_size.py", "api/curated_models.json",
-                                  "api/wavespeed_models.json", "bot/skill_output.py"])
+                                  "api/wavespeed_models.json"])
 def test_pins_sizes_and_model_tables_are_unchanged_from_main(path):
     assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == hashlib.sha256(_main_bytes(path)).hexdigest(), path
 
@@ -503,12 +503,13 @@ def test_pins_sizes_and_model_tables_are_unchanged_from_main(path):
 # #927 versions of these two files, pinned by literal sha256 of the working-tree
 # bytes (no git-object lookup — the lock tip will not be on main after squash).
 PINNED_SHA256 = {
+    "bot/skill_output.py": "25ff9cab4780ebd7b1532d89246acd085ef63a493808abf1de20be8befaf6dd0",  # #905 size-notice handling
     "api/portrait_studio.py": "61257848a9e23d13c066d01c103c565d6804e58c926d3905c6ed8b0890569224",
     "bot/self_check.py": "1a9b4f7eda7e915adf83df42ff31ccf3c27e83253d9636ba5c85aead447993b6",
 }
 
 
-@pytest.mark.parametrize("path", ["api/portrait_studio.py", "bot/self_check.py"])
+@pytest.mark.parametrize("path", ["api/portrait_studio.py", "bot/self_check.py", "bot/skill_output.py"])
 def test_portrait_studio_and_self_check_match_pinned_sha256(path):
     assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == PINNED_SHA256[path], path
 
