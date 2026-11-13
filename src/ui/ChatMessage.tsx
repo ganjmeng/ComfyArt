@@ -327,22 +327,23 @@ export function RunStop({ b, latest }: { b: BotBlock; latest: boolean }) {
   if (reason === 'done') return null
   const lk = lang === 'zh' ? 'zh' : 'en'
   const copy = b.copy?.[lk]
-  const title = copy?.title ?? t(`runStop.reason.${reason}`)
-  const body = copy?.body ?? ''
-  const details = b.details?.[lk] ?? []
+  const stillGenerating = b.copy?.key === 'stuck:timeout'
+  const title = stillGenerating ? (copy?.title || t('runStop.stillGenerating')) : (copy?.title ?? t(`runStop.reason.${reason}`))
+  const body = stillGenerating ? (copy?.body ?? '') : (copy?.body ?? '')
+  const details = stillGenerating ? [] : (b.details?.[lk] ?? [])
   const go = () => {
     if (!b.run_id) return
     setBusy(true)
     continueRun(b.run_id, lang).catch((e) => { setError(errorText(e)); setBusy(false) })
   }
   return (
-    <div className="ca-run" data-reason={reason} data-key={b.copy?.key} data-tone={b.copy?.tone}>
+    <div className="ca-run" data-reason={reason} data-key={b.copy?.key} data-tone={b.copy?.tone} data-testid={stillGenerating ? 'run-stop-still-generating' : undefined}>
       <div className="ca-run__head">
         <span className="ca-icon">{Icons.agent}</span>
         <span className="ca-run__title">{title}</span>
       </div>
       {body && <div className="ca-run__body">{body}</div>}
-      {copy?.reason && copy.reason !== body && <div className="ca-run__body" data-run-reason="">{copy.reason}</div>}
+      {!stillGenerating && copy?.reason && copy.reason !== body && <div className="ca-run__body" data-run-reason="">{copy.reason}</div>}
       {details.length > 0 && (
         <details className="ca-run__details">
           <summary>{t('runStop.details')}</summary>
@@ -350,7 +351,7 @@ export function RunStop({ b, latest }: { b: BotBlock; latest: boolean }) {
         </details>
       )}
       {error && <div className="ca-chat__hint">{error}</div>}
-      {b.can_continue && latest && !closed && copy?.primary && (
+      {!stillGenerating && b.can_continue && latest && !closed && copy?.primary && (
         <div className="ca-panel__foot">
           {copy.secondary && <button type="button" className="ca-panel__secondary" disabled={busy} onClick={() => setClosed(true)}>{copy.secondary}</button>}
           {/* #709: when the card offers 继续生成, it is THE primary action; the locked primary steps back */}

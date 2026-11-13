@@ -41,7 +41,7 @@ def block(key, kw, i):
         args = {k: (v[lk] if isinstance(v, dict) else v) for k, v in kw.items()}
         copy[lk] = {"title": title, "body": al._card_body(key, lk, **args), "primary": primary, "secondary": secondary}
     return {"type": "run_stop", "run_id": f"run{i}", "stop": {"reason": key.split(":")[0]}, "copy": copy,
-            "details": DETAILS, "can_continue": key != "done"}
+            "details": DETAILS, "can_continue": key not in ("done", "stuck:timeout")}
 
 
 BLOCKS = [block(k, kw, i) for i, (k, kw) in enumerate(CARDS)]

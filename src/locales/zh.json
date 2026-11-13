@@ -1537,6 +1537,7 @@
   "runStop.sub.self_check_failed": "结果未通过自检",
   "runStop.sub.quote_declined": "已取消，未扣费",
   "runStop.sub.network": "网络中断",
+  "runStop.stillGenerating": "图片还在生成，生成好后会自动出现在画布上，不会重复扣费。",
   "runStop.details": "详情",
   "runStop.continue": "继续",
   "arti.evolutionEmpty": "暂无进化日志",
