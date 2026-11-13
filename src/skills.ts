@@ -909,6 +909,36 @@ export function skillEditToolHint(skill: Pick<Skill, 'id' | 'name'>): string {
 /** #705: marker the agent loop treats as a hard stop (bot/agent_loop.py NON_RETRYABLE_MARK). */
 export const SKILL_NON_RETRYABLE = '[non-retryable]'
 
+/** #960: skill reads are paged so the agent's 4000-char tool-result cap can never drop the tail
+ *  (card specs used to land past the cut). A page is the real text from `offset`, never a summary;
+ *  `next_offset` is exactly how to continue. 3000 keeps the page plus its envelope under the cap
+ *  and keeps the YouTube card 1 spec (ends at ~2900 chars) whole on page 1. */
+export const SKILL_READ_PAGE = 3000
+export const SKILL_READ_MAX_PAGE = 3000
+const SKILL_READ_PAGE_NOTE = 'This is one page of the real skill text, not a summary. When has_more is true, '
+  + 'call skill action="read" again with the same id/name (and the same path for a bundled file) plus '
+  + 'offset=next_offset to read the rest. One page is never the whole skill; read until has_more is false.'
+const SKILL_READ_PAST_END = 'offset is at or past the end of the text; total_chars is its full length.'
+
+function skillReadPage(text: string, args: Record<string, unknown>) {
+  const total = text.length
+  const wantsOffset = Math.floor(Number(args.offset))
+  const wantsLimit = Math.floor(Number(args.limit))
+  const explicit = Number.isFinite(wantsOffset) || Number.isFinite(wantsLimit)
+  if (!explicit && total <= SKILL_READ_PAGE) return null
+  const offset = Math.min(total, Math.max(0, Number.isFinite(wantsOffset) ? wantsOffset : 0))
+  const limit = Math.max(1, Math.min(SKILL_READ_MAX_PAGE, Number.isFinite(wantsLimit) && wantsLimit > 0 ? wantsLimit : SKILL_READ_PAGE))
+  const end = Math.min(total, offset + limit)
+  return {
+    content: text.slice(offset, end),
+    offset,
+    total_chars: total,
+    next_offset: end < total ? end : null,
+    has_more: end < total,
+    note: offset >= total && total > 0 ? SKILL_READ_PAST_END : SKILL_READ_PAGE_NOTE,
+  }
+}
+
 export async function skillTool(args: Record<string, unknown>): Promise<unknown> {
   const skills = await loadSkills()
   const listed = listedSkills(skills)
@@ -949,9 +979,17 @@ export async function skillTool(args: Record<string, unknown>): Promise<unknown>
   if (args.path) {
     const content = skill.files?.[String(args.path)]
     if (content == null) throw new Error(`skill ${skill.name} has no file ${args.path}; files: ${Object.keys(skill.files ?? {}).join(', ') || '(none)'}`)
+    const page = skillReadPage(content, args)
+    if (page) return { id: skill.id, name: skill.name, path: args.path, ...page }
     return { id: skill.id, name: skill.name, path: args.path, content }
   }
   const output = SKILL_OUTPUT[skill.id]
+  const page = skillReadPage(skill.instructions, args)
+  if (page) {
+    // files stay (the agent needs the path names); images are display assets that were already
+    // past the old cut for long skills, and dropping them keeps the page under the result cap.
+    return { id: skill.id, name: skill.name, description: skill.description ?? '', files: Object.keys(skill.files ?? {}), ...page, ...(output ? { output } : {}) }
+  }
   return { id: skill.id, name: skill.name, description: skill.description ?? '', instructions: skill.instructions, files: Object.keys(skill.files ?? {}), images: Object.values(skill.images ?? {}), ...(output ? { output } : {}) }
 }
 
