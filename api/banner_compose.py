@@ -887,20 +887,51 @@ def _ask_blocks(chat_id: str) -> list[dict]:
     return blocks
 
 
-def _is_card2_block(block: dict) -> bool:
-    from . import bot_asks
+def _block_questions(block: dict) -> list[dict]:
     questions = [q for q in (block.get("questions") or []) if isinstance(q, dict)]
     if block.get("id") or block.get("prompt"):
         questions = questions + [{"id": block.get("id"), "prompt": block.get("prompt")}]
-    return any(bot_asks._yt_match(q, locked) for q in questions for locked in bot_asks.YT_CARD_2)
+    return questions
+
+
+def _is_card_block(block: dict, locked_card: tuple) -> bool:
+    from . import bot_asks
+    return any(bot_asks._yt_match(q, locked) for q in _block_questions(block) for locked in locked_card)
+
+
+def _is_card1_block(block: dict) -> bool:
+    from . import bot_asks
+    return _is_card_block(block, bot_asks.YT_CARD_1)
+
+
+def _is_card2_block(block: dict) -> bool:
+    from . import bot_asks
+    return _is_card_block(block, bot_asks.YT_CARD_2)
 
 
 def _latest_answered_card2(chat_id: str) -> dict | None:
+    """Latest answered card 2 in block order (kept for tests and the order-aware lookup)."""
     found = None
     for block in _ask_blocks(chat_id):
         if block.get("status") == "answered" and _is_card2_block(block):
             found = block
     return found
+
+
+def _latest_answered_card_positions(chat_id: str) -> tuple[int | None, int | None, dict | None]:
+    """Indices of the latest answered card 1 and card 2 in `_ask_blocks` order, plus the card-2 block."""
+    card1_i: int | None = None
+    card2_i: int | None = None
+    card2_block: dict | None = None
+    for i, block in enumerate(_ask_blocks(chat_id)):
+        if block.get("status") != "answered":
+            continue
+        if _is_card1_block(block):
+            card1_i = i
+        if _is_card2_block(block):
+            card2_i = i
+            card2_block = block
+    return card1_i, card2_i, card2_block
 
 
 def _question_answer(block: dict, locked: dict) -> dict:
@@ -970,18 +1001,23 @@ def stage_from_card2(block: dict) -> str | None:
 
 
 def infer_omitted_stage() -> str:
-    """When banner_stage is omitted: board until card 2 is answered, else the text-mode stage.
+    """When banner_stage is omitted: board, or the text-mode stage after a newer card 2.
 
-    Reads the latest answered youtube-channel-banner card 2 from this chat's ask
-    blocks (chat_store messages and the live ACTIVE_TURNS turn). If card 2 was
-    answered but yt_text_mode cannot be mapped to base/direct, raise ValueError
-    so the call is refused and no paid board is generated.
+    Reads this chat's ask blocks (chat_store messages and the live ACTIVE_TURNS
+    turn) in message/block order. If the latest answered card 1 is newer than
+    the latest answered card 2 — or there is no card 2 — this is a new board
+    (a second banner in the same chat starts with card 1 again). Only when
+    card 2 is newer does the server take base/direct from yt_text_mode. If
+    that cannot be mapped, raise ValueError so the call is refused and no
+    paid board is generated.
     """
     chat_id = _banner_chat_id()
-    block = _latest_answered_card2(chat_id) if chat_id else None
-    if block is None:
+    if not chat_id:
         return "board"
-    stage = stage_from_card2(block)
+    card1_i, card2_i, card2_block = _latest_answered_card_positions(chat_id)
+    if card2_i is None or (card1_i is not None and card1_i > card2_i):
+        return "board"
+    stage = stage_from_card2(card2_block)
     if stage in ("base", "direct"):
         return stage
     raise ValueError(_MISSING_STAGE_ERROR)
@@ -1007,11 +1043,13 @@ def stage_args(args: dict) -> dict:
     no exact text is ever requested on the text-free plate.
 
     #948: a missing banner_stage defaults to the direction board (BOARD_CLAUSE plus
-    2048×1152) only while card 2 is still unanswered. After card 2 is answered, the
-    server takes base/direct from the yt_text_mode answer. If that cannot be
-    determined, the call is refused — it does not generate another paid board.
-    Agent-passed width/height/ratio are overwritten by the stage size. Other
-    skills are unchanged.
+    2048×1152) when card 2 is still unanswered, or when a newer card 1 has been
+    answered after an earlier card 2 (a second banner in the same chat). Only
+    when the latest card 2 is newer than the latest card 1 does the server take
+    base/direct from the yt_text_mode answer. If that cannot be determined, the
+    call is refused — it does not generate another paid board. Agent-passed
+    width/height/ratio are overwritten by the stage size. Other skills are
+    unchanged.
     """
     args = dict(args)
     stage = resolve_banner_stage(args)

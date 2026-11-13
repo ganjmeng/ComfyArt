@@ -460,8 +460,13 @@ def _card2_block(*, text_mode=None, direction="A", other_text="", status="answer
 
 
 def _seed_chat(*blocks):
+    return _seed_chat_rounds(list(blocks))
+
+
+def _seed_chat_rounds(*rounds):
     chat = chat_store.create_chat(user="default", project="p948", provider="local-llm")
-    chat_store.create_message(chat_id=chat["id"], role="assistant", blocks=list(blocks), status="done")
+    for blocks in rounds:
+        chat_store.create_message(chat_id=chat["id"], role="assistant", blocks=list(blocks), status="done")
     return chat["id"]
 
 
@@ -555,6 +560,61 @@ def test_mutation_reverting_card2_inference_fails_b_and_c(relay, monkeypatch):
     _assert_inferred(_run(chat_id=_seed_chat(_card1_block(), _card2_block(text_mode="A")), **_CARD2_ARGS), bc.BASE_CLAUSE)
     SENT.clear()
     _assert_refused(_run(chat_id=_seed_chat(_card1_block(), _card2_block(text_mode=None, other_text="随便看看再说")), **_CARD2_ARGS))
+
+
+def _second_banner_chat():
+    """Round 1 answered card 1 + card 2; round 2 answered a new card 1 only."""
+    return _seed_chat_rounds(
+        [_card1_block(), _card2_block(text_mode="A")],
+        [_card1_block()],
+    )
+
+
+def _assert_second_banner_board(chat_id):
+    out = _run(chat_id=chat_id, **_CARD2_ARGS)
+    sent = _assert_board(out)
+    assert sent.get("edit_resolution") == "2k"
+    token = BOT_CHAT_ID.set(chat_id)
+    try:
+        sized = bc.stage_args(dict(_CARD2_ARGS))
+    finally:
+        BOT_CHAT_ID.reset(token)
+    assert (sized["width"], sized["height"]) == (2048, 1152)
+    assert sized["prompt"].endswith(bc.BOARD_CLAUSE)
+    assert bc.BASE_CLAUSE not in sized["prompt"]
+    return sent
+
+
+def test_missing_stage_newer_card1_after_prior_card2_defaults_to_board(relay):
+    """#948: second banner in the same chat — newer card 1 than card 2 → board 2048×1152."""
+    _assert_second_banner_board(_second_banner_chat())
+
+
+def test_mutation_ignoring_card_order_fails_second_banner(relay, monkeypatch):
+    """Using the latest card 2 and ignoring a newer card 1 must fail the second-banner board lock."""
+    def latest_card2_only():
+        chat_id = bc._banner_chat_id()
+        block = bc._latest_answered_card2(chat_id) if chat_id else None
+        if block is None:
+            return "board"
+        stage = bc.stage_from_card2(block)
+        if stage in ("base", "direct"):
+            return stage
+        raise ValueError(bc._MISSING_STAGE_ERROR)
+
+    real = bc.infer_omitted_stage
+    monkeypatch.setattr(bc, "infer_omitted_stage", latest_card2_only)
+    SENT.clear()
+    red = False
+    try:
+        _assert_second_banner_board(_second_banner_chat())
+    except AssertionError:
+        red = True
+    assert red, "ignoring card order should fail: a newer card 1 must start a board, not reuse the old card 2"
+
+    monkeypatch.setattr(bc, "infer_omitted_stage", real)
+    SENT.clear()
+    _assert_second_banner_board(_second_banner_chat())
 
 
 # --- compositing lock --------------------------------------------------------------------------------
