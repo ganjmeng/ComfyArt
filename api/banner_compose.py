@@ -813,7 +813,11 @@ def preflight_base_text(args: dict) -> dict | None:
     """
     if str(args.get("skill") or "") != SKILL:
         return None
-    if str(args.get("banner_stage") or "").strip().lower() != "base":
+    try:
+        stage = resolve_banner_stage(args)
+    except ValueError:
+        return None
+    if stage != "base":
         return None
     channel = str(args.get("channel_name") or "")
     tagline = str(args.get("tagline") or "")
@@ -828,6 +832,173 @@ def preflight_base_text(args: dict) -> dict | None:
     return None
 
 
+_TEXT_MODE_STAGE = {"A": "base", "B": "direct"}
+_MISSING_STAGE_ERROR = (
+    "banner_stage is required after card 2 (yt_direction / yt_text_mode) has been answered; "
+    "pass banner_stage explicitly as 'base' (精确排版) or 'direct' (图像模型直出). "
+    "The server will not generate another direction board."
+)
+_NOTURN_PREFIX = "__noturn__"
+
+
+def _banner_chat_id() -> str:
+    """The live Agent chat, when generate_image is running inside one."""
+    from .mcp_tools._context import BOT_CHAT_ID, GUARD_CHAT_ID
+    for raw in (BOT_CHAT_ID.get(), GUARD_CHAT_ID.get()):
+        chat = str(raw or "").strip()
+        if chat and not chat.startswith(_NOTURN_PREFIX):
+            return chat
+    return ""
+
+
+def _ask_blocks(chat_id: str) -> list[dict]:
+    """Ask-card blocks for this chat: persisted messages, then the live turn (freshest)."""
+    if not chat_id:
+        return []
+    blocks: list[dict] = []
+    seen: set[str] = set()
+
+    def _add(block: object) -> None:
+        if not isinstance(block, dict) or block.get("type") != "ask":
+            return
+        key = str(block.get("ask_id") or "")
+        if key:
+            if key in seen:
+                # A later copy (live turn) replaces the earlier persisted one.
+                blocks[:] = [b for b in blocks if str(b.get("ask_id") or "") != key]
+            seen.add(key)
+        blocks.append(block)
+
+    try:
+        from . import chat_store
+        for msg in chat_store.list_messages(chat_id) or []:
+            for block in msg.get("blocks") or []:
+                _add(block)
+    except Exception:
+        pass
+    try:
+        from .bot_turns import ACTIVE_TURNS
+        state = ACTIVE_TURNS.get(chat_id)
+        if state is not None:
+            for block in getattr(state, "blocks", None) or []:
+                _add(block)
+    except Exception:
+        pass
+    return blocks
+
+
+def _is_card2_block(block: dict) -> bool:
+    from . import bot_asks
+    questions = [q for q in (block.get("questions") or []) if isinstance(q, dict)]
+    if block.get("id") or block.get("prompt"):
+        questions = questions + [{"id": block.get("id"), "prompt": block.get("prompt")}]
+    return any(bot_asks._yt_match(q, locked) for q in questions for locked in bot_asks.YT_CARD_2)
+
+
+def _latest_answered_card2(chat_id: str) -> dict | None:
+    found = None
+    for block in _ask_blocks(chat_id):
+        if block.get("status") == "answered" and _is_card2_block(block):
+            found = block
+    return found
+
+
+def _question_answer(block: dict, locked: dict) -> dict:
+    from . import bot_asks
+    answers = block.get("answers")
+    if isinstance(answers, dict):
+        raw = answers.get(locked["id"])
+        if isinstance(raw, dict):
+            return raw
+        for key, value in answers.items():
+            if isinstance(value, dict) and bot_asks._yt_match({"id": key, "prompt": ""}, locked):
+                return value
+    questions = [q for q in (block.get("questions") or []) if isinstance(q, dict)]
+    if not questions:
+        questions = [{"id": block.get("id"), "prompt": block.get("prompt")}]
+    if len(questions) <= 1 and bot_asks._yt_match(questions[0], locked):
+        return {"selected": block.get("selected") or [], "other_text": block.get("other_text") or ""}
+    return {}
+
+
+def _map_text_mode(selected: object, other_text: object, options: object) -> str | None:
+    """Map a yt_text_mode answer to base / direct. Return None when it cannot be determined."""
+    labels = {}
+    if isinstance(options, list):
+        for opt in options:
+            if isinstance(opt, dict) and opt.get("id") is not None:
+                labels[str(opt.get("id"))] = str(opt.get("label") or "")
+    picked = [str(s).strip() for s in (selected or []) if str(s).strip()]
+    for item in picked:
+        key = item.upper()
+        if key in _TEXT_MODE_STAGE:
+            return _TEXT_MODE_STAGE[key]
+        for oid, label in labels.items():
+            if item == label or item == oid:
+                return _TEXT_MODE_STAGE.get(str(oid).upper())
+    text = str(other_text or "").strip()
+    if not text:
+        return None
+    # Only exact, unambiguous wording — free text otherwise stays undetermined.
+    if text in labels.values():
+        for oid, label in labels.items():
+            if text == label:
+                return _TEXT_MODE_STAGE.get(str(oid).upper())
+    compact = text.replace("（推荐）", "").replace("(推荐)", "").strip()
+    exact = {
+        "精确排版": "base",
+        "精确排版（推荐）": "base",
+        "base": "base",
+        "图像模型直出": "direct",
+        "direct": "direct",
+    }
+    return exact.get(text) or exact.get(compact) or exact.get(text.lower())
+
+
+def stage_from_card2(block: dict) -> str | None:
+    """Infer banner_stage from an answered card-2 block, or None if it cannot be determined."""
+    from . import bot_asks
+    answer = _question_answer(block, bot_asks.YT_TEXT_MODE)
+    options = None
+    for q in block.get("questions") or []:
+        if isinstance(q, dict) and bot_asks._yt_match(q, bot_asks.YT_TEXT_MODE):
+            options = q.get("options")
+            break
+    if options is None and bot_asks._yt_match({"id": block.get("id"), "prompt": block.get("prompt")}, bot_asks.YT_TEXT_MODE):
+        options = block.get("options")
+    return _map_text_mode(answer.get("selected"), answer.get("other_text"), options)
+
+
+def infer_omitted_stage() -> str:
+    """When banner_stage is omitted: board until card 2 is answered, else the text-mode stage.
+
+    Reads the latest answered youtube-channel-banner card 2 from this chat's ask
+    blocks (chat_store messages and the live ACTIVE_TURNS turn). If card 2 was
+    answered but yt_text_mode cannot be mapped to base/direct, raise ValueError
+    so the call is refused and no paid board is generated.
+    """
+    chat_id = _banner_chat_id()
+    block = _latest_answered_card2(chat_id) if chat_id else None
+    if block is None:
+        return "board"
+    stage = stage_from_card2(block)
+    if stage in ("base", "direct"):
+        return stage
+    raise ValueError(_MISSING_STAGE_ERROR)
+
+
+def resolve_banner_stage(args: dict) -> str | None:
+    """Effective banner_stage for this generate_image call, or None for other skills."""
+    if str(args.get("skill") or "") != SKILL:
+        return None
+    stage = str(args.get("banner_stage") or "").strip().lower()
+    if stage:
+        if stage not in STAGES:
+            raise ValueError(f"banner_stage must be one of {', '.join(STAGES)}")
+        return stage
+    return infer_omitted_stage()
+
+
 def stage_args(args: dict) -> dict:
     """generate_image args for one youtube-channel-banner model step.
 
@@ -835,19 +1006,18 @@ def stage_args(args: dict) -> dict:
     stage's fixed clause. The base stage also drops any quoted copy from the prompt so
     no exact text is ever requested on the text-free plate.
 
-    #948: a missing banner_stage (before card 2 has been answered) defaults to the
-    direction board — BOARD_CLAUSE plus 2048×1152 — and is not rejected. Agent-passed
-    width/height/ratio are overwritten by the stage size. Other skills are unchanged.
+    #948: a missing banner_stage defaults to the direction board (BOARD_CLAUSE plus
+    2048×1152) only while card 2 is still unanswered. After card 2 is answered, the
+    server takes base/direct from the yt_text_mode answer. If that cannot be
+    determined, the call is refused — it does not generate another paid board.
+    Agent-passed width/height/ratio are overwritten by the stage size. Other
+    skills are unchanged.
     """
     args = dict(args)
-    skill = str(args.get("skill") or "")
-    stage = str(args.pop("banner_stage", "") or "").strip().lower()
-    if skill != SKILL:
+    stage = resolve_banner_stage(args)
+    args.pop("banner_stage", None)
+    if stage is None:
         return args
-    if not stage:
-        stage = "board"
-    if stage not in STAGES:
-        raise ValueError(f"banner_stage must be one of {', '.join(STAGES)}")
     prompt = str(args.get("prompt") or "").strip()
     if stage == "base":
         prompt = _QUOTED.sub("", prompt)

@@ -27,8 +27,9 @@ from PIL import Image, ImageDraw
 
 from ComfyArt.api import banner_compose as bc
 from ComfyArt.api import bot_asks, paid_guard, wavespeed
+from ComfyArt.api import chat_store
 from ComfyArt.api.mcp_tools import banner, canvas
-from ComfyArt.api.mcp_tools._context import GUARD_CHAT_ID
+from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID, GUARD_CHAT_ID
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = (ROOT / "src/skills.ts").read_text(encoding="utf-8")
@@ -181,14 +182,17 @@ def relay(monkeypatch):
     monkeypatch.setattr(canvas, "maybe_ask_run_approval", no_approval)
 
 
-def _run(*, lang: str | None = None, goal_text: str = "", **args):
+def _run(*, lang: str | None = None, goal_text: str = "", chat_id: str | None = None, **args):
     chat = paid_guard.noturn_key(f"ytb-{uuid.uuid4().hex}")
     token = GUARD_CHAT_ID.set(chat)
+    bot_token = BOT_CHAT_ID.set(chat_id) if chat_id else None
     try:
         if lang is not None:
             paid_guard.begin_turn(chat, text=goal_text, provider_text="", lang=lang)
         return asyncio.run(canvas.TOOLS["generate_image"]["handler"](args))
     finally:
+        if bot_token is not None:
+            BOT_CHAT_ID.reset(bot_token)
         GUARD_CHAT_ID.reset(token)
         paid_guard.TURNS.pop(chat, None)
 
@@ -268,7 +272,7 @@ _USER_NAMED_REASON = {"zh": "你指定了这个模型", "en": "you named this mo
 
 
 def test_stage_args_missing_stage_defaults_to_board():
-    """#948: omitting banner_stage is the board, not a no-op and not a refusal."""
+    """#948: omitting banner_stage while card 2 is unanswered is the board, not a no-op or refusal."""
     from ComfyArt.api.auto_models import skill_pin_reason
 
     args = {
@@ -396,6 +400,161 @@ def test_banner_pin_ignores_agent_model_in_select_model():
     # Other pinned skills still let a user-named model win (unchanged pin rule).
     named = canvas.select_model("generate_image", {"prompt": "x", "skill": "ai-model", "model": "bytedance/seedream-v5.0-pro"})
     assert named["category"] != "skill"
+
+
+
+# --- #948: omit banner_stage after looking up card 2 ----------------------------------------------
+
+_CARD2_PROMPT = 'Bright watercolor brand world, brand blue #2F6BFF, copy "Loomi Studio"'
+_CARD2_ARGS = {
+    "prompt": _CARD2_PROMPT,
+    "skill": "youtube-channel-banner",
+    "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+    "width": 1024,
+    "height": 1024,
+    "ratio": "1:1",
+    "count": 3,
+    "channel_name": "Loomi Studio",
+    "tagline": "AI 绘画教程",
+    "schedule": "每周二/五更新",
+}
+
+
+def _card1_block():
+    spec = bot_asks.validate_spec({
+        "questions": [
+            {"id": "yt_delivery", "prompt": "这次横幅想怎么交付？",
+             "options": [{"id": "A", "label": "先出三方向选择板，再做终稿"},
+                         {"id": "B", "label": "直接出一张终稿，文字用精确排版渲染"},
+                         {"id": "C", "label": "直接出一张终稿，文字由图像模型生成"}]},
+            {"id": "yt_banner_text", "prompt": "横幅上实际要出现哪些文字？", "options": LIVE_TEXT},
+            {"id": "yt_brand_assets", "prompt": "有需要放进去的品牌资产吗？",
+             "options": [{"id": "A", "label": "没有，纯图形＋文字构成识别"},
+                         {"id": "B", "label": "有 Logo／头像，我上传给你"},
+                         {"id": "C", "label": "需要预留真人出镜位置"}]},
+        ],
+    })
+    return {
+        "type": "ask", "ask_id": uuid.uuid4().hex, "status": "answered", **spec,
+        "answers": {
+            "yt_delivery": {"selected": ["A"], "other_text": ""},
+            "yt_banner_text": {"selected": ["A"], "other_text": ""},
+            "yt_brand_assets": {"selected": ["A"], "other_text": ""},
+        },
+    }
+
+
+def _card2_block(*, text_mode=None, direction="A", other_text="", status="answered"):
+    spec = bot_asks.validate_spec({
+        "questions": [
+            {"id": "yt_direction", "prompt": "选哪个方向做 2560×1440 终稿？", "options": LIVE_DIRECTIONS},
+            {"id": "yt_text_mode", "prompt": "终稿的文字怎么上？",
+             "options": [{"id": "A", "label": "精确排版（推荐）"}, {"id": "B", "label": "图像模型直出"}]},
+        ],
+    })
+    answers = {
+        "yt_direction": {"selected": [direction] if direction else [], "other_text": ""},
+        "yt_text_mode": {"selected": [text_mode] if text_mode else [], "other_text": other_text},
+    }
+    return {"type": "ask", "ask_id": uuid.uuid4().hex, "status": status, **spec, "answers": answers}
+
+
+def _seed_chat(*blocks):
+    chat = chat_store.create_chat(user="default", project="p948", provider="local-llm")
+    chat_store.create_message(chat_id=chat["id"], role="assistant", blocks=list(blocks), status="done")
+    return chat["id"]
+
+
+def _assert_board(out):
+    assert out.get("status") != "failed", out
+    assert len(SENT) == 1 and SENT[0][0] == "generate_image"
+    sent = SENT[0][1]
+    assert sent["ratio"] == "16:9" and sent["count"] == 1
+    assert sent["prompt"].endswith(bc.BOARD_CLAUSE)
+    assert bc.BASE_CLAUSE not in sent["prompt"] and bc.DIRECT_CLAUSE not in sent["prompt"]
+    assert "width" not in sent and "height" not in sent
+    return sent
+
+
+def _assert_inferred(out, clause):
+    assert out.get("status") != "failed", out
+    assert len(SENT) == 1 and SENT[0][0] == "generate_image"
+    sent = SENT[0][1]
+    assert sent["prompt"].endswith(clause)
+    assert bc.BOARD_CLAUSE not in sent["prompt"]
+    assert sent["ratio"] == "16:9" and sent["count"] == 1
+    assert "width" not in sent and "height" not in sent
+    return sent
+
+
+def _assert_refused(out):
+    assert out.get("status") == "failed", out
+    assert out.get("submitted") is False
+    assert out.get("generation_succeeded") is False
+    assert SENT == []
+    err = str(out.get("error") or "")
+    assert "banner_stage" in err
+    assert "card 2" in err.lower() or "yt_text_mode" in err
+    return err
+
+
+def test_missing_stage_card2_unanswered_defaults_to_board(relay):
+    """#948 (a): card 2 unanswered + missing stage → direction board at 2048×1152."""
+    chat_id = _seed_chat(_card1_block())
+    out = _run(chat_id=chat_id, **_CARD2_ARGS)
+    sent = _assert_board(out)
+    # stage_args itself also reports the 2k board size before the pin drops width/height.
+    sized = bc.stage_args({**_CARD2_ARGS, "skill": "youtube-channel-banner"})
+    # No BOT_CHAT_ID here, so this path is also "unanswered".
+    assert (sized["width"], sized["height"]) == (2048, 1152)
+    assert sized["prompt"].endswith(bc.BOARD_CLAUSE)
+    assert sent.get("edit_resolution") == "2k"
+
+
+def test_missing_stage_card2_answered_infers_stage(relay):
+    """#948 (b): card 2 answered + missing stage → inferred base/direct, no board clause."""
+    for mode, clause in (("A", bc.BASE_CLAUSE), ("B", bc.DIRECT_CLAUSE)):
+        SENT.clear()
+        chat_id = _seed_chat(_card1_block(), _card2_block(text_mode=mode))
+        out = _run(chat_id=chat_id, **_CARD2_ARGS)
+        _assert_inferred(out, clause)
+
+
+def test_missing_stage_card2_answered_indeterminate_refuses(relay):
+    """#948 (c): card 2 answered but yt_text_mode cannot be mapped → refuse, no generate."""
+    chat_id = _seed_chat(_card1_block(), _card2_block(text_mode=None, other_text="随便看看再说"))
+    out = _run(chat_id=chat_id, **_CARD2_ARGS)
+    _assert_refused(out)
+
+
+def test_mutation_reverting_card2_inference_fails_b_and_c(relay, monkeypatch):
+    """Reverting omitted-stage inference to always-board must fail (b) and (c)."""
+    real = bc.infer_omitted_stage
+    monkeypatch.setattr(bc, "infer_omitted_stage", lambda: "board")
+
+    chat_b = _seed_chat(_card1_block(), _card2_block(text_mode="A"))
+    SENT.clear()
+    red_b = False
+    try:
+        _assert_inferred(_run(chat_id=chat_b, **_CARD2_ARGS), bc.BASE_CLAUSE)
+    except AssertionError:
+        red_b = True
+    assert red_b, "always-board inference should fail the answered-card-2 → base lock"
+
+    chat_c = _seed_chat(_card1_block(), _card2_block(text_mode=None, other_text="随便看看再说"))
+    SENT.clear()
+    red_c = False
+    try:
+        _assert_refused(_run(chat_id=chat_c, **_CARD2_ARGS))
+    except AssertionError:
+        red_c = True
+    assert red_c, "always-board inference should fail the indeterminate-card-2 refusal lock"
+
+    monkeypatch.setattr(bc, "infer_omitted_stage", real)
+    SENT.clear()
+    _assert_inferred(_run(chat_id=_seed_chat(_card1_block(), _card2_block(text_mode="A")), **_CARD2_ARGS), bc.BASE_CLAUSE)
+    SENT.clear()
+    _assert_refused(_run(chat_id=_seed_chat(_card1_block(), _card2_block(text_mode=None, other_text="随便看看再说")), **_CARD2_ARGS))
 
 
 # --- compositing lock --------------------------------------------------------------------------------

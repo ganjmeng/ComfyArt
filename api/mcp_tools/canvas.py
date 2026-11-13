@@ -682,7 +682,10 @@ SPECS: dict[str, dict] = {
          "banner_stage": {"type": "string", "enum": ["board", "base", "direct"],
                           "description": "youtube-channel-banner only: board (three-direction board), base (text-free "
                                          "base for compose_banner_text) or direct (model draws the text). "
-                                         "If omitted before card 2 is answered, the server defaults to board."},
+                                         "If omitted before card 2 is answered, the server defaults to board. "
+                                         "After card 2 is answered, the server uses the yt_text_mode answer "
+                                         "(base or direct). If it cannot tell, the call is refused — pass "
+                                         "banner_stage explicitly. It will not generate another direction board."},
          "channel_name": {"type": "string",
                           "description": "youtube-channel-banner base stage: card-1 channel name. The server dry-runs "
                                          "the 2560×1440 text layout before any model call."},
