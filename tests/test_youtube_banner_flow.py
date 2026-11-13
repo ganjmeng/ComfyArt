@@ -420,7 +420,7 @@ _CARD2_ARGS = {
 }
 
 
-def _card1_block():
+def _card1_block(*, delivery="A", other_text=""):
     spec = bot_asks.validate_spec({
         "questions": [
             {"id": "yt_delivery", "prompt": "这次横幅想怎么交付？",
@@ -437,7 +437,7 @@ def _card1_block():
     return {
         "type": "ask", "ask_id": uuid.uuid4().hex, "status": "answered", **spec,
         "answers": {
-            "yt_delivery": {"selected": ["A"], "other_text": ""},
+            "yt_delivery": {"selected": [delivery] if delivery else [], "other_text": other_text},
             "yt_banner_text": {"selected": ["A"], "other_text": ""},
             "yt_brand_assets": {"selected": ["A"], "other_text": ""},
         },
@@ -500,6 +500,17 @@ def _assert_refused(out):
     err = str(out.get("error") or "")
     assert "banner_stage" in err
     assert "card 2" in err.lower() or "yt_text_mode" in err
+    return err
+
+
+def _assert_refused_delivery(out):
+    assert out.get("status") == "failed", out
+    assert out.get("submitted") is False
+    assert out.get("generation_succeeded") is False
+    assert SENT == []
+    err = str(out.get("error") or "")
+    assert "banner_stage" in err
+    assert "yt_delivery" in err or "card 1" in err.lower()
     return err
 
 
@@ -615,6 +626,94 @@ def test_mutation_ignoring_card_order_fails_second_banner(relay, monkeypatch):
     monkeypatch.setattr(bc, "infer_omitted_stage", real)
     SENT.clear()
     _assert_second_banner_board(_second_banner_chat())
+
+
+def test_missing_stage_card1_delivery_b_skips_board_uses_base(relay):
+    """yt_delivery B + omitted stage (no card 2) → base; skips the direction board."""
+    chat_id = _seed_chat(_card1_block(delivery="B"))
+    out = _run(chat_id=chat_id, **_CARD2_ARGS)
+    _assert_inferred(out, bc.BASE_CLAUSE)
+
+
+def test_missing_stage_card1_delivery_c_skips_board_uses_direct(relay):
+    """yt_delivery C + omitted stage (no card 2) → direct; skips the direction board."""
+    chat_id = _seed_chat(_card1_block(delivery="C"))
+    out = _run(chat_id=chat_id, **_CARD2_ARGS)
+    _assert_inferred(out, bc.DIRECT_CLAUSE)
+
+
+def test_missing_stage_card1_delivery_unknown_refuses(relay):
+    """yt_delivery free text that cannot be mapped → refuse, zero submit, no paid fallback."""
+    chat_id = _seed_chat(_card1_block(delivery=None, other_text="一次出多个方向终稿"))
+    out = _run(chat_id=chat_id, **_CARD2_ARGS)
+    _assert_refused_delivery(out)
+
+
+def test_missing_stage_card1_delivery_skipped_defaults_to_board(relay):
+    """yt_delivery skipped + omitted stage → direction board."""
+    chat_id = _seed_chat(_card1_block(delivery=None))
+    out = _run(chat_id=chat_id, **_CARD2_ARGS)
+    _assert_board(out)
+
+
+def test_second_banner_new_card1_delivery_b_uses_base_not_prior_card2(relay):
+    """Second banner uses the new card 1: delivery B → base, not the prior card 2 and not a board."""
+    chat_id = _seed_chat_rounds(
+        [_card1_block(), _card2_block(text_mode="B")],
+        [_card1_block(delivery="B")],
+    )
+    out = _run(chat_id=chat_id, **_CARD2_ARGS)
+    _assert_inferred(out, bc.BASE_CLAUSE)
+
+
+def test_mutation_ignoring_card1_delivery_fails_b_and_c(relay, monkeypatch):
+    """Always-board when card 1 is latest must fail the B→base and C→direct locks."""
+    def always_board_when_card1_latest():
+        chat_id = bc._banner_chat_id()
+        if not chat_id:
+            return "board"
+        card1_i, card2_i, _ignored_card1, card2_block = bc._latest_answered_card_positions(chat_id)
+        if card2_i is None or (card1_i is not None and card1_i > card2_i):
+            return "board"
+        stage = bc.stage_from_card2(card2_block)
+        if stage in ("base", "direct"):
+            return stage
+        raise ValueError(bc._MISSING_STAGE_ERROR)
+
+    real = bc.infer_omitted_stage
+    monkeypatch.setattr(bc, "infer_omitted_stage", always_board_when_card1_latest)
+
+    SENT.clear()
+    red_b = False
+    try:
+        _assert_inferred(_run(chat_id=_seed_chat(_card1_block(delivery="B")), **_CARD2_ARGS), bc.BASE_CLAUSE)
+    except AssertionError:
+        red_b = True
+    assert red_b, "ignoring yt_delivery B should fail: omitted stage must use base, not a paid board"
+
+    SENT.clear()
+    red_c = False
+    try:
+        _assert_inferred(_run(chat_id=_seed_chat(_card1_block(delivery="C")), **_CARD2_ARGS), bc.DIRECT_CLAUSE)
+    except AssertionError:
+        red_c = True
+    assert red_c, "ignoring yt_delivery C should fail: omitted stage must use direct, not a paid board"
+
+    SENT.clear()
+    red_unk = False
+    try:
+        _assert_refused_delivery(_run(chat_id=_seed_chat(_card1_block(delivery=None, other_text="一次出多个方向终稿")), **_CARD2_ARGS))
+    except AssertionError:
+        red_unk = True
+    assert red_unk, "ignoring unmapped yt_delivery should fail: the call must be refused, not a paid board"
+
+    monkeypatch.setattr(bc, "infer_omitted_stage", real)
+    SENT.clear()
+    _assert_inferred(_run(chat_id=_seed_chat(_card1_block(delivery="B")), **_CARD2_ARGS), bc.BASE_CLAUSE)
+    SENT.clear()
+    _assert_inferred(_run(chat_id=_seed_chat(_card1_block(delivery="C")), **_CARD2_ARGS), bc.DIRECT_CLAUSE)
+    SENT.clear()
+    _assert_refused_delivery(_run(chat_id=_seed_chat(_card1_block(delivery=None, other_text="一次出多个方向终稿")), **_CARD2_ARGS))
 
 
 # --- compositing lock --------------------------------------------------------------------------------

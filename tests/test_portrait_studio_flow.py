@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-from ComfyArt.api import bot_asks, paid_guard
+from ComfyArt.api import banner_compose as bc, bot_asks, paid_guard
 from ComfyArt.api import portrait_studio as ps
 from ComfyArt.api.mcp_tools import canvas
 from ComfyArt.api.mcp_tools._context import GUARD_CHAT_ID
@@ -493,9 +493,12 @@ def test_every_pose_line_is_the_shared_reference_posing(shot):
 
 
 def test_other_skills_prompts_are_not_rewritten(relay):
+    # Explicit banner_stage: this test locks that portrait-studio does not
+    # rewrite other skills' prompts, not the #948 omitted-stage default.
     _run_turn("zh", [{"prompt": "a cat", "count": 1, "refs": ["shape:a"], "shot": "closeup"},
-                     {"prompt": "a dog", "count": 1, "skill": "youtube-channel-banner", "refs": ["shape:b"]}])
-    assert [a["prompt"] for _, a in SENT] == ["a cat", "a dog"]
+                     {"prompt": "a dog", "count": 1, "skill": "youtube-channel-banner",
+                      "banner_stage": "direct", "refs": ["shape:b"]}])
+    assert [a["prompt"] for _, a in SENT] == ["a cat", "a dog\n" + bc.DIRECT_CLAUSE]
     assert all("shot" not in a for _, a in SENT)
 
 
