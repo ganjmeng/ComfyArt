@@ -194,7 +194,8 @@ def test_resolve_model_choice_keeps_incoming_skill_size_reason():
     }
     model, choice = wavespeed.resolve_model_choice(
         "image_edit",
-        {"model": QWEN_EDIT, "feature": "image_edit", "size_lock": True, "model_choice": incoming},
+        {"model": QWEN_EDIT, "feature": "image_edit", "size_lock": True, "model_choice": incoming,
+         "auto_model": True},
     )
     assert model == QWEN_EDIT
     assert choice and choice["auto"] is True
@@ -231,9 +232,20 @@ def test_frontend_does_not_invent_user_named_reason_for_a_skill_input():
     gen = (ROOT / "src/generate.ts").read_text()
     assert "attachModelChoice" in gen and "applyModelChoice" in gen
     assert "choiceMatchesCurrent" in gen
+    # #953 QA HOLD: the cached record only counts for the model this job runs, and a pure
+    # Auto record on a manual card must not self-corroborate as Auto.
+    assert "autoProvenance" in gen and "skillRouted" in gen
+    assert "typeof current !== 'string'" in gen
     panel = (ROOT / "src/ui/GenPanel.tsx").read_text()
-    assert "clobber" in panel and "#953" in panel
-    assert "sameModel" in panel
+    # A model-menu pick / Auto off overwrites the stale Auto record with a manual one;
+    # Auto on drops it so the estimate derives Auto again.
+    assert "manualModelChoice" in panel
+    assert "choiceAfter" in panel
+    assert "modelChoice: on ? null" in panel
+    assert "modelChoice: choiceAfter(" in panel
+    pill = (ROOT / "src/autoPill.ts").read_text()
+    assert "export function manualModelChoice" in pill
+    assert "auto: false" in pill
 
 
 def test_mutation_dropping_relabel_would_mark_agent_fill_as_user_named(monkeypatch):
@@ -279,6 +291,52 @@ def test_stale_display_metadata_must_not_override_submitted_model():
     assert actual == base == alternate
     assert choice and choice["model"] == alternate
     assert actual != default
+
+
+def test_manual_pick_of_the_same_model_after_auto_is_manual():
+    """#953 QA HOLD: Studio Auto estimate (Flare) → Auto off → user picks the same Flare id.
+
+    The id is unchanged, so an id-only staleness check keeps the old Auto source. The
+    source must follow the user's action: manual, no Auto reason, same submitted model.
+    """
+    flare = "openai/gpt-image-2.6-flare/text-to-image"
+    stale_auto = {
+        "model": flare, "auto": True, "category": "default",
+        "reason": {"zh": "这是通用生图的默认模型", "en": "the default model for general image generation"},
+    }
+    manual = {"model": flare, "auto": False, "category": "user",
+              "reason": {"zh": "你指定了这个模型", "en": "you named this model"}}
+    # 1) the fixed page drops the stale record; the explicit model alone is a manual pick
+    model, choice = wavespeed.resolve_model_choice(
+        "text_to_image", {"model": flare, "prompt": "a cup of coffee on a table"})
+    assert model == flare
+    assert choice and choice["auto"] is False
+    assert choice.get("category") == "user"
+    assert is_user_named_reason(choice.get("reason"))
+    # 2) a manual record for the same id survives as manual
+    model2, choice2 = wavespeed.resolve_model_choice(
+        "text_to_image",
+        {"model": flare, "prompt": "a cup of coffee on a table", "model_choice": manual})
+    assert model2 == flare
+    assert choice2 and choice2["auto"] is False
+    assert choice2.get("model") == flare
+    assert is_user_named_reason(choice2.get("reason"))
+    # 3) stale Auto display metadata without the caller's Auto flag must not self-corroborate:
+    #    the model stays Flare and the source is the manual pick (this is the failure QA held).
+    model3, choice3 = wavespeed.resolve_model_choice(
+        "text_to_image",
+        {"model": flare, "prompt": "a cup of coffee on a table", "model_choice": stale_auto})
+    assert model3 == flare
+    assert choice3 and choice3["auto"] is False
+    assert choice3.get("category") == "user"
+    assert is_user_named_reason(choice3.get("reason"))
+    # 4) an Auto record is still valid when the caller says Auto routed it (Agent / Auto card).
+    model4, choice4 = wavespeed.resolve_model_choice(
+        "text_to_image",
+        {"model": flare, "prompt": "a cup of coffee on a table", "model_choice": stale_auto,
+         "auto_model": True})
+    assert model4 == flare
+    assert choice4 and choice4["auto"] is True
 
 
 def test_generic_endpoint_word_is_not_a_user_named_model():

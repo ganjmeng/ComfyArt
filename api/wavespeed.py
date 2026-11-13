@@ -626,6 +626,12 @@ def resolve_model_choice(feature: str, inputs: dict) -> tuple[str, dict | None]:
     stale = bool(incoming and named and incoming_mid and named != incoming_mid)
     if stale:
         incoming = None
+    # #953: comparing ids is not enough -- Auto off + picking the same id keeps the id but
+    # changes the source. A cached Auto record is display metadata: unless the caller also
+    # says Auto routed this request (auto_model), an explicit model is the user's current
+    # pick and its source is manual. The model that runs is unchanged.
+    if incoming and incoming.get("auto") is True and named and inputs.get("auto_model") is not True:
+        incoming = None
     if incoming and (incoming.get("model") or incoming.get("auto") is not None):
         mid = incoming.get("model") or (picked if isinstance(picked, str) else None)
         model = resolve_model(feature, mid, size_lock=size_lock)

@@ -37,6 +37,17 @@ GPT2 = "openai/gpt-image-2/text-to-image"
 pytestmark = pytest.mark.skipif(not any((ROOT / "dist").glob("index.html")), reason="needs built dist/")
 
 
+async def _launch(p):
+    """Firefox for the QA / design harness when installed; Chromium ($0) elsewhere."""
+    try:
+        return await p.firefox.launch()
+    except Exception as firefox_error:
+        try:
+            return await p.chromium.launch()
+        except Exception as chromium_error:
+            pytest.skip(f"no Playwright browser: firefox={firefox_error}; chromium={chromium_error}")
+
+
 def _label_png(path: Path, w: int, h: int, rgb: tuple[int, int, int], label: str) -> bytes:
     img = Image.new("RGB", (w, h), rgb)
     ImageDraw.Draw(img).text((16, 16), label, fill=(255, 255, 255))
@@ -246,10 +257,7 @@ async def test_studio_manual_gpt_image_2_is_the_submitted_model(app_url, mock_ws
     mock_ws["png"] = _label_png(SHOT / "studio-mock.png", 1024, 1024, (32, 96, 64), "MOCK #953 studio")
     intended = GPT2
     async with pw.async_playwright() as p:
-        try:
-            browser = await p.firefox.launch()
-        except Exception as e:
-            pytest.skip(f"firefox not available: {e}")
+        browser = await _launch(p)
         page = await browser.new_page(viewport={"width": 1600, "height": 1000})
         await page.add_init_script("localStorage.setItem('comfyart.lang','en'); localStorage.setItem('comfyart.e2e','1')")
         await page.goto(app_url)
@@ -291,6 +299,116 @@ async def test_studio_manual_gpt_image_2_is_the_submitted_model(app_url, mock_ws
         await browser.close()
         assert len(mock_ws["submits"]) == 1, mock_ws["submits"]
         assert mock_ws["submits"][0][0] == intended
+
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+async def test_studio_manual_pick_of_the_same_model_after_auto_is_manual(app_url, mock_ws, lang):
+    """#953 QA HOLD: Auto estimate (Flare) → Auto off → user checks the same Flare id → Generate.
+
+    The submitted model must not change, and the estimate / result source must be the
+    user's manual pick (no Auto), in zh and en. Full App mock, $0.
+    """
+    SHOT.mkdir(parents=True, exist_ok=True)
+    mock_ws["png"] = _label_png(SHOT / f"studio-same-mock-{lang}.png", 1024, 1024, (32, 96, 64), "MOCK #953 same-id")
+    estimates: list[dict] = []
+    async with pw.async_playwright() as p:
+        browser = await _launch(p)
+        page = await browser.new_page(viewport={"width": 1600, "height": 1000})
+        await page.add_init_script(
+            f"localStorage.setItem('comfyart.lang','{lang}'); localStorage.setItem('comfyart.e2e','1')")
+
+        async def watch_estimate(route):
+            response = await route.fetch()
+            try:
+                body = await response.json()
+            except Exception:
+                body = {}
+            estimates.append({"request": route.request.post_data_json, "response": body})
+            await route.fulfill(response=response)
+
+        await page.route("**/comfyart/wavespeed/estimate", watch_estimate)
+        await page.goto(app_url)
+        await page.wait_for_timeout(1000)
+        await page.mouse.click(28, 83)
+        await page.locator(".tl-canvas").wait_for()
+        await page.wait_for_timeout(600)
+        if await page.locator(".ca-modal").count():
+            await page.keyboard.press("Escape")
+        await page.locator(".ca-dock .ca-split .ca-bar__btn").first.click()
+        await page.locator(".ca-gen__prompt").wait_for()
+        await page.locator(".ca-gen__prompt").fill("a cup of coffee on a table")
+        # 1) wait for the Auto estimate: the card is on Auto · Flare before the user acts
+        await page.wait_for_function(
+            "() => { const e = document.querySelector('[data-testid=auto-model-label]');"
+            " return !!e && (e.textContent || '').includes('Auto') }", timeout=30000)
+        modelbutton = page.locator(".ca-gen__foot [data-pill=model]")
+        assert await modelbutton.get_attribute("data-auto") == "true"
+        # 2) Auto off, then explicitly check the same Flare row
+        await modelbutton.click()
+        menu = page.get_by_test_id("model-menu")
+        await menu.wait_for()
+        switch = menu.locator("[role=switch]")
+        assert await switch.get_attribute("aria-checked") == "true"
+        await switch.click()
+        assert await switch.get_attribute("aria-checked") != "true"
+        row = menu.locator('button[title="' + FLARE + '"]')
+        await row.scroll_into_view_if_needed()
+        await row.click()
+        assert await modelbutton.get_attribute("data-model") == FLARE
+        assert await modelbutton.get_attribute("data-auto") is None
+        # 3) after Auto off + the explicit same-id pick, the estimate for this card is a user
+        #    pick, not the old Auto record. (The first Auto estimate above is auto=true.)
+        assert any(
+            ((e.get("response") or {}).get("model_choice") or {}).get("auto") is True for e in estimates
+        ), [e.get("request") for e in estimates]
+        manual: list[dict] = []
+        for _ in range(100):
+            manual = [e for e in estimates
+                      if ((e.get("response") or {}).get("model_choice") or {}).get("model") == FLARE
+                      and ((e.get("response") or {}).get("model_choice") or {}).get("auto") is False]
+            if manual:
+                break
+            await page.wait_for_timeout(100)
+        assert manual, [e.get("request") for e in estimates]
+        assert manual[-1]["response"]["model"] == FLARE
+        label = page.get_by_test_id("auto-model-label")
+        await page.wait_for_function(
+            "() => { const e = document.querySelector('[data-testid=auto-model-label]');"
+            " return !!e && !(e.textContent || '').includes('Auto') }", timeout=10000)
+        assert (await label.first.inner_text()).strip() == "GPT Image 2.6 Flare"
+        # evidence: menu still shows Auto off + the same Flare checked
+        await modelbutton.click()
+        await menu.wait_for()
+        assert await menu.locator('[role=switch]').get_attribute("aria-checked") != "true"
+        assert await menu.locator('button[title="' + FLARE + '"]').get_attribute("data-on") is not None
+        await page.screenshot(path=str(SHOT / f"studio-same-manual-selected-{lang}.png"))
+        await page.keyboard.press("Escape")
+        # 4) generate: the submitted model must stay Flare …
+        await page.locator(".ca-gen__send").click()
+        for _ in range(120):
+            if mock_ws["submits"]:
+                break
+            b = page.locator(".ca-modal .ca-panel__primary")
+            if await b.count() and await b.first.is_visible():
+                await b.first.click()
+            await page.wait_for_timeout(150)
+        await page.wait_for_timeout(1000)
+        # … and the result source must be the manual pick too (no Auto · label / no reason tip)
+        target = page.get_by_test_id("auto-model-label")
+        await page.wait_for_function(
+            "() => { const e = document.querySelector('[data-testid=auto-model-label]');"
+            " return !!e && !(e.textContent || '').includes('Auto') }", timeout=20000)
+        assert (await target.first.inner_text()).strip() == "GPT Image 2.6 Flare"
+        # manual source: no Auto hover reason is attached to the label (Auto cards set aria-label)
+        assert await target.first.get_attribute("aria-label") is None
+        assert await page.locator(".ca-tip").count() == 0
+        await page.screenshot(path=str(SHOT / f"studio-same-submitted-{lang}.png"))
+        await browser.close()
+        assert len(mock_ws["submits"]) == 1, mock_ws["submits"]
+        assert mock_ws["submits"][0][0] == FLARE
+        choice = manual[-1]["response"].get("model_choice") or {}
+        assert choice.get("auto") is False
+        assert choice.get("model") == FLARE
 
 
 CASES = {
@@ -343,10 +461,7 @@ async def test_agent_quote_and_history_agree(app_url, mock_ws, monkeypatch, case
 
     monkeypatch.setattr(canvas, "submit_command", capture)
     async with pw.async_playwright() as p:
-        try:
-            browser = await p.firefox.launch()
-        except Exception as e:
-            pytest.skip(f"firefox not available: {e}")
+        browser = await _launch(p)
         ctx = await browser.new_context(viewport={"width": 1600, "height": 1000})
         await ctx.route_web_socket(re.compile(r"/ws(\?|$)"), lambda ws: sockets.append(ws))
         page = await ctx.new_page()
