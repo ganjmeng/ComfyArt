@@ -48,11 +48,14 @@ def test_ts_table_matches_python():
     assert "output } : {})" in SKILLS or "output } : {} }" in SKILLS
 
 
-def test_apply_fills_from_display_name_and_leaves_other_skills():
+def test_apply_fills_from_display_name_and_floors_unknown_skills():
     bare = apply_generate({"prompt": "cat", "ratio": "1:1"})
     assert bare == {"prompt": "cat", "ratio": "1:1"}
+    # #982: an unknown/custom skill no longer reaches the provider with no pixels.
     custom = apply_generate({"skill": "poster", "prompt": "x", "ratio": "1:1"}, "LinkedIn Banner")
-    assert custom == {"skill": "poster", "prompt": "x", "ratio": "1:1"}
+    assert (custom["width"], custom["height"], custom["ratio"], custom["size_lock"]) == \
+        (1024, 1024, "1:1", True)
+    assert custom["skill"] == "poster" and custom["prompt"] == "x"
     ba = apply_generate({"prompt": "x"}, "前后对比视觉")
     assert ba["skill"] == "before-after" and (ba["width"], ba["height"], ba["ratio"], ba["count"]) == (1920, 1080, "16:9", 1)
     assert ba["size_lock"] is True

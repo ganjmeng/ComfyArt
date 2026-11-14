@@ -4,6 +4,12 @@ The agent is told the size in the skill text. This module also fills generate_im
 when a skill run omits it, and skips the list_models / expand / extra-frame detour
 on a single-image skill. It does not choose a model and does not change the #706
 identical-call guard.
+
+#982: a skill run with no declared canvas used to submit no size at all, so the
+provider's schema default decided the pixels (the $0 audit saw 512x512). Every
+unpinned skill now gets the documented 1024x1024 floor below, with the size audit
+on; product-specific defaults still belong in OUTPUTS (logo/character are pinned
+here) and are listed as open questions in the #982 PR.
 """
 from __future__ import annotations
 
@@ -67,6 +73,34 @@ PACKAGING_PRESETS_979: dict[str, dict] = {
         "name": "包装货架展示 / Packaging Shelf Display",
     },
 }
+# #982: every character template delivers ONE sheet at the ratio the template
+# itself declares (src/data/skills-748.json media[]): 1:1 for turnaround /
+# outfit / prop / editorial, 16:9 for expression / modeling / basic /
+# technical. Sizes follow the product canvases already in use: 1024x1024 for
+# 1:1 and 2048x1152 for 16:9. Template ids are the ones applyRaw748 keeps.
+CHARACTER_PRESETS_982: dict[str, dict] = {
+    "turnaround": {"width": 1024, "height": 1024, "ratio": "1:1", "images": 1,
+                   "name": "Character Turnaround Sheet"},
+    "expression": {"width": 2048, "height": 1152, "ratio": "16:9", "images": 1,
+                   "name": "Expression & Pose Sheet"},
+    "modeling": {"width": 2048, "height": 1152, "ratio": "16:9", "images": 1,
+                 "name": "Modeling Detail Reference Sheet"},
+    "outfit": {"width": 1024, "height": 1024, "ratio": "1:1", "images": 1,
+               "name": "Outfit / Form Variation Sheet"},
+    "prop": {"width": 1024, "height": 1024, "ratio": "1:1", "images": 1,
+             "name": "Prop Interaction Sheet"},
+    "basic": {"width": 2048, "height": 1152, "ratio": "16:9", "images": 1,
+              "name": "Basic Character Sheet"},
+    "technical": {"width": 2048, "height": 1152, "ratio": "16:9", "images": 1,
+                  "name": "Complete Technical Character Sheet"},
+    "editorial": {"width": 1024, "height": 1024, "ratio": "1:1", "images": 1,
+                  "name": "Editorial Fashion Sheet"},
+}
+# #982: documented floor for a skill that is neither in OUTPUTS nor managed by a
+# registered pin. It is not a product default for that skill; it is the smallest
+# canvas the pipeline may submit on its own, and `size_lock` makes a smaller
+# provider file visible instead of silently delivering it.
+FALLBACK_OUTPUT_982: dict[str, int | str] = {"width": 1024, "height": 1024, "ratio": "1:1"}
 OUTPUTS: dict[str, dict] = {
     "before-after": {
         "width": 1920, "height": 1080, "ratio": "16:9", "images": 1,
@@ -95,6 +129,23 @@ OUTPUTS: dict[str, dict] = {
     "clothing-swap": {
         "width": 1536, "height": 2048, "ratio": "3:4", "images": 1,
         "names": ("clothing-swap", "AI服装换装", "AI Clothing Swap"),
+    },
+    # #982: the example-type skill lost its 4 dead presets (applyRaw748) and had no
+    # output contract, so the default path submitted no size. Product-minimal
+    # default: one 1:1 1024x1024 brushed-metal study; Additional Details may name
+    # another finish, but never a second frame.
+    "logo-material-explorer": {
+        "width": 1024, "height": 1024, "ratio": "1:1", "images": 1,
+        "names": ("logo-material-explorer", "徽标材质探索器", "Logo Material Explorer"),
+    },
+    # #982: eight templates, eight plans, one sheet each. Flat fields are the
+    # default turnaround template (also the dialog's first template).
+    "character-sheet-design": {
+        "width": 1024, "height": 1024, "ratio": "1:1", "images": 1,
+        "presets": CHARACTER_PRESETS_982,
+        "names": ("character-sheet-design", "真人角色设定与参考板",
+                  "Realistic Human Character Design & Reference Sheets",
+                  "角色设定表", "Character Sheet"),
     },
     # #979: brand delivery is TWO stages, 4 images total. Flat fields = stage 1
     # (the safe default when no stage is passed); stages carry the full contract.
@@ -178,6 +229,54 @@ def plan_for(sid: str, preset_id: object = "", stage: object = 1) -> dict:
         "ratio": chosen.get("ratio"),
         "images": int(chosen.get("images") or 1),
     }
+
+
+def pixels_for_ratio(ratio: object) -> tuple[int, int] | None:
+    """#982: a 16-multiple canvas with a 1024 long side at the given `a:b` ratio."""
+    m = re.fullmatch(r"\s*(\d{1,3})\s*[:：]\s*(\d{1,3})\s*", str(ratio or ""))
+    if not m:
+        return None
+    a, b = int(m.group(1)), int(m.group(2))
+    if not a or not b:
+        return None
+    if a >= b:
+        return 1024, max(64, round(1024 * b / a / 16) * 16)
+    return max(64, round(1024 * a / b / 16) * 16), 1024
+
+
+def fill_unpinned_fallback(args: dict, skill: object) -> dict:
+    """#982: fill the documented floor for a skill that has no declared canvas.
+
+    A call that would otherwise submit no size gets pixels: the row's 1:1 default,
+    or the model's explicit ratio at a 1024 long side. Explicit width+height and a
+    resolution tier win. A registered skill pin owns its size (#708/#911), so
+    pinned skills are left untouched.
+    """
+    skill_id = str(skill or "").strip()
+    if not skill_id:
+        return args
+    from ..api.auto_models import skill_pin
+    if skill_pin(skill_id):
+        return args
+    if args.get("width") and args.get("height"):
+        return args
+    if args.get("resolution") or args.get("edit_resolution"):
+        return args
+    ratio = args.get("ratio")
+    if ratio:
+        pixels = pixels_for_ratio(ratio)
+        if not pixels:
+            return args
+        args["width"], args["height"] = pixels
+    else:
+        args["width"] = int(FALLBACK_OUTPUT_982["width"])
+        args["height"] = int(FALLBACK_OUTPUT_982["height"])
+        args["ratio"] = str(FALLBACK_OUTPUT_982["ratio"])
+    # The page audits the downloaded file; a provider that still returns a small
+    # file is reported instead of being silently delivered as the result.
+    args["size_lock"] = True
+    args.setdefault("skill", skill_id)
+    return args
 
 
 # #979: the lock itself names the template so a relay pass (no user text) can be
@@ -294,7 +393,11 @@ def ref_ratio(sid: str, data: bytes | None) -> str | None:
 
 def apply_generate(args: dict | None, current_skill: str = "", user_text: str | None = None,
                    ref_image: bytes | None = None, current_preset: str = "") -> dict:
-    """Fill the skill id and its declared pixels. Unknown skills are left alone.
+    """Fill the skill id and its declared pixels.
+
+    #982: skills without a declared canvas (and without a registered pin) get the
+    documented 1024x1024 floor instead of submitting no size; explicit pixels/ratio
+    still win. Skills managed by a pin keep that pin's size behavior.
 
     A declared size replaces a square default or a ratio the model invented.
     count stays 1: a multi-shot skill varies the prompt per call, not count.
@@ -309,7 +412,8 @@ def apply_generate(args: dict | None, current_skill: str = "", user_text: str | 
     raw = str(args.get("skill") or "").strip()
     named = resolve(raw)
     if raw and not named:
-        return args
+        # #982: an unknown/custom skill id must not reach the provider with no size.
+        return fill_unpinned_fallback(args, raw)
     sid = named or resolve(current_skill)
     if not sid:
         # #911 / #912: studio-model and ai-model are not in OUTPUTS (no
@@ -319,7 +423,8 @@ def apply_generate(args: dict | None, current_skill: str = "", user_text: str | 
         # Do not invent a size, do not use a generic skill_pin hook, and
         # do not fill when the call already names a model.
         from ..api.auto_models import named_or_none
-        cur = str(current_skill or "").strip().casefold()
+        cur_raw = str(current_skill or "").strip()
+        cur = cur_raw.casefold()
         if (
             cur in {"studio-model", "ai-model"}
             and not raw
@@ -327,6 +432,10 @@ def apply_generate(args: dict | None, current_skill: str = "", user_text: str | 
             and not named_or_none(args.get("edit_model"))
         ):
             args["skill"] = cur
+            return args
+        if cur_raw:
+            # #982: a custom/undeclared skill run also gets the floor.
+            return fill_unpinned_fallback(args, cur_raw)
         return args
     row = OUTPUTS[sid]
     if not named:

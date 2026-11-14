@@ -32,7 +32,7 @@ CLOTHING_SWAP_TAIL_SHA256 = "f3036b3d1ebcb3320bcee7d76c961014b38cbb443783ae53485
 AUTO_MODELS_SHA256 = "9ef106b6133d427f04347d0c31c31931e641e1cd47d2a86c0d0769cde48c5d7b"
 OTHER_SKILL_ENTRIES_SHA256 = "f088dd000ad53f7802bec2675b815cb40d0343da3127c413fadc12b40895488a"
 # #974: multi-angle instruction rewrite (four separate 3:4 1536x2048 images, its own wording).
-UNCHANGED_SKILL_ENTRIES_SHA256 = "6b6ad079cf3d313895b408de7b8d98b3d497fd58d608205f8c1779f53b404fc2"
+UNCHANGED_SKILL_ENTRIES_SHA256 = "7c4ae2f56d46cb178531830e2aa52776ced36407ad4558fbbf015f1a8c061845"  # #982: same base, minus the two skills whose Delivery line changed
 SHARED_CONST_SHA256 = {
     "NEARMISS_INPUTS": "4fe64962178b3c0404f163a02b5a0cdfff1c072d1be399e9f6acbbf597730722",
     "EFFECT_INPUTS": "bbca63995ca34766f0f0ac21ae1baf8cf66df417c9ddaa3f584a128c619eacb6",
@@ -631,7 +631,9 @@ def test_qa4_clothing_swap_drops_rule6_and_708_others_unchanged():
     ids = _all_skill_ids(SKILLS)
     assert ids == ALL_SKILL_IDS
     excluded = {"clothing-swap", "youtube-channel-banner", "portrait-studio", "before-after",
-                "product-to-packaging"}
+                "product-to-packaging",
+                # #982: the two output contracts deliberately add a Delivery line.
+                "logo-material-explorer", "character-sheet-design"}
     assert _entries_sha256(SKILLS, [sid for sid in ids if sid not in excluded]) == UNCHANGED_SKILL_ENTRIES_SHA256
 
 
