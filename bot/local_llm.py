@@ -1758,7 +1758,9 @@ class LocalLlmProvider(AgentProvider):
             if routed and routed[0]:
                 # #953: quote_route adds the display-only `_model_choice`; the pricer sees the call only.
                 model, args = routed[0], _call_price_params(routed[1] or {})
-        return await self._price_one(model, args)
+        result = await self._price_one(model, args)
+        # #968: _price_one answers (price, source, reason); this single-call budget cap only needs the amount.
+        return result[0] if isinstance(result, tuple) else result
 
     async def _llm_request(self, session: aiohttp.ClientSession, url: str,
                            body: dict, emit: EmitFn, handle: TurnHandle) -> dict:
@@ -1878,9 +1880,10 @@ class LocalLlmProvider(AgentProvider):
         return float(confirm_usd())
 
     async def _price_one(self, model: str, inputs: dict):
-        from ..api.wavespeed import quote
-        price, _source = await quote(model, inputs)
-        return price
+        """#968: (price, source, reason) from the three-state quote; the source must reach the quote card so
+        an `estimate` fallback is never rendered as an exact price."""
+        from ..api.wavespeed import quote_detail
+        return await quote_detail(model, inputs)
 
     async def _models_for(self, feature: str):
         from ..api.wavespeed import grouped_models
