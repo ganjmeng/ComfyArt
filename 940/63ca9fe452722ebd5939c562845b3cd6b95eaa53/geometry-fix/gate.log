@@ -1,0 +1,18 @@
+940 TSC_OK
+940 UNIT: collected=4756 collect_exit=0
+940 UNIT node-unit: 455 tests (node v24.22.1)
+940 UNIT: duration=419s
+940 UNIT: 4731 passed, 25 skipped, 590 deselected in 416.55s (0:06:56)
+940 UNIT: exit=0
+940 BUILD_OK(local, not committed)
+940 E2E: collected=191 collect_exit=0
+940 E2E: duration=422s
+940 E2E: 191 passed, 5155 deselected in 419.96s (0:06:59)
+940 E2E: exit=0
+ M docs/qa/707-local-canvas/before-after-placed.png
+ M docs/qa/707-local-canvas/game-art-placed.png
+940 GATE_EXIT=0
+
+SHELL_GATE_EXIT=0
+MOCK_COST=$0
+LOCAL_TIP=63ca9fe452722ebd5939c562845b3cd6b95eaa53

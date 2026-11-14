@@ -1,0 +1,25 @@
+{
+  "source": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/2082537ff964633a1c5779884d4d7ac3a5744ffa/911/lovart-ai/youtube-channel-banner/card-1.png",
+  "size": [
+    1920,
+    1072
+  ],
+  "inkTopPitch": 36,
+  "inkRowsInclusive": {
+    "D": [
+      675,
+      687
+    ],
+    "Q2": [
+      711,
+      723
+    ]
+  },
+  "uncertainty": "about \u00b11px per raster anchor / \u00b12px for difference",
+  "DOMBoxes": null,
+  "Q2Q3": null,
+  "trackRight": null,
+  "thumbRight": 1317,
+  "cardInnerApprox": 1319,
+  "thumbOffsetApprox": 2
+}

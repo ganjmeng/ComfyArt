@@ -1,0 +1,1222 @@
+{
+  "zh": [
+    {
+      "name": "unselected-q1-q2",
+      "scrollTop": 206,
+      "lastOption": {
+        "x": 29,
+        "y": 396,
+        "left": 29,
+        "top": 396,
+        "right": 357,
+        "bottom": 432,
+        "width": 328,
+        "height": 36
+      },
+      "nextPromptLineBox": {
+        "x": 29,
+        "y": 441,
+        "left": 29,
+        "top": 441,
+        "right": 357,
+        "bottom": 461,
+        "width": 328,
+        "height": 20
+      },
+      "raster": {
+        "lastPlaceholderInkTop": 408,
+        "nextPromptInkTop": 444,
+        "inkPitch": 36,
+        "trackRight": 387,
+        "thumbRight": 385,
+        "thumbPaintWidth": 6,
+        "cardRightInner": 387,
+        "trackOffset": 0,
+        "thumbOffset": 2
+      },
+      "card": {
+        "x": 12,
+        "y": 279,
+        "left": 12,
+        "top": 279,
+        "right": 388,
+        "bottom": 721,
+        "width": 376,
+        "height": 442
+      },
+      "scrollArea": {
+        "x": 29,
+        "y": 326,
+        "left": 29,
+        "top": 326,
+        "right": 387,
+        "bottom": 664,
+        "width": 358,
+        "height": 338
+      },
+      "head": {
+        "x": 29,
+        "y": 296,
+        "left": 29,
+        "top": 296,
+        "right": 375,
+        "bottom": 316,
+        "width": 346,
+        "height": 20
+      },
+      "foot": {
+        "x": 29,
+        "y": 674,
+        "left": 29,
+        "top": 674,
+        "right": 375,
+        "bottom": 706,
+        "width": 346,
+        "height": 32
+      },
+      "contentWidth": 328
+    },
+    {
+      "name": "unselected-q2-q3",
+      "scrollTop": 493,
+      "lastOption": {
+        "x": 29,
+        "y": 396,
+        "left": 29,
+        "top": 396,
+        "right": 357,
+        "bottom": 432,
+        "width": 328,
+        "height": 36
+      },
+      "nextPromptLineBox": {
+        "x": 29,
+        "y": 441,
+        "left": 29,
+        "top": 441,
+        "right": 357,
+        "bottom": 461,
+        "width": 328,
+        "height": 20
+      },
+      "raster": {
+        "lastPlaceholderInkTop": 408,
+        "nextPromptInkTop": 444,
+        "inkPitch": 36,
+        "trackRight": 387,
+        "thumbRight": 385,
+        "thumbPaintWidth": 6,
+        "cardRightInner": 387,
+        "trackOffset": 0,
+        "thumbOffset": 2
+      },
+      "card": {
+        "x": 12,
+        "y": 279,
+        "left": 12,
+        "top": 279,
+        "right": 388,
+        "bottom": 721,
+        "width": 376,
+        "height": 442
+      },
+      "scrollArea": {
+        "x": 29,
+        "y": 326,
+        "left": 29,
+        "top": 326,
+        "right": 387,
+        "bottom": 664,
+        "width": 358,
+        "height": 338
+      },
+      "head": {
+        "x": 29,
+        "y": 296,
+        "left": 29,
+        "top": 296,
+        "right": 375,
+        "bottom": 316,
+        "width": 346,
+        "height": 20
+      },
+      "foot": {
+        "x": 29,
+        "y": 674,
+        "left": 29,
+        "top": 674,
+        "right": 375,
+        "bottom": 706,
+        "width": 346,
+        "height": 32
+      },
+      "contentWidth": 328
+    },
+    {
+      "name": "selected-q1-q2",
+      "scrollTop": 206,
+      "lastOption": {
+        "x": 29,
+        "y": 396,
+        "left": 29,
+        "top": 396,
+        "right": 357,
+        "bottom": 432,
+        "width": 328,
+        "height": 36
+      },
+      "nextPromptLineBox": {
+        "x": 29,
+        "y": 441,
+        "left": 29,
+        "top": 441,
+        "right": 357,
+        "bottom": 461,
+        "width": 328,
+        "height": 20
+      },
+      "raster": {
+        "lastPlaceholderInkTop": 408,
+        "nextPromptInkTop": 444,
+        "inkPitch": 36,
+        "trackRight": 387,
+        "thumbRight": 385,
+        "thumbPaintWidth": 6,
+        "cardRightInner": 387,
+        "trackOffset": 0,
+        "thumbOffset": 2
+      },
+      "card": {
+        "x": 12,
+        "y": 279,
+        "left": 12,
+        "top": 279,
+        "right": 388,
+        "bottom": 721,
+        "width": 376,
+        "height": 442
+      },
+      "scrollArea": {
+        "x": 29,
+        "y": 326,
+        "left": 29,
+        "top": 326,
+        "right": 387,
+        "bottom": 664,
+        "width": 358,
+        "height": 338
+      },
+      "head": {
+        "x": 29,
+        "y": 296,
+        "left": 29,
+        "top": 296,
+        "right": 375,
+        "bottom": 316,
+        "width": 346,
+        "height": 20
+      },
+      "foot": {
+        "x": 29,
+        "y": 674,
+        "left": 29,
+        "top": 674,
+        "right": 375,
+        "bottom": 706,
+        "width": 346,
+        "height": 32
+      },
+      "contentWidth": 328
+    },
+    {
+      "name": "selected-q2-q3",
+      "scrollTop": 493,
+      "lastOption": {
+        "x": 29,
+        "y": 396,
+        "left": 29,
+        "top": 396,
+        "right": 357,
+        "bottom": 432,
+        "width": 328,
+        "height": 36
+      },
+      "nextPromptLineBox": {
+        "x": 29,
+        "y": 441,
+        "left": 29,
+        "top": 441,
+        "right": 357,
+        "bottom": 461,
+        "width": 328,
+        "height": 20
+      },
+      "raster": {
+        "lastPlaceholderInkTop": 408,
+        "nextPromptInkTop": 444,
+        "inkPitch": 36,
+        "trackRight": 387,
+        "thumbRight": 385,
+        "thumbPaintWidth": 6,
+        "cardRightInner": 387,
+        "trackOffset": 0,
+        "thumbOffset": 2
+      },
+      "card": {
+        "x": 12,
+        "y": 279,
+        "left": 12,
+        "top": 279,
+        "right": 388,
+        "bottom": 721,
+        "width": 376,
+        "height": 442
+      },
+      "scrollArea": {
+        "x": 29,
+        "y": 326,
+        "left": 29,
+        "top": 326,
+        "right": 387,
+        "bottom": 664,
+        "width": 358,
+        "height": 338
+      },
+      "head": {
+        "x": 29,
+        "y": 296,
+        "left": 29,
+        "top": 296,
+        "right": 375,
+        "bottom": 316,
+        "width": 346,
+        "height": 20
+      },
+      "foot": {
+        "x": 29,
+        "y": 674,
+        "left": 29,
+        "top": 674,
+        "right": 375,
+        "bottom": 706,
+        "width": 346,
+        "height": 32
+      },
+      "contentWidth": 328
+    },
+    {
+      "name": "before-mutations",
+      "scrollTop": 206,
+      "lastOption": {
+        "x": 29,
+        "y": 396,
+        "left": 29,
+        "top": 396,
+        "right": 357,
+        "bottom": 432,
+        "width": 328,
+        "height": 36
+      },
+      "nextPromptLineBox": {
+        "x": 29,
+        "y": 441,
+        "left": 29,
+        "top": 441,
+        "right": 357,
+        "bottom": 461,
+        "width": 328,
+        "height": 20
+      },
+      "raster": {
+        "lastPlaceholderInkTop": 408,
+        "nextPromptInkTop": 444,
+        "inkPitch": 36,
+        "trackRight": 387,
+        "thumbRight": 385,
+        "thumbPaintWidth": 6,
+        "cardRightInner": 387,
+        "trackOffset": 0,
+        "thumbOffset": 2
+      },
+      "card": {
+        "x": 12,
+        "y": 279,
+        "left": 12,
+        "top": 279,
+        "right": 388,
+        "bottom": 721,
+        "width": 376,
+        "height": 442
+      },
+      "scrollArea": {
+        "x": 29,
+        "y": 326,
+        "left": 29,
+        "top": 326,
+        "right": 387,
+        "bottom": 664,
+        "width": 358,
+        "height": 338
+      },
+      "head": {
+        "x": 29,
+        "y": 296,
+        "left": 29,
+        "top": 296,
+        "right": 375,
+        "bottom": 316,
+        "width": 346,
+        "height": 20
+      },
+      "foot": {
+        "x": 29,
+        "y": 674,
+        "left": 29,
+        "top": 674,
+        "right": 375,
+        "bottom": 706,
+        "width": 346,
+        "height": 32
+      },
+      "contentWidth": 328
+    },
+    {
+      "name": "mutation-old-body-gap",
+      "scrollTop": 206,
+      "lastOption": {
+        "x": 29,
+        "y": 396,
+        "left": 29,
+        "top": 396,
+        "right": 357,
+        "bottom": 432,
+        "width": 328,
+        "height": 36
+      },
+      "nextPromptLineBox": {
+        "x": 29,
+        "y": 448,
+        "left": 29,
+        "top": 448,
+        "right": 357,
+        "bottom": 468,
+        "width": 328,
+        "height": 20
+      },
+      "raster": {
+        "lastPlaceholderInkTop": 408,
+        "nextPromptInkTop": 451,
+        "inkPitch": 43,
+        "trackRight": 387,
+        "thumbRight": 385,
+        "thumbPaintWidth": 6,
+        "cardRightInner": 387,
+        "trackOffset": 0,
+        "thumbOffset": 2
+      },
+      "card": {
+        "x": 12,
+        "y": 279,
+        "left": 12,
+        "top": 279,
+        "right": 388,
+        "bottom": 721,
+        "width": 376,
+        "height": 442
+      },
+      "scrollArea": {
+        "x": 29,
+        "y": 326,
+        "left": 29,
+        "top": 326,
+        "right": 387,
+        "bottom": 664,
+        "width": 358,
+        "height": 338
+      },
+      "head": {
+        "x": 29,
+        "y": 296,
+        "left": 29,
+        "top": 296,
+        "right": 375,
+        "bottom": 316,
+        "width": 346,
+        "height": 20
+      },
+      "foot": {
+        "x": 29,
+        "y": 674,
+        "left": 29,
+        "top": 674,
+        "right": 375,
+        "bottom": 706,
+        "width": 346,
+        "height": 32
+      },
+      "contentWidth": 328
+    },
+    {
+      "name": "mutation-old-scrollbar-position",
+      "scrollTop": 206,
+      "lastOption": {
+        "x": 29,
+        "y": 396,
+        "left": 29,
+        "top": 396,
+        "right": 357,
+        "bottom": 432,
+        "width": 328,
+        "height": 36
+      },
+      "nextPromptLineBox": {
+        "x": 29,
+        "y": 441,
+        "left": 29,
+        "top": 441,
+        "right": 357,
+        "bottom": 461,
+        "width": 328,
+        "height": 20
+      },
+      "raster": {
+        "lastPlaceholderInkTop": 408,
+        "nextPromptInkTop": 444,
+        "inkPitch": 36,
+        "trackRight": 375,
+        "thumbRight": 373,
+        "thumbPaintWidth": 6,
+        "cardRightInner": 387,
+        "trackOffset": 12,
+        "thumbOffset": 14
+      },
+      "card": {
+        "x": 12,
+        "y": 279,
+        "left": 12,
+        "top": 279,
+        "right": 388,
+        "bottom": 721,
+        "width": 376,
+        "height": 442
+      },
+      "scrollArea": {
+        "x": 29,
+        "y": 326,
+        "left": 29,
+        "top": 326,
+        "right": 375,
+        "bottom": 664,
+        "width": 346,
+        "height": 338
+      },
+      "head": {
+        "x": 29,
+        "y": 296,
+        "left": 29,
+        "top": 296,
+        "right": 375,
+        "bottom": 316,
+        "width": 346,
+        "height": 20
+      },
+      "foot": {
+        "x": 29,
+        "y": 674,
+        "left": 29,
+        "top": 674,
+        "right": 375,
+        "bottom": 706,
+        "width": 346,
+        "height": 32
+      },
+      "contentWidth": 328
+    },
+    {
+      "name": "restored",
+      "scrollTop": 206,
+      "lastOption": {
+        "x": 29,
+        "y": 396,
+        "left": 29,
+        "top": 396,
+        "right": 357,
+        "bottom": 432,
+        "width": 328,
+        "height": 36
+      },
+      "nextPromptLineBox": {
+        "x": 29,
+        "y": 441,
+        "left": 29,
+        "top": 441,
+        "right": 357,
+        "bottom": 461,
+        "width": 328,
+        "height": 20
+      },
+      "raster": {
+        "lastPlaceholderInkTop": 408,
+        "nextPromptInkTop": 444,
+        "inkPitch": 36,
+        "trackRight": 387,
+        "thumbRight": 385,
+        "thumbPaintWidth": 6,
+        "cardRightInner": 387,
+        "trackOffset": 0,
+        "thumbOffset": 2
+      },
+      "card": {
+        "x": 12,
+        "y": 279,
+        "left": 12,
+        "top": 279,
+        "right": 388,
+        "bottom": 721,
+        "width": 376,
+        "height": 442
+      },
+      "scrollArea": {
+        "x": 29,
+        "y": 326,
+        "left": 29,
+        "top": 326,
+        "right": 387,
+        "bottom": 664,
+        "width": 358,
+        "height": 338
+      },
+      "head": {
+        "x": 29,
+        "y": 296,
+        "left": 29,
+        "top": 296,
+        "right": 375,
+        "bottom": 316,
+        "width": 346,
+        "height": 20
+      },
+      "foot": {
+        "x": 29,
+        "y": 674,
+        "left": 29,
+        "top": 674,
+        "right": 375,
+        "bottom": 706,
+        "width": 346,
+        "height": 32
+      },
+      "contentWidth": 328
+    }
+  ],
+  "en": [
+    {
+      "name": "unselected-q1-q2",
+      "scrollTop": 302,
+      "lastOption": {
+        "x": 29,
+        "y": 396,
+        "left": 29,
+        "top": 396,
+        "right": 357,
+        "bottom": 432,
+        "width": 328,
+        "height": 36
+      },
+      "nextPromptLineBox": {
+        "x": 29,
+        "y": 441,
+        "left": 29,
+        "top": 441,
+        "right": 357,
+        "bottom": 461,
+        "width": 328,
+        "height": 20
+      },
+      "raster": {
+        "lastPlaceholderInkTop": 410,
+        "nextPromptInkTop": 445,
+        "inkPitch": 35,
+        "trackRight": 387,
+        "thumbRight": 385,
+        "thumbPaintWidth": 6,
+        "cardRightInner": 387,
+        "trackOffset": 0,
+        "thumbOffset": 2
+      },
+      "card": {
+        "x": 12,
+        "y": 279,
+        "left": 12,
+        "top": 279,
+        "right": 388,
+        "bottom": 721,
+        "width": 376,
+        "height": 442
+      },
+      "scrollArea": {
+        "x": 29,
+        "y": 326,
+        "left": 29,
+        "top": 326,
+        "right": 387,
+        "bottom": 664,
+        "width": 358,
+        "height": 338
+      },
+      "head": {
+        "x": 29,
+        "y": 296,
+        "left": 29,
+        "top": 296,
+        "right": 375,
+        "bottom": 316,
+        "width": 346,
+        "height": 20
+      },
+      "foot": {
+        "x": 29,
+        "y": 674,
+        "left": 29,
+        "top": 674,
+        "right": 375,
+        "bottom": 706,
+        "width": 346,
+        "height": 32
+      },
+      "contentWidth": 328
+    },
+    {
+      "name": "unselected-q2-q3",
+      "scrollTop": 645,
+      "lastOption": {
+        "x": 29,
+        "y": 396,
+        "left": 29,
+        "top": 396,
+        "right": 357,
+        "bottom": 432,
+        "width": 328,
+        "height": 36
+      },
+      "nextPromptLineBox": {
+        "x": 29,
+        "y": 441,
+        "left": 29,
+        "top": 441,
+        "right": 357,
+        "bottom": 481,
+        "width": 328,
+        "height": 40
+      },
+      "raster": {
+        "lastPlaceholderInkTop": 410,
+        "nextPromptInkTop": 445,
+        "inkPitch": 35,
+        "trackRight": 387,
+        "thumbRight": 385,
+        "thumbPaintWidth": 6,
+        "cardRightInner": 387,
+        "trackOffset": 0,
+        "thumbOffset": 2
+      },
+      "card": {
+        "x": 12,
+        "y": 279,
+        "left": 12,
+        "top": 279,
+        "right": 388,
+        "bottom": 721,
+        "width": 376,
+        "height": 442
+      },
+      "scrollArea": {
+        "x": 29,
+        "y": 326,
+        "left": 29,
+        "top": 326,
+        "right": 387,
+        "bottom": 664,
+        "width": 358,
+        "height": 338
+      },
+      "head": {
+        "x": 29,
+        "y": 296,
+        "left": 29,
+        "top": 296,
+        "right": 375,
+        "bottom": 316,
+        "width": 346,
+        "height": 20
+      },
+      "foot": {
+        "x": 29,
+        "y": 674,
+        "left": 29,
+        "top": 674,
+        "right": 375,
+        "bottom": 706,
+        "width": 346,
+        "height": 32
+      },
+      "contentWidth": 328
+    },
+    {
+      "name": "selected-q1-q2",
+      "scrollTop": 302,
+      "lastOption": {
+        "x": 29,
+        "y": 396,
+        "left": 29,
+        "top": 396,
+        "right": 357,
+        "bottom": 432,
+        "width": 328,
+        "height": 36
+      },
+      "nextPromptLineBox": {
+        "x": 29,
+        "y": 441,
+        "left": 29,
+        "top": 441,
+        "right": 357,
+        "bottom": 461,
+        "width": 328,
+        "height": 20
+      },
+      "raster": {
+        "lastPlaceholderInkTop": 410,
+        "nextPromptInkTop": 445,
+        "inkPitch": 35,
+        "trackRight": 387,
+        "thumbRight": 385,
+        "thumbPaintWidth": 6,
+        "cardRightInner": 387,
+        "trackOffset": 0,
+        "thumbOffset": 2
+      },
+      "card": {
+        "x": 12,
+        "y": 279,
+        "left": 12,
+        "top": 279,
+        "right": 388,
+        "bottom": 721,
+        "width": 376,
+        "height": 442
+      },
+      "scrollArea": {
+        "x": 29,
+        "y": 326,
+        "left": 29,
+        "top": 326,
+        "right": 387,
+        "bottom": 664,
+        "width": 358,
+        "height": 338
+      },
+      "head": {
+        "x": 29,
+        "y": 296,
+        "left": 29,
+        "top": 296,
+        "right": 375,
+        "bottom": 316,
+        "width": 346,
+        "height": 20
+      },
+      "foot": {
+        "x": 29,
+        "y": 674,
+        "left": 29,
+        "top": 674,
+        "right": 375,
+        "bottom": 706,
+        "width": 346,
+        "height": 32
+      },
+      "contentWidth": 328
+    },
+    {
+      "name": "selected-q2-q3",
+      "scrollTop": 645,
+      "lastOption": {
+        "x": 29,
+        "y": 396,
+        "left": 29,
+        "top": 396,
+        "right": 357,
+        "bottom": 432,
+        "width": 328,
+        "height": 36
+      },
+      "nextPromptLineBox": {
+        "x": 29,
+        "y": 441,
+        "left": 29,
+        "top": 441,
+        "right": 357,
+        "bottom": 481,
+        "width": 328,
+        "height": 40
+      },
+      "raster": {
+        "lastPlaceholderInkTop": 410,
+        "nextPromptInkTop": 445,
+        "inkPitch": 35,
+        "trackRight": 387,
+        "thumbRight": 385,
+        "thumbPaintWidth": 6,
+        "cardRightInner": 387,
+        "trackOffset": 0,
+        "thumbOffset": 2
+      },
+      "card": {
+        "x": 12,
+        "y": 279,
+        "left": 12,
+        "top": 279,
+        "right": 388,
+        "bottom": 721,
+        "width": 376,
+        "height": 442
+      },
+      "scrollArea": {
+        "x": 29,
+        "y": 326,
+        "left": 29,
+        "top": 326,
+        "right": 387,
+        "bottom": 664,
+        "width": 358,
+        "height": 338
+      },
+      "head": {
+        "x": 29,
+        "y": 296,
+        "left": 29,
+        "top": 296,
+        "right": 375,
+        "bottom": 316,
+        "width": 346,
+        "height": 20
+      },
+      "foot": {
+        "x": 29,
+        "y": 674,
+        "left": 29,
+        "top": 674,
+        "right": 375,
+        "bottom": 706,
+        "width": 346,
+        "height": 32
+      },
+      "contentWidth": 328
+    },
+    {
+      "name": "before-mutations",
+      "scrollTop": 302,
+      "lastOption": {
+        "x": 29,
+        "y": 396,
+        "left": 29,
+        "top": 396,
+        "right": 357,
+        "bottom": 432,
+        "width": 328,
+        "height": 36
+      },
+      "nextPromptLineBox": {
+        "x": 29,
+        "y": 441,
+        "left": 29,
+        "top": 441,
+        "right": 357,
+        "bottom": 461,
+        "width": 328,
+        "height": 20
+      },
+      "raster": {
+        "lastPlaceholderInkTop": 410,
+        "nextPromptInkTop": 445,
+        "inkPitch": 35,
+        "trackRight": 387,
+        "thumbRight": 385,
+        "thumbPaintWidth": 6,
+        "cardRightInner": 387,
+        "trackOffset": 0,
+        "thumbOffset": 2
+      },
+      "card": {
+        "x": 12,
+        "y": 279,
+        "left": 12,
+        "top": 279,
+        "right": 388,
+        "bottom": 721,
+        "width": 376,
+        "height": 442
+      },
+      "scrollArea": {
+        "x": 29,
+        "y": 326,
+        "left": 29,
+        "top": 326,
+        "right": 387,
+        "bottom": 664,
+        "width": 358,
+        "height": 338
+      },
+      "head": {
+        "x": 29,
+        "y": 296,
+        "left": 29,
+        "top": 296,
+        "right": 375,
+        "bottom": 316,
+        "width": 346,
+        "height": 20
+      },
+      "foot": {
+        "x": 29,
+        "y": 674,
+        "left": 29,
+        "top": 674,
+        "right": 375,
+        "bottom": 706,
+        "width": 346,
+        "height": 32
+      },
+      "contentWidth": 328
+    },
+    {
+      "name": "mutation-old-body-gap",
+      "scrollTop": 302,
+      "lastOption": {
+        "x": 29,
+        "y": 396,
+        "left": 29,
+        "top": 396,
+        "right": 357,
+        "bottom": 432,
+        "width": 328,
+        "height": 36
+      },
+      "nextPromptLineBox": {
+        "x": 29,
+        "y": 448,
+        "left": 29,
+        "top": 448,
+        "right": 357,
+        "bottom": 468,
+        "width": 328,
+        "height": 20
+      },
+      "raster": {
+        "lastPlaceholderInkTop": 410,
+        "nextPromptInkTop": 452,
+        "inkPitch": 42,
+        "trackRight": 387,
+        "thumbRight": 385,
+        "thumbPaintWidth": 6,
+        "cardRightInner": 387,
+        "trackOffset": 0,
+        "thumbOffset": 2
+      },
+      "card": {
+        "x": 12,
+        "y": 279,
+        "left": 12,
+        "top": 279,
+        "right": 388,
+        "bottom": 721,
+        "width": 376,
+        "height": 442
+      },
+      "scrollArea": {
+        "x": 29,
+        "y": 326,
+        "left": 29,
+        "top": 326,
+        "right": 387,
+        "bottom": 664,
+        "width": 358,
+        "height": 338
+      },
+      "head": {
+        "x": 29,
+        "y": 296,
+        "left": 29,
+        "top": 296,
+        "right": 375,
+        "bottom": 316,
+        "width": 346,
+        "height": 20
+      },
+      "foot": {
+        "x": 29,
+        "y": 674,
+        "left": 29,
+        "top": 674,
+        "right": 375,
+        "bottom": 706,
+        "width": 346,
+        "height": 32
+      },
+      "contentWidth": 328
+    },
+    {
+      "name": "mutation-old-scrollbar-position",
+      "scrollTop": 302,
+      "lastOption": {
+        "x": 29,
+        "y": 396,
+        "left": 29,
+        "top": 396,
+        "right": 357,
+        "bottom": 432,
+        "width": 328,
+        "height": 36
+      },
+      "nextPromptLineBox": {
+        "x": 29,
+        "y": 441,
+        "left": 29,
+        "top": 441,
+        "right": 357,
+        "bottom": 461,
+        "width": 328,
+        "height": 20
+      },
+      "raster": {
+        "lastPlaceholderInkTop": 410,
+        "nextPromptInkTop": 445,
+        "inkPitch": 35,
+        "trackRight": 375,
+        "thumbRight": 373,
+        "thumbPaintWidth": 6,
+        "cardRightInner": 387,
+        "trackOffset": 12,
+        "thumbOffset": 14
+      },
+      "card": {
+        "x": 12,
+        "y": 279,
+        "left": 12,
+        "top": 279,
+        "right": 388,
+        "bottom": 721,
+        "width": 376,
+        "height": 442
+      },
+      "scrollArea": {
+        "x": 29,
+        "y": 326,
+        "left": 29,
+        "top": 326,
+        "right": 375,
+        "bottom": 664,
+        "width": 346,
+        "height": 338
+      },
+      "head": {
+        "x": 29,
+        "y": 296,
+        "left": 29,
+        "top": 296,
+        "right": 375,
+        "bottom": 316,
+        "width": 346,
+        "height": 20
+      },
+      "foot": {
+        "x": 29,
+        "y": 674,
+        "left": 29,
+        "top": 674,
+        "right": 375,
+        "bottom": 706,
+        "width": 346,
+        "height": 32
+      },
+      "contentWidth": 328
+    },
+    {
+      "name": "restored",
+      "scrollTop": 302,
+      "lastOption": {
+        "x": 29,
+        "y": 396,
+        "left": 29,
+        "top": 396,
+        "right": 357,
+        "bottom": 432,
+        "width": 328,
+        "height": 36
+      },
+      "nextPromptLineBox": {
+        "x": 29,
+        "y": 441,
+        "left": 29,
+        "top": 441,
+        "right": 357,
+        "bottom": 461,
+        "width": 328,
+        "height": 20
+      },
+      "raster": {
+        "lastPlaceholderInkTop": 410,
+        "nextPromptInkTop": 445,
+        "inkPitch": 35,
+        "trackRight": 387,
+        "thumbRight": 385,
+        "thumbPaintWidth": 6,
+        "cardRightInner": 387,
+        "trackOffset": 0,
+        "thumbOffset": 2
+      },
+      "card": {
+        "x": 12,
+        "y": 279,
+        "left": 12,
+        "top": 279,
+        "right": 388,
+        "bottom": 721,
+        "width": 376,
+        "height": 442
+      },
+      "scrollArea": {
+        "x": 29,
+        "y": 326,
+        "left": 29,
+        "top": 326,
+        "right": 387,
+        "bottom": 664,
+        "width": 358,
+        "height": 338
+      },
+      "head": {
+        "x": 29,
+        "y": 296,
+        "left": 29,
+        "top": 296,
+        "right": 375,
+        "bottom": 316,
+        "width": 346,
+        "height": 20
+      },
+      "foot": {
+        "x": 29,
+        "y": 674,
+        "left": 29,
+        "top": 674,
+        "right": 375,
+        "bottom": 706,
+        "width": 346,
+        "height": 32
+      },
+      "contentWidth": 328
+    }
+  ]
+}

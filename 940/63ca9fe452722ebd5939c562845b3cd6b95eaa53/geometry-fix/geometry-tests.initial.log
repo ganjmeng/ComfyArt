@@ -1,0 +1,22 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+___________ test_fullapp_940_cross_question_ink_and_native_thumb[zh] ___________
+tests/test_skill_e2e_940_geometry.py:181: in test_fullapp_940_cross_question_ink_and_native_thumb
+    assert diag['blocks'] == fixed['blocks']
+E   AssertionError: assert [{'outer': {'...', ...}, ...}] == [{'outer': {'...', ...}, ...}]
+E     
+E     At index 0 diff: {'outer': {'x': 29, 'y': 120, 'left': 29, 'top': 120, 'right': 357, 'bottom': 432, 'width': 328, 'height': 312}, 'outerStyle': {'borderTopWidth': '0px', 'borderRightWidth': '0px', 'borderBottomWidth': '0px', 'borderLeftWidth': '0px', 'paddingTop': '0px', 'paddingRight': '0px', 'paddingBottom': '0px', 'paddingLeft': '0px', 'gap': '16px', 'lineHeight': '18px', 'fontSize': '13px', 'height': '312px', 'overflowY': 'visible', 'scrollbarWidth': 'auto', 'scrollbarColor': 'rgb(223, 224, 226) rgb(220, 238, 255)'}, 'prompt': {'x': 29, 'y': 120, 'left': 29, 'top': ...
+E     
+E     ...Full output truncated, use '-vv' to show
+___________ test_fullapp_940_cross_question_ink_and_native_thumb[en] ___________
+tests/test_skill_e2e_940_geometry.py:181: in test_fullapp_940_cross_question_ink_and_native_thumb
+    assert diag['blocks'] == fixed['blocks']
+E   AssertionError: assert [{'outer': {'...', ...}, ...}] == [{'outer': {'...', ...}, ...}]
+E     
+E     At index 0 diff: {'outer': {'x': 29, 'y': 24, 'left': 29, 'top': 24, 'right': 357, 'bottom': 432, 'width': 328, 'height': 408}, 'outerStyle': {'borderTopWidth': '0px', 'borderRightWidth': '0px', 'borderBottomWidth': '0px', 'borderLeftWidth': '0px', 'paddingTop': '0px', 'paddingRight': '0px', 'paddingBottom': '0px', 'paddingLeft': '0px', 'gap': '16px', 'lineHeight': '18px', 'fontSize': '13px', 'height': '408px', 'overflowY': 'visible', 'scrollbarWidth': 'auto', 'scrollbarColor': 'rgb(223, 224, 226) rgb(220, 238, 255)'}, 'prompt': {'x': 29, 'y': 24, 'left': 29, 'top': 24,...
+E     
+E     ...Full output truncated, use '-vv' to show
+=========================== short test summary info ============================
+FAILED tests/test_skill_e2e_940_geometry.py::test_fullapp_940_cross_question_ink_and_native_thumb[zh]
+FAILED tests/test_skill_e2e_940_geometry.py::test_fullapp_940_cross_question_ink_and_native_thumb[en]
+2 failed in 12.96s
