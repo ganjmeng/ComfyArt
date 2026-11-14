@@ -27,8 +27,8 @@ from PIL import Image, ImageDraw
 from test_e2e_comment_edit import app_url, mock_ws  # noqa: F401  (real routes + local mock WaveSpeed)
 from test_skill_e2e_portrait_studio import ws_forward  # noqa: F401
 from test_a_class_fullapp_e2e_911 import (  # noqa: F401
-    _all_ids, _attached, _calls, _last_tool_json, _open_skill, _refs, _reply, _send_default, _wait,
-    built_dist, local_agent, no_paid_keys,
+    _all_ids, _attached, _calls, _canvas_images, _last_tool_json, _open_skill, _refs, _reply,
+    _send_default, _wait, built_dist, local_agent, no_paid_keys,
 )
 
 pw = pytest.importorskip("playwright.async_api")
@@ -95,6 +95,13 @@ def _gen_args(state: dict) -> list[dict]:
 def _ratio(text: str) -> float:
     a, b = text.replace("x", ":").replace("*", ":").split(":")[:2]
     return float(a) / float(b)
+
+
+def _png(width: int, height: int) -> bytes:
+    import io
+    buf = io.BytesIO()
+    Image.new("RGB", (width, height), (235, 225, 210)).save(buf, format="PNG")
+    return buf.getvalue()
 
 
 def _assert_provider_canvas(body: dict, width: int, height: int) -> None:
@@ -193,11 +200,16 @@ async def test_fullapp_character_expression_template_is_2048x1152(app_url, mock_
             await browser.close()
 
 
-async def test_fullapp_poster_default_is_3to4_1024x1360(app_url, mock_ws,  # noqa: F811
+async def test_fullapp_poster_default_is_provider_2k_3to4(app_url, mock_ws,  # noqa: F811
                                                        local_agent, ws_forward, monkeypatch):
     _add_flare_models(monkeypatch)
     _provider, state = local_agent
     state["respond"] = _still_script(state, POSTER, "a poster key visual")
+    # QA HOLD 6874585151: the fixed 512 mock cannot test the real 2K delivery.
+    # Return a contract-sized file; the exact size lock must accept it, and the
+    # placed shape's pixels must equal 1536x2048 (not merely the submitted args).
+    import test_e2e_comment_edit as ce
+    monkeypatch.setattr(ce, "RESULT", _png(1536, 2048))
 
     async with pw.async_playwright() as p:
         browser, pg = await _open_skill(p, app_url, "en", POSTER, ws_forward,  # noqa: F811
@@ -210,17 +222,25 @@ async def test_fullapp_poster_default_is_3to4_1024x1360(app_url, mock_ws,  # noq
             assert len(gens) == 1, gens
             args = gens[0]
             assert (args.get("width"), args.get("height"), args.get("ratio"), args.get("count")) == \
-                (1024, 1360, "3:4", 1), args
+                (1536, 2048, "3:4", 1), args
             assert args.get("size_lock") is True
             # This is the case the HOLD named: poster's instruction says default 3:4.
             assert args.get("ratio") != "1:1"
             assert len(mock_ws["submits"]) == 1, mock_ws["submits"]
-            _assert_provider_canvas(mock_ws["submits"][0][1], 1024, 1360)
+            _assert_provider_canvas(mock_ws["submits"][0][1], 1536, 2048)
+            # Delivery pixel assertion: the downloaded file and canvas shape must
+            # equal the contract, not just the request args.
+            rows = (state.get("wait") or {}).get("results") or []
+            generated = {sid for row in rows for sid in (row.get("shapes") or [])}
+            assert len(generated) == 1, rows
+            shapes = await _canvas_images(state["chat"])
+            placed = [s for s in shapes if s["id"] in generated]
+            assert len(placed) == 1 and placed[0].get("pixels") == "1536x2048", placed
         finally:
             await browser.close()
 
 
-async def test_fullapp_banner_default_is_16to9_1824x1024(app_url, mock_ws,  # noqa: F811
+async def test_fullapp_banner_default_is_16to9_2048x1152(app_url, mock_ws,  # noqa: F811
                                                         local_agent, ws_forward, monkeypatch):
     _add_flare_models(monkeypatch)
     _provider, state = local_agent
@@ -237,11 +257,11 @@ async def test_fullapp_banner_default_is_16to9_1824x1024(app_url, mock_ws,  # no
             assert len(gens) == 1, gens
             args = gens[0]
             assert (args.get("width"), args.get("height"), args.get("ratio"), args.get("count")) == \
-                (1824, 1024, "16:9", 1), args
+                (2048, 1152, "16:9", 1), args
             assert args.get("size_lock") is True
             assert (args.get("width"), args.get("height")) != (1024, 1024)
             assert len(mock_ws["submits"]) == 1, mock_ws["submits"]
-            _assert_provider_canvas(mock_ws["submits"][0][1], 1824, 1024)
+            _assert_provider_canvas(mock_ws["submits"][0][1], 2048, 1152)
         finally:
             await browser.close()
 
@@ -263,11 +283,11 @@ async def test_fullapp_meta_ads_pack_submits_three_ratios(app_url, mock_ws,  # n
             gens = _gen_args(state)
             assert len(gens) == 3, gens
             assert [(a.get("width"), a.get("height"), a.get("ratio"), a.get("count")) for a in gens] == [
-                (1024, 1024, "1:1", 1), (1024, 1280, "4:5", 1), (1024, 1824, "9:16", 1)], gens
+                (1024, 1024, "1:1", 1), (1638, 2048, "4:5", 1), (1152, 2048, "9:16", 1)], gens
             assert all(a.get("size_lock") is True and a.get("skill") == META for a in gens)
             assert len(mock_ws["submits"]) == 3, mock_ws["submits"]
             for body, (w, h) in zip([b for _m, b in mock_ws["submits"]],
-                                    [(1024, 1024), (1024, 1280), (1024, 1824)]):
+                                    [(1024, 1024), (1638, 2048), (1152, 2048)]):
                 _assert_provider_canvas(body, w, h)
         finally:
             await browser.close()

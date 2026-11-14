@@ -76,18 +76,19 @@ PACKAGING_PRESETS_979: dict[str, dict] = {
 # #982: every character template delivers ONE sheet at the ratio the template
 # itself declares (src/data/skills-748.json media[]): 1:1 for turnaround /
 # outfit / prop, 3:4 for editorial, 16:9 for expression / modeling / basic /
-# technical. Design review 6874380577 raised 1:1 to 1536x1536 (the 1024 sheet
-# made the face ~80 px); 16:9 stays 2048x1152. Template ids are applyRaw748's.
+# technical. Design review 6874380577 raised 1:1 from 1024 square; QA HOLD
+# 6874585151 aligns it to the provider's real 2K square (2048x2048), while
+# 16:9 stays 2048x1152 and editorial is 1536x2048 (2K 3:4).
 CHARACTER_PRESETS_982: dict[str, dict] = {
-    "turnaround": {"width": 1536, "height": 1536, "ratio": "1:1", "images": 1,
+    "turnaround": {"width": 2048, "height": 2048, "ratio": "1:1", "images": 1,
                    "name": "Character Turnaround Sheet"},
     "expression": {"width": 2048, "height": 1152, "ratio": "16:9", "images": 1,
                    "name": "Expression & Pose Sheet"},
     "modeling": {"width": 2048, "height": 1152, "ratio": "16:9", "images": 1,
                  "name": "Modeling Detail Reference Sheet"},
-    "outfit": {"width": 1536, "height": 1536, "ratio": "1:1", "images": 1,
+    "outfit": {"width": 2048, "height": 2048, "ratio": "1:1", "images": 1,
                "name": "Outfit / Form Variation Sheet"},
-    "prop": {"width": 1536, "height": 1536, "ratio": "1:1", "images": 1,
+    "prop": {"width": 2048, "height": 2048, "ratio": "1:1", "images": 1,
              "name": "Prop Interaction Sheet"},
     "basic": {"width": 2048, "height": 1152, "ratio": "16:9", "images": 1,
               "name": "Basic Character Sheet"},
@@ -117,8 +118,10 @@ def _call(width: int, height: int, ratio: str, label: str) -> dict:
 # #982 product ruling (HOLD comment 6874283882): 33 unpinned skills get a typed
 # default, not one square. Accepted 1:1 (8), wide 16:9 (7), portrait 3:4 (3),
 # multi-ratio packs (3), 9:21 phone (1), 4:3 (1), video stills (6), follow-ref (2),
-# multi-asset (3 calls) (2). Sizes use the page's card semantics: 1024 SHORT
-# side, long side snapped to 16 (16:9 = 1824x1024, 3:4 = 1024x1360, ...).
+# multi-asset (3 calls) (2). Typed pixels use the provider's real 2K output
+# (QA HOLD 6874585151): 16:9 = 2048x1152, 3:4 = 1536x2048, 4:5 = 1638x2048,
+# 9:16 = 1152x2048, 4:3 = 2048x1536, 1:1 = 2048x2048 for character. The design
+# table's 1824x1024 was the old 1024-short-side convention.
 TYPE_OUTPUTS_982: dict[str, dict] = {
     # --- accepted 1:1 (product: keep 1024x1024) ---
     "logo-abstract": _out(1024, 1024, "1:1", 1,
@@ -145,40 +148,47 @@ TYPE_OUTPUTS_982: dict[str, dict] = {
     "taobao-product": _out(1024, 1024, "1:1", 1,
         ("taobao-product", "淘宝商品视觉", "Taobao Product Visuals"),
         refs="product image (main image is 1:1)"),
-    # --- wide 16:9 (product: 1824x1024 / 2k) ---
-    # TODO(design 6874380577): website/PPT count pending visual review; current 1.
-    "banner-design-director": _out(1824, 1024, "16:9", 1,
+    # --- wide 16:9 (provider 2K: 2048x1152) ---
+    "banner-design-director": _out(2048, 1152, "16:9", 1,
         ("banner-design-director", "横幅设计", "Banner Design"),
         refs="uploaded refs; pass every one"),
-    "ppt-visual": _out(1824, 1024, "16:9", 1,
+    # PROVISIONAL 982: page counts pending visual review.
+    "ppt-visual": _out(2048, 1152, "16:9", 3,
         ("ppt-visual", "高级感 PPT 视觉", "Premium PPT Visual"),
-        refs="uploaded refs; pass every one"),
-    "web-product-visual-design": _out(1824, 1024, "16:9", 1,
+        refs="uploaded refs; pass every one",
+        calls=[_call(2048, 1152, "16:9", "cover"), _call(2048, 1152, "16:9", "section"),
+               _call(2048, 1152, "16:9", "comparison")]),
+    "web-product-visual-design": _out(2048, 1152, "16:9", 1,
         ("web-product-visual-design", "Web产品视觉设计", "Web Product Visual Design"),
         refs="uploaded refs; pass every one"),
-    "product-website": _out(1824, 1024, "16:9", 1,
+    "product-website": _out(2048, 1152, "16:9", 3,
         ("product-website", "产品网站设计师", "Product Website Designer"),
-        refs="uploaded refs; pass every one"),
-    "premium-website": _out(1824, 1024, "16:9", 1,
+        refs="uploaded refs; pass every one",
+        calls=[_call(2048, 1152, "16:9", "hero"), _call(2048, 1152, "16:9", "spec grid"),
+               _call(2048, 1152, "16:9", "supporting section")]),
+    "premium-website": _out(2048, 1152, "16:9", 2,
         ("premium-website", "高端网站艺术总监", "Premium Website Art Director"),
-        refs="uploaded refs; pass every one"),
-    "restaurant-website": _out(1824, 1024, "16:9", 1,
+        refs="uploaded refs; pass every one",
+        calls=[_call(2048, 1152, "16:9", "hero"), _call(2048, 1152, "16:9", "first-screen system")]),
+    "restaurant-website": _out(2048, 1152, "16:9", 3,
         ("restaurant-website", "餐厅网站创建器", "Restaurant Website Builder"),
-        refs="uploaded refs; pass every one"),
+        refs="uploaded refs; pass every one",
+        calls=[_call(2048, 1152, "16:9", "mood hero"), _call(2048, 1152, "16:9", "menu board"),
+               _call(2048, 1152, "16:9", "reserve/CTA")]),
     # TODO(design 6874380577): confirm 16:9 vs 4:3; current 16:9 with the
     # instruction's 4:3 detail vignette left to the agent.
-    "interior-architectural-visualization": _out(1824, 1024, "16:9", 1,
+    "interior-architectural-visualization": _out(2048, 1152, "16:9", 1,
         ("interior-architectural-visualization", "室内与建筑可视化", "Interior & Architectural Visualization"),
         refs="uploaded refs; eye-level wide shot, detail vignette is 4:3"),
     # --- portrait 3:4 (product: 1024x1360 / 2k) ---
-    "poster-differentiated-compiler": _out(1024, 1360, "3:4", 1,
+    "poster-differentiated-compiler": _out(1536, 2048, "3:4", 1,
         ("poster-differentiated-compiler", "海报设计", "Poster Design"),
         refs="uploaded refs; instruction says default 3:4"),
-    # TODO(design 6874380577): 4:5 vs 3:4 pending visual review; current 3:4.
-    "photo-split-poster": _out(1024, 1360, "3:4", 1,
+    # PROVISIONAL 982: 4:5 vs 3:4 pending visual review; current 4:5.
+    "photo-split-poster": _out(1638, 2048, "4:5", 1,
         ("photo-split-poster", "照片对半抽象海报", "Photo Split Abstract Poster"),
         refs="photo (image 1); keep the photo/geometry split"),
-    "yingzao": _out(1024, 1360, "3:4", 1,
+    "yingzao": _out(1536, 2048, "3:4", 1,
         ("yingzao", "营造·在地编辑海报", "Yingzao Local Editorial Poster"),
         refs="photo (image 1); no invented architecture"),
     # --- multi-ratio packs (3 calls, 1 image each) ---
@@ -186,22 +196,21 @@ TYPE_OUTPUTS_982: dict[str, dict] = {
         ("meta-ads-creative-director", "Meta广告创意", "Meta Ads Creative"),
         refs="product/person refs, same on every call",
         calls=[_call(1024, 1024, "1:1", "feed 1:1"),
-               _call(1024, 1280, "4:5", "feed 4:5"),
-               _call(1024, 1824, "9:16", "story/reel 9:16")]),
+               _call(1638, 2048, "4:5", "feed 4:5"),
+               _call(1152, 2048, "9:16", "story/reel 9:16")]),
     "rednote-cover-maker": _out(1024, 1024, "1:1", 3,
         ("rednote-cover-maker", "小红书封面制作器", "RedNote Cover Maker"),
         refs="product/person refs, same on every call",
         calls=[_call(1024, 1024, "1:1", "feed 1:1"),
-               _call(1024, 1280, "4:5", "post 4:5"),
-               _call(1024, 1824, "9:16", "story 9:16")]),
-    # TODO(design 6874380577): pack composition pending visual review; current
-    # 16:9 hero + 1:1 social + 4:5 display.
-    "marketing-campaign-generator": _out(1824, 1024, "16:9", 3,
+               _call(1638, 2048, "4:5", "post 4:5"),
+               _call(1152, 2048, "9:16", "story 9:16")]),
+    # PROVISIONAL 982: pack pending visual review; current 16:9+4:5+9:16.
+    "marketing-campaign-generator": _out(2048, 1152, "16:9", 3,
         ("marketing-campaign-generator", "营销活动生成器", "Marketing Campaign Generator"),
         refs="brand/product refs, same on every call",
-        calls=[_call(1824, 1024, "16:9", "hero KV 16:9"),
-               _call(1024, 1024, "1:1", "social 1:1"),
-               _call(1024, 1280, "4:5", "display 4:5")]),
+        calls=[_call(2048, 1152, "16:9", "hero KV 16:9"),
+               _call(1638, 2048, "4:5", "display 4:5"),
+               _call(1152, 2048, "9:16", "social 9:16")]),
     # --- 9:19.5 phone frames (2 calls) ---
     # Design 6874380577: 9:19.5 is not in the model enum; 9:21 880x2048 (2K long
     # edge) is the supported phone frame, so size lock does not false-alarm.
@@ -211,53 +220,54 @@ TYPE_OUTPUTS_982: dict[str, dict] = {
         calls=[_call(880, 2048, "9:21", "home screen"),
                _call(880, 2048, "9:21", "detail screen")]),
     # --- 4:3 ---
-    "crt-interface": _out(1360, 1024, "4:3", 1,
+    "crt-interface": _out(2048, 1536, "4:3", 1,
         ("crt-interface", "CRT 复古界面", "CRT Retro Interface"),
         refs="uploaded refs"),
     # --- video skills: still/image-call default only; film uses generate_video/animate_image ---
-    "product-tvc-advertisement-generator": _out(1824, 1024, "16:9", 1,
+    "product-tvc-advertisement-generator": _out(2048, 1152, "16:9", 1,
         ("product-tvc-advertisement-generator", "产品广告片", "Product Commercial"),
         refs="product image (always pass it)", media="video"),
-    "motion-poster-generator": _out(1360, 1024, "4:3", 1,
+    # PROVISIONAL 982: still ratio pending visual review; current 3:4.
+    "motion-poster-generator": _out(1536, 2048, "3:4", 1,
         ("motion-poster-generator", "动态海报", "Motion Poster"),
         refs="source_image (the static artwork)", media="video"),
-    "flash-cut-video": _out(1824, 1024, "16:9", 1,
+    "flash-cut-video": _out(2048, 1152, "16:9", 1,
         ("flash-cut-video", "截图闪剪视频", "Screenshot Flash-Cut Video"),
         refs="landscape 16:9 screenshot", media="video"),
-    # TODO(design 6874380577): video fallback still pending visual review; current 1:1.
-    "anim-2d": _out(1024, 1024, "1:1", 1,
+    # PROVISIONAL 982: still ratio pending visual review; current 16:9.
+    "anim-2d": _out(2048, 1152, "16:9", 1,
         ("anim-2d", "2D动画转换器", "2D Animation Converter"),
         refs="primary visual", media="video"),
-    # TODO(design 6874380577): video fallback still pending visual review; current 4:3.
-    "animated-poster": _out(1360, 1024, "4:3", 1,
+    # PROVISIONAL 982: still ratio pending visual review; current 3:4.
+    "animated-poster": _out(1536, 2048, "3:4", 1,
         ("animated-poster", "动态海报生成器", "Animated Poster Generator"),
         refs="source artwork", media="video"),
-    # TODO(design 6874380577): video fallback still pending visual review; current 1:1.
-    "logo-animation": _out(1024, 1024, "1:1", 1,
+    # PROVISIONAL 982: still ratio pending visual review; current 16:9.
+    "logo-animation": _out(2048, 1152, "16:9", 1,
         ("logo-animation", "LOGO动画视频", "Logo Animation Video"),
         refs="logo image (image 1)", media="video"),
     # --- follow-ref (server reads image 1; see FOLLOW_REF_SIZES) ---
     "style-transfer": _out(1024, 1024, "1:1", 1,
         ("style-transfer", "自适应风格迁移导演", "Adaptive Style Transfer Director"),
         refs="content image first, style image second"),
-    "person-swap": _out(1024, 1360, "3:4", 3,
+    "person-swap": _out(1536, 2048, "3:4", 3,
         ("person-swap", "电商三图换人", "E-commerce 3-Image Person Swap"),
         refs="scene/pose first, then face and outfit"),
     # --- multi-asset kits (3 calls) ---
-    # TODO(design 6874380577): asset count pending visual review; current 3 calls.
+    # PROVISIONAL 982: asset set pending visual review; current avatar+cover+1:1.
     "creator-identity": _out(1024, 1024, "1:1", 3,
         ("creator-identity", "创作者视觉识别系统", "Creator Visual Identity System"),
         refs="creator refs",
         calls=[_call(1024, 1024, "1:1", "avatar 1:1"),
-               _call(1824, 1024, "16:9", "channel cover 16:9"),
-               _call(1024, 1280, "4:5", "social template 4:5")]),
-    # TODO(design 6874380577): asset count pending visual review; current 3 calls.
-    "live-promo-decor": _out(1824, 1024, "16:9", 3,
+               _call(2048, 1152, "16:9", "channel cover 16:9"),
+               _call(1024, 1024, "1:1", "social template 1:1")]),
+    # PROVISIONAL 982: asset set pending visual review; current 3x 9:16.
+    "live-promo-decor": _out(1152, 2048, "9:16", 3,
         ("live-promo-decor", "电商直播素材", "Live Commerce Promo Decor"),
         refs="product/stream refs",
-        calls=[_call(1824, 1024, "16:9", "background 16:9"),
-               _call(1024, 1024, "1:1", "price tag 1:1"),
-               _call(1024, 1024, "1:1", "corner badge 1:1")]),
+        calls=[_call(1152, 2048, "9:16", "background 9:16"),
+               _call(1152, 2048, "9:16", "price tag 9:16"),
+               _call(1152, 2048, "9:16", "corner badge 9:16")]),
 }
 
 # #982: last-resort neutral floor for a custom/unknown skill that is neither in
@@ -306,7 +316,7 @@ OUTPUTS: dict[str, dict] = {
     # #982: eight templates, eight plans, one sheet each. Flat fields are the
     # default turnaround template (also the dialog's first template).
     "character-sheet-design": {
-        "width": 1536, "height": 1536, "ratio": "1:1", "images": 1,
+        "width": 2048, "height": 2048, "ratio": "1:1", "images": 1,
         "presets": CHARACTER_PRESETS_982,
         "names": ("character-sheet-design", "真人角色设定与参考板",
                   "Realistic Human Character Design & Reference Sheets",
@@ -330,6 +340,25 @@ OUTPUTS: dict[str, dict] = {
     },
 }
 OUTPUTS.update(TYPE_OUTPUTS_982)
+# #982 design 6874380577: these values are PROVISIONAL and must be reviewed
+# visually before they become a product contract. The rows stay so the pipeline
+# has a deterministic default, but run_hint and the skill read say so.
+PROVISIONAL_982: dict[str, str] = {
+    "photo-split-poster": "4:5 vs 3:4 pending visual review; current 4:5",
+    "marketing-campaign-generator": "pack pending visual review; current 16:9+4:5+9:16",
+    "ppt-visual": "page count pending visual review; current 3",
+    "product-website": "page count pending visual review; current 3",
+    "premium-website": "page count pending visual review; current 2",
+    "restaurant-website": "page count pending visual review; current 3",
+    "motion-poster-generator": "still ratio pending visual review; current 3:4",
+    "anim-2d": "still ratio pending visual review; current 16:9",
+    "animated-poster": "still ratio pending visual review; current 3:4",
+    "logo-animation": "still ratio pending visual review; current 16:9",
+    "creator-identity": "asset set pending visual review; current avatar+cover+1:1",
+    "live-promo-decor": "asset set pending visual review; current 3x 9:16",
+}
+for _provisional_sid, _provisional_note in PROVISIONAL_982.items():
+    OUTPUTS[_provisional_sid]["provisional"] = _provisional_note
 
 _BY_NAME = {n.casefold(): sid for sid, row in OUTPUTS.items() for n in row["names"]}
 _DETOUR = frozenset({"list_models", "expand_image", "create_frame"})
@@ -443,10 +472,12 @@ RATIO_ALIASES_982: dict[str, tuple[str, int, int]] = {
 
 
 def pixels_for_ratio(ratio: object) -> tuple[int, int] | None:
-    """#982: the page's targetSize semantics: 1024 SHORT side, long side snapped to 16.
+    """#982 QA HOLD 6874585151: provider 2K output is the source of truth.
 
-    16:9 -> 1824x1024, 3:4 -> 1024x1360, 9:16 -> 1024x1824, 4:3 -> 1360x1024.
-    This is deliberately not a 1024 long side: that shrank wide/portrait defaults.
+    16:9 -> 2048x1152, 3:4 -> 1536x2048, 4:5 -> 1638x2048, 9:16 -> 1152x2048,
+    4:3 -> 2048x1536. 1:1 stays 1024x1024 (1K) as the neutral floor. The old
+    1824x1024 / 1024x1360 values were the 1024-short-side convention and did not
+    match the provider's 2K canvas, so exact size_lock would false-report.
     """
     m = re.fullmatch(r"\s*(\d{1,3}(?:\.\d+)?)\s*[:：]\s*(\d{1,3}(?:\.\d+)?)\s*", str(ratio or ""))
     if not m:
@@ -454,10 +485,21 @@ def pixels_for_ratio(ratio: object) -> tuple[int, int] | None:
     a, b = float(m.group(1)), float(m.group(2))
     if not a or not b:
         return None
-    snap = lambda v: max(64, round(v / 16) * 16)  # noqa: E731 - one-line 16px snap
+    # Measured provider 2K canvases (QA HOLD 6874585151). 1:1 stays 1K (1024).
+    known = {
+        "1:1": (1024, 1024),
+        "16:9": (2048, 1152), "9:16": (1152, 2048),
+        "3:4": (1536, 2048), "4:3": (2048, 1536),
+        "4:5": (1638, 2048), "5:4": (2048, 1638),
+        "9:21": (880, 2048),
+    }
+    key = f"{a:g}:{b:g}"
+    if key in known:
+        return known[key]
+    long = 2048
     if a >= b:
-        return snap(1024 * a / b), 1024
-    return 1024, snap(1024 * b / a)
+        return long, max(64, round(long * b / a))
+    return max(64, round(long * a / b)), long
 
 
 def fill_unpinned_fallback(args: dict, skill: object) -> dict:
@@ -567,11 +609,12 @@ FOLLOW_REF_SIZES: dict[str, dict[str, tuple[int, int]]] = {
 # the scene/pose base (image 1). These are the page's card sizes at a 1024 short
 # side, so a readable reference never produces a smaller request than main.
 FOLLOW_REF_SIZES_982 = {
+    # #982 QA HOLD 6874585151: provider 2K is the source of truth. 1:1 stays 1K
+    # (1024 square); the other ratios use the provider's 2K output canvas.
     "1:1": (1024, 1024),
-    "4:5": (1024, 1280), "5:4": (1280, 1024),
-    "3:4": (1024, 1360), "4:3": (1360, 1024),
-    "2:3": (1024, 1536), "3:2": (1536, 1024),
-    "9:16": (1024, 1824), "16:9": (1824, 1024),
+    "4:5": (1638, 2048), "5:4": (2048, 1638),
+    "3:4": (1536, 2048), "4:3": (2048, 1536),
+    "9:16": (1152, 2048), "16:9": (2048, 1152),
 }
 FOLLOW_REF_SIZES["style-transfer"] = FOLLOW_REF_SIZES_982
 FOLLOW_REF_SIZES["person-swap"] = FOLLOW_REF_SIZES_982
@@ -879,8 +922,8 @@ def _video_hint(sid: str, row: dict) -> str:
     )
 
 
-def run_hint(name: object, user_text: str = "", ref_image: bytes | None = None,
-             preset_id: str = "") -> str:
+def _run_hint_declared(name: object, user_text: str = "", ref_image: bytes | None = None,
+                       preset_id: str = "") -> str:
     """One line appended to the skill-start user text. Empty when the skill has no declared size.
 
     #905: when the user's own message names a whitelisted ratio, the lock states that size, so the
@@ -946,6 +989,18 @@ def run_hint(name: object, user_text: str = "", ref_image: bytes | None = None,
         f"Output lock: each generate_image uses skill={sid!r}, {size}, count=1, and a different prompt "
         "(pose and angle only, not camera or shot size). Do not repeat the same arguments. Do not use 1024x1024."
     )
+
+
+def run_hint(name: object, user_text: str = "", ref_image: bytes | None = None,
+             preset_id: str = "") -> str:
+    """Declared Output lock, plus an explicit PROVISIONAL note when design has not
+    finished visual review (#982 design 6874380577)."""
+    hint = _run_hint_declared(name, user_text, ref_image, preset_id)
+    sid = resolve(name)
+    note = str((OUTPUTS.get(sid) or {}).get("provisional") or "") if sid else ""
+    if hint and note:
+        hint += f" PROVISIONAL: {note}; visual review pending, do not treat it as final."
+    return hint
 
 
 def single_image_skip(tool: str, skill: object, lang: str, generated: int,

@@ -55,13 +55,13 @@ needs_node = pytest.mark.skipif(
 
 LOGO_SIZE = (1024, 1024, "1:1", 1)
 CHARACTER_EXPECTED = {
-    # Design 6874380577: 1024 square made the face ~80 px; 1:1 stays at 1536
-    # square, editorial moves to 3:4 2K, the four 16:9 templates stay 2048x1152.
-    "turnaround": (1536, 1536, "1:1", 1),
+    # Design 6874380577 raised 1:1; QA HOLD 6874585151 aligns it to the provider's
+    # real 2K square (2048), editorial 3:4 is 1536x2048, 16:9 stays 2048x1152.
+    "turnaround": (2048, 2048, "1:1", 1),
     "expression": (2048, 1152, "16:9", 1),
     "modeling": (2048, 1152, "16:9", 1),
-    "outfit": (1536, 1536, "1:1", 1),
-    "prop": (1536, 1536, "1:1", 1),
+    "outfit": (2048, 2048, "1:1", 1),
+    "prop": (2048, 2048, "1:1", 1),
     "basic": (2048, 1152, "16:9", 1),
     "technical": (2048, 1152, "16:9", 1),
     "editorial": (1536, 2048, "3:4", 1),
@@ -77,9 +77,12 @@ WIDE_16_9 = {
     "product-website", "premium-website", "restaurant-website",
     "interior-architectural-visualization",
 }
-PORTRAIT_3_4 = {
-    "poster-differentiated-compiler", "photo-split-poster", "yingzao",
-}
+# The three non-provisional wide skills are one image; the four website/PPT
+# skills are provisional multi-page sets and are covered by CALLS.
+WIDE_16_9_SINGLE = {"banner-design-director", "web-product-visual-design",
+                    "interior-architectural-visualization"}
+PORTRAIT_3_4 = {"poster-differentiated-compiler", "yingzao"}
+PHOTO_SPLIT = {"photo-split-poster"}
 PACKS = {
     "meta-ads-creative-director", "rednote-cover-maker", "marketing-campaign-generator",
 }
@@ -91,30 +94,70 @@ VIDEO = {
 }
 FOLLOW_REF = {"style-transfer", "person-swap"}
 MULTI_ASSET = {"creator-identity", "live-promo-decor"}
-TYPED = SQUARE_1024 | WIDE_16_9 | PORTRAIT_3_4 | PACKS | PHONE | CRT | VIDEO | FOLLOW_REF | MULTI_ASSET
+TYPED = (SQUARE_1024 | WIDE_16_9 | PORTRAIT_3_4 | PHOTO_SPLIT | PACKS | PHONE
+         | CRT | VIDEO | FOLLOW_REF | MULTI_ASSET)
+
+# #982 design 6874380577: not final. These are the current provisional values;
+# the test below says "this is what is provisional now", not "this is correct".
+PROVISIONAL = {
+    "photo-split-poster": "4:5 vs 3:4 pending visual review; current 4:5",
+    "marketing-campaign-generator": "pack pending visual review; current 16:9+4:5+9:16",
+    "ppt-visual": "page count pending visual review; current 3",
+    "product-website": "page count pending visual review; current 3",
+    "premium-website": "page count pending visual review; current 2",
+    "restaurant-website": "page count pending visual review; current 3",
+    "motion-poster-generator": "still ratio pending visual review; current 3:4",
+    "anim-2d": "still ratio pending visual review; current 16:9",
+    "animated-poster": "still ratio pending visual review; current 3:4",
+    "logo-animation": "still ratio pending visual review; current 16:9",
+    "creator-identity": "asset set pending visual review; current avatar+cover+1:1",
+    "live-promo-decor": "asset set pending visual review; current 3x 9:16",
+}
+PROVISIONAL_CURRENT = {
+    "photo-split-poster": (1638, 2048, "4:5", 1),
+    "marketing-campaign-generator": (2048, 1152, "16:9", 3),
+    "ppt-visual": (2048, 1152, "16:9", 3),
+    "product-website": (2048, 1152, "16:9", 3),
+    "premium-website": (2048, 1152, "16:9", 2),
+    "restaurant-website": (2048, 1152, "16:9", 3),
+    "motion-poster-generator": (1536, 2048, "3:4", 1),
+    "anim-2d": (2048, 1152, "16:9", 1),
+    "animated-poster": (1536, 2048, "3:4", 1),
+    "logo-animation": (2048, 1152, "16:9", 1),
+    "creator-identity": (1024, 1024, "1:1", 3),
+    "live-promo-decor": (1152, 2048, "9:16", 3),
+}
 
 CALLS = {
     "meta-ads-creative-director": [
-        (1024, 1024, "1:1"), (1024, 1280, "4:5"), (1024, 1824, "9:16")],
+        (1024, 1024, "1:1"), (1638, 2048, "4:5"), (1152, 2048, "9:16")],
     "rednote-cover-maker": [
-        (1024, 1024, "1:1"), (1024, 1280, "4:5"), (1024, 1824, "9:16")],
+        (1024, 1024, "1:1"), (1638, 2048, "4:5"), (1152, 2048, "9:16")],
     "marketing-campaign-generator": [
-        (1824, 1024, "16:9"), (1024, 1024, "1:1"), (1024, 1280, "4:5")],
+        (2048, 1152, "16:9"), (1638, 2048, "4:5"), (1152, 2048, "9:16")],
     # Design 6874380577: 9:19.5 is not enum-supported; 9:21 880x2048 is.
     "mobile-app-visual-design": [
         (880, 2048, "9:21"), (880, 2048, "9:21")],
     "creator-identity": [
-        (1024, 1024, "1:1"), (1824, 1024, "16:9"), (1024, 1280, "4:5")],
+        (1024, 1024, "1:1"), (2048, 1152, "16:9"), (1024, 1024, "1:1")],
     "live-promo-decor": [
-        (1824, 1024, "16:9"), (1024, 1024, "1:1"), (1024, 1024, "1:1")],
+        (1152, 2048, "9:16"), (1152, 2048, "9:16"), (1152, 2048, "9:16")],
+    "ppt-visual": [
+        (2048, 1152, "16:9"), (2048, 1152, "16:9"), (2048, 1152, "16:9")],
+    "product-website": [
+        (2048, 1152, "16:9"), (2048, 1152, "16:9"), (2048, 1152, "16:9")],
+    "premium-website": [
+        (2048, 1152, "16:9"), (2048, 1152, "16:9")],
+    "restaurant-website": [
+        (2048, 1152, "16:9"), (2048, 1152, "16:9"), (2048, 1152, "16:9")],
 }
 VIDEO_STILL = {
-    "product-tvc-advertisement-generator": (1824, 1024, "16:9"),
-    "motion-poster-generator": (1360, 1024, "4:3"),
-    "flash-cut-video": (1824, 1024, "16:9"),
-    "anim-2d": (1024, 1024, "1:1"),
-    "animated-poster": (1360, 1024, "4:3"),
-    "logo-animation": (1024, 1024, "1:1"),
+    "product-tvc-advertisement-generator": (2048, 1152, "16:9"),
+    "motion-poster-generator": (1536, 2048, "3:4"),
+    "flash-cut-video": (2048, 1152, "16:9"),
+    "anim-2d": (2048, 1152, "16:9"),
+    "animated-poster": (1536, 2048, "3:4"),
+    "logo-animation": (2048, 1152, "16:9"),
 }
 
 # Still missing after this card: only the six pinned skills. Their pins own size
@@ -175,7 +218,7 @@ def test_character_has_one_plan_per_template():
                                   "packaging-design-director", CHARACTER}
     assert (OUTPUTS[CHARACTER]["width"], OUTPUTS[CHARACTER]["height"],
             OUTPUTS[CHARACTER]["ratio"], OUTPUTS[CHARACTER]["images"]) == CHARACTER_EXPECTED["turnaround"]
-    assert (OUTPUTS[CHARACTER]["width"], OUTPUTS[CHARACTER]["height"]) == (1536, 1536)
+    assert (OUTPUTS[CHARACTER]["width"], OUTPUTS[CHARACTER]["height"]) == (2048, 2048)
     for pid, want in CHARACTER_EXPECTED.items():
         plan = plan_for(CHARACTER, pid)
         assert (plan["width"], plan["height"], plan["ratio"], plan["images"]) == want, pid
@@ -215,28 +258,34 @@ def test_accepted_square_skills_are_1024(sid):
     assert is_single(sid) is True
 
 
-@pytest.mark.parametrize("sid", sorted(WIDE_16_9))
-def test_wide_skills_keep_1824x1024(sid):
+@pytest.mark.parametrize("sid", sorted(WIDE_16_9_SINGLE))
+def test_wide_skills_use_provider_2k(sid):
     args = apply_generate({"skill": sid, "prompt": "a wide frame"}, sid)
-    assert (args["width"], args["height"], args["ratio"], args["count"]) == (1824, 1024, "16:9", 1)
+    assert (args["width"], args["height"], args["ratio"], args["count"]) == (2048, 1152, "16:9", 1)
     assert args["size_lock"] is True
     assert (args["width"], args["height"]) != (1024, 1024)
     assert is_single(sid) is True
 
 
 @pytest.mark.parametrize("sid", sorted(PORTRAIT_3_4))
-def test_portrait_skills_keep_1024x1360(sid):
+def test_portrait_skills_use_provider_2k_3to4(sid):
     args = apply_generate({"skill": sid, "prompt": "a portrait poster"}, sid)
-    assert (args["width"], args["height"], args["ratio"], args["count"]) == (1024, 1360, "3:4", 1)
+    assert (args["width"], args["height"], args["ratio"], args["count"]) == (1536, 2048, "3:4", 1)
     assert args["size_lock"] is True
     assert (args["width"], args["height"]) != (1024, 1024)
     # poster's instruction says default 3:4; this is the regression the HOLD named.
     assert args["ratio"] == "3:4"
 
 
-def test_crt_is_4_3():
+def test_photo_split_is_provisional_4to5():
+    args = apply_generate({"skill": "photo-split-poster", "prompt": "split"}, "photo-split-poster")
+    assert (args["width"], args["height"], args["ratio"]) == (1638, 2048, "4:5")
+    assert OUTPUTS["photo-split-poster"]["provisional"].startswith("4:5 vs 3:4")
+
+
+def test_crt_is_provider_2k_4_3():
     args = apply_generate({"skill": "crt-interface", "prompt": "crt"}, "crt-interface")
-    assert (args["width"], args["height"], args["ratio"]) == (1360, 1024, "4:3")
+    assert (args["width"], args["height"], args["ratio"]) == (2048, 1536, "4:3")
     assert is_single("crt-interface") is True
 
 
@@ -283,13 +332,13 @@ def _png(w: int, h: int) -> bytes:
 
 @pytest.mark.parametrize("sid,fallback", [
     ("style-transfer", (1024, 1024, "1:1")),
-    ("person-swap", (1024, 1360, "3:4")),
+    ("person-swap", (1536, 2048, "3:4")),
 ])
 def test_follow_ref_skills_take_image_1_size(sid, fallback):
     assert sid in FOLLOW_REF_SIZES
     ref = _png(768, 1024)  # 3:4
     got = apply_generate({"skill": sid, "prompt": "x", "refs": ["shape:1"]}, sid, ref_image=ref)
-    assert (got["width"], got["height"], got["ratio"]) == (1024, 1360, "3:4")
+    assert (got["width"], got["height"], got["ratio"]) == (1536, 2048, "3:4")
     assert got["size_lock"] is True
     bare = apply_generate({"skill": sid, "prompt": "x"}, sid)
     assert (bare["width"], bare["height"], bare["ratio"]) == fallback
@@ -299,18 +348,21 @@ def test_follow_ref_skills_take_image_1_size(sid, fallback):
         assert "exactly 3 separate images" in hint
 
 
-def test_pixels_for_ratio_uses_the_page_short_side_not_a_long_side():
-    # Product HOLD: the old 1024-long-edge math shrank 16:9 to 1024x576 and 3:4
-    # to 768x1024. The page's targetSize uses a 1024 SHORT side.
-    assert pixels_for_ratio("16:9") == (1824, 1024)
-    assert pixels_for_ratio("3:4") == (1024, 1360)
-    assert pixels_for_ratio("4:5") == (1024, 1280)
-    assert pixels_for_ratio("9:16") == (1024, 1824)
-    assert pixels_for_ratio("4:3") == (1360, 1024)
+def test_pixels_for_ratio_uses_provider_2k_output():
+    # QA HOLD 6874585151: provider 2K is the fact source. The old 1024-short-side
+    # values (1824x1024 / 1024x1360) did not match the provider's 2K canvas.
+    assert pixels_for_ratio("16:9") == (2048, 1152)
+    assert pixels_for_ratio("3:4") == (1536, 2048)
+    assert pixels_for_ratio("4:5") == (1638, 2048)
+    assert pixels_for_ratio("9:16") == (1152, 2048)
+    assert pixels_for_ratio("4:3") == (2048, 1536)
     assert pixels_for_ratio("1:1") == (1024, 1024)
+    assert pixels_for_ratio("9:21") == (880, 2048)
     assert pixels_for_ratio("wide") is None and pixels_for_ratio("0:1") is None
     assert pixels_for_ratio("16:9") != (1024, 576)
     assert pixels_for_ratio("3:4") != (768, 1024)
+    assert pixels_for_ratio("16:9") != (1824, 1024)
+    assert pixels_for_ratio("3:4") != (1024, 1360)
 
 
 def test_typed_defaults_never_fall_below_the_main_card():
@@ -349,9 +401,9 @@ def test_custom_skill_floor_is_neutral_but_ratio_aware():
         (1024, 1024, "1:1", "my-custom-skill")
     assert custom["size_lock"] is True
     wide = apply_generate({"prompt": "x", "ratio": "16:9"}, "my-custom-skill")
-    assert (wide["width"], wide["height"], wide["ratio"]) == (1824, 1024, "16:9")
+    assert (wide["width"], wide["height"], wide["ratio"]) == (2048, 1152, "16:9")
     portrait = apply_generate({"prompt": "x", "ratio": "3:4"}, "my-custom-skill")
-    assert (portrait["width"], portrait["height"], portrait["ratio"]) == (1024, 1360, "3:4")
+    assert (portrait["width"], portrait["height"], portrait["ratio"]) == (1536, 2048, "3:4")
     assert apply_generate({"prompt": "cat"}) == {"prompt": "cat"}
     assert apply_generate({"prompt": "cat", "ratio": "1:1"}) == {"prompt": "cat", "ratio": "1:1"}
 
@@ -367,7 +419,7 @@ def test_explicit_size_wins_only_for_a_custom_floor():
     # A declared contract wins over a model-invented size (poster must stay 3:4).
     poster = apply_generate({"skill": "poster-differentiated-compiler", "prompt": "x",
                              "width": 1536, "height": 1024, "ratio": "1:1"}, "poster-differentiated-compiler")
-    assert (poster["width"], poster["height"], poster["ratio"]) == (1024, 1360, "3:4")
+    assert (poster["width"], poster["height"], poster["ratio"]) == (1536, 2048, "3:4")
     # A custom skill has no contract: explicit pixels and a tier are honored.
     explicit = apply_generate({"prompt": "x", "width": 1536, "height": 1024}, "my-custom-skill")
     assert (explicit["width"], explicit["height"]) == (1536, 1024)
@@ -376,6 +428,23 @@ def test_explicit_size_wins_only_for_a_custom_floor():
     assert "width" not in tier and "height" not in tier
     tier_ratio = apply_generate({"prompt": "x", "ratio": "16:9", "resolution": "2k"}, "my-custom-skill")
     assert "width" not in tier_ratio and "height" not in tier_ratio
+
+
+def test_provisional_rows_are_explicit_not_final():
+    """Design 6874380577: these values are TODO, not a product contract."""
+    assert set(PROVISIONAL) == set(PROVISIONAL_CURRENT)
+    assert len(PROVISIONAL) == 12
+    for sid, note in PROVISIONAL.items():
+        row = OUTPUTS[sid]
+        assert row.get("provisional") == note, sid
+        assert (row["width"], row["height"], row["ratio"], row["images"]) == \
+            PROVISIONAL_CURRENT[sid], sid
+        hint = run_hint(sid)
+        assert "PROVISIONAL" in hint and "visual review pending" in hint, (sid, hint)
+        # Current value is deterministic, but the hint never calls it final.
+        if sid not in CALLS:
+            got = apply_generate({"skill": sid, "prompt": "x"}, sid)
+            assert (got["width"], got["height"], got["ratio"]) == PROVISIONAL_CURRENT[sid][:3]
 
 
 @needs_node
@@ -392,6 +461,7 @@ def test_ts_and_python_typed_rows_agree():
         assert got.get("media") == row.get("media"), sid
         assert got.get("refs") == row.get("refs"), sid
         assert got.get("calls") == row.get("calls"), sid
+        assert got.get("provisional") == row.get("provisional"), sid
     assert [p["id"] for p in js["presets"]["character"]] == list(CHARACTER_EXPECTED)
 
 
