@@ -471,8 +471,13 @@ def _restore_locks(locks: dict, frozen: dict) -> None:
         locks[key] = item
 
 
-def preview_locked_args(args: dict) -> dict:
-    """The args lock_request would submit, without advancing the turn lock."""
+def preview_locked_args(args: dict, position: int | None = None) -> dict:
+    """The args lock_request would submit, without advancing the turn lock.
+
+    #959 `position`: this step's 0-based place in a quoted multi-image plan, so the
+    quote walks image 1..n (ratio/role/refs of each real submit) while the real
+    execution sequence still starts at 1.
+    """
     args = dict(args or {})
     if portrait.applies(args):
         frozen = _freeze_locks(portrait._LOCKS)
@@ -484,15 +489,18 @@ def preview_locked_args(args: dict) -> dict:
     if packaging.applies(args):
         frozen = _freeze_locks(packaging._LOCKS)
         try:
-            args = packaging.lock_request(args)
+            args = packaging.lock_request(args, preview_position=position)
         finally:
             _restore_locks(packaging._LOCKS, frozen)
     return args
 
 
-def prepare_for_quote(args: dict, chat_id: str = "") -> tuple[dict | None, dict | None]:
-    """(validated args, None) or (None, refuse result). Loose refs must already be resolved."""
+def prepare_for_quote(args: dict, chat_id: str = "", position: int | None = None) -> tuple[dict | None, dict | None]:
+    """(validated args, None) or (None, refuse result). Loose refs must already be resolved.
+
+    #959 `position`: the step's 0-based place in the quoted plan (see preview_locked_args).
+    """
     blocked = preflight(args, chat_id=chat_id)
     if blocked is not None:
         return None, blocked
-    return preview_locked_args(args), None
+    return preview_locked_args(args, position), None

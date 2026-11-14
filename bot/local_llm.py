@@ -1343,9 +1343,10 @@ class _PlanGate:
     item the user can still approve one at a time.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, chat_id: str = "") -> None:
         self.strict = False
         self.keys: set[tuple] = set()
+        self.chat_id = chat_id
 
     def allow(self, quote, strict: bool) -> None:
         self.strict = strict
@@ -1354,7 +1355,15 @@ class _PlanGate:
     def blocks(self, name: str, args: dict) -> bool:
         if not self.strict or name not in PAID_TOOLS:
             return False
-        return canon_key(name, args) not in self.keys
+        # #963: plan keys compare a packaging anchor slot semantically -- the quote names a
+        # future anchor, the submit names the shape placed by image 1 -- but the submit side
+        # is only canonicalized when it is that placed anchor id. Everything else stays
+        # strict; dedupe (paid_key) keeps the exact key.
+        anchor = ""
+        if self.chat_id and name == "generate_image":
+            from ..api import product_packaging
+            anchor = product_packaging.anchor_for(self.chat_id)
+        return canon_key(name, args, plan=True, anchor=anchor) not in self.keys
 
 
 TEST_TIMEOUT_S = 10.0
@@ -1890,10 +1899,11 @@ class LocalLlmProvider(AgentProvider):
                                  pricer=self._price_one, models_for=self._models_for, router=self._quote_route)
 
     @staticmethod
-    def _quote_route(tool: str, args: dict):
-        """#910: the routed model and price inputs of one step (canvas.quote_route); None when not routable."""
+    def _quote_route(tool: str, args: dict, position: int = 0):
+        """#910: the routed model and price inputs of one step (canvas.quote_route); None when not routable.
+        #959: `position` is the step's 0-based place in the quoted plan (per-image skills preview 1..n)."""
         from ..api.mcp_tools.canvas import quote_route
-        return quote_route(tool, args)
+        return quote_route(tool, args, position=position)
 
     async def _confirm_plan(self, spec: dict, turn: TurnRequest, handle: TurnHandle, *,
                             run=None, messages: Optional[list] = None) -> str:
@@ -2469,7 +2479,7 @@ class LocalLlmProvider(AgentProvider):
                 gens: dict[str, dict] = {}
                 run_ctx = self._paid_run_context(turn, window=window, lang=lang, policy=policy)
                 loop = {"repeat": 0, "last_key": "", "cache_hits": 0, "gens": gens, "run": run_ctx}
-                gate = _PlanGate()
+                gate = _PlanGate(turn.chat_id)
                 limit = self._max_steps()
                 for _ in range(limit):
                     if handle.stop_requested:

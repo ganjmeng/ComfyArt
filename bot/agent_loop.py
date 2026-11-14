@@ -849,7 +849,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
     gens: dict[str, dict] = {}
     loop = {"repeat": 0, "last_key": "", "cache_hits": 0, "gens": gens, "budget_loop": True, "run": ctx,
             "identical": IdenticalCallGuard()}
-    gate = _PlanGate()
+    gate = _PlanGate(turn.chat_id)
     reason_next = False  # #413: set after a step that wrote memory; consumed by the next request
     try:
         if resumed is None:

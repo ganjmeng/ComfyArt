@@ -5,6 +5,7 @@ tests never reach WaveSpeed. External agents do not use this module (#238).
 """
 from __future__ import annotations
 
+import inspect
 import json
 import math
 from dataclasses import dataclass
@@ -28,7 +29,9 @@ Pricer = Callable[[str, dict], Awaitable[Optional[float]]]
 ModelsFor = Callable[[str], Awaitable[list[tuple[str, Optional[float]]]]]
 # #910: (tool, arguments) -> (routed model id, price inputs) or None. The built-in agent passes
 # api.mcp_tools.canvas.quote_route, so an Auto step is named and priced as the model it will run on.
-Router = Callable[[str, dict], Optional[tuple[str, dict]]]
+# #959: the third argument is the step's 0-based place in the quoted plan, so a per-image skill
+# previews image 1..n instead of pricing every step as image 1.
+Router = Callable[..., Optional[tuple[str, dict]]]
 
 QUOTE_TOOL = "quote_plan"
 
@@ -136,14 +139,57 @@ def price_inputs(args: dict) -> dict:
     return out
 
 
-def canon_key(tool: str, args: dict, model: str = "") -> tuple:
-    """Identity of one authorized paid call: tool + selected model + arguments, without fallback fields."""
+PLANNED_ANCHOR = "<planned-anchor>"  # #963: semantic slot for the packaging anchor a quote cannot name yet
+
+
+def _planned_args(tool: str, args: dict, anchor: Optional[str] = None,
+                  plan_position: Optional[int] = None) -> dict:
+    """#963: compare a quoted step with its submit even when a ref is a future image.
+
+    product-to-packaging images 2-4 take [product photo, anchor]. A quote made
+    before image 1 exists can only name a placeholder for the anchor; the submit
+    names the placed shape. This function compares that second slot semantically,
+    but only for this skill and only with exactly two refs.
+
+    `anchor=None` is the quote side (the anchor cannot exist yet): the slot is
+    replaced with the plan sentinel when the step is an extension (`plan_position > 0`;
+    image 1 is the anchor and stays strict, including a multi-product-ref anchor).
+    A string `anchor` is the submit side: the slot is replaced **only when it is that
+    placed anchor id**, so a wrong anchor, a wrong URL or a swapped order still fails
+    the comparison. Ref count/order, the product photo and every other field stay strict.
+    """
+    if tool != "generate_image":
+        return args
+    from ..api.product_packaging import SKILL as packaging_skill
+    if str(args.get("skill") or "") != packaging_skill:
+        return args
+    refs = args.get("refs")
+    if not (isinstance(refs, list) and len(refs) == 2):
+        return args
+    if anchor is None:
+        if plan_position is not None and plan_position <= 0:
+            return args  # image 1 is the anchor: its refs are the product photo(s), compared strictly
+    elif not anchor or str(refs[1]) != anchor:
+        return args
+    return {**args, "refs": [refs[0], PLANNED_ANCHOR]}
+
+
+def canon_key(tool: str, args: dict, model: str = "", *, plan: bool = False,
+              anchor: Optional[str] = None, plan_position: Optional[int] = None) -> tuple:
+    """Identity of one authorized paid call: tool + selected model + arguments, without fallback fields.
+
+    `plan=True` is the plan-gate comparison (#963): a packaging anchor slot that
+    cannot exist yet is compared as a slot, the same on both sides. Dedupe
+    (`paid_key`) keeps the strict default so two different anchors stay distinct.
+    """
     clean = {}
     if isinstance(args, dict):
         for k, v in args.items():
             if k in _DROP_ARG:
                 continue
             clean[k] = v
+    if plan:
+        clean = _planned_args(str(tool), clean, anchor, plan_position)
     picked = str(model or (args.get("model") if isinstance(args, dict) else "") or "")
     blob = json.dumps(clean, sort_keys=True, ensure_ascii=False, default=str)
     return (str(tool), picked, blob)
@@ -289,17 +335,46 @@ async def _max_model(feature: str, models_for: ModelsFor) -> tuple[str, Optional
     return best_id, best
 
 
+def _route(router: Router, tool: str, args: dict, position: int):
+    """Call a router with the step's plan position; older routers take (tool, args) only."""
+    try:
+        takes = "position" in inspect.signature(router).parameters
+    except (TypeError, ValueError):
+        takes = False
+    return router(tool, args, position=position) if takes else router(tool, args)
+
+
+def _plan_positions(steps: list[dict]) -> list[int]:
+    """0-based place of each step among the earlier steps of the same tool + skill (#959).
+
+    A per-image skill (product-to-packaging) puts all its images in one plan; the quote must
+    walk that sequence (image 1, then 2..n) instead of previewing every step as image 1.
+    This is computed per quote build and never executes anything, so repeating the quote
+    starts again from the turn's real next place.
+    """
+    seen: dict[tuple[str, str], int] = {}
+    out: list[int] = []
+    for step in steps:
+        args = step.get("arguments") if isinstance(step.get("arguments"), dict) else {}
+        key = (str(step.get("tool") or ""), str(args.get("skill") or ""))
+        at = seen.get(key, 0)
+        out.append(at)
+        seen[key] = at + 1
+    return out
+
+
 async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
-                      router: Optional[Router] = None) -> tuple[Optional[float], bool, str, Optional[dict], Optional[dict]]:
+                      router: Optional[Router] = None, position: int = 0) -> tuple[Optional[float], bool, str, Optional[dict], Optional[dict]]:
     """(line amount, approx, model id to show, optional model_choice for the quote copy,
     optional param-block). Unknown prices use the dearest model of that type.
     #910: with a router, the step is shown and priced as the model it is routed to (Auto included), with its
-    reference images counted, so the card's model and price are the ones that will run."""
+    reference images counted, so the card's model and price are the ones that will run.
+    #959: `position` is the step's place in the quoted plan (see _plan_positions)."""
     tool, args, model = step["tool"], step["arguments"], step["model"]
     inputs = price_inputs(args)
     units = units_of(tool, args)
     feature = feature_of_step(tool, args)
-    routed = router(tool, args) if router is not None and not step.get("svg_blocked") else None
+    routed = _route(router, tool, args, position) if router is not None and not step.get("svg_blocked") else None
     choice = None
     if routed and isinstance(routed, tuple) and (routed[1] or {}).get("param_blocked"):
         # #956 / #957: do not price a silent text-to-image fallback when required params are missing.
@@ -347,20 +422,21 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
     if not prepared:
         return None
     lines: list[Line] = []
-    for step in prepared:
+    positions = _plan_positions(prepared)
+    for step, position in zip(prepared, positions):
         if step.get("svg_blocked"):
             lines.append(Line(
                 text=step["svg_blocked"]["message"], price=ABOUT[lang], amount=0.0, approx=True,
-                unpriced=True, key=canon_key(step["tool"], step["arguments"], step["model"]),
+                unpriced=True, key=canon_key(step["tool"], step["arguments"], step["model"], plan=True, plan_position=position),
             ))
             continue
-        amount, approx, show, routed_choice, blocked = await _price_step(step, pricer, models_for, router)
+        amount, approx, show, routed_choice, blocked = await _price_step(step, pricer, models_for, router, position)
         if blocked:
             # #956 / #957: required params are missing; name the real refusal and price nothing.
             lines.append(Line(
                 text=str(blocked.get("error") or blocked.get("user_message") or ""),
                 price=ABOUT[lang], amount=0.0, approx=True, unpriced=True,
-                key=canon_key(step["tool"], step["arguments"], ""),
+                key=canon_key(step["tool"], step["arguments"], "", plan=True, plan_position=position),
             ))
             continue
         unpriced = amount is None
@@ -386,7 +462,7 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
             amount_n = float(amount or 0)
         lines.append(Line(
             text=text, price=price, amount=amount_n, approx=approx or unpriced,
-            unpriced=unpriced, key=canon_key(step["tool"], step["arguments"], step["model"]),
+            unpriced=unpriced, key=canon_key(step["tool"], step["arguments"], step["model"], plan=True, plan_position=position),
         ))
     total = round(sum(ln.amount for ln in lines), 4)
     ask = _needs_ask(total, threshold, any(ln.unpriced for ln in lines))
