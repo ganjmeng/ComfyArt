@@ -75,14 +75,15 @@ def _instructions() -> str:
 
 # --- cards -------------------------------------------------------------------------------------------
 
-def _assert_card(spec: dict, expected: list, page_count: int, live: dict) -> None:
+def _assert_card(spec: dict, expected: list, page_count: int, live: dict, pages=None) -> None:
     assert spec["page_count"] == page_count
     assert spec["allow_skip"] is True
     assert "defaults" not in spec
     assert [q["id"] for q in spec["questions"]] == [e[0] for e in expected]
+    want_pages = pages if pages is not None else list(range(1, len(expected) + 1))
     for i, (q, (qid, prompt, labels, placeholder)) in enumerate(zip(spec["questions"], expected), start=1):
         assert q["prompt"] == prompt, qid
-        assert q["page"] == i, qid
+        assert q["page"] == want_pages[i - 1], qid
         assert q["allow_other"] is True, qid
         assert q["placeholder"] == placeholder, qid
         assert "defaults" not in q, qid
@@ -105,7 +106,7 @@ def test_card1_skeleton_is_exact_and_nothing_preselected():
         "page_count": 4,
         "allow_skip": False,
     })
-    _assert_card(spec, CARD1, 3, {"yt_banner_text": [o["label"] for o in LIVE_TEXT]})
+    _assert_card(spec, CARD1, 3, {"yt_banner_text": [o["label"] for o in LIVE_TEXT]}, pages=[1, 1, 1])
 
 
 def test_card2_skeleton_is_exact_and_recommended_is_description_prefix_only():
@@ -119,7 +120,7 @@ def test_card2_skeleton_is_exact_and_recommended_is_description_prefix_only():
         ],
     })
     labels = ["方向 A：品牌主导·大留白", "方向 B：全画幅叙事场景", "方向 C：模块化工作流网格"]
-    _assert_card(spec, CARD2, 2, {"yt_direction": labels})
+    _assert_card(spec, CARD2, 2, {"yt_direction": labels}, pages=[1, 2])
     directions = spec["questions"][0]["options"]
     assert [o["description"] for o in directions] == [
         "（推荐）选择板顶部：最干净，缩到移动端也不丢信息",

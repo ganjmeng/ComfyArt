@@ -2,8 +2,8 @@
 Chinese first sentence in a Chinese conversation.
 
 Locks the three fixes from the #925 paid acceptance (issuecomment-6845366241):
-1. Card 1's three questions are always in a single ask; page_count 3 does not
-   leave pages 2 and 3 empty (one question per page, header 1 of 3, Next pages).
+1. Card 1's three questions are always in a single ask; all three sit on page 1
+   (header 1 of 3 is chrome only, one scrolling card, Next submits).
 2. Trailing typographic junk (`”,` / `",`) is stripped from card 1 and card 2
    placeholders.
 3. In a Chinese conversation, the agent's first visible sentence is Chinese
@@ -150,16 +150,17 @@ def test_mutation_passthrough_placeholders_fails_the_junk_lock(monkeypatch) -> N
 
 # --- card 1 is one ask, no empty pages ----------------------------------------------------------
 
-def test_card1_partial_ask_is_completed_to_three_questions_one_per_page(monkeypatch) -> None:
+def test_card1_partial_ask_is_completed_to_three_questions_on_page1(monkeypatch) -> None:
     """The paid-run failure: first ask_user had only Q1 with page_count 3."""
     spec = _spec(monkeypatch, "zh", Q1_ONLY_DIRTY)
     assert [q["id"] for q in spec["questions"]] == [
         "yt_delivery", "yt_banner_text", "yt_brand_assets",
     ]
     assert spec["page_count"] == 3
-    assert [q["page"] for q in spec["questions"]] == [1, 2, 3]
-    # One question per page fills 1/2/3 — no empty page, still a single ask.
-    assert len({q["page"] for q in spec["questions"]}) == len(spec["questions"]) == spec["page_count"]
+    assert [q["page"] for q in spec["questions"]] == [1, 1, 1]
+    # One scrolling card: every question on page 1, header chrome is still 1 of 3.
+    assert len({q["page"] for q in spec["questions"]}) == 1
+    assert spec["page_count"] == len(spec["questions"]) == 3
 
 
 def test_card2_missing_text_mode_is_completed_like_card1(monkeypatch) -> None:
@@ -202,7 +203,7 @@ def test_mutation_keeping_only_sent_card1_questions_fails(monkeypatch) -> None:
         assert [q["id"] for q in spec["questions"]] == [
             "yt_delivery", "yt_banner_text", "yt_brand_assets",
         ]
-        assert [q["page"] for q in spec["questions"]] == [1, 2, 3]
+        assert [q["page"] for q in spec["questions"]] == [1, 1, 1]
     except AssertionError:
         red = True
     assert red, "keeping only Q1 must fail the card-1 one-ask lock"

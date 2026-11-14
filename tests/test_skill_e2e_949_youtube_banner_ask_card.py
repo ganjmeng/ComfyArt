@@ -5,7 +5,7 @@ Walks the official skill-page path with a scripted in-process agent (no LLM)
 and the mock WaveSpeed server (no submit, no quote). Replays the #925 failure:
 the agent opens with "I'll read the skill first." and calls ask_user with only
 Q1, page_count 3, and placeholders ending in `”,`. The real server + UI must
-show all three questions as one 1/3 ask (one question per page, no empty pages), strip the junk, and (in zh)
+show all three questions as one scrolling 1/3 ask (all on page 1, no empty pages), strip the junk, and (in zh)
 rewrite the first sentence into Chinese.
 
 ASK949_SHOTS=/dir keeps the zh/en after-fix screenshots. Chromium is required;
@@ -24,7 +24,7 @@ import pytest
 from conftest import FakeProvider, write_settings
 from test_e2e_comment_edit import app_url, mock_ws  # noqa: F401
 from test_skill_param_guard_e2e_956_957 import LOC, _bind_open_project, _call
-from ask_card_pages import inspect_pages
+from ask_card_pages import inspect_scroll_card
 
 pw = pytest.importorskip("playwright.async_api")
 
@@ -197,17 +197,15 @@ async def test_fullapp_card1_one_ask_clean_placeholders_zh_first_sentence(
         else:
             await pg.get_by_text("I'll read the skill first.").first.wait_for(timeout=20000)
 
-        # (2) one ask, 1/3 header, one question per page, no empty 2/3 or 3/3
-        pages = await inspect_pages(pg, 3)
-        assert len(pages) == 3
-        assert re.search(r"1\s*(of|/)\s*3", pages[0]["head"]), pages[0]["head"]
-        assert re.search(r"2\s*(of|/)\s*3", pages[1]["head"]), pages[1]["head"]
-        assert re.search(r"3\s*(of|/)\s*3", pages[2]["head"]), pages[2]["head"]
-        for snap in pages:
-            assert snap["block_count"] == 1
-            assert snap["scroll_card"] is None
-            assert snap["prompts"], snap
-        prompts = [p["prompts"][0] for p in pages]
+        # (2) one ask, scrolling card, 1/3 header chrome, all three questions visible
+        snap = await inspect_scroll_card(pg, 3)
+        assert re.search(r"1\s*(of|/)\s*3", snap["head"]), snap["head"]
+        assert not re.search(r"2\s*(of|/)\s*3", snap["head"]), snap["head"]
+        assert snap["block_count"] == 3
+        assert snap["scroll_card"] is not None
+        assert snap["chevrons_disabled"] is True
+        prompts = snap["prompts"]
+        assert len(prompts) == 3
         if lang == "zh":
             assert prompts[0].startswith("这次横幅想怎么交付")
             assert prompts[1].startswith("横幅上实际要出现哪些文字")
@@ -216,9 +214,9 @@ async def test_fullapp_card1_one_ask_clean_placeholders_zh_first_sentence(
             assert all(not CJK.search(p) for p in prompts), prompts
             assert "delivered" in prompts[0].lower() or "How should" in prompts[0]
 
-        # (3) placeholders have no trailing `”,` on every page
-        visible = [ph for snap in pages for ph in snap["placeholders"] if ph]
-        assert visible, pages
+        # (3) placeholders have no trailing `”,` on any question
+        visible = [ph for ph in snap["placeholders"] if ph]
+        assert visible, snap
         for ph in visible:
             assert JUNK not in ph, ph
             assert "\u201d" not in ph, ph

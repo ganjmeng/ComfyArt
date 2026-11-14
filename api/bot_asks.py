@@ -807,19 +807,21 @@ def normalize_youtube_banner_card(args: dict, lang: str | None = None) -> dict:
         if not any(_yt_match(q, lk) for q in questions for lk in card):
             continue
         kept = []
-        # #949: always emit every question of this card in this one ask, even
-        # when the model only sent Q1 (that used to render 1/3 with empty
-        # pages 2 and 3, then a second ask for the remaining questions).
-        # #934: card 2 is completed the same way (yt_text_mode is no longer
-        # left missing). Each question gets its own page; page_count matches
-        # the question count so no page is empty. The user advances with
-        # Next and submits on the last question — still one ask, not two.
+        # #949 / HOLD #998: always emit every question of this card in this
+        # one ask, even when the model only sent Q1. Card 1 is a scrolling
+        # card: every question is page 1; page_count 3 is header chrome only
+        # (1 of 3). Next submits; chevrons do not page.
+        # #934: card 2 is also completed in this ask (yt_text_mode is no
+        # longer left missing) but paginated one question per page (1 of 2,
+        # Next advances, submit on the last) — still one ask, not two.
+        is_card1 = card is YT_CARD_1_BY_LANG[lang]
         for index, lk in enumerate(card, start=1):
+            page = 1 if is_card1 else index
             raw = next((q for q in questions if _yt_match(q, lk)), None)
             if raw is not None:
-                kept.append(_yt_question(raw, lk, lang, page=index))
+                kept.append(_yt_question(raw, lk, lang, page=page))
             else:
-                kept.append(_yt_question({}, lk, lang, page=index))
+                kept.append(_yt_question({}, lk, lang, page=page))
         if not kept:
             continue
         if card is YT_CARD_2_BY_LANG[lang]:

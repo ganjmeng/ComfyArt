@@ -24,7 +24,7 @@ import pytest
 from conftest import FakeProvider, write_settings
 from test_e2e_comment_edit import app_url, mock_ws  # noqa: F401
 from test_skill_param_guard_e2e_956_957 import LOC, _bind_open_project, _call
-from ask_card_pages import inspect_and_answer, inspect_pages, wait_dock, read_page
+from ask_card_pages import answer_scroll_card, inspect_scroll_card, wait_dock, read_page
 
 pw = pytest.importorskip("playwright.async_api")
 
@@ -153,7 +153,7 @@ async def _open_youtube(p, app_url, lang, sockets):  # noqa: F811
 
 
 async def _answer(pg, picks):
-    await inspect_and_answer(pg, picks)
+    await answer_scroll_card(pg, picks)
 
 
 @pytest.mark.parametrize("lang", ["zh", "en"])
@@ -201,22 +201,22 @@ async def test_fullapp_card1_appears_answers_and_continues(app_url, mock_ws, age
         for needle in ("yt_delivery", "yt_banner_text", "yt_brand_assets"):
             assert needle in text, needle
 
-        # (3+4) the card from the fixed call is real, 1 of 3, one question per
-        # page, nothing preselected; answer B / C / A and the agent receives that.
-        pages = await inspect_and_answer(pg, picks=(1, 2, 0))
-        assert len(pages) == 3
-        assert re.search(r"1\s*(of|/)\s*3", pages[0]["head"]), pages[0]["head"]
-        prompts = [p["prompts"][0] for p in pages]
+        # (3+4) the card from the fixed call is real, a scrolling 1 of 3,
+        # nothing preselected; answer B / C / A and the agent receives that.
+        snap = await inspect_scroll_card(pg, 3)
+        assert re.search(r"1\s*(of|/)\s*3", snap["head"]), snap["head"]
+        assert not re.search(r"2\s*(of|/)\s*3", snap["head"]), snap["head"]
+        prompts = snap["prompts"]
         if lang == "zh":
             assert prompts == [q["prompt"] for q in CARD1["questions"]]
         else:
             # #962: the server locks card 1 in the ask-card language, so an en turn renders the
             # en skeleton even when the scripted agent sent the zh copy.
             assert all(not re.search(r"[\u4e00-\u9fff]", p) for p in prompts), prompts
-        for snap in pages:
-            assert snap["block_count"] == 1
-            assert snap["selected"][0] == 0
-            assert snap["scroll_card"] is None
+        assert snap["block_count"] == 3
+        assert snap["selected"] == [0, 0, 0]
+        assert snap["scroll_card"] is not None
+        await answer_scroll_card(pg, picks=(1, 2, 0))
         await _shot(pg, f"card1-{lang}")
         for _ in range(200):
             if getattr(agent, "answered", None) is not None:

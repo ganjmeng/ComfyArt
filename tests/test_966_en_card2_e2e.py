@@ -20,7 +20,7 @@ import pytest
 from conftest import FakeProvider, write_settings
 from test_e2e_comment_edit import app_url, mock_ws  # noqa: F401
 from test_skill_param_guard_e2e_956_957 import LOC, _bind_open_project, _call
-from ask_card_pages import inspect_and_answer, inspect_pages, wait_dock, read_page
+from ask_card_pages import answer_scroll_card, inspect_and_answer, inspect_pages, wait_dock, read_page
 
 pw = pytest.importorskip("playwright.async_api")
 
@@ -228,7 +228,7 @@ async def _open_youtube(p, app_url, lang, sockets):  # noqa: F811
 
 
 async def _answer(pg, picks):
-    await inspect_and_answer(pg, picks)
+    await answer_scroll_card(pg, picks)
 
 
 async def _wait_card(pg, prompts):

@@ -21,7 +21,7 @@ from pathlib import Path
 import pytest
 from PIL import Image, ImageDraw
 
-from ask_card_pages import inspect_and_answer, inspect_pages, wait_dock
+from ask_card_pages import answer_scroll_card, inspect_and_answer, inspect_pages, inspect_scroll_card, wait_dock
 from conftest import FakeProvider, write_settings
 from test_e2e_comment_edit import app_url, mock_ws  # noqa: F401
 from test_skill_param_guard_e2e_956_957 import LOC, _bind_open_project, _call
@@ -257,20 +257,22 @@ async def test_fullapp_card2_thumbs_descriptions_and_pagination(
     async with pw.async_playwright() as p:
         browser, pg = await _open_youtube(p, app_url, lang, ws_forward)
 
-        # Card 1: descriptions visible under titles; one question per page.
+        # Card 1: scrolling card, descriptions under titles, Next does not paginate.
         await wait_dock(pg)
+        c1 = await inspect_scroll_card(pg, 3)
         await _shot(pg, f"card1-q1-{lang}")
-        c1 = await inspect_and_answer(pg, picks=(0, 0, 0))
-        assert len(c1) == 3
-        assert re.search(r"1\s*(of|/)\s*3", c1[0]["head"]), c1[0]["head"]
-        for snap in c1:
-            assert snap["block_count"] == 1
-            assert snap["scroll_card"] is None
-            assert snap["selected"][0] == 0
-            # Locked card-1 options (delivery / assets) plus live banner-text all have descriptions.
-            assert snap["descs"][0], snap
+        assert re.search(r"1\s*(of|/)\s*3", c1["head"]), c1["head"]
+        assert not re.search(r"2\s*(of|/)\s*3", c1["head"]), c1["head"]
+        assert c1["block_count"] == 3
+        assert c1["scroll_card"] is not None
+        assert c1["chevrons_disabled"] is True
+        assert c1["selected"] == [0, 0, 0]
+        # Locked card-1 options (delivery / assets) plus live banner-text all have descriptions.
+        assert len(c1["descs"]) == 3
+        assert all(row for row in c1["descs"]), c1["descs"]
         if lang == "zh":
-            assert "推荐：一张板上放 3 个结构不同的方向" in " ".join(c1[0]["descs"][0])
+            assert "推荐：一张板上放 3 个结构不同的方向" in " ".join(c1["descs"][0])
+        await answer_scroll_card(pg, picks=(0, 0, 0))
 
         # Card 2 page 1: same board thumbnail on every direction; descriptions visible.
         for _ in range(200):

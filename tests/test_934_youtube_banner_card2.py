@@ -160,7 +160,7 @@ def test_mutation_unique_thumbnails_fails_the_shared_board_lock(monkeypatch) -> 
 
 def test_card1_and_card2_text_options_carry_visible_descriptions(monkeypatch) -> None:
     one = _spec(monkeypatch, "zh", CARD1)
-    assert [q["page"] for q in one["questions"]] == [1, 2, 3]
+    assert [q["page"] for q in one["questions"]] == [1, 1, 1]
     delivery = one["questions"][0]["options"]
     assert delivery[0]["description"].startswith("推荐：一张板上放 3 个结构不同的方向")
     assert delivery[1]["description"]
@@ -205,6 +205,43 @@ def test_mutation_dropping_descriptions_fails_the_lock(monkeypatch) -> None:
 
 
 # --- pagination: one question per page, one ask, no empty pages, no defaults ------------------
+
+def test_card1_is_one_scrolling_page_with_all_three_questions(monkeypatch) -> None:
+    """HOLD #998: card 1 stays one scrolling card; only card 2 is 1/2 + Next."""
+    spec = _spec(monkeypatch, "zh", CARD1)
+    assert [q["id"] for q in spec["questions"]] == [
+        "yt_delivery", "yt_banner_text", "yt_brand_assets",
+    ]
+    assert [q["page"] for q in spec["questions"]] == [1, 1, 1]
+    assert spec["page_count"] == 3
+    assert len({q["page"] for q in spec["questions"]}) == 1
+    # Descriptions under titles are still present (the #934 card-1 increment).
+    assert all(o.get("description") for o in spec["questions"][0]["options"])
+    assert all(o.get("description") for o in spec["questions"][2]["options"])
+
+
+def test_mutation_paginating_card1_fails_the_scroll_lock(monkeypatch) -> None:
+    """Putting card 1 back on pages 1/2/3 must fail the scrolling-card lock."""
+    real = bot_asks.normalize_youtube_banner_card
+
+    def paged(args, lang=None):
+        out = real(args, lang)
+        qs = list(out.get("questions") or [])
+        if qs and qs[0].get("id") == "yt_delivery":
+            out = dict(out)
+            out["questions"] = [{**q, "page": i} for i, q in enumerate(qs, start=1)]
+        return out
+
+    monkeypatch.setattr(bot_asks, "normalize_youtube_banner_card", paged)
+    red = False
+    try:
+        spec = bot_asks.validate_spec(dict(CARD1))
+        assert [q["page"] for q in spec["questions"]] == [1, 1, 1]
+        assert len({q["page"] for q in spec["questions"]}) == 1
+    except AssertionError:
+        red = True
+    assert red, "paginating card 1 as 1/3, 2/3, 3/3 must fail the scroll-card lock"
+
 
 def test_card2_is_one_ask_with_one_question_per_page(monkeypatch) -> None:
     spec = _spec(monkeypatch, "zh", CARD2)
@@ -276,10 +313,11 @@ def test_skill_instructions_describe_card2_thumbnails_and_pagination() -> None:
     )
     assert m, "youtube-channel-banner instructions did not parse"
     instr = m.group(1).replace("\\n", "\n").replace("\\'", "'").replace("\\\\", "\\")
-    assert "One question per page" in instr
+    assert "One question per page" in instr  # card 2 only
     assert "the same full board image" in instr
     assert "do not crop" in instr.lower() or "not a crop" in instr
     assert "选择板顶部/中部/底部：理由" in instr
     assert "page 1 and page 2, page_count 2, so the header is 1 of 2" in instr
-    assert "page 1 / 2 / 3, page_count 3, so the header is 1 of 3" in instr
-    assert "do not paginate with 下一步" not in instr
+    assert "all page 1, page_count 3, so the header is 1 of 3" in instr
+    assert "do not paginate with 下一步" in instr  # card 1 scrolling card
+    assert "page 1 / 2 / 3" not in instr
