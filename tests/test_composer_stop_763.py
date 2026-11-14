@@ -77,7 +77,8 @@ def test_dock_card_geometry():
     q = css.split(".ca-chat__dock .ca-q {")[1].split("}")[0]
     assert "--ca-opt-h: 36px" in q
     assert "width: 60px; height: 32px" in css.split(".ca-chat__dock .ca-q__skip {")[1].split("}")[0]
-    assert "width: 90px; height: 32px" in css.split(".ca-chat__dock .ca-q__submit {")[1].split("}")[0]
+    # #940 second cut / #934: primary is auto-width (min 76px), not the old fixed 90px.
+    assert "width: auto; min-width: 76px; height: 32px" in css.split(".ca-chat__dock .ca-q__submit {")[1].split("}")[0]
 
 
 def test_at_menu_assets_then_model_and_ref_chip_restored():

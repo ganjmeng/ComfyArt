@@ -48,10 +48,11 @@ def test_opt_h_28_locked() -> None:
 
 
 def test_next_submit_text_glyphs() -> None:
-    # Next uses text →; Submit uses text ↵ — not oversized SVG key-icon
-    assert 'ca-q__key">→</span>' in CHAT
+    # #940 second cut / #934: Next and Submit both use text ↵ — not →, not an SVG key-icon
     assert 'ca-q__key">↵</span>' in CHAT
+    assert 'ca-q__key">→</span>' not in CHAT
     assert "ca-q__key-icon" not in CHAT
+    assert CHAT.count('ca-q__key">↵</span>') >= 2
 
 
 def test_multi_hint_class() -> None:
@@ -129,8 +130,9 @@ def test_pager_next_source_asserts_334() -> None:
     assert "const onNext = () => { if (!pageOk) return; go(page + 1) }" in CHAT
     assert "const onSubmit = () => { if (!allOk) return; resolve(toAnswers(questions, states)) }" in CHAT
     assert "isLast ?" in CHAT
-    assert 'chatMessage.next' in CHAT and 'ca-q__key">→</span>' in CHAT
+    assert 'chatMessage.next' in CHAT and 'ca-q__key">↵</span>' in CHAT
     assert 'chatMessage.submit' in CHAT and 'ca-q__key">↵</span>' in CHAT
+    assert 'ca-q__key">→</span>' not in CHAT
     # disabled gates
     assert "disabled={!pageOk}" in CHAT
     assert "disabled={!allOk}" in CHAT
