@@ -2216,6 +2216,12 @@ class LocalLlmProvider(AgentProvider):
                                                 if choice == "cancel" else
                                                 Stop(StopReason.AWAITING_CONFIRM, "not_approved", step=step))
 
+        if quote is not None and decision == "start":
+            # #909: no whole-group count in the user's message -> the plan the card
+            # showed sets the paid-guard cap (an explicit "做 3 张" still wins).
+            from ..api import paid_guard
+            paid_guard.allow_planned_cap(turn.chat_id, quote.units)
+
         lang_key = "zh" if lang == "zh" else "en"
         for i, it in enumerate(parsed):
             if chunks[i] is not None:

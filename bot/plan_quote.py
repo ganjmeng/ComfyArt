@@ -223,6 +223,8 @@ class Line:
     approx: bool
     unpriced: bool
     key: tuple
+    # #909: paid units this line authorizes (generate_image count, 1 otherwise).
+    units: int = 1
 
 
 @dataclass
@@ -237,6 +239,9 @@ class Quote:
     total_text: str
     keys: list[tuple]
     cancel_text: str
+    # #909: sum of the lines' paid units; the paid-guard cap follows this when
+    # the user did not name a whole-group count.
+    units: int = 0
 
     def ask_spec(self) -> dict:
         lang = _lang(self.lang)
@@ -364,9 +369,9 @@ def _plan_positions(steps: list[dict]) -> list[int]:
 
 
 async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
-                      router: Optional[Router] = None, position: int = 0) -> tuple[Optional[float], bool, str, Optional[dict], Optional[dict]]:
+                      router: Optional[Router] = None, position: int = 0) -> tuple[Optional[float], bool, str, Optional[dict], Optional[dict], int]:
     """(line amount, approx, model id to show, optional model_choice for the quote copy,
-    optional param-block). Unknown prices use the dearest model of that type.
+    optional param-block, paid units). Unknown prices use the dearest model of that type.
     #910: with a router, the step is shown and priced as the model it is routed to (Auto included), with its
     reference images counted, so the card's model and price are the ones that will run.
     #959: `position` is the step's place in the quoted plan (see _plan_positions)."""
@@ -378,7 +383,7 @@ async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
     choice = None
     if routed and isinstance(routed, tuple) and (routed[1] or {}).get("param_blocked"):
         # #956 / #957: do not price a silent text-to-image fallback when required params are missing.
-        return None, True, "", None, routed[1]["param_blocked"]
+        return None, True, "", None, routed[1]["param_blocked"], 0
     if routed and routed[0]:
         model = routed[0]
         payload = dict(routed[1] or {})
@@ -403,8 +408,8 @@ async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
         approx = True
         show, unit = await _max_model(feature, models_for)
     if unit is None:
-        return None, True, show, choice, None
-    return round(float(unit) * units, 6), approx, show, choice, None
+        return None, True, show, choice, None, units
+    return round(float(unit) * units, 6), approx, show, choice, None, units
 
 
 def _needs_ask(total: float, threshold: float, force: bool) -> bool:
@@ -428,15 +433,17 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
             lines.append(Line(
                 text=step["svg_blocked"]["message"], price=ABOUT[lang], amount=0.0, approx=True,
                 unpriced=True, key=canon_key(step["tool"], step["arguments"], step["model"], plan=True, plan_position=position),
+                units=0,
             ))
             continue
-        amount, approx, show, routed_choice, blocked = await _price_step(step, pricer, models_for, router, position)
+        amount, approx, show, routed_choice, blocked, units = await _price_step(step, pricer, models_for, router, position)
         if blocked:
             # #956 / #957: required params are missing; name the real refusal and price nothing.
             lines.append(Line(
                 text=str(blocked.get("error") or blocked.get("user_message") or ""),
                 price=ABOUT[lang], amount=0.0, approx=True, unpriced=True,
                 key=canon_key(step["tool"], step["arguments"], "", plan=True, plan_position=position),
+                units=0,
             ))
             continue
         unpriced = amount is None
@@ -463,6 +470,7 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         lines.append(Line(
             text=text, price=price, amount=amount_n, approx=approx or unpriced,
             unpriced=unpriced, key=canon_key(step["tool"], step["arguments"], step["model"], plan=True, plan_position=position),
+            units=units,
         ))
     total = round(sum(ln.amount for ln in lines), 4)
     ask = _needs_ask(total, threshold, any(ln.unpriced for ln in lines))
@@ -478,4 +486,5 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         ),
         total_label=TOTAL_LABEL[lang], total_text=total_text,
         keys=[ln.key for ln in lines], cancel_text=CANCEL_TEXT[lang],
+        units=sum(ln.units for ln in lines),
     )
