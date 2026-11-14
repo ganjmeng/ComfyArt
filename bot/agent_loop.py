@@ -167,6 +167,22 @@ def current_skill_from_messages(messages: list) -> str:
     return ""
 
 
+def current_preset_from_messages(messages: list) -> str:
+    """#979: the template the skill run was started from, from the Output-lock line the
+    client already received. No template / no lock → '' (the skill's default template)."""
+    from .skill_output import preset_from_text
+    for m in messages or []:
+        if m.get("role") != "user":
+            continue
+        c = m.get("content")
+        if isinstance(c, list):
+            c = " ".join(str(p.get("text") or "") for p in c if isinstance(p, dict))
+        found = preset_from_text(c)
+        if found:
+            return found
+    return ""
+
+
 def autofill_skill_read(ctx: Optional["RunContext"], name: str, args: dict) -> dict:
     """#705: `skill {"action":"read"}` with no id/name inside a skill run reads the run's skill; logged in the run log."""
     if ctx is None or name != "skill" or str(args.get("action") or "").lower() != "read" or not ctx.current_skill:
@@ -224,6 +240,7 @@ class RunContext:
     pricer: Any = None
     confirmer: Any = None
     current_skill: str = ""                         # #705: skill the run was started from (auto-fills empty reads)
+    current_preset: str = ""                        # #979: template the skill run was started from
     skill_autofills: int = 0
     plan_gate_active: bool = False                  # #710: multi-shot plan card is open or confirmed
     shot_confirmed: bool = False
@@ -760,6 +777,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
             store.acquire_lease(run_id, lease_owner, policy["lease_s"])
     ctx.messages = messages
     ctx.current_skill = ctx.current_skill or current_skill_from_messages(messages)
+    ctx.current_preset = ctx.current_preset or current_preset_from_messages(messages)
     ctx.pricer = getattr(provider, "_price_call", None)
     ctx.confirmer = getattr(provider, "_confirm_paid_over_quote", None)
     t_start = clock()

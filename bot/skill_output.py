@@ -11,6 +11,62 @@ import re
 
 # images: how many separate generate_image calls the skill is built for.
 # A single-image skill is exactly one call. pose-fission is one call per shot.
+#
+# #979: the deliverable is now per TEMPLATE (#911 comment 6872615903), not per skill.
+# A row may carry `stages` (ordered delivery stages, each with its own images/size)
+# and `presets` (one plan per template id; ids come from src/skills.ts → applyRaw748).
+# Flat width/height/ratio/images stay on every row: they are the default template
+# and keep #707/#974/#905 consumers working unchanged. `images` is the total across
+# stages (brand = 3 + 1), so a staged skill is never a single-image skill.
+BRAND_STAGES_979: tuple[dict, ...] = (
+    # Stage 1: three different logo direction proposals, 1:1.
+    {"width": 1024, "height": 1024, "ratio": "1:1", "images": 3,
+     "label": "3 logo direction proposals"},
+    # Stage 2: only after the user picks one direction (or says "you decide"):
+    # one 16:9 guideline board. Never a landscape single board instead of the set.
+    {"width": 2048, "height": 1152, "ratio": "16:9", "images": 1,
+     "label": "1 guideline board for the chosen direction"},
+)
+PACKAGING_PLAYFUL_STAGES_979: tuple[dict, ...] = (
+    {"width": 1536, "height": 2048, "ratio": "3:4", "images": 3,
+     "label": "3 single-SKU pack images"},
+    {"width": 2048, "height": 1152, "ratio": "16:9", "images": 1,
+     "label": "1 range shot"},
+)
+# #979: product ruling — the template ids below are the ids applyRaw748 keeps from
+# the built-in presets (index order of data/skills-748.json). Brand's six templates
+# all share the same staged plan; packaging's five templates do not.
+BRAND_PRESETS_979: dict[str, dict] = {
+    "geometric": {"name": "餐饮服务 / Food Service"},
+    "handmade": {"name": "Fashion & Accessories / 服装配饰"},
+    "tech": {"name": "Beauty & Personal Care / 美妆个护"},
+    "beauty": {"name": "Food & Beverage / 食品饮料"},
+    "foodbev": {"name": "Pet Supplies / 宠物用品"},
+    "pet": {"name": "Home & Lifestyle / 家居生活"},
+}
+PACKAGING_PRESETS_979: dict[str, dict] = {
+    "eco": {
+        "width": 1536, "height": 2048, "ratio": "3:4", "images": 1,
+        "name": "主款包装设计 / Master Packaging Design",
+    },
+    "gold": {
+        "width": 2048, "height": 1152, "ratio": "16:9", "images": 3,
+        "name": "包装视觉方向 / Packaging Visual Direction",
+    },
+    "playful": {
+        "width": 1536, "height": 2048, "ratio": "3:4", "images": 4,
+        "stages": PACKAGING_PLAYFUL_STAGES_979,
+        "name": "多 SKU 包装系列 / Multi-SKU Packaging Series",
+    },
+    "panels": {
+        "width": 2048, "height": 1152, "ratio": "16:9", "images": 1,
+        "name": "包装面板与结构示意 / Packaging Panels & Structural Diagram",
+    },
+    "shelf": {
+        "width": 2048, "height": 1152, "ratio": "16:9", "images": 1,
+        "name": "包装货架展示 / Packaging Shelf Display",
+    },
+}
 OUTPUTS: dict[str, dict] = {
     "before-after": {
         "width": 1920, "height": 1080, "ratio": "16:9", "images": 1,
@@ -40,6 +96,22 @@ OUTPUTS: dict[str, dict] = {
         "width": 1536, "height": 2048, "ratio": "3:4", "images": 1,
         "names": ("clothing-swap", "AI服装换装", "AI Clothing Swap"),
     },
+    # #979: brand delivery is TWO stages, 4 images total. Flat fields = stage 1
+    # (the safe default when no stage is passed); stages carry the full contract.
+    "brand-identity-director": {
+        "width": 1024, "height": 1024, "ratio": "1:1", "images": 4,
+        "stages": BRAND_STAGES_979,
+        "presets": {pid: {"stages": BRAND_STAGES_979, **row}
+                    for pid, row in BRAND_PRESETS_979.items()},
+        "names": ("brand-identity-director", "品牌视觉识别", "Logo System"),
+    },
+    # #979: five templates, five plans. Flat fields = the default 「主款」 (eco, t1).
+    "packaging-design-director": {
+        "width": 1536, "height": 2048, "ratio": "3:4", "images": 1,
+        "presets": PACKAGING_PRESETS_979,
+        "names": ("packaging-design-director", "品牌包装设计系统",
+                  "Brand Packaging Design System"),
+    },
 }
 
 _BY_NAME = {n.casefold(): sid for sid, row in OUTPUTS.items() for n in row["names"]}
@@ -56,14 +128,90 @@ def output_of(name: object) -> dict | None:
     return OUTPUTS.get(sid) if sid else None
 
 
-def is_single(name: object) -> bool:
-    row = output_of(name)
-    return bool(row) and int(row["images"]) == 1
+# #979: rows whose plan depends on the selected template / delivery stage.
+PRESET_PLAN_SKILLS = frozenset(
+    sid for sid, row in OUTPUTS.items() if row.get("presets") or row.get("stages")
+)
 
-# #905: a ratio the user wrote in their own message overrides the default, for before-after only.
+
+def _preset_row(sid: str, preset_id: object = "") -> tuple[str, dict, bool]:
+    """(effective template id, plan row, defaulted). No/unknown template → the skill's
+    default template (the first one), never a 1024x1024 fallback."""
+    row = OUTPUTS[sid]
+    presets: dict[str, dict] = row.get("presets") or {}
+    if not presets:
+        return "", row, True
+    key = str(preset_id or "").strip()
+    if key in presets:
+        return key, presets[key], False
+    first = next(iter(presets))
+    return first, presets[first], True
+
+
+def plan_for(sid: str, preset_id: object = "", stage: object = 1) -> dict:
+    """The effective plan for one generate_image call: template + 1-based stage.
+
+    Returns width/height/ratio/images for that stage, the total across stages, and
+    the effective template so the lock can state it. Unknown stage clamps to the
+    last stage (never to 1024x1024)."""
+    pid, spec, defaulted = _preset_row(sid, preset_id)
+    stages = list(spec.get("stages") or OUTPUTS[sid].get("stages") or [])
+    total = int(spec.get("images") or OUTPUTS[sid]["images"])
+    if stages:
+        try:
+            n = int(stage or 1)
+        except (TypeError, ValueError):
+            n = 1
+        n = max(1, min(len(stages), n))
+        chosen = stages[n - 1]
+        total = sum(int(s.get("images") or 1) for s in stages)
+    else:
+        n, chosen = 1, spec
+    return {
+        "preset": pid,
+        "default_template": defaulted,
+        "stage": n,
+        "stages": stages,
+        "total_images": total,
+        "width": int(chosen["width"]),
+        "height": int(chosen["height"]),
+        "ratio": chosen.get("ratio"),
+        "images": int(chosen.get("images") or 1),
+    }
+
+
+# #979: the lock itself names the template so a relay pass (no user text) can be
+# filled the same way. Kept on the single Output-lock line, which #905/#978 already
+# strip before reading the user's own words.
+_TEMPLATE_ID_RE = re.compile(r"(?:^|\n)Output lock:[^\n]*?\btemplate=([A-Za-z0-9_.-]+)")
+
+
+def preset_from_text(text: object) -> str:
+    m = _TEMPLATE_ID_RE.search(str(text or ""))
+    return m.group(1) if m else ""
+
+
+def is_single(name: object, preset_id: object = "") -> bool:
+    sid = resolve(name)
+    if not sid:
+        return False
+    if sid in PRESET_PLAN_SKILLS:
+        return int(plan_for(sid, preset_id)["images"]) == 1
+    return int(OUTPUTS[sid]["images"]) == 1
+
+# #905: a ratio the user wrote in their own message overrides the default.
 # One exact size per ratio. A ratio the chat model wrote is ignored; a ratio not in the table falls back.
+# #979: brand/packaging are default values too — a ratio the user wrote still wins over
+# the template's ratio (the plan's images/stage count is unchanged).
+# #905: a reference card sets the ratio only for before-after. Packaging/brand keep
+# their template ratio when the user names none (an upload is not a ratio request).
+REF_CARD_RATIO = frozenset({"before-after"})
 USER_RATIOS: dict[str, dict[str, tuple[int, int]]] = {
     "before-after": {"16:9": (1920, 1080), "4:5": (1024, 1280), "1:1": (1024, 1024), "9:16": (1080, 1920)},
+    "brand-identity-director": {"1:1": (1024, 1024), "16:9": (2048, 1152),
+                                "4:5": (1024, 1280), "9:16": (1152, 2048)},
+    "packaging-design-director": {"3:4": (1536, 2048), "16:9": (2048, 1152), "1:1": (1536, 1536),
+                                  "4:5": (1600, 2000), "9:16": (1152, 2048)},
 }
 _RATIO_WORDS = {"横版": "16:9", "竖版": "9:16", "方图": "1:1", "正方形": "1:1"}
 _RATIO_RE = re.compile(r"(?<![\d.])(\d{1,2})\s*[:：]\s*(\d{1,2})(?![\d.])")
@@ -145,7 +293,7 @@ def ref_ratio(sid: str, data: bytes | None) -> str | None:
 
 
 def apply_generate(args: dict | None, current_skill: str = "", user_text: str | None = None,
-                   ref_image: bytes | None = None) -> dict:
+                   ref_image: bytes | None = None, current_preset: str = "") -> dict:
     """Fill the skill id and its declared pixels. Unknown skills are left alone.
 
     A declared size replaces a square default or a ratio the model invented.
@@ -183,13 +331,33 @@ def apply_generate(args: dict | None, current_skill: str = "", user_text: str | 
     row = OUTPUTS[sid]
     if not named:
         args["skill"] = sid
+    # #979: resolve the template before anything else. An explicit arg wins (the relay
+    # re-runs this function), then the lock line the client already received, then the
+    # skill's default template. Unknown/no template never becomes 1024x1024.
+    plan = None
+    if sid in PRESET_PLAN_SKILLS:
+        requested = str(args.pop("preset", "") or "").strip()
+        preset_id = requested or preset_from_text(user_text) or str(current_preset or "").strip()
+        stage_raw = args.pop("stage", None)
+        if stage_raw is None:
+            # The model may pass the stage's pixels instead of stage=N (the lock names both).
+            # Use a size that exactly matches one of this template's stages; otherwise stage 1.
+            try:
+                asked = (int(args.get("width") or 0), int(args.get("height") or 0))
+            except (TypeError, ValueError):
+                asked = (0, 0)
+            _pid, _spec, _ = _preset_row(sid, preset_id)
+            _stages = _spec.get("stages") or OUTPUTS[sid].get("stages") or []
+            stage_raw = next((i + 1 for i, st in enumerate(_stages)
+                              if (int(st["width"]), int(st["height"])) == asked), 1)
+        plan = plan_for(sid, preset_id, stage_raw)
     picked = None
     if sid in USER_RATIOS:
         # #905: user_text is given only where the user's own message is known (the chat loop); it sets
         # or clears the marker. Without it (the relay), only a marker matching the table is kept.
         if user_text is not None:
             picked = user_ratio(sid, user_text)
-            if not picked and ref_image and args.get("refs") and sid in USER_RATIOS:
+            if not picked and ref_image and args.get("refs") and sid in REF_CARD_RATIO:
                 # #905: no ratio in the user message, but a reference: follow the card inside it.
                 # Decided from pixels on the server (bot/ref_orientation.py); the model has no say.
                 from .ref_orientation import reference_ratio
@@ -218,36 +386,130 @@ def apply_generate(args: dict | None, current_skill: str = "", user_text: str | 
     else:
         picked = None
     if not picked:
-        args["width"] = int(row["width"])
-        args["height"] = int(row["height"])
-        if row.get("ratio"):
-            args["ratio"] = row["ratio"]
+        # #979: a preset plan's own stage size; otherwise the row's flat default.
+        width = plan["width"] if plan else int(row["width"])
+        height = plan["height"] if plan else int(row["height"])
+        ratio = plan.get("ratio") if plan else row.get("ratio")
+        args["width"], args["height"] = width, height
+        if ratio:
+            args["ratio"] = ratio
         else:
             args.pop("ratio", None)
     args["count"] = 1
     # The page audits the downloaded file against these pixels. This does not change the model.
     args["size_lock"] = True
+    if plan:
+        # #979: keep the resolved template/stage on the args so the relay pass
+        # (api/mcp_tools/canvas.py applies this a second time) is idempotent.
+        args["preset"] = plan["preset"]
+        args["stage"] = plan["stage"]
     return args
 
 
-def run_hint(name: object, user_text: str = "", ref_image: bytes | None = None) -> str:
+def _size_text(sid: str, width: int, height: int, ratio: object, picked: str | None = None) -> str:
+    if sid in FOLLOW_REF_SIZES:
+        return ("the size and ratio of image 1 (the server fills width, height and ratio; "
+                "do not pass them)")
+    if picked:
+        return f"width={width} height={height} ratio={picked}"
+    out = f"width={width} height={height}"
+    return out + (f" ratio={ratio}" if ratio else "")
+
+
+def _preset_hint(sid: str, preset_id: str, user_text: str) -> str:
+    """#979: one-line lock naming the template, its count(s) and its size(s)."""
+    row = OUTPUTS[sid]
+    plan = plan_for(sid, preset_id, 1)
+    preset = plan["preset"]
+    name = str((row.get("presets") or {}).get(preset, {}).get("name") or preset)
+    picked = user_ratio(sid, user_text) if user_text else None
+    if picked:
+        w, h = USER_RATIOS[sid][picked]
+        override = f" The user named ratio {picked}, so use width={w} height={h} ratio={picked} on every image."
+    else:
+        override = ""
+    stages = plan["stages"]
+    total = plan["total_images"]
+    default = " (skill default template: none was selected)" if plan["default_template"] else ""
+    if sid == "brand-identity-director":
+        sizes = []
+        for i, s in enumerate(stages, 1):
+            sw, sh = (USER_RATIOS[sid][picked] if picked else (s["width"], s["height"]))
+            size = _size_text(sid, sw, sh, s.get("ratio"), picked)
+            sizes.append(f"stage {i} = {int(s['images'])} image(s) at {size}")
+        return (
+            f"Output lock: template={preset} ({name}){default} — brand delivery is 2 stages / "
+            f"{total} images total, and is NOT one landscape board. " + "; ".join(sizes) + ". "
+            "Stage 1 this run, before the user picks a direction: exactly 3 separate images, count=1, "
+            "one per distinct direction (different shape language, palette and type); then stop and ask "
+            "the user to choose one. Do not render stage 2 before they pick. Stage 2, only after they pick "
+            "a direction (or say you decide): exactly 1 guideline board with the main mark, horizontal and "
+            "stacked lockups, black-and-white versions and basic usage examples; pass stage=2. "
+            f"Every generate_image passes skill={sid!r} and preset={preset!r}, count=1; total exactly "
+            f"{total} images, never a 5th and never 4 in one round." + override
+        )
+    if stages:
+        parts = []
+        call_at = 1
+        for i, s in enumerate(stages, 1):
+            sw, sh = (USER_RATIOS[sid][picked] if picked else (s["width"], s["height"]))
+            size = _size_text(sid, sw, sh, s.get("ratio"), picked)
+            n = int(s["images"])
+            part = f"stage {i} = {n} image(s) at {size}"
+            if n > 1:
+                part += f" (pass stage={i} on calls {call_at}-{call_at + n - 1})"
+            else:
+                part += f" (pass stage={i})"
+            parts.append(part)
+            call_at += n
+        return (
+            f"Output lock: template={preset} ({name}){default} — deliver exactly {total} separate images "
+            f"in {len(stages)} stages: " + "; ".join(parts) + ". "
+            f"Call generate_image exactly {total} times, count=1 each, with a different prompt each time; "
+            f"pass skill={sid!r} and preset={preset!r} on every call and use each stage's declared size. "
+            "Do not substitute 1024x1024." + override
+        )
+    plan_w, plan_h = (USER_RATIOS[sid][picked] if picked else (plan["width"], plan["height"]))
+    size = _size_text(sid, plan_w, plan_h, plan.get("ratio"), picked)
+    n = int(plan["images"])
+    if n == 1:
+        return (
+            f"Output lock: template={preset} ({name}){default} — call generate_image exactly once with "
+            f"skill={sid!r}, preset={preset!r}, stage=1, {size}, count=1. Do not call list_models, "
+            "expand_image, or create_frame. Do not outpaint. Then wait_generation and finish. "
+            "Lettering must be real words in quotes, large enough to read." + override
+        )
+    return (
+        f"Output lock: template={preset} ({name}){default} — deliver exactly {n} separate images, each "
+        f"{size}, count=1. Call generate_image exactly {n} times with a different prompt each time; "
+        f"pass skill={sid!r}, preset={preset!r}, stage=1 and count=1 on every call. "
+        "Do not repeat the same arguments. Do not use 1024x1024." + override
+    )
+
+
+def run_hint(name: object, user_text: str = "", ref_image: bytes | None = None,
+             preset_id: str = "") -> str:
     """One line appended to the skill-start user text. Empty when the skill has no declared size.
 
     #905: when the user's own message names a whitelisted ratio, the lock states that size, so the
     model is not told 16:9 while the user asked for 4:5. A reference with no user ratio follows
     the card inside it.
     #911: FOLLOW_REF_SIZES skills tell the model the server will fill size from image 1.
+    #979: for a template-aware skill the lock states the selected template's count(s) and size(s)
+    (and its default when no template was sent), so a template's plan is never read as the skill default.
     """
     sid = resolve(name)
     if not sid:
         return ""
+    if sid in PRESET_PLAN_SKILLS:
+        return _preset_hint(sid, preset_id, user_text)
     row = OUTPUTS[sid]
     if sid in FOLLOW_REF_SIZES:
         # #911: the server sets width/height/ratio from image 1; the model must not pick one.
         size = "the size and ratio of image 1 (the server fills width, height and ratio; do not pass them)"
     else:
         picked = user_ratio(sid, user_text) if user_text else None
-        if not picked and ref_image and sid in USER_RATIOS:
+        if not picked and ref_image and sid in REF_CARD_RATIO:
             from .ref_orientation import reference_ratio
             ref = reference_ratio(ref_image)
             picked = ref if ref in USER_RATIOS[sid] else None
@@ -279,21 +541,26 @@ def run_hint(name: object, user_text: str = "", ref_image: bytes | None = None) 
     )
 
 
-def single_image_skip(tool: str, skill: object, lang: str, generated: int) -> str | None:
+def single_image_skip(tool: str, skill: object, lang: str, generated: int,
+                      preset_id: object = "") -> str | None:
     """Canned result for a detour or a second generate on a single-image skill. None = run the tool.
 
     The text is a normal tool result, not a non-retryable error, so the model can finish.
+    #979: single-image is per template — packaging gold (3) and playful (4) are never skipped.
     """
     sid = resolve(skill)
-    if not sid or not is_single(sid):
+    if not sid or not is_single(sid, preset_id):
         return None
     row = OUTPUTS[sid]
+    plan = plan_for(sid, preset_id) if sid in PRESET_PLAN_SKILLS else None
+    width = plan["width"] if plan else row["width"]
+    height = plan["height"] if plan else row["height"]
+    size = f"{width}x{height}"
     base = tool.split(".")[-1]
     if base == "generate_image" and generated < 1:
         return None
     if base != "generate_image" and base not in _DETOUR:
         return None
-    size = f"{row['width']}x{row['height']}"
     if lang == "zh":
         if base == "generate_image":
             return (
@@ -302,7 +569,7 @@ def single_image_skip(tool: str, skill: object, lang: str, generated: int) -> st
             )
         return (
             f"单图技能 {sid} 不使用 {base}。请直接 generate_image 一次，"
-            f"skill={sid}，width={row['width']}，height={row['height']}（{size}），count=1。"
+            f"skill={sid}，width={width}，height={height}（{size}），count=1。"
             "不要扩图，不要另建不同尺寸的画框。"
         )
     if base == "generate_image":
@@ -313,6 +580,6 @@ def single_image_skip(tool: str, skill: object, lang: str, generated: int) -> st
         )
     return (
         f"Single-image skill {sid} does not use {base}. Call generate_image once with "
-        f"skill={sid!r}, width={row['width']}, height={row['height']} ({size}), count=1. "
+        f"skill={sid!r}, width={width}, height={height} ({size}), count=1. "
         "Do not outpaint and do not create a frame at another size."
     )

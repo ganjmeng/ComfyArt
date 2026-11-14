@@ -771,6 +771,14 @@ SPECS: dict[str, dict] = {
          "width": {"type": "integer"}, "height": {"type": "integer"},
          "count": {"type": "integer"}, "refs": _IDS, "ref_modes": {"type": "array", "items": {"type": "string"}}, "base": {"type": "string"},
          "base_strength": {"type": "integer"}, "skill": {"type": "string"},
+         "preset": {"type": "string",
+                    "description": "template id the skill run selected (e.g. packaging-design-director's eco/gold/"
+                                   "playful/panels/shelf). The output contract is per template; omit only when the "
+                                   "user did not pick one (the skill's default template is used)."},
+         "stage": {"type": "integer",
+                   "description": "1-based delivery stage of the template's output contract (brand: stage 1 = "
+                                  "3×1024×1024 direction proposals, stage 2 = 1×2048×1152 guideline board; "
+                                  "multi-SKU packaging: stage 1 = 3×1536×2048, stage 2 = 1×2048×1152). Default 1."},
          "shot": {"type": "string", "enum": ["closeup", "half", "three_quarter", "full"],
                   "description": "portrait-studio only: the shot size of this one image"},
          "output_format": {"type": "string", "enum": ["png", "jpeg", "webp", "gif", "svg"]},
