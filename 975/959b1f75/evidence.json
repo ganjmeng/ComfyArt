@@ -1,0 +1,84 @@
+{
+ "thumbs": 11,
+ "imgs": [
+  {
+   "state": "ok",
+   "src": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/959b1f75b5c9b46eece733592302df939869530a/975/wash/multi-angle/examples/01.webp",
+   "cur": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/959b1f75b5c9b46eece733592302df939869530a/975/wash/multi-angle/examples/01.webp",
+   "w": 1536,
+   "c": true
+  },
+  {
+   "state": "ok",
+   "src": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/959b1f75b5c9b46eece733592302df939869530a/975/wash/multi-angle/examples/02.webp",
+   "cur": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/959b1f75b5c9b46eece733592302df939869530a/975/wash/multi-angle/examples/02.webp",
+   "w": 1536,
+   "c": true
+  },
+  {
+   "state": "ok",
+   "src": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/959b1f75b5c9b46eece733592302df939869530a/975/wash/multi-angle/examples/03.webp",
+   "cur": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/959b1f75b5c9b46eece733592302df939869530a/975/wash/multi-angle/examples/03.webp",
+   "w": 1536,
+   "c": true
+  },
+  {
+   "state": "ok",
+   "src": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/959b1f75b5c9b46eece733592302df939869530a/975/wash/multi-angle/examples/04.webp",
+   "cur": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/959b1f75b5c9b46eece733592302df939869530a/975/wash/multi-angle/examples/04.webp",
+   "w": 1536,
+   "c": true
+  },
+  {
+   "state": "ok",
+   "src": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/959b1f75b5c9b46eece733592302df939869530a/975/wash/multi-angle/examples/05.webp",
+   "cur": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/959b1f75b5c9b46eece733592302df939869530a/975/wash/multi-angle/examples/05.webp",
+   "w": 1536,
+   "c": true
+  },
+  {
+   "state": "ok",
+   "src": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/959b1f75b5c9b46eece733592302df939869530a/975/wash/multi-angle/examples/06.webp",
+   "cur": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/959b1f75b5c9b46eece733592302df939869530a/975/wash/multi-angle/examples/06.webp",
+   "w": 1536,
+   "c": true
+  },
+  {
+   "state": "ok",
+   "src": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/959b1f75b5c9b46eece733592302df939869530a/975/wash/multi-angle/examples/07.webp",
+   "cur": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/959b1f75b5c9b46eece733592302df939869530a/975/wash/multi-angle/examples/07.webp",
+   "w": 1536,
+   "c": true
+  },
+  {
+   "state": "ok",
+   "src": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/959b1f75b5c9b46eece733592302df939869530a/975/wash/multi-angle/examples/08.webp",
+   "cur": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/959b1f75b5c9b46eece733592302df939869530a/975/wash/multi-angle/examples/08.webp",
+   "w": 1536,
+   "c": true
+  },
+  {
+   "state": "ok",
+   "src": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/959b1f75b5c9b46eece733592302df939869530a/975/wash/multi-angle/examples/09.webp",
+   "cur": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/959b1f75b5c9b46eece733592302df939869530a/975/wash/multi-angle/examples/09.webp",
+   "w": 1536,
+   "c": true
+  },
+  {
+   "state": "ok",
+   "src": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/959b1f75b5c9b46eece733592302df939869530a/975/wash/multi-angle/examples/10.webp",
+   "cur": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/959b1f75b5c9b46eece733592302df939869530a/975/wash/multi-angle/examples/10.webp",
+   "w": 1536,
+   "c": true
+  },
+  {
+   "state": "ok",
+   "src": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/959b1f75b5c9b46eece733592302df939869530a/975/wash/multi-angle/examples/11.webp",
+   "cur": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/959b1f75b5c9b46eece733592302df939869530a/975/wash/multi-angle/examples/11.webp",
+   "w": 1536,
+   "c": true
+  }
+ ],
+ "pending": "0",
+ "stage": "ok"
+}
