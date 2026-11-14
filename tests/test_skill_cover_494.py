@@ -72,10 +72,10 @@ def test_builtin_covers(got):
     w812 = _w812.group(1)
     for sid in ("yingzao", "crt-interface", "crayon-sketch", "fabric-collage"):
         assert covers[sid] == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{w812}/812/wash/{sid}/cover.webp", sid
-    # multi-angle stays covers-v4 @ WASH_594 (folder = assetDir). meta/marketing covers are cover687 (#687).
+    # multi-angle re-washed @ 959b1f75 (#975/#984; was covers-v4 @ WASH_594). meta/marketing covers are cover687 (#687).
     w687 = "5c954dbcefb8bd50edef69688b303122debb4ffb"
     phase1_new = {
-        "universal-multi-angle-grid": f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{v4}/494/covers-v4/multi-angle.webp",
+        "universal-multi-angle-grid": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/959b1f75b5c9b46eece733592302df939869530a/975/wash/multi-angle/multi-angle.webp",  # #975 wash cover (#984)
         "meta-ads-creative-director": f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{w687}/687/wash/meta-ads/cover.webp",
         "marketing-campaign-generator": f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{w687}/687/wash/marketing-campaign/cover.webp",
     }
