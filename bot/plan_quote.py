@@ -25,7 +25,10 @@ def _svg():
     from ..api import svg_image
     return svg_image
 
-Pricer = Callable[[str, dict], Awaitable[Optional[float]]]
+PriceAnswer = Optional[float] | tuple[Optional[float], str] | tuple[Optional[float], str, str]
+Pricer = Callable[[str, dict], Awaitable[PriceAnswer]]
+# #968: a pricer may answer a bare float (legacy exact price), `(price, source)` or
+# `(price, source, reason)`; see `price_source` for the normalization.
 ModelsFor = Callable[[str], Awaitable[list[tuple[str, Optional[float]]]]]
 # #910: (tool, arguments) -> (routed model id, price inputs) or None. The built-in agent passes
 # api.mcp_tools.canvas.quote_route, so an Auto step is named and priced as the model it will run on.
@@ -35,12 +38,22 @@ Router = Callable[..., Optional[tuple[str, dict]]]
 
 QUOTE_TOOL = "quote_plan"
 
+# #968: the three-state price contract (api/wavespeed.py::quote_detail). `quote` is exact, `estimate`
+# must be labelled 「约」 and `unpriced` shows no number and always asks.
+SOURCE_QUOTE = "quote"
+SOURCE_ESTIMATE = "estimate"
+SOURCE_UNPRICED = "unpriced"
+_SOURCES = (SOURCE_QUOTE, SOURCE_ESTIMATE, SOURCE_UNPRICED)
+
 CANCEL_TEXT = {
     "zh": "已取消，没有扣费。",
     "en": "Cancelled. Nothing was charged.",
 }
 TOTAL_LABEL = {"zh": "总价", "en": "Total"}
 ABOUT = {"zh": "约", "en": "about"}
+# #968: the published table is the undiscounted list price. The charge is normally the price API's
+# discounted price, so a fallback on it is an upper bound, not the quote. Name it on the card.
+LIST_PRICE_NOTE = {"zh": "标价上限估算", "en": "list-price estimate"}
 START_LABEL = {"zh": "开始", "en": "Start"}
 CANCEL_LABEL = {"zh": "取消", "en": "Cancel"}
 AUTO_LABEL = {"zh": "自动", "en": "Auto"}
@@ -79,16 +92,45 @@ def threshold_text(n: float) -> str:
     return f"{v:.2f}"
 
 
-def credits_label(amount_usd: float, lang: str, *, approx: bool = False) -> str:
-    """#397: line / total price as UI credits. Spend 0 → 「积分 0」 / "0 credits"; no $."""
-    from .run_budget import ui_credits
-    n = ui_credits(amount_usd)
+def credits_text(n: int, lang: str, *, approx: bool = False) -> str:
+    """#968: render an already-rounded credit count. Line credits are rounded once and the total is
+    their sum, so the card's rows always add up to the total it shows."""
+    n = int(n)
     lang = _lang(lang)
     if lang == "zh":
         body = f"积分 {n}" if n == 0 else f"{n} 积分"
         return f"约 {body}" if approx else body
     body = f"{n} credits"
     return f"about {body}" if approx else body
+
+
+def credits_label(amount_usd: float, lang: str, *, approx: bool = False) -> str:
+    """#397: line / total price as UI credits. Spend 0 → 「积分 0」 / "0 credits"; no $."""
+    from .run_budget import ui_credits
+    return credits_text(ui_credits(amount_usd), lang, approx=approx)
+
+
+def price_source(answer: object) -> tuple[Optional[float], str, str]:
+    """#968: normalize a pricer answer into `(amount, source, reason)`.
+
+    A bare number is a legacy exact price. A tuple carries the three-state source and an optional
+    reason. A source outside the contract (a token-billed provider's `unknown`, Replicate's
+    `quote: "unknown"`) is never treated as exact: a known amount becomes an estimate and no amount
+    is unpriced. An explicit unpriced answer never gets a stand-in number.
+    """
+    if isinstance(answer, (int, float)) and not isinstance(answer, bool):
+        return float(answer), SOURCE_QUOTE, ""
+    if not isinstance(answer, tuple) or len(answer) < 2:
+        return None, SOURCE_UNPRICED, ""
+    raw, source = answer[0], str(answer[1] or "")
+    reason = str(answer[2] or "") if len(answer) > 2 else ""
+    amount = (float(raw) if isinstance(raw, (int, float)) and not isinstance(raw, bool)
+              and math.isfinite(float(raw)) else None)
+    if source not in _SOURCES:
+        source = SOURCE_ESTIMATE if amount is not None else SOURCE_UNPRICED
+    if source == SOURCE_UNPRICED or amount is None:
+        return None, SOURCE_UNPRICED, reason
+    return amount, source, reason
 
 
 def _tool_features() -> dict:
@@ -225,6 +267,13 @@ class Line:
     key: tuple
     # #909: paid units this line authorizes (generate_image count, 1 otherwise).
     units: int = 1
+    # #968: the three-state price source (`quote` | `estimate` | `unpriced`) survives from
+    # api.wavespeed.quote_detail, so an estimate can never render as an exact price. `reason` names
+    # the fallback (e.g. `list_price` = undiscounted published table, an upper bound), `credits` is the
+    # rounded amount this line shows.
+    source: str = SOURCE_QUOTE
+    reason: str = ""
+    credits: int = 0
 
 
 @dataclass
@@ -242,6 +291,9 @@ class Quote:
     # #909: sum of the lines' paid units; the paid-guard cap follows this when
     # the user did not name a whole-group count.
     units: int = 0
+    # #968: the total the card shows is the sum of the per-line rounded credits, so line and total
+    # can never disagree. `total` above stays the exact USD sum used by the confirm threshold.
+    total_credits: int = 0
 
     def ask_spec(self) -> dict:
         lang = _lang(self.lang)
@@ -255,7 +307,7 @@ class Quote:
             "max_selections": 1,
             "allow_other": False,
             "kind": "plan_quote",
-            "lines": [{"text": ln.text, "price": ln.price} for ln in self.lines],
+            "lines": [{"text": ln.text, "price": ln.price, "source": ln.source} for ln in self.lines],
             "total_label": self.total_label,
             "total": self.total_text,
         }
@@ -368,13 +420,28 @@ def _plan_positions(steps: list[dict]) -> list[int]:
     return out
 
 
+@dataclass
+class _StepPrice:
+    """#968: one priced step; `source`/`reason` are the price contract from the pricer."""
+    amount: Optional[float]
+    approx: bool
+    show: str
+    choice: Optional[dict]
+    blocked: Optional[dict]
+    units: int
+    source: str = SOURCE_QUOTE
+    reason: str = ""
+
+
 async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
-                      router: Optional[Router] = None, position: int = 0) -> tuple[Optional[float], bool, str, Optional[dict], Optional[dict], int]:
+                      router: Optional[Router] = None, position: int = 0) -> _StepPrice:
     """(line amount, approx, model id to show, optional model_choice for the quote copy,
-    optional param-block, paid units). Unknown prices use the dearest model of that type.
+    optional param-block, paid units, source, reason). Unknown prices use the dearest model of that type.
     #910: with a router, the step is shown and priced as the model it is routed to (Auto included), with its
     reference images counted, so the card's model and price are the ones that will run.
-    #959: `position` is the step's place in the quoted plan (see _plan_positions)."""
+    #959: `position` is the step's place in the quoted plan (see _plan_positions).
+    #968: the pricer's source is carried through; an `estimate` line is marked 约 and an explicit
+    `unpriced` answer never borrows another model's number."""
     tool, args, model = step["tool"], step["arguments"], step["model"]
     inputs = price_inputs(args)
     units = units_of(tool, args)
@@ -383,7 +450,7 @@ async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
     choice = None
     if routed and isinstance(routed, tuple) and (routed[1] or {}).get("param_blocked"):
         # #956 / #957: do not price a silent text-to-image fallback when required params are missing.
-        return None, True, "", None, routed[1]["param_blocked"], 0
+        return _StepPrice(None, True, "", None, routed[1]["param_blocked"], 0, SOURCE_UNPRICED, "param_blocked")
     if routed and routed[0]:
         model = routed[0]
         payload = dict(routed[1] or {})
@@ -397,19 +464,28 @@ async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
             units = units_of(tool, {**args, **{k: payload[k] for k in ("count", "n") if k in payload}})
     approx = False
     show = model
-    unit: Optional[float] = None
+    source, reason = SOURCE_QUOTE, ""
+    amount: Optional[float] = None
     if model:
-        unit = await pricer(model, inputs)
-        if unit is None:
+        answer = await pricer(model, inputs)
+        amount, source, reason = price_source(answer)
+        if amount is None and answer is None:
+            # #235 legacy: a pricer with no answer at all prices the dearest model of that type, labelled 约.
+            # #968: an explicit `(None, "unpriced")` answer is honored — no stand-in number for a known tier.
             approx = True
             _fb, fb_price = await _max_model(feature, models_for)
-            unit = fb_price
+            amount = fb_price
+            source = SOURCE_ESTIMATE if fb_price is not None else SOURCE_UNPRICED
+            reason = "dearest_model"
     else:
         approx = True
-        show, unit = await _max_model(feature, models_for)
-    if unit is None:
-        return None, True, show, choice, None, units
-    return round(float(unit) * units, 6), approx, show, choice, None, units
+        show, amount = await _max_model(feature, models_for)
+        source = SOURCE_ESTIMATE if amount is not None else SOURCE_UNPRICED
+        reason = "dearest_model"
+    if amount is None:
+        return _StepPrice(None, True, show, choice, None, units, SOURCE_UNPRICED, reason)
+    return _StepPrice(round(float(amount) * units, 6),
+                      approx or source == SOURCE_ESTIMATE, show, choice, None, units, source, reason)
 
 
 def _needs_ask(total: float, threshold: float, force: bool) -> bool:
@@ -423,6 +499,7 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
     """A quote for 2+ priced steps. #418: a single step gets a quote only when it needs asking
     (estimate >= threshold, threshold 0, or unpriced); otherwise None (no card, run as before)."""
     lang = _lang(lang)
+    from .run_budget import ui_credits
     prepared = normalize_steps(steps)
     if not prepared:
         return None
@@ -433,19 +510,21 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
             lines.append(Line(
                 text=step["svg_blocked"]["message"], price=ABOUT[lang], amount=0.0, approx=True,
                 unpriced=True, key=canon_key(step["tool"], step["arguments"], step["model"], plan=True, plan_position=position),
-                units=0,
+                units=0, source=SOURCE_UNPRICED, reason="svg_blocked",
             ))
             continue
-        amount, approx, show, routed_choice, blocked, units = await _price_step(step, pricer, models_for, router, position)
+        priced = await _price_step(step, pricer, models_for, router, position)
+        show, routed_choice, blocked, units = priced.show, priced.choice, priced.blocked, priced.units
         if blocked:
             # #956 / #957: required params are missing; name the real refusal and price nothing.
             lines.append(Line(
                 text=str(blocked.get("error") or blocked.get("user_message") or ""),
                 price=ABOUT[lang], amount=0.0, approx=True, unpriced=True,
                 key=canon_key(step["tool"], step["arguments"], "", plan=True, plan_position=position),
-                units=0,
+                units=0, source=SOURCE_UNPRICED, reason="param_blocked",
             ))
             continue
+        amount, approx, source, reason = priced.amount, priced.approx, priced.source, priced.reason
         unpriced = amount is None
         name = step["text"] or step["tool"]
         label = model_label(show) if show else AUTO_LABEL[lang]
@@ -461,30 +540,38 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
             text = f"{text} · {_gif().gif_quote_label(step['arguments'].get('frame_count'), step['arguments'].get('frame_duration_ms'))}"
         if step["tool"] == "generate_image" and _svg().requests_svg(step["arguments"]):
             text = f"{text} · SVG · n=1"
+        # #968: an undiscounted list-price fallback is an upper bound, not this run's price.
+        if source == SOURCE_ESTIMATE and reason == "list_price":
+            text = f"{text} · {LIST_PRICE_NOTE[lang]}"
         if unpriced:
             price = ABOUT[lang]
             amount_n = 0.0
+            credits = 0
         else:
-            price = credits_label(amount or 0, lang, approx=approx)
+            # #968: round once per line; the total below is the sum of these, never a re-rounding of USD.
+            credits = ui_credits(amount)
+            price = credits_text(credits, lang, approx=approx)
             amount_n = float(amount or 0)
         lines.append(Line(
             text=text, price=price, amount=amount_n, approx=approx or unpriced,
             unpriced=unpriced, key=canon_key(step["tool"], step["arguments"], step["model"], plan=True, plan_position=position),
-            units=units,
+            units=units, source=source, reason=reason, credits=credits,
         ))
     total = round(sum(ln.amount for ln in lines), 4)
     ask = _needs_ask(total, threshold, any(ln.unpriced for ln in lines))
     if len(lines) == 1 and not ask:
         return None
     # One estimated line makes the sum an estimate too: 「约 64 积分」 / "about 64 credits".
-    from .run_budget import ui_credits
-    total_text = credits_label(total, lang, approx=any(ln.approx for ln in lines))
+    # #968: the displayed total is the sum of the line credits (not ui_credits(sum of USD)), so the rows
+    # and the total can never disagree: 4 x 0.115 is 12+12+12+12 = 48, not ceil(0.46) = 46/47.
+    total_credits = sum(ln.credits for ln in lines)
+    total_text = credits_text(total_credits, lang, approx=any(ln.approx for ln in lines))
     return Quote(
         lines=lines, total=total, n=len(lines), ask=ask, lang=lang,
         prompt=(_PROMPT_ONE if len(lines) == 1 else _PROMPT)[lang].format(
-            n=len(lines), total=ui_credits(total), threshold=ui_credits(threshold),
+            n=len(lines), total=total_credits, threshold=ui_credits(threshold),
         ),
         total_label=TOTAL_LABEL[lang], total_text=total_text,
         keys=[ln.key for ln in lines], cancel_text=CANCEL_TEXT[lang],
-        units=sum(ln.units for ln in lines),
+        units=sum(ln.units for ln in lines), total_credits=total_credits,
     )

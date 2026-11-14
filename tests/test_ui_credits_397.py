@@ -168,7 +168,9 @@ def test_mutation_plan_quote_prompt_rejects_dollar_sign():
     # the UI prompt templates must not embed $
     assert '"zh": "这个任务共 {n} 步，预计约 {total} 积分' in src
     assert "${total}" not in src and "${threshold}" not in src
-    assert "credits_label" in src and "ui_credits(total)" in src
+    assert "credits_label" in src and "ui_credits(amount)" in src
+    # #968: the prompt total is the summed line credits, never a re-rounded USD total.
+    assert "total=total_credits" in src and "total_credits = sum(ln.credits" in src
 
 
 def test_mutation_settings_api_is_credits():
