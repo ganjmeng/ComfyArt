@@ -31,8 +31,13 @@ from tests.test_agent_budget_391 import Rig, calls, reply
 
 SKILL = pk.SKILL
 PRODUCT = "/api/view?filename=product-959.png&type=input"
-ANCHOR_PLAN = "shape:anchor-planned"  # plan placeholder: the anchor does not exist when the quote runs
-ANCHOR = "shape:anchor-959"           # the shape images 2-4 add after image 1 is placed
+ANCHOR_PLAN = "shape:anchor-planned"   # plan placeholder: the anchor does not exist when the quote runs
+ANCHOR_HOLDER = "shape:anchor-holder-959"  # the anchor generator shape returned by generate_image
+ANCHOR = "shape:anchor-placed-959"         # the placed anchor image shape (holder replaced after delivery)
+WAIT_URL = "/api/view?filename=anchor-959.png&type=output"
+WRONG_ANCHOR = "shape:wrong-anchor-959"
+WRONG_URL = "/api/view?filename=wrong-anchor-959.png&type=output"
+PRODUCT_B = "/api/view?filename=product-b-959.png&type=input"
 SUNBURST_EDIT = str(skill_pin(SKILL)["edit_model"])
 
 # QA #959 mock table, deliberately amplified so a wrong tier/ratio/ref count is visible.
@@ -92,8 +97,14 @@ def relay(monkeypatch):
     SENT.clear()
 
     async def submit(action, args, project, timeout, chat=""):
+        if action == "wait_generation":
+            return {"status": "done", "results": [{
+                "id": ANCHOR_HOLDER, "status": "done", "placed": True,
+                "generation_succeeded": True, "delivered": 1,
+                "urls": [WAIT_URL], "shapes": [ANCHOR]}]}
         SENT.append((action, copy.deepcopy(dict(args))))
-        return {"ids": [f"shape:g{len(SENT)}"], "submitted": True,
+        anchor = ANCHOR_HOLDER if len(SENT) == 1 else f"shape:ext{len(SENT)}"
+        return {"ids": [anchor], "submitted": True,
                 "model": args.get("edit_model") or args.get("model")}
 
     async def approval(label):
@@ -189,6 +200,46 @@ def _execute(chat_id: str, calls: list[dict]) -> None:
         asyncio.run(go())
     finally:
         BOT_CHAT_ID.reset(token)
+
+
+def _wait(chat_id: str, ids: list[str]) -> dict:
+    """The real wait_generation tool: binds the placed anchor shape for #963."""
+    token = BOT_CHAT_ID.set(chat_id)
+
+    async def go():
+        return await canvas.TOOLS["wait_generation"]["handler"]({"ids": ids})
+
+    try:
+        return asyncio.run(go())
+    finally:
+        BOT_CHAT_ID.reset(token)
+
+
+def _anchor_from(messages: list) -> str:
+    """The anchor the agent can reference: the placed image shape after wait_generation."""
+    for m in reversed(messages):
+        if m.get("role") != "tool":
+            continue
+        try:
+            data = json.loads(str(m.get("content") or ""))
+        except ValueError:
+            continue
+        if not isinstance(data, dict):
+            continue
+        results = data.get("results")
+        if isinstance(results, list) and results:
+            row = results[0] if isinstance(results[0], dict) else {}
+            shapes = row.get("shapes") or []
+            if isinstance(shapes, list) and shapes:
+                return str(shapes[0])
+            if row.get("id"):
+                return str(row["id"])
+            if row.get("urls"):
+                return str(row["urls"][0])
+        ids = data.get("ids")
+        if isinstance(ids, list) and ids:
+            return str(ids[0])
+    return ""
 
 
 def _preview(chat_id: str, steps: list[dict]) -> list[dict]:
@@ -287,39 +338,75 @@ def test_quote_still_refuses_missing_refs_without_a_price(relay):
 
 # --- #963: the built-in agent's plan gate must accept the real anchor ---------------------
 
-def test_plan_gate_accepts_the_real_anchor_and_stays_strict_on_the_rest():
-    """The quote names a future anchor; the submit names the placed shape. Same slot, same step.
+def test_plan_gate_binds_the_placed_anchor_and_stays_strict(relay):
+    """#963: the gate accepts image 2-4 only when their 2nd ref is the anchor placed this turn.
 
-    Everything else must stay a strict comparison: a different prompt, model, ratio,
-    resolution, count, reference count/order or product photo is still refused.
+    The quote names a future anchor (plan sentinel), the submit must name the placed
+    image shape. A wrong anchor id, a URL, the pre-placement holder id, a swapped
+    order, 1/3/no refs, another product photo, and any prompt/model/count/ratio/
+    resolution change are still refused. `paid_key` keeps the strict comparison.
     """
     chat, answers = _chat()
     _seed(chat["id"], answers)
     quote, _, _ = _quote(chat["id"], _steps())
     assert quote is not None
-
-    gate = _PlanGate()
+    actual = _actual_calls()
+    gate = _PlanGate(chat["id"])
     gate.allow(quote, True)
-    assert [gate.blocks("generate_image", a) for a in _actual_calls()] == [False, False, False, False]
-    assert [gate.blocks("generate_image", s["arguments"]) for s in _steps()] == [False, False, False, False]
+
+    # Before image 1 has a placed anchor, extensions are not submittable; image 1 is.
+    assert gate.blocks("generate_image", actual[0]) is False
+    assert gate.blocks("generate_image", actual[1]) is True
+    assert gate.blocks("generate_image", {**actual[1], "refs": [PRODUCT, ANCHOR_PLAN]}) is True
+
+    # Image 1's holder shape is known after submit, but it is not the placed anchor yet.
+    _execute(chat["id"], [actual[0]])
+    assert gate.blocks("generate_image", {**actual[1], "refs": [PRODUCT, ANCHOR_HOLDER]}) is True
+    assert gate.blocks("generate_image", actual[1]) is True
+
+    # wait_generation reports the placed image shape: that is the anchor the gate binds to.
+    _wait(chat["id"], [ANCHOR_HOLDER])
+    assert gate.blocks("generate_image", actual[1]) is False
+    assert gate.blocks("generate_image", actual[2]) is False
 
     def blocked(**changes):
-        args = copy.deepcopy(_actual_calls()[1])
+        args = copy.deepcopy(actual[1])
         args.update(changes)
         return gate.blocks("generate_image", args)
 
+    assert blocked(refs=[PRODUCT, WRONG_ANCHOR])          # wrong anchor id
+    assert blocked(refs=[PRODUCT, WRONG_URL])             # wrong URL
+    assert blocked(refs=[PRODUCT, WAIT_URL])              # the anchor's URL is not its shape id
+    assert blocked(refs=[PRODUCT, ANCHOR_HOLDER])         # the deleted holder id
+    assert blocked(refs=[ANCHOR, PRODUCT])                # order: product photo first
+    assert blocked(refs=[PRODUCT])                        # 1 ref
+    assert blocked(refs=[PRODUCT, ANCHOR, "shape:third"])  # 3 refs
+    assert blocked(refs=[])                               # no refs
+    assert blocked(refs=[PRODUCT_B, ANCHOR])              # the product photo itself
     assert blocked(prompt="a different extension")
     assert blocked(count=2)
     assert blocked(ratio="3:4")
     assert blocked(resolution="1k")
     assert blocked(model="openai/gpt-image-2.6-sunburst/text-to-image")
     assert blocked(skill="studio-model")
-    assert blocked(refs=[PRODUCT])                              # ref count
-    assert blocked(refs=[PRODUCT, ANCHOR, "shape:third"])       # ref count
-    assert blocked(refs=[ANCHOR, PRODUCT])                      # order: product first
-    assert blocked(refs=["/api/view?filename=other.png", ANCHOR])  # the product photo itself
-    assert not gate.blocks("generate_image", {**_steps()[0]["arguments"]})  # anchor image: 1 ref, strict
-    assert gate.blocks("generate_image", {**_steps()[0]["arguments"], "refs": [PRODUCT, ANCHOR]})
+    # Image 1 stays a strict 1-ref product image; adding the anchor to it is refused.
+    assert gate.blocks("generate_image", {**actual[0], "refs": [PRODUCT, ANCHOR]}) is True
+    # The plan-side placeholder is never a submittable call.
+    assert gate.blocks("generate_image", _steps()[1]["arguments"]) is True
+    # Dedupe (paid_key) keeps the exact, strict key: a different anchor is a different call.
+    from ComfyArt.bot.plan_quote import canon_key
+    assert (canon_key("generate_image", actual[1])
+            != canon_key("generate_image", {**actual[1], "refs": [PRODUCT, WRONG_ANCHOR]}))
+    assert (canon_key("generate_image", actual[1])
+            != canon_key("generate_image", {**actual[1], "refs": [PRODUCT, ANCHOR_HOLDER]}))
+    # Quote side: only images 2-4 are an extension slot; a two-ref image 1 stays strict.
+    img1_two = {**actual[0], "refs": [PRODUCT, PRODUCT_B]}
+    assert (canon_key("generate_image", img1_two, plan=True, plan_position=0)
+            != canon_key("generate_image", {**img1_two, "refs": [PRODUCT, "shape:other"]},
+                         plan=True, plan_position=0))
+    assert (canon_key("generate_image", actual[1], plan=True, plan_position=1)
+            == canon_key("generate_image", {**actual[1], "refs": [PRODUCT, "shape:any"]},
+                         plan=True, plan_position=1))
 
 
 def test_agent_loop_plan_gate_submits_all_four_with_the_real_anchor(monkeypatch):
@@ -333,8 +420,13 @@ def test_agent_loop_plan_gate_submits_all_four_with_the_real_anchor(monkeypatch)
     sent: list[dict] = []
 
     async def submit(action, args, project, timeout, chat=""):
+        if action == "wait_generation":
+            return {"status": "done", "results": [{
+                "id": ANCHOR_HOLDER, "status": "done", "placed": True,
+                "generation_succeeded": True, "delivered": 1,
+                "urls": [WAIT_URL], "shapes": [ANCHOR]}]}
         sent.append(copy.deepcopy(dict(args)))
-        anchor = ANCHOR if len(sent) == 1 else f"shape:ext{len(sent)}"
+        anchor = ANCHOR_HOLDER if len(sent) == 1 else f"shape:ext{len(sent)}"
         return {"ids": [anchor], "model": args.get("edit_model") or args.get("model")}
 
     async def approval(label):
@@ -396,17 +488,33 @@ def test_agent_loop_plan_gate_submits_all_four_with_the_real_anchor(monkeypatch)
     monkeypatch.setattr(rig.p, "_quote_route", route_capture)
 
     plan = _steps()
-    submissions = _actual_calls()
+    state: dict = {}
 
     def script(messages, n):
         if n == 0:
             return calls(("quote_plan", {"steps": plan}))
-        if 1 <= n <= 4:
-            return calls(("generate_image", submissions[n - 1]))
+        if n == 1:
+            return calls(("generate_image", copy.deepcopy(plan[0]["arguments"])))
+        if n == 2:
+            return calls(("wait_generation", {"ids": [_anchor_from(messages)]}))
+        if 3 <= n <= 5:
+            state.setdefault("anchor", _anchor_from(messages))
+            args = copy.deepcopy(plan[n - 2]["arguments"])
+            args["refs"] = [PRODUCT, state["anchor"]]
+            return calls(("generate_image", args))
         return reply("好")
 
     rig.script = script
-    res, events = asyncio.run(rig.send(goal=""))
+    from ComfyArt.bot.providers import TurnHandle, TurnRequest
+    events: list = []
+
+    async def emit(event):
+        events.append(event)
+
+    res = asyncio.run(rig.p.send(
+        TurnRequest(chat_id=chat["id"], user_text="用这张产品图做一套包装。", lang="zh",
+                    mcp_endpoint="http://x/mcp", model="m", goal_text=""),
+        emit, TurnHandle()))
 
     quote = captured["quote"]
     assert quote is not None and quote.total == 0.29

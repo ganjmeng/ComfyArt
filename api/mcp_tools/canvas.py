@@ -102,6 +102,8 @@ def _unregistered_copy() -> str:
 
 
 async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float) -> dict:
+    from .. import product_packaging
+    packaging_run = action == "generate_image" and product_packaging.applies(args)
     if action == "generate_image":
         # #707: a named skill's declared pixels reach the page even if the provider omitted them.
         from ...bot.skill_output import REF_RATIO_KEY, apply_generate, follows_ref
@@ -213,6 +215,9 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
         if choice.get("auto"):
             args["auto_model"] = True
     result = await submit_command(action, args, PROJECT.get(), timeout, chat=BOT_CHAT_ID.get())
+    if packaging_run and isinstance(result, dict) and not result.get("cancelled"):
+        # #963: image 1's returned shape is the anchor holder; wait_generation swaps in the placed shape.
+        product_packaging.record_submitted(result)
     if choice and isinstance(result, dict) and not result.get("cancelled"):
         ran = result.get("model")
         if choice["auto"] and choice.get("category") != "skill_size" and "edit_model" not in choice and choice["category"] != "references" and ran and ran != choice["model"]:
@@ -244,7 +249,11 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
 
 async def _wait_generation(args: dict) -> dict:
     timeout = max(1, min(int(args.get("timeout_s") or WAIT_MAX_S), WAIT_MAX_S))
-    return await submit_command("wait_generation", {**args, "timeout_s": timeout}, PROJECT.get(), timeout + 15)
+    from .. import product_packaging
+    payload = await submit_command("wait_generation", {**args, "timeout_s": timeout}, PROJECT.get(), timeout + 15)
+    # #963: the placed anchor image shape (image 1 of a packaging turn) is what the plan gate binds to.
+    product_packaging.record_wait(payload)
+    return payload
 
 
 def _running_feature(action: str, args: dict) -> str | None:

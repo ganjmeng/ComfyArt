@@ -1343,9 +1343,10 @@ class _PlanGate:
     item the user can still approve one at a time.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, chat_id: str = "") -> None:
         self.strict = False
         self.keys: set[tuple] = set()
+        self.chat_id = chat_id
 
     def allow(self, quote, strict: bool) -> None:
         self.strict = strict
@@ -1354,9 +1355,15 @@ class _PlanGate:
     def blocks(self, name: str, args: dict) -> bool:
         if not self.strict or name not in PAID_TOOLS:
             return False
-        # #963: plan keys compare a packaging anchor slot semantically (the quote cannot
-        # name the future anchor). Everything else stays strict; dedupe keeps the exact key.
-        return canon_key(name, args, plan=True) not in self.keys
+        # #963: plan keys compare a packaging anchor slot semantically -- the quote names a
+        # future anchor, the submit names the shape placed by image 1 -- but the submit side
+        # is only canonicalized when it is that placed anchor id. Everything else stays
+        # strict; dedupe (paid_key) keeps the exact key.
+        anchor = ""
+        if self.chat_id and name == "generate_image":
+            from ..api import product_packaging
+            anchor = product_packaging.anchor_for(self.chat_id)
+        return canon_key(name, args, plan=True, anchor=anchor) not in self.keys
 
 
 TEST_TIMEOUT_S = 10.0
@@ -2472,7 +2479,7 @@ class LocalLlmProvider(AgentProvider):
                 gens: dict[str, dict] = {}
                 run_ctx = self._paid_run_context(turn, window=window, lang=lang, policy=policy)
                 loop = {"repeat": 0, "last_key": "", "cache_hits": 0, "gens": gens, "run": run_ctx}
-                gate = _PlanGate()
+                gate = _PlanGate(turn.chat_id)
                 limit = self._max_steps()
                 for _ in range(limit):
                     if handle.stop_requested:

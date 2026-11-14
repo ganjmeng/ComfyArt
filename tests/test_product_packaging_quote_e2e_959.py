@@ -87,8 +87,15 @@ def _anchor_from(messages: list) -> str:
         if not isinstance(data, dict):
             continue
         results = data.get("results")
-        if isinstance(results, list) and results and (results[0] or {}).get("urls"):
-            return str(results[0]["urls"][0])
+        if isinstance(results, list) and results:
+            row = results[0] if isinstance(results[0], dict) else {}
+            shapes = row.get("shapes") or []
+            if isinstance(shapes, list) and shapes:
+                return str(shapes[0])       # the placed anchor image shape (#963 gate binding)
+            if row.get("id"):
+                return str(row["id"])
+            if row.get("urls"):
+                return str(row["urls"][0])
         ids = data.get("ids")
         if ids:
             return str(ids[0])

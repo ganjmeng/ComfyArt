@@ -308,7 +308,8 @@ def _turn_lock() -> dict:
         del _LOCKS[stale]  # ended or replaced turns (this chat's previous turn included)
     lock = _LOCKS.get(chat)
     if lock is None:  # a new turn starts a new set
-        lock = _LOCKS[chat] = {"guard": guard, "refs": None, "n": 0, "scopes": None, "items": None}
+        lock = _LOCKS[chat] = {"guard": guard, "refs": None, "n": 0, "scopes": None, "items": None,
+                               "last_index": None, "anchor": "", "anchor_holder": ""}
     return lock
 
 
@@ -436,6 +437,9 @@ def lock_request(args: dict, preview_position: int | None = None) -> dict:
         args.pop("refs", None)
     for k in _SIZE_KEYS:
         args.pop(k, None)
+    if preview_position is None:
+        # #963: this call's image place, so the anchor submit can be told from the extensions.
+        lock["last_index"] = index
     args["ratio"] = ratio_for(index)
     args["count"] = 1
     # #959: the quoted plan names its image number/role so the preview can be compared with
@@ -451,3 +455,57 @@ def lock_request(args: dict, preview_position: int | None = None) -> dict:
     if not retry and preview_position is None:
         lock["n"] += 1
     return args
+
+
+# --- #963: bind the plan gate to the anchor image actually placed on this turn ---------------------
+
+def _live_lock() -> dict | None:
+    """This chat's packaging lock without creating/pruning one (preview/gate read only)."""
+    from . import paid_guard
+    return _LOCKS.get(paid_guard.resolve_guard_chat_id())
+
+
+def record_submitted(result: object) -> str:
+    """After a real packaging submit, remember the shape the anchor call returned.
+
+    Image 1 is the anchor; the page later replaces that holder with the placed image
+    shape, which `record_wait` swaps in. Only image 1 (the first place) records here,
+    so an extension submission can never become the anchor.
+    """
+    lock = _live_lock()
+    if lock is None:
+        return ""
+    if lock.get("last_index") != 0:
+        return str(lock.get("anchor") or "")
+    ids = result.get("ids") if isinstance(result, dict) else None
+    if ids:
+        # Only the holder is known here; `record_wait` sets the placed image shape that
+        # #963's gate binds to. Until then a 2-ref extension is not submittable.
+        lock["anchor_holder"] = str(ids[0])
+    return str(lock.get("anchor") or "")
+
+
+def record_wait(result: object) -> str:
+    """Bind the anchor to the placed image shape from the anchor's wait_generation result.
+
+    The page reports the delivered image shapes next to the holder id it was asked
+    to wait on; the anchor is the shape that replaced image 1's holder.
+    """
+    lock = _live_lock()
+    if lock is None:
+        return ""
+    holder = str(lock.get("anchor_holder") or "")
+    if not holder or not isinstance(result, dict):
+        return str(lock.get("anchor") or "")
+    for row in result.get("results") or []:
+        if not isinstance(row, dict) or str(row.get("id") or "") != holder:
+            continue
+        shapes = row.get("shapes") or []
+        if isinstance(shapes, list) and shapes:
+            lock["anchor"] = str(shapes[0])
+    return str(lock.get("anchor") or "")
+
+
+def anchor_for(chat_id: str) -> str:
+    """The placed anchor image shape id of this chat's live packaging turn ("" when none)."""
+    return str(((_LOCKS.get(chat_id) or {}).get("anchor")) or "")
