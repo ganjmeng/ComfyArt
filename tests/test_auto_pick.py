@@ -118,6 +118,17 @@ def test_one_base_image_uses_edit_default():
     assert choice["model"] == default("image_edit") and "edit_model" not in SENT[-1][1]
 
 
+def test_size_locked_one_ref_passes_the_edit_model_to_the_page():
+    """#974: a size-locked refs call (a skill with a declared canvas) must reach the page as an
+    image_edit model. Without edit_model the page's size-lock branch falls back to the
+    text-to-image workflow id and the edit submit is rejected as an unknown image_edit model."""
+    choice = run("generate_image", prompt="multi-angle set", refs=["shape:r"], size_lock=True)["model_choice"]
+    default_edit = default("image_edit")
+    assert choice["model"] == default_edit and choice["category"] == "references"
+    assert choice["edit_model"] == default_edit
+    assert SENT[-1][1]["edit_model"] == default_edit and "model" not in SENT[-1][1]
+
+
 def test_two_refs_auto_uses_nano_banana_and_says_why():
     choice = run("generate_image", prompt="the mug from <Picture 1> on the desk from <Picture 2>", refs=["shape:a", "shape:b"])["model_choice"]
     assert choice["model"] == "google/nano-banana-2.1/edit" and choice["auto"] and choice["category"] == "multi_reference"

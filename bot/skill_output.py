@@ -20,6 +20,12 @@ OUTPUTS: dict[str, dict] = {
         "width": 1536, "height": 2048, "ratio": "3:4", "images": 4,
         "names": ("pose-fission", "电商同场景角色姿势裂变", "Same-Scene Pose Fission"),
     },
+    # #974: product ruling (#911 comment 6872065790) — four SEPARATE 3:4 1536x2048 images,
+    # one per angle, never one grid; every call carries the same uploaded reference.
+    "universal-multi-angle-grid": {
+        "width": 1536, "height": 2048, "ratio": "3:4", "images": 4,
+        "names": ("universal-multi-angle-grid", "多角度图像生成器", "Multi-Angle Image Generator"),
+    },
     "game-art": {
         "width": 1024, "height": 1824, "ratio": "9:16", "images": 1,
         "names": ("game-art", "游戏美术与运营视觉设计", "Game Art & Ops Visuals"),
@@ -248,6 +254,15 @@ def run_hint(name: object, user_text: str = "", ref_image: bytes | None = None) 
             f"Output lock: call generate_image exactly once with skill={sid!r}, {size}, count=1. "
             "Do not call list_models, expand_image, or create_frame. Do not outpaint. "
             "Then wait_generation and finish. Lettering must be real words in quotes, large enough to read."
+        )
+    if sid == "universal-multi-angle-grid":
+        # #974: this skill's own wording, not pose-fission's. Four separate angle images, same reference each call.
+        return (
+            f"Output lock: deliver exactly {int(row['images'])} separate images, each {size}, count=1. "
+            f"Call generate_image {int(row['images'])} times, one angle per call (front, 3/4, strict 90° side profile, "
+            "detail/macro), with a different prompt each time. Pass the same uploaded subject shape id in refs "
+            "(ref_modes content) on every call. Never merge the angles into one grid, collage or contact sheet. "
+            "Do not use 1024x1024."
         )
     return (
         f"Output lock: each generate_image uses skill={sid!r}, {size}, count=1, and a different prompt "
