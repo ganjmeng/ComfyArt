@@ -168,7 +168,11 @@ def test_mutation_plan_quote_prompt_rejects_dollar_sign():
     # the UI prompt templates must not embed $
     assert '"zh": "这个任务共 {n} 步，预计约 {total} 积分' in src
     assert "${total}" not in src and "${threshold}" not in src
-    assert "credits_label" in src and "ui_credits(total)" in src
+    assert "credits_label" in src
+    # #968: the total is ui_credits(exact USD sum) and the rows are apportioned from it, never
+    # a re-rounding or a per-row ceiling sum.
+    assert "total_credits = 0 if all_unpriced else ui_credits(total)" in src
+    assert "credit_alloc(" in src and "total=total_credits" in src
 
 
 def test_mutation_settings_api_is_credits():

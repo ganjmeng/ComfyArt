@@ -17,6 +17,9 @@ PLAN_SKILLS = frozenset({
     "Same-Scene Pose Fission",
 })
 SKILL_ID = "pose-fission"
+# #971: the plan card is a real question (questions[]) so the Full App QuestionCard's
+# answers[] payload validates; one stable id keeps the stored answer readable.
+QUESTION_ID = "plan"
 QUESTION = "是否生成这 {n} 张？"
 REFUSE = (
     "Plan not confirmed. Do not call generate_image until the user picks "
@@ -175,16 +178,28 @@ def question(n: int) -> str:
 
 
 def ask_spec(shots: list[Shot]) -> dict:
+    """The #710 plan card, as a real question spec (questions[]), never legacy prompt+options.
+
+    #971: the Full App QuestionCard always posts answers[], while bot_asks.validate_answer
+    refuses answers for a spec without questions[] (422 "answers require questions[] in the
+    spec"). The plan card is a question like any other, so it is normalized at the source and
+    then goes through bot_asks.validate_spec (run_plan_card's _ask) exactly like ask_user.
+    """
     prompt = "\n".join([s.zh() for s in shots] + [question(len(shots))])
     return {
-        "prompt": prompt,
-        "options": [
-            {"id": "generate", "label": "开始生成"},
-            {"id": "regenerate", "label": "换一组方案"},
-        ],
-        "min_selections": 1,
-        "max_selections": 1,
-        "allow_other": True,
+        "questions": [{
+            "id": QUESTION_ID,
+            "prompt": prompt,
+            "options": [
+                {"id": "generate", "label": "开始生成"},
+                {"id": "regenerate", "label": "换一组方案"},
+            ],
+            "min_selections": 1,
+            "max_selections": 1,
+            "allow_other": True,
+            "page": 1,
+        }],
+        "page_count": 1,
         "allow_skip": True,
     }
 
@@ -205,13 +220,19 @@ def _flat(outcome: dict) -> tuple[list[str], str]:
 
 
 def choice_of(outcome: dict) -> str:
-    """A (start or skip), B (new plans only), C (free text)."""
+    """A (start), B (new plans only), C (free text), S (explicit skip: no answer at all).
+
+    #971: an empty answer is a skip, never a silent A — the caller branches on S and records
+    it as a skip (the current plan still runs, the transcript says the user skipped the card).
+    """
     selected, other = _flat(outcome)
     if "regenerate" in selected:
         return "B"
     if other and "generate" not in selected:
         return "C"
-    return "A"
+    if "generate" in selected:
+        return "A"
+    return "S"
 
 
 def other_of(outcome: dict) -> str:
@@ -261,6 +282,11 @@ def _refs_of(text: str) -> list[str]:
 async def _ask(chat_id: str, state, spec: dict, handle) -> dict:
     from ..api import bot_asks
     from ..api.mcp_tools.bot_tools import _await_ask
+    # #971: run_plan_card used to hand its spec straight to create_ask, so a legacy
+    # prompt+options spec skipped validation and every Full App Submit got a 422. The plan
+    # card now goes through the same validate_spec as ask_user: the stored spec always has
+    # questions[] (and ask_spec itself already emits that shape).
+    spec = bot_asks.validate_spec(spec)
     task = asyncio.create_task(_await_ask(chat_id, state, spec, wait_forever=True))
     while not task.done():
         if handle.stop_requested:
@@ -299,6 +325,7 @@ async def run_plan_card(ctx, turn, handle, messages: list) -> str | None:
         return None  # scripted runs with no chat panel keep the old path
     ctx.plan_gate_active = True
     ctx.shot_confirmed = False
+    ctx.plan_skipped = False
     ctx.shots = []
     ctx.shot_cursor = 0
     scene = scene_of(goal or user)
@@ -323,16 +350,30 @@ async def run_plan_card(ctx, turn, handle, messages: list) -> str | None:
             note = other_of(outcome)
             variant += 1
             continue
+        # kind is "A" (开始生成) or "S" (skip). A skip is never recorded as an A answer: the
+        # ask keeps its empty answers (the UI shows a skip bubble), the run notes the skip and
+        # the model is told the user did not pick an option — the shown plan still runs.
         ctx.shot_confirmed = True
+        ctx.plan_skipped = kind == "S"
         ctx.shots = shots
         ctx.shot_cursor = 0
         body = "\n".join(f"{s.index}. {s.prompt_en}" for s in shots)
+        if ctx.plan_skipped:
+            lead = (
+                "The user skipped the shot plan card without picking any option (not A 开始生成, "
+                "not B 换一组方案, not C other). The plan below is what they were shown and it "
+                f"stays as is. Call generate_image exactly {len(shots)} times now, one per line, "
+            )
+        else:
+            lead = (
+                "The user confirmed the shot plan (A 开始生成). "
+                f"Call generate_image exactly {len(shots)} times now, one per line, "
+            )
         messages.append({
             "role": "user",
             "content": (
-                "The user confirmed the shot plan (A 开始生成, or skip which means the same). "
-                f"Call generate_image exactly {len(shots)} times now, one per line, "
-                "with skill pose-fission. The server binds each call to that line's prompt. "
+                lead
+                + "with skill pose-fission. The server binds each call to that line's prompt. "
                 "Do not ask again.\n" + body
             ),
         })

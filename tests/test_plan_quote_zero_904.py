@@ -1,13 +1,16 @@
 """#904: the plan-quote confirm decision.
 
 A **known 0-credit** plan must not raise a confirm card: the agent continues.
-An **unknown price** is not 0 credits and still asks (source=unpriced). A mixed
-plan judges only its priced part, and a blocked/refused step makes no paid call,
-so it never forces a card either.
+An **unknown price** is not 0 credits and still asks. A mixed plan judges only its
+priced part, and a blocked/refused step makes no paid call, so it never forces a
+card either. The unpriced card wording itself is #968/#970 (`未定价` / "Unpriced",
+no amount); these tests lock the decision on top of it, not the display.
 
 Mocks only, $0: every price is injected; no WaveSpeed or LLM request.
 """
 from __future__ import annotations
+
+import re
 
 from ComfyArt.bot.plan_quote import build_quote
 from ComfyArt.tests.test_plan_quote_235 import POSTER, _run, _step, _tc
@@ -49,12 +52,16 @@ async def test_priced_zero_single_call_is_not_a_plan_quote():
     assert quote is None  # no card, the call runs as before
 
 
-async def test_priced_zero_plan_skips_even_at_a_zero_confirm_line():
-    """threshold 0 = "always confirm a real spend"; a 0 spend has nothing to confirm."""
+async def test_zero_confirm_line_keeps_its_always_confirm_contract():
+    """Settings promise "0 = always confirm": even a known 0 plan gets the card at 0.
+
+    #904 reverts the earlier attempt to change this contract; the settings copy is
+    unchanged. A true 0 plan does not ask at any positive confirm line.
+    """
     quote = await _quote([_step("a", "generate_image", FREE, prompt="a"),
                           _step("b", "generate_image", FREE, prompt="b")],
                          threshold=0, prices={FREE: 0.0})
-    assert quote is not None and quote.total == 0.0 and quote.ask is False
+    assert quote is not None and quote.total == 0.0 and quote.ask is True
 
 
 # --- a real spend keeps the confirm line exactly as before -------------------
@@ -78,19 +85,72 @@ async def test_a_zero_confirm_line_still_asks_for_a_real_spend():
 
 # --- an unknown price is not 0 credits: it always asks -----------------------
 
-async def test_unpriced_paid_step_asks_even_when_the_total_is_zero():
+async def test_unpriced_paid_step_asks_without_a_numeric_total():
     quote = await _quote([_step("unknown", "generate_image", MYSTERY, prompt="a"),
                           _step("free", "generate_image", FREE, prompt="b")],
                          prices={FREE: 0.0})
-    assert quote is not None and quote.total == 0.0
+    assert quote is not None and quote.ask is True  # unknown forces the card, under the line too
     assert quote.lines[0].unpriced and quote.lines[0].units == 1
-    assert quote.ask is True  # 0 credits != "we could not tell the price"
+    # #970: the card says 未定价 / 部分未定价 and never prints the USD sum as 0.
+    assert quote.lines[0].price == "未定价"
+    assert quote.lines[1].price == "积分 0"        # the priced line is a known 0
+    assert quote.total_text == "部分未定价"
+    assert quote.ask_spec()["total"] == "部分未定价"
+    assert "确认线" not in quote.prompt and "0 积分" not in quote.prompt
 
 
 async def test_single_unpriced_call_keeps_its_one_step_card():
     quote = await _quote([_step("unknown", "generate_image", MYSTERY, prompt="a")])
     assert quote is not None and quote.ask is True
-    assert "这次生成" in quote.prompt  # the #904 card shape: one generation, still asking
+    assert quote.lines[0].price == "未定价" and quote.total_text == "未定价"
+    assert quote.prompt.startswith("这次生成的价格暂未确定")  # #970 copy, no amount
+    assert "确认线" not in quote.prompt and "50" not in quote.prompt
+
+
+def _card_texts(quote):
+    spec = quote.ask_spec()
+    return [quote.prompt, quote.total_text, spec["total"],
+            *[str(ln["price"]) for ln in spec["lines"]]], spec
+
+
+_ZERO_CREDITS = re.compile(r"(?<![\d.])0\s*(?:积分|credits)")
+
+
+def _assert_no_zero_credits(texts):
+    bad = [t for t in texts if _ZERO_CREDITS.search(t)]
+    assert not bad, bad
+
+
+async def test_unpriced_card_never_shows_zero_credits_or_a_threshold_claim():
+    quote = await _quote([_step("unknown", "generate_image", MYSTERY, prompt="a")])
+    assert quote is not None and quote.ask is True
+    texts, spec = _card_texts(quote)
+    _assert_no_zero_credits(texts)
+    assert "确认线" not in quote.prompt and "confirm limit" not in quote.prompt
+    assert spec["total"] == "未定价" and spec["lines"][0]["price"] == "未定价"
+    assert spec["lines"][0]["source"] == "unpriced"  # #968: the source survives to the card
+
+
+async def test_unpriced_card_en_never_shows_zero_credits_or_a_threshold_claim():
+    quote = await _quote([_step("unknown", "generate_image", MYSTERY, prompt="a")], lang="en")
+    assert quote is not None and quote.ask is True
+    texts, spec = _card_texts(quote)
+    _assert_no_zero_credits(texts)
+    assert "confirm limit" not in quote.prompt
+    assert spec["total"] == "Unpriced" and spec["lines"][0]["price"] == "Unpriced"
+
+
+async def test_mixed_unpriced_card_does_not_print_a_zero_total_or_the_line():
+    quote = await _quote([_step("unknown", "generate_image", MYSTERY, prompt="a"),
+                          _step("paid", "generate_image", POSTER, prompt="b")],
+                         prices={POSTER: 0.40})
+    assert quote is not None and quote.ask is True
+    texts, spec = _card_texts(quote)
+    _assert_no_zero_credits(texts)
+    assert "确认线" not in quote.prompt
+    assert quote.total_text == "部分未定价"
+    assert spec["lines"][0]["price"] == "未定价"
+    assert spec["lines"][1]["price"] == "40 积分"  # the priced line still shows its amount
 
 
 # --- mixed plans judge only the priced part ---------------------------------
@@ -109,6 +169,7 @@ async def test_mixed_plan_with_an_unknown_step_still_asks():
                           _step("paid", "generate_image", POSTER, prompt="b")],
                          prices={POSTER: 0.40})
     assert quote is not None and quote.total == 0.40 and quote.ask is True
+    assert quote.total_text == "部分未定价"
 
 
 # --- a step that makes no paid call never forces a card ----------------------

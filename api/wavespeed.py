@@ -1283,6 +1283,12 @@ def _active() -> int:
 
 PREFS_FILE = "wavespeed_prefs.json"
 QUOTE_TTL = 300.0
+# #968: the price API is a free, read-only call made before any submit. Paid acceptance saw a 10.61 s
+# cold-start response against the old 10 s timeout, so the quote now waits 15 s and retries once on a
+# transport error/timeout; a 4xx is not retried. Retrying this call can never submit a job twice.
+QUOTE_TIMEOUT_S = 15.0
+QUOTE_RETRIES = 1
+QUOTE_RETRY_BACKOFF_S = 0.3
 _quotes: dict[str, tuple[float, float]] = {}
 # scalar fields that change a model's price; media and prompts never do
 _PRICE_FIELDS = ("duration", "resolution", "aspect_ratio", "ratio", "size", "num_images", "quality", "thinking", "output_format", "frame_count", "frame_duration_ms")
@@ -1497,19 +1503,46 @@ def duration_estimated(model: str, inputs: dict) -> bool:
     return model in DURATION_BILLED and media_seconds(inputs) is None
 
 
+class _Quoted(tuple):
+    """#968: `(price, source)` — exactly the two elements `_quote` always answered — with the estimate
+    `reason` carried beside them. Keeping the pair keeps every existing unpack and `_quote` patch working."""
+
+    def __new__(cls, price: float | None, source: str, reason: str = ""):
+        self = super().__new__(cls, (price, source))
+        self.reason = reason
+        return self
+
+
 async def quote(model: str, inputs: dict) -> tuple[float | None, str]:
-    """#185 wrapper: a per-second job priced at the 60 s fallback is an estimate (「估算价」), never an exact quote."""
-    price, source = await _quote(model, inputs)
-    if source == "quote" and duration_estimated(model, inputs):
-        source = "estimate"
+    """The three-state price (#968): (amount, source) with source `quote` | `estimate` | `unpriced`."""
+    price, source, _reason = await quote_detail(model, inputs)
     return price, source
+
+
+async def quote_detail(model: str, inputs: dict) -> tuple[float | None, str, str]:
+    """#968: (amount, source, reason); `quote` returns the same contract without the reason.
+
+    `reason` says why a price is not exact so the card can label it, e.g. `list_price` when the fallback
+    used WaveSpeed's **undiscounted** published table (an upper bound, never the discount price) and
+    `duration_fallback` when a per-second job was priced at the 60 s stand-in.
+    """
+    answer = await _quote(model, inputs)
+    price, source = answer[0], answer[1]
+    reason = str(getattr(answer, "reason", "") or "")
+    if source == "quote" and duration_estimated(model, inputs):
+        source, reason = "estimate", "duration_fallback"
+    return price, source, reason
 
 
 async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
     """Price of one run via WaveSpeed's free POST /api/v3/model/price, cached 5 minutes, for the tier that will be
     submitted. #159: when the price API fails the catalog base_price is returned as source 'estimate' only if the
     submitted tier is the schema's default tier (the tier base_price is for), labelled 「估算价」/'Estimated'; otherwise
-    (None, 'unpriced'): no amount is shown and the job always asks before it is submitted."""
+    (None, 'unpriced'): no amount is shown and the job always asks before it is submitted.
+
+    #968: the answer is the usual `(price, source)` pair with `.reason` beside it. `list_price` marks the
+    undiscounted published table, which is only an upper bound of the (usually discounted) charge and must not be
+    shown as an exact price."""
     priced = await priced_inputs(model, inputs)
     if svg_image.requests_svg(inputs) or str(priced.get("output_format") or "").lower() == "svg":
         # Local still cell + $0.02. Do not call the price API and do not submit.
@@ -1517,44 +1550,64 @@ async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
         resolution = str(priced.get("resolution") or "1k")
         stub = svg_image.local_usd(model, quality, resolution)
         if stub is None:
-            return None, "unpriced"
-        return float(stub), "estimate"
+            return _Quoted(None, "unpriced")
+        return _Quoted(float(stub), "estimate", "svg_stub")
     # #825: frame_count / frame_duration_ms are quoted on the confirm line but not sent to the price API.
     body = {"model_id": model, "inputs": gif_image.billable(priced)}
     ck = json.dumps(body, sort_keys=True)
     hit = _quotes.get(ck)
     if hit and time.time() - hit[1] < QUOTE_TTL:
-        return hit[0], "quote"
-    try:
-        async with aiohttp.ClientSession(headers=_headers()) as session:
-            async with session.post(f"{_base()}/api/v3/model/price", json=body, timeout=aiohttp.ClientTimeout(total=10)) as res:
-                data = ((await _json(res)) or {}).get("data") or {} if res.status < 400 else {}
-                if res.status >= 400:
-                    log.warning("WaveSpeed price API %s for %s %s; showing an estimate", res.status, model, priced)
-        price = data.get("discounted_price", data.get("price")) if isinstance(data, dict) else None
-        if isinstance(price, (int, float)) and not isinstance(price, bool):
-            _quotes[ck] = (float(price), time.time())
-            return float(price), "quote"
-    except (aiohttp.ClientError, asyncio.TimeoutError, ValueError):
-        pass
+        return _Quoted(hit[0], "quote", "cache")
+    # #968: cold starts can take longer than the old 10 s (paid acceptance 2026-11-13 hit 10.61 s). The
+    # free price call is read-only and is never the submit, so one short retry cannot double-charge a job;
+    # a 4xx is not retried (the same request will fail the same way).
+    for attempt in range(QUOTE_RETRIES + 1):
+        try:
+            async with aiohttp.ClientSession(headers=_headers()) as session:
+                async with session.post(f"{_base()}/api/v3/model/price", json=body,
+                                        timeout=aiohttp.ClientTimeout(total=QUOTE_TIMEOUT_S)) as res:
+                    data = ((await _json(res)) or {}).get("data") or {} if res.status < 400 else {}
+                    if res.status >= 400:
+                        if res.status >= 500 and attempt < QUOTE_RETRIES:
+                            # #968: a 5xx can be transient (cold start / upstream blip): retry once.
+                            log.warning("WaveSpeed price API %s for %s (attempt %d); retrying once",
+                                        res.status, model, attempt + 1)
+                            await asyncio.sleep(QUOTE_RETRY_BACKOFF_S)
+                            continue
+                        log.warning("WaveSpeed price API %s for %s %s; showing an estimate", res.status, model, priced)
+                        break
+            price = data.get("discounted_price", data.get("price")) if isinstance(data, dict) else None
+            if isinstance(price, (int, float)) and not isinstance(price, bool):
+                _quotes[ck] = (float(price), time.time())
+                return _Quoted(float(price), "quote", "live")
+            break
+        except (aiohttp.ClientError, asyncio.TimeoutError, ValueError) as e:
+            if attempt >= QUOTE_RETRIES:
+                log.warning("WaveSpeed price API %s for %s after %d attempt(s); showing an estimate",
+                            type(e).__name__, model, attempt + 1)
+                break
+            log.warning("WaveSpeed price API %s for %s (attempt %d); retrying once", type(e).__name__, model, attempt + 1)
+            await asyncio.sleep(QUOTE_RETRY_BACKOFF_S)
     # Published GPT Image 2.6 / 2.5 table when the price API is down. GIF uses the still cell; frames are
     # not a multiplier. Unset quality/resolution are the schema defaults (medium / 1k), which #189 also
     # leaves unpinned. #910: an edit adds $0.015 per input image (images + mask_image), not the catalog's
     # one-image base_price. documented_usd returns None for models with no lock table.
+    # #968: the published table is the list price, not the discounted price the price API charges; the card
+    # labels it 「标价上限估算」 (reason list_price) instead of passing it off as the exact quote.
     n = len(priced.get("images") or []) + (1 if priced.get("mask_image") else 0)
     stub = gif_image.documented_usd(model, str(priced.get("quality") or "medium"), str(priced.get("resolution") or "1k"), n)
     if stub is not None:
-        return float(stub), "estimate"
+        return _Quoted(float(stub), "estimate", "list_price")
     meta = (await catalog()).get(model) or {}
     base = base_price_of(model, meta)
     if model in DURATION_BILLED and isinstance(base, (int, float)) and not isinstance(base, bool) and priced.get("duration"):
         # #185: the catalog base_price of a per-second model is its price per second of media (whisper $0.0007/s,
         # WaveSpeed docs; a real 4.752 s clip was charged $0.0035 = 5 s x $0.0007), so the local estimate is
         # base_price x rounded-up seconds (60 s when the length is unknown), labelled 「估算价」, never unpriced.
-        return round(float(base) * int(priced["duration"]), 6), "estimate"
+        return _Quoted(round(float(base) * int(priced["duration"]), 6), "estimate", "duration_base")
     if isinstance(base, (int, float)) and not isinstance(base, bool) and _is_default_tier(_schema(meta).get("properties") or {}, priced):
-        return float(base), "estimate"
-    return None, "unpriced"
+        return _Quoted(float(base), "estimate", "base_price")
+    return _Quoted(None, "unpriced")
 
 
 async def route_gif_live(inputs: dict) -> dict:
