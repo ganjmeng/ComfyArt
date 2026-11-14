@@ -114,7 +114,7 @@ const COVERS_581: Record<string, readonly [string, string]> = {
   'banner-design-director': ['778/wash', WASH_778], // #778: fintech hero cover (was VENTUR brand board)
   'character-sheet-design': ['788/wash', WASH_788], // #788 SIENNA VALE
   'product-tvc-advertisement-generator': ['784/wash', WASH_784], /* #784: BR lip-tube wash; featured stays 779 */ 'motion-poster-generator': ['806/wash', WASH_806], /* #806: LUMEN DRIFT triptych, same poster as the template wash */ 'interior-architectural-visualization': ['494/covers-v3', COVER_V3],
-  'universal-multi-angle-grid': ['494/covers-v4', COVER_V4], 'logo-material-explorer': ['wash-lm', WASH_LM], // VELA
+  'universal-multi-angle-grid': ['975/wash/multi-angle', '959b1f75b5c9b46eece733592302df939869530a'], 'logo-material-explorer': ['wash-lm', WASH_LM], // VELA
   'meta-ads-creative-director': ['494/covers-v4', COVER_V4], 'mobile-app-visual-design': ['wash-mu', WASH_MU], // SAELIN
   'web-product-visual-design': ['wash-wp', WASH_WP], // ORIVA/KINLO/AYRA
   'marketing-campaign-generator': ['494/covers-v4', COVER_V4],

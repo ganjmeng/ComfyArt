@@ -62,18 +62,6 @@
 | web-product-visual-design | highlight 8 | image | 1.7778 |
 | web-product-visual-design | highlight 9 | image | 1.7778 |
 | web-product-visual-design | cover | video | None |
-| universal-multi-angle-grid | highlight 1 | image | 0.75 |
-| universal-multi-angle-grid | highlight 2 | image | 0.75 |
-| universal-multi-angle-grid | highlight 3 | image | 0.75 |
-| universal-multi-angle-grid | highlight 4 | image | 0.75 |
-| universal-multi-angle-grid | highlight 5 | image | 0.75 |
-| universal-multi-angle-grid | highlight 6 | image | 0.75 |
-| universal-multi-angle-grid | highlight 7 | image | 0.75 |
-| universal-multi-angle-grid | highlight 8 | image | 0.75 |
-| universal-multi-angle-grid | highlight 9 | image | 0.75 |
-| universal-multi-angle-grid | highlight 10 | image | 0.75 |
-| universal-multi-angle-grid | highlight 11 | image | 0.75 |
-| universal-multi-angle-grid | cover | image | None |
 | interior-architectural-visualization | highlight 1 | image | 0.8 |
 | interior-architectural-visualization | highlight 2 | image | 0.8 |
 | interior-architectural-visualization | highlight 3 | image | 0.8 |
