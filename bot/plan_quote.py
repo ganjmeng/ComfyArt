@@ -534,16 +534,26 @@ async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
                       approx or source == SOURCE_ESTIMATE, show, choice, None, units, source, reason)
 
 
-def _needs_ask(total: float, threshold: float, force: bool) -> bool:
-    if force or threshold == 0:
+def _needs_ask(total: float, threshold: float, unknown_price: bool) -> bool:
+    """#904: a known 0-credit plan does not ask; an unknown price always does.
+
+    `threshold == 0` keeps its settings contract "0 = always confirm" (it asks even for a known 0,
+    until product approves a copy change). A priced 0 is a fact; a missing price (#968
+    source=unpriced) is not 0 and must never be approved silently.
+    """
+    if unknown_price or threshold == 0:
         return True
-    return round(total, 4) >= round(float(threshold), 4)
+    total = round(float(total), 4)
+    if total <= 0:
+        return False
+    return total >= round(float(threshold), 4)
 
 
 async def build_quote(steps: object, lang: str, *, threshold: float,
                       pricer: Pricer, models_for: ModelsFor, router: Optional[Router] = None) -> Optional[Quote]:
-    """A quote for 2+ priced steps. #418: a single step gets a quote only when it needs asking
-    (estimate >= threshold, threshold 0, or unpriced); otherwise None (no card, run as before)."""
+    """A quote for 2+ steps. #418: a single step gets a quote only when it needs asking
+    (unknown price, threshold 0, or spend >= threshold); otherwise None (no card, run as before).
+    #904: a known 0-credit plan never asks, and a blocked step makes no paid call."""
     lang = _lang(lang)
     from .run_budget import ui_credits
     prepared = normalize_steps(steps)
@@ -600,8 +610,13 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
             units=units, source=source, reason=reason, credits=0,
         ))
     total = round(sum(ln.amount for ln in lines), 4)
-    ask = _needs_ask(total, threshold, any(ln.unpriced for ln in lines))
-    if len(lines) == 1 and not ask:
+    # #904: only a billable line with an unknown price (#968 source=unpriced) forces the card.
+    # A blocked/refused step has units 0 (it makes no paid call), so it must not force one.
+    unknown_price = any(ln.unpriced and ln.units > 0 for ln in lines)
+    ask = _needs_ask(total, threshold, unknown_price)
+    if len(lines) == 1 and not ask and not lines[0].unpriced:
+        # #904: a known 0-credit (or under-line) single call runs as before. A single refusal
+        # line keeps the quote object it had before #904 (the line names the reason, #956).
         return None
     # #968: the total is rounded ONCE from the exact USD sum — the credits the account is charged
     # (`ui_credits` ceil). Rows are apportioned from that total (largest remainder), never ceil-per-row
