@@ -54,7 +54,7 @@ ABOUT = {"zh": "约", "en": "about"}
 # #968: the published table is the undiscounted list price. The charge is normally the price API's
 # discounted price, so a fallback on it is an upper bound, not the quote. Name it on the row and
 # explain once on the card, so users do not read it as a confident price.
-LIST_PRICE_NOTE = {"zh": "标价上限（未打折）", "en": "list price (upper bound)"}
+LIST_PRICE_NOTE = {"zh": "上限", "en": "cap"}
 LIST_PRICE_EXPLAIN = {
     "zh": "实时价格暂不可用，按未打折标价估算，实际扣费可能更低。",
     "en": "The live price is unavailable; this is an undiscounted list-price estimate and the actual charge may be lower.",
@@ -581,14 +581,18 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
             copied = quote_model_copy(choice, show or "", lang)
             if copied:
                 label = copied
-        text = f"{name} · {label}" if label else name
+        # #968: the row label is a single-line ellipsis (.ca-lib__name), so a long tag at the END gets
+        # cut. Keep the list-price tag one short word and put it BEFORE the (often long) model copy.
+        parts = [name]
+        if source == SOURCE_ESTIMATE and reason == "list_price":
+            parts.append(LIST_PRICE_NOTE[lang])
+        if label:
+            parts.append(label)
+        text = " · ".join(parts)
         if step["tool"] == "generate_image" and _gif().requests_gif(step["arguments"]):
             text = f"{text} · {_gif().gif_quote_label(step['arguments'].get('frame_count'), step['arguments'].get('frame_duration_ms'))}"
         if step["tool"] == "generate_image" and _svg().requests_svg(step["arguments"]):
             text = f"{text} · SVG · n=1"
-        # #968: an undiscounted list-price fallback is an upper bound, not this run's price.
-        if source == SOURCE_ESTIMATE and reason == "list_price":
-            text = f"{text} · {LIST_PRICE_NOTE[lang]}"
         amount_n = 0.0 if unpriced else float(amount or 0)
         lines.append(Line(
             text=text, price="", amount=amount_n, approx=approx or unpriced,
@@ -624,7 +628,8 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
             n=len(lines), total=total_credits, threshold=ui_credits(threshold))
     if any(ln.reason == "list_price" for ln in lines):
         question = "确定开始吗？" if lang == "zh" else "Start?"
-        prompt = prompt.replace(question, f"{LIST_PRICE_EXPLAIN[lang]}{question}")
+        gap = "" if lang == "zh" else " "  # en: "…lower. Start?", never "…lower.Start?"
+        prompt = prompt.replace(question, f"{LIST_PRICE_EXPLAIN[lang]}{gap}{question}")
     return Quote(
         lines=lines, total=total, n=len(lines), ask=ask, lang=lang,
         prompt=prompt,

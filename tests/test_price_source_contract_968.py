@@ -6,7 +6,7 @@ old 10 s timeout. `_quote` fell back to the undiscounted published table ($0.115
 card $0.466 / 47 credits vs charge $0.4545 / 46 credits.
 
 These tests mock a price API that hangs (a real timeout, not a 4xx), then assert:
-1. the card says 「约」 and 「标价上限估算」, and the source reaches the ask card;
+1. the card says 「约」 + the short 「上限」 tag, and the source reaches the ask card;
 2. the free quote retries once (15 s / 1 retry) and never submits during the quote;
 3. the submitted job is still quoted/charged at the API's discounted price;
 4. per-line and total credits agree;
@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -125,7 +126,9 @@ async def test_price_timeout_card_is_estimate_labelled_list_price_and_retries_on
     assert line.source == SOURCE_ESTIMATE
     assert line.reason == "list_price" and line.approx and not line.unpriced
     assert line.price == "约 5 积分"
-    assert "标价上限（未打折）" in line.text
+    # Short tag before the model copy: the row label is a single-line ellipsis, so a tag at the
+    # end would be cut off by a long model description.
+    assert " · 上限 · " in line.text and "标价上限" not in line.text
     # The total is `ui_credits(exact USD sum)` = 5, marked 「约」 because a row is an estimate.
     assert card.total_credits == ui_credits(LIST_USD) == 5
     assert card.total_text == "约 5 积分"
@@ -151,7 +154,7 @@ async def test_a_healthy_price_api_stays_an_exact_quote(slow_price):
     line = card.lines[0]
     assert line.source == SOURCE_QUOTE and not line.approx and not line.unpriced
     assert line.price == "5 积分"  # ceil(0.045 x 100) = 5
-    assert "标价上限" not in line.text and "约" not in card.total_text
+    assert "上限" not in line.text and "约" not in card.total_text
 
 
 async def test_a_4xx_price_error_is_not_retried_and_the_fallback_is_still_an_estimate(slow_price):
@@ -233,6 +236,24 @@ async def test_a_4_x_0_115_plan_is_46_not_48():
     assert sum(ln.credits for ln in en.lines) == 46
 
 
+async def test_en_list_price_copy_is_short_and_has_a_space_after_the_full_stop():
+    """QA nit: en showed `…may be lower.Start?` and the long row tag was ellipsized on the first row."""
+    async def pricer(_model, _inputs):
+        return 0.05, "estimate", "list_price"
+
+    en = await build_quote([_step()], "en", threshold=0.0, pricer=pricer, models_for=_no_models)
+    assert en is not None
+    assert " · cap · " in en.lines[0].text
+    assert "may be lower. Start?" in en.prompt
+    assert "lower.Start?" not in en.prompt
+    assert re.search(r"\.[A-Z]", en.prompt) is None  # every en full stop is followed by a space
+
+    zh = await build_quote([_step()], "zh", threshold=0.0, pricer=pricer, models_for=_no_models)
+    assert zh is not None
+    assert " · 上限 · " in zh.lines[0].text
+    assert "实际扣费可能更低。确定开始吗？" in zh.prompt
+
+
 async def test_a_mixed_estimate_and_quote_total_is_approx():
     """One estimate row makes the total 「约」 even though the total itself is the USD-sum ceiling."""
     async def pricer(model, _inputs):
@@ -246,7 +267,7 @@ async def test_a_mixed_estimate_and_quote_total_is_approx():
     assert sum(ln.credits for ln in card.lines) == 23
     assert card.total_text == "约 23 积分"  # any estimate → 約
     assert [ln.source for ln in card.lines] == [SOURCE_QUOTE, SOURCE_ESTIMATE]
-    assert "标价上限（未打折）" in card.lines[1].text
+    assert " · 上限 · " in card.lines[1].text
     assert "实时价格暂不可用" in card.prompt
 
 
@@ -266,8 +287,8 @@ async def test_959_fallback_card_total_is_the_usd_sum_marked_approx():
     assert card.total_credits == ui_credits(card.total) == 47
     assert sum(ln.credits for ln in card.lines) == 47
     assert card.total_text == "约 47 积分"  # never an exact-looking price when any row is an estimate
-    assert "标价上限（未打折）" in card.lines[0].text
-    assert "标价上限" not in card.lines[1].text
+    assert " · 上限 · " in card.lines[0].text
+    assert " · 上限 · " not in card.lines[1].text
 
 
 # ---- token-billed providers never get an invented exact per-run price ----
@@ -321,4 +342,4 @@ async def test_mutation_dropped_source_goes_red(slow_price):
     assert (price, source, reason) == (LIST_USD, SOURCE_ESTIMATE, "list_price")
     card = await _quote_card(_provider()._price_one)
     assert card is not None and card.lines[0].source == SOURCE_ESTIMATE
-    assert card.lines[0].price.startswith("约 ") and "标价上限" in card.lines[0].text
+    assert card.lines[0].price.startswith("约 ") and " · 上限 · " in card.lines[0].text
