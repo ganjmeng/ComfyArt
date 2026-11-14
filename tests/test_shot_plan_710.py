@@ -57,10 +57,21 @@ def test_default_batch_fields_and_angle_pool():
         assert "硬" in s.light and "斑驳" in s.light
         assert shot_plan.trace_ok(s.prompt_en, s)
     spec = shot_plan.ask_spec(shots)
-    assert spec["prompt"].count("\n") == 4
-    assert spec["prompt"].rstrip().endswith("是否生成这 4 张？")
-    assert [o["label"] for o in spec["options"]] == ["开始生成", "换一组方案"]
-    assert spec["allow_other"] is True and spec["allow_skip"] is True
+    # #971: the plan card is a real question spec (questions[]), not legacy prompt+options.
+    assert "prompt" not in spec and "options" not in spec, spec
+    question = spec["questions"][0]
+    assert question["id"] == shot_plan.QUESTION_ID == "plan"
+    assert question["prompt"].count("\n") == 4
+    assert question["prompt"].rstrip().endswith("是否生成这 4 张？")
+    assert [o["label"] for o in question["options"]] == ["开始生成", "换一组方案"]
+    assert question["allow_other"] is True and spec["allow_skip"] is True
+    assert spec["page_count"] == 1
+    # Validated exactly like ask_user: the stored spec mirrors prompt/options and has questions[].
+    canonical = bot_asks.validate_spec(spec)
+    assert canonical["questions"][0]["id"] == "plan"
+    assert canonical["prompt"] == question["prompt"]
+    assert canonical["options"] == question["options"]
+    assert canonical["kind"] == "question" and canonical["allow_skip"] is True
 
 
 def test_regenerate_differs_and_stays_in_the_pool():
@@ -83,11 +94,28 @@ def test_single_image_internal_plan_does_not_raise_and_is_not_frontal():
     assert "三分" in shots[0].composition
 
 
-def test_choice_skip_is_a_and_letters():
+def test_choice_letters_and_skip_is_never_a():
     assert shot_plan.choice_of({"status": "answered", "selected": ["generate"]}) == "A"
-    assert shot_plan.choice_of({"status": "answered", "selected": []}) == "A"
+    # #971: an empty answer is an explicit skip, not a silent A.
+    assert shot_plan.choice_of({"status": "answered", "selected": []}) == "S"
+    assert shot_plan.choice_of({"status": "answered"}) == "S"
     assert shot_plan.choice_of({"status": "answered", "selected": ["regenerate"]}) == "B"
     assert shot_plan.choice_of({"status": "answered", "selected": [], "other_text": "更近"}) == "C"
+
+
+def test_fullapp_answer_payloads_validate_against_the_plan_spec():
+    """#971: the three Full App Submit payloads (A / 换一组 / 跳过) pass validate_answer."""
+    spec = bot_asks.validate_spec(shot_plan.ask_spec(shot_plan.build_shots(4)))
+    qid = spec["questions"][0]["id"]
+    bot_asks.validate_answer(spec, [], "", {qid: {"selected": ["generate"]}})
+    bot_asks.validate_answer(spec, [], "", {qid: {"selected": ["regenerate"]}})
+    bot_asks.validate_answer(spec, [], "", {qid: {"selected": []}})      # 跳过: empty answers
+    # A legacy spec without questions[] still refuses answers[]; the route never pretends.
+    with pytest.raises(ValueError, match=r"answers require questions\[\]"):
+        bot_asks.validate_answer({
+            "prompt": "p", "options": [{"id": "a", "label": "A"}], "min_selections": 1,
+            "max_selections": 1, "allow_other": True, "allow_skip": True,
+        }, [], "", {"plan": {"selected": ["a"]}})
 
 
 def _live(handle: TurnHandle):
@@ -199,6 +227,7 @@ async def test_c_other_text_is_in_the_next_plan_not_an_image(monkeypatch, store)
 
 
 async def test_skip_generates_the_current_plan(monkeypatch, store):  # noqa: F811
+    """#971: 跳过 runs the shown plan but is never recorded as an A answer."""
     h = TurnHandle()
     _live(h)
     rig = Rig(monkeypatch, _script(4), store=store, prices={"generate_image": 0.001})
@@ -206,7 +235,10 @@ async def test_skip_generates_the_current_plan(monkeypatch, store):  # noqa: F81
     async def answer():
         ask = await _wait_ask()
         assert _gens(rig) == []
-        bot_asks.resolve_ask(ask.id, "answered", selected=[])
+        assert ask.spec["questions"][0]["id"] == shot_plan.QUESTION_ID
+        # The Full App 跳过 payload: answered, one empty per-question answer.
+        bot_asks.resolve_ask(ask.id, "answered", selected=[], answers={
+            shot_plan.QUESTION_ID: {"selected": []}})
 
     task = asyncio.create_task(answer())
     res, _ = await rig.send(compose_provider_text("同参考图", skill_name=ZH), goal="", handle=h)
@@ -217,6 +249,9 @@ async def test_skip_generates_the_current_plan(monkeypatch, store):  # noqa: F81
     assert len(gens) == 4
     for shot, call in zip(shots, gens):
         assert shot_plan.trace_ok(call[1]["prompt"], shot)
+    seen = "\n".join(str(m.get("content")) for req in rig.requests for m in req)
+    assert "skipped the shot plan card" in seen
+    assert "confirmed the shot plan" not in seen
 
 
 async def test_single_image_skill_has_no_card_and_internal_plan(monkeypatch, store):  # noqa: F811

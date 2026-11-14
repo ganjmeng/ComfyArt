@@ -27,7 +27,8 @@ LOVART = "821762885248abef007feb308e09d5132ade7fe1"
 
 
 def _prompt(scene="同参考图街景，街道和建筑完整可读，背景保持明亮可读"):
-    return ask_spec(build_shots(4, 0, scene))["prompt"]
+    # #971: ask_spec is a questions[] spec; the UI reads questions[0].prompt.
+    return ask_spec(build_shots(4, 0, scene))["questions"][0]["prompt"]
 
 
 @pytest.fixture(scope="module")
