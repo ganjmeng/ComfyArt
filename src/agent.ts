@@ -16,7 +16,7 @@ import { OWNER_DEFAULT, WORKSPACE_DEFAULT } from './memoryStore'
 import { directSettings, modelOf } from './models'
 import { COMMENT, type CommentShape } from './shapes/CommentShape'
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
-import { blockHiddenSkill, type Skill } from './skills'
+import { blockHiddenSkill, selectedPresetPrompt, type Skill } from './skills'
 import { t } from './i18n'
 
 export type AgentMode = 'agent' | 'image' | 'video'
@@ -141,12 +141,16 @@ export async function sendToAgent(editor: Editor, text: string, refs: RefShape[]
     imageCount: refs.length + loose.length,
   })
   const ctx = [packed.snapshot, context].filter(Boolean).join('\n')
+  // #978: the selected template's prompt travels with the skill in the message body — one boundary for every
+  // skill, and the agent is guaranteed to read it (unlike a UI-only selection). No template → payload unchanged.
+  const preset = skill ? selectedPresetPrompt(skill, text) : null
   await sendMessage({
     text,
     refs: sent,
     docs,
     kits: kits.map((k) => ({ name: k.name, description: describeItem(k), images: itemImages(k) })),
     ...(skill ? { skill: skill.name } : {}),
+    ...(preset ? { preset } : {}),
     memory: packed.memoryPrompt,
     ...(ctx ? { context: ctx } : {}),
     ...(opts?.runMode ? { run_mode: opts.runMode } : {}),
