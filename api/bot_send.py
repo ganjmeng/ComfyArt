@@ -98,9 +98,21 @@ async def prepare_attachments(refs: list[dict], kits: list[dict], docs: list[dic
     return attachments, lines
 
 
+# #978: a template prompt is short by design; cap a malformed/hostile body instead of growing the turn.
+PRESET_PROMPT_MAX = 4000
+
+
+def parse_preset(raw) -> str:
+    """#978: the selected template's prompt from the send body ({id, prompt}); unset/invalid → ''."""
+    if not isinstance(raw, dict):
+        return ""
+    prompt = raw.get("prompt")
+    return prompt.strip()[:PRESET_PROMPT_MAX] if isinstance(prompt, str) else ""
+
+
 def compose_provider_text(text: str, *, skill_name: str = "", memory: str = "",
                           lines: list[str] = (), review: bool | None = None,
-                          ref_image: bytes | None = None) -> str:
+                          ref_image: bytes | None = None, preset_prompt: str = "") -> str:
     # #911: a selected skill with no typed text gets a neutral, model-only line
     # (no image-content words) so the skill runs instead of a describe-and-stop.
     # No skill + empty text keeps the original line; typed text is never rewritten.
@@ -113,13 +125,18 @@ def compose_provider_text(text: str, *, skill_name: str = "", memory: str = "",
     else:
         provider_text = "Look at the attached images and tell me what you see."
     if skill_name:
-        from ..bot.skill_output import run_hint
+        from ..bot.skill_output import TEMPLATE_BLOCK_END, TEMPLATE_BLOCK_START, run_hint
         hint = run_hint(skill_name, text or "", ref_image)
         provider_text = (
             f"Use the ComfyArt skill {skill_name!r} for this task: first call "
             f"the comfyart MCP tool skill with action='read' and "
             f"name={skill_name!r}, then follow those instructions."
             + (f"\n{hint}" if hint else "")
+            # #978: the template the user selected is part of this run's task, not display-only. It arrives
+            # already interpolated by the client (values of this run); the base skill remains the read payload.
+            + (f"\n\n{TEMPLATE_BLOCK_START}\nSelected template instructions (apply these to this run; "
+               f"where they conflict with the skill's base instructions, follow the template):\n"
+               f"{preset_prompt}\n{TEMPLATE_BLOCK_END}" if preset_prompt else "")
             + "\n\n"
             + provider_text)
     if lines:

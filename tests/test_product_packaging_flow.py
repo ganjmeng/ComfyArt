@@ -493,7 +493,7 @@ PINNED_SHA256 = {
     "api/skill_size.py": "43c130b1aa05cd6736d28564e743feaa41e0ce26e61ea2ad0960ada01203c3df",
     "api/curated_models.json": "fb5c6a1acd2782cb3d7da42837bef92bd4485fe90abd84dd272de1170f9fe04b",
     "api/wavespeed_models.json": "8be944b91aeaf2f4fc24fb5099e36664d2136004dc828737c95ff7943a7363fb",
-    "bot/skill_output.py": "07d0aa8270c5d6bfaedd44016395158f2b27eccc93773e9ab1eb7d900509388a",  # #905 size-notice; #974 multi-angle row/run_hint
+    "bot/skill_output.py": "5bddf4a22f1971d1de6da7395fa88a3a2ac3643205cab07ca0a5d14e960789ec",  # #905 size-notice; #974 multi-angle; #978 template block is not user intent
     "api/portrait_studio.py": "61257848a9e23d13c066d01c103c565d6804e58c926d3905c6ed8b0890569224",
     "bot/self_check.py": "1a9b4f7eda7e915adf83df42ff31ccf3c27e83253d9636ba5c85aead447993b6",
 }

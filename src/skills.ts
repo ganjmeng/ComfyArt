@@ -48,6 +48,9 @@ export interface SkillInput {
 }
 export interface Skill {
   id: string; name: string; description?: string; instructions: string; files?: Record<string, string>; images?: Record<string, string>; custom?: boolean; learned?: string[]
+  /** #978 — the template this composer attachment was opened with (set by `withPreset`). Unset = no template
+   *  selected, so the send boundary adds nothing and the skill behaves exactly as before. */
+  activePreset?: string
   /** #494 built-in metadata. Imported / personal skills have none of these and need no migration. */
   category?: SkillCategory; cover?: string; video?: string; presets?: SkillPreset[]; inputs?: SkillInput[]; media?: SkillMediaItem[]
   /** #541/#575 「效果示例」 carousel media (commit-pinned stills and/or short mp4). Unset → the section is not rendered.
@@ -1187,10 +1190,70 @@ export function skillPreset(skill: Skill, presetId?: string | null): SkillPreset
   return skill.presets?.find((p) => p.id === presetId) ?? skill.presets?.[0]
 }
 
-/** #494-2 product rule: the selected preset's `prompt` is appended AFTER the skill's instructions. */
+/** #494-2 product rule: the selected preset's `prompt` is appended AFTER the skill's instructions.
+ *  #978: `activePreset` marks the attachment so the send boundary can also deliver the template prompt
+ *  interpolated with this run's values (`selectedPresetPrompt`). */
 export function withPreset(skill: Skill, presetId?: string | null): Skill {
   const p = presetId ? skill.presets?.find((x) => x.id === presetId) : undefined
-  return p?.prompt ? { ...skill, instructions: `${skill.instructions.trimEnd()}\n\n${p.prompt}` } : skill
+  return p?.prompt ? { ...skill, instructions: `${skill.instructions.trimEnd()}\n\n${p.prompt}`, activePreset: p.id } : skill
+}
+
+/** #978 — placeholders a template prompt can carry: `{{input_key}}` of that template's own text fields.
+ *  Image fields are references, not variables. Unknown names and empty values are dropped (never `{{x}}`). */
+const PRESET_PLACEHOLDER_RE = /\{\{\s*([A-Za-z0-9_.-]+)\s*\}\}/g
+/** A placeholder directly preceded by its own label (`Motion: {{motion_brief}}`): when the value is empty the
+ *  label goes with it, so an unfilled optional field never leaves a `Motion: Look:` shell in the prompt. */
+const PRESET_LABEL_PLACEHOLDER_RE = /([^\s:：]{1,16})[:：][ \t]*\{\{\s*([A-Za-z0-9_.-]+)\s*\}\}/g
+
+/** #978 — read this run's template input values back from the sent text. `skillRunParams` writes every filled
+ *  text/select field as `label: value`; that text is the only run state that survives the new-project handoff
+ *  (and any edit the user made before sending), so it is the value source. A field whose label is absent stays out. */
+export function presetInputValues(preset: SkillPreset, text: string): Record<string, string> {
+  const fields = (preset.inputs ?? []).filter((f) => f.type !== 'image')
+  const values: Record<string, string> = {}
+  if (!fields.length || !text) return values
+  let key: string | null = null
+  let buf: string[] = []
+  const flush = () => {
+    if (!key) return
+    const value = buf.join('\n').trim()
+    if (value) values[key] = value
+  }
+  for (const line of text.split(/\r?\n/)) {
+    const m = /^\s*([^:：]{1,80})[:：]\s*([\s\S]*)$/.exec(line)
+    const hit = m ? fields.find((f) => f.label.zh === m[1].trim() || (f.label.en ?? '') === m[1].trim()) : undefined
+    if (hit) { flush(); key = hit.key; buf = [m![2]] }
+    else if (key) buf.push(line)
+  }
+  flush()
+  return values
+}
+
+/** #978 — replace `{{key}}` with this run's value; a missing/blank/unknown variable becomes '' (and a labeled
+ *  one takes its label with it), so a template prompt never reaches the agent with `{{x}}`, `undefined`, an empty
+ *  slot or a `Motion: Look:` shell. Whitespace/punctuation left behind is collapsed. */
+export function interpolatePresetPrompt(prompt: string, values: Record<string, string>): string {
+  const fill = (key: string) => (values[key] ?? '').trim()
+  return prompt
+    .replace(PRESET_LABEL_PLACEHOLDER_RE, (_m, label: string, key: string) => {
+      const value = fill(key)
+      return value ? `${label}: ${value}` : ''
+    })
+    .replace(PRESET_PLACEHOLDER_RE, (_m, key: string) => fill(key))
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/[ \t]+([,.;:!?，。；：！？])/g, '$1')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+/** #978 — the selected template's instruction block for this run, ready for the message body.
+ *  Null when this attachment carries no template (no preset / unknown preset / skill without presets). */
+export function selectedPresetPrompt(skill: Skill, text: string): { id: string; prompt: string } | null {
+  const preset = skill.activePreset ? skill.presets?.find((p) => p.id === skill.activePreset) : undefined
+  if (!preset?.prompt) return null
+  const prompt = interpolatePresetPrompt(preset.prompt, presetInputValues(preset, text))
+  return prompt ? { id: preset.id, prompt } : null
 }
 
 /** #644 design: 「N 个模板」 = the thumbnails the dialog really shows — the Examples strip plus preset tiles with media
