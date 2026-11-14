@@ -227,6 +227,7 @@ class RunContext:
     skill_autofills: int = 0
     plan_gate_active: bool = False                  # #710: multi-shot plan card is open or confirmed
     shot_confirmed: bool = False
+    plan_skipped: bool = False                      # #971: user skipped the plan card (no A/B/C)
     shots: list = field(default_factory=list)
     shot_cursor: int = 0
 

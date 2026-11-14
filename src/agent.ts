@@ -113,15 +113,17 @@ export async function sendToAgent(editor: Editor, text: string, refs: RefShape[]
     if (items || said) context = [context, `[Linked reference frame "${frame.props.name}" (${frame.id}): follow it as the reference for this work.${items}${said}]`].filter(Boolean).join('\n')
     refs = [...refs, ...extra]
   }
-  const sent = await Promise.all(refs.map(async (r) => {
+  const canvasRefs = (await Promise.all(refs.map(async (r) => {
     const src = srcOf(editor, r)
     if (!src) return []
     const kind = refKindOf(r)
     const transcript = kind === 'audio' ? await transcribeFile(src).catch(() => '') : ''
     return [{ id: r.id, src, name: mediaName(editor, r), kind, ...(transcript ? { transcript } : {}) }]
-  }))
+  }))).flat()
   const loose = (opts?.loose ?? []).map((l, i) => ({ id: `loose:${i}` as TLShapeId, src: l.src, name: l.name, kind: 'image' as const }))
-  if (loose.length) sent.push(loose)
+  // #911-A2/#971: composer-only (loose) refs are numbered image-1..N before canvas refs (refChipLabel),
+  // so they must be sent first too. Appending them swapped image-1/image-2 for the server and the model.
+  const sent = [...loose, ...canvasRefs]
   const mem = settingsAtom.get()['memory-enabled'] === false ? '' : memoryPrompt(text)
   // #384: every turn attaches a fresh canvas snapshot; pack against the shared #382 window budget.
   const { nodes, selection } = canvasNodesFromEditor(editor)
@@ -141,7 +143,7 @@ export async function sendToAgent(editor: Editor, text: string, refs: RefShape[]
   const ctx = [packed.snapshot, context].filter(Boolean).join('\n')
   await sendMessage({
     text,
-    refs: sent.flat(),
+    refs: sent,
     docs,
     kits: kits.map((k) => ({ name: k.name, description: describeItem(k), images: itemImages(k) })),
     ...(skill ? { skill: skill.name } : {}),
