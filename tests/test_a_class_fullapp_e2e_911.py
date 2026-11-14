@@ -415,6 +415,9 @@ async def _open_skill(p, app_url, lang, sid, sockets, dialog_ref=None, dialog_te
         "logo-material-explorer": "skills.logoMaterialExplorer",
         "character-sheet-design": "skills.characterSheet",
         "poster-differentiated-compiler": "skills.posterDesign",
+        "banner-design-director": "skills.bannerDesign",
+        "meta-ads-creative-director": "skills.metaAdsCreative",
+        "mobile-app-visual-design": "skills.mobileAppVisualDesign",
     }.get(sid, "skills.poseFission")
     chip = pg.locator('.ca-composer [data-testid="composer-skill-chip"]')
     await chip.wait_for(timeout=15000)

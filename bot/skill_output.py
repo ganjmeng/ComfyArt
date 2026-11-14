@@ -75,31 +75,196 @@ PACKAGING_PRESETS_979: dict[str, dict] = {
 }
 # #982: every character template delivers ONE sheet at the ratio the template
 # itself declares (src/data/skills-748.json media[]): 1:1 for turnaround /
-# outfit / prop / editorial, 16:9 for expression / modeling / basic /
-# technical. Sizes follow the product canvases already in use: 1024x1024 for
-# 1:1 and 2048x1152 for 16:9. Template ids are the ones applyRaw748 keeps.
+# outfit / prop, 3:4 for editorial, 16:9 for expression / modeling / basic /
+# technical. Design review 6874380577 raised 1:1 to 1536x1536 (the 1024 sheet
+# made the face ~80 px); 16:9 stays 2048x1152. Template ids are applyRaw748's.
 CHARACTER_PRESETS_982: dict[str, dict] = {
-    "turnaround": {"width": 1024, "height": 1024, "ratio": "1:1", "images": 1,
+    "turnaround": {"width": 1536, "height": 1536, "ratio": "1:1", "images": 1,
                    "name": "Character Turnaround Sheet"},
     "expression": {"width": 2048, "height": 1152, "ratio": "16:9", "images": 1,
                    "name": "Expression & Pose Sheet"},
     "modeling": {"width": 2048, "height": 1152, "ratio": "16:9", "images": 1,
                  "name": "Modeling Detail Reference Sheet"},
-    "outfit": {"width": 1024, "height": 1024, "ratio": "1:1", "images": 1,
+    "outfit": {"width": 1536, "height": 1536, "ratio": "1:1", "images": 1,
                "name": "Outfit / Form Variation Sheet"},
-    "prop": {"width": 1024, "height": 1024, "ratio": "1:1", "images": 1,
+    "prop": {"width": 1536, "height": 1536, "ratio": "1:1", "images": 1,
              "name": "Prop Interaction Sheet"},
     "basic": {"width": 2048, "height": 1152, "ratio": "16:9", "images": 1,
               "name": "Basic Character Sheet"},
     "technical": {"width": 2048, "height": 1152, "ratio": "16:9", "images": 1,
                   "name": "Complete Technical Character Sheet"},
-    "editorial": {"width": 1024, "height": 1024, "ratio": "1:1", "images": 1,
+    # Design review 6874380577: 1024 square made the face ~80 px; 1:1 stays for
+    # turnaround/outfit/prop at 1536 square, editorial is 3:4 at 2K.
+    "editorial": {"width": 1536, "height": 2048, "ratio": "3:4", "images": 1,
                   "name": "Editorial Fashion Sheet"},
 }
-# #982: documented floor for a skill that is neither in OUTPUTS nor managed by a
-# registered pin. It is not a product default for that skill; it is the smallest
-# canvas the pipeline may submit on its own, and `size_lock` makes a smaller
-# provider file visible instead of silently delivering it.
+def _out(width: int, height: int, ratio: str, images: int, names: tuple[str, ...],
+         *, refs: str = "", calls: list[dict] | None = None, media: str = "") -> dict:
+    row: dict = {"width": width, "height": height, "ratio": ratio, "images": images, "names": names}
+    if refs:
+        row["refs"] = refs
+    if calls:
+        row["calls"] = calls
+    if media:
+        row["media"] = media
+    return row
+
+
+def _call(width: int, height: int, ratio: str, label: str) -> dict:
+    return {"width": width, "height": height, "ratio": ratio, "images": 1, "label": label}
+
+
+# #982 product ruling (HOLD comment 6874283882): 33 unpinned skills get a typed
+# default, not one square. Accepted 1:1 (8), wide 16:9 (7), portrait 3:4 (3),
+# multi-ratio packs (3), 9:21 phone (1), 4:3 (1), video stills (6), follow-ref (2),
+# multi-asset (3 calls) (2). Sizes use the page's card semantics: 1024 SHORT
+# side, long side snapped to 16 (16:9 = 1824x1024, 3:4 = 1024x1360, ...).
+TYPE_OUTPUTS_982: dict[str, dict] = {
+    # --- accepted 1:1 (product: keep 1024x1024) ---
+    "logo-abstract": _out(1024, 1024, "1:1", 1,
+        ("logo-abstract", "极简几何抽象 Logo", "Minimal Geometric Abstract Logo"),
+        refs="reference photo (image 1)"),
+    "lifestyle-scene": _out(1024, 1024, "1:1", 1,
+        ("lifestyle-scene", "电商生活场景设计师", "E-commerce Lifestyle Scene Designer"),
+        refs="product image (when provided)"),
+    "crayon-sketch": _out(1024, 1024, "1:1", 1,
+        ("crayon-sketch", "潦草蜡笔画风", "Rough Crayon Sketch"),
+        refs="subject image (image 1)"),
+    "fabric-collage": _out(1024, 1024, "1:1", 1,
+        ("fabric-collage", "布艺拼贴画", "Fabric Collage"),
+        refs="uploaded refs"),
+    "naive-illustration": _out(1024, 1024, "1:1", 1,
+        ("naive-illustration", "稚拙手绘插画", "Naive Illustration"),
+        refs="uploaded refs"),
+    "commerce-strategist": _out(1024, 1024, "1:1", 1,
+        ("commerce-strategist", "电商视觉策略师", "Commerce Visual Strategist"),
+        refs="optional ref assets"),
+    "promo-ecommerce": _out(1024, 1024, "1:1", 1,
+        ("promo-ecommerce", "电商促销主视觉", "E-commerce Promo Key Visual"),
+        refs="product image"),
+    "taobao-product": _out(1024, 1024, "1:1", 1,
+        ("taobao-product", "淘宝商品视觉", "Taobao Product Visuals"),
+        refs="product image (main image is 1:1)"),
+    # --- wide 16:9 (product: 1824x1024 / 2k) ---
+    # TODO(design 6874380577): website/PPT count pending visual review; current 1.
+    "banner-design-director": _out(1824, 1024, "16:9", 1,
+        ("banner-design-director", "横幅设计", "Banner Design"),
+        refs="uploaded refs; pass every one"),
+    "ppt-visual": _out(1824, 1024, "16:9", 1,
+        ("ppt-visual", "高级感 PPT 视觉", "Premium PPT Visual"),
+        refs="uploaded refs; pass every one"),
+    "web-product-visual-design": _out(1824, 1024, "16:9", 1,
+        ("web-product-visual-design", "Web产品视觉设计", "Web Product Visual Design"),
+        refs="uploaded refs; pass every one"),
+    "product-website": _out(1824, 1024, "16:9", 1,
+        ("product-website", "产品网站设计师", "Product Website Designer"),
+        refs="uploaded refs; pass every one"),
+    "premium-website": _out(1824, 1024, "16:9", 1,
+        ("premium-website", "高端网站艺术总监", "Premium Website Art Director"),
+        refs="uploaded refs; pass every one"),
+    "restaurant-website": _out(1824, 1024, "16:9", 1,
+        ("restaurant-website", "餐厅网站创建器", "Restaurant Website Builder"),
+        refs="uploaded refs; pass every one"),
+    # TODO(design 6874380577): confirm 16:9 vs 4:3; current 16:9 with the
+    # instruction's 4:3 detail vignette left to the agent.
+    "interior-architectural-visualization": _out(1824, 1024, "16:9", 1,
+        ("interior-architectural-visualization", "室内与建筑可视化", "Interior & Architectural Visualization"),
+        refs="uploaded refs; eye-level wide shot, detail vignette is 4:3"),
+    # --- portrait 3:4 (product: 1024x1360 / 2k) ---
+    "poster-differentiated-compiler": _out(1024, 1360, "3:4", 1,
+        ("poster-differentiated-compiler", "海报设计", "Poster Design"),
+        refs="uploaded refs; instruction says default 3:4"),
+    # TODO(design 6874380577): 4:5 vs 3:4 pending visual review; current 3:4.
+    "photo-split-poster": _out(1024, 1360, "3:4", 1,
+        ("photo-split-poster", "照片对半抽象海报", "Photo Split Abstract Poster"),
+        refs="photo (image 1); keep the photo/geometry split"),
+    "yingzao": _out(1024, 1360, "3:4", 1,
+        ("yingzao", "营造·在地编辑海报", "Yingzao Local Editorial Poster"),
+        refs="photo (image 1); no invented architecture"),
+    # --- multi-ratio packs (3 calls, 1 image each) ---
+    "meta-ads-creative-director": _out(1024, 1024, "1:1", 3,
+        ("meta-ads-creative-director", "Meta广告创意", "Meta Ads Creative"),
+        refs="product/person refs, same on every call",
+        calls=[_call(1024, 1024, "1:1", "feed 1:1"),
+               _call(1024, 1280, "4:5", "feed 4:5"),
+               _call(1024, 1824, "9:16", "story/reel 9:16")]),
+    "rednote-cover-maker": _out(1024, 1024, "1:1", 3,
+        ("rednote-cover-maker", "小红书封面制作器", "RedNote Cover Maker"),
+        refs="product/person refs, same on every call",
+        calls=[_call(1024, 1024, "1:1", "feed 1:1"),
+               _call(1024, 1280, "4:5", "post 4:5"),
+               _call(1024, 1824, "9:16", "story 9:16")]),
+    # TODO(design 6874380577): pack composition pending visual review; current
+    # 16:9 hero + 1:1 social + 4:5 display.
+    "marketing-campaign-generator": _out(1824, 1024, "16:9", 3,
+        ("marketing-campaign-generator", "营销活动生成器", "Marketing Campaign Generator"),
+        refs="brand/product refs, same on every call",
+        calls=[_call(1824, 1024, "16:9", "hero KV 16:9"),
+               _call(1024, 1024, "1:1", "social 1:1"),
+               _call(1024, 1280, "4:5", "display 4:5")]),
+    # --- 9:19.5 phone frames (2 calls) ---
+    # Design 6874380577: 9:19.5 is not in the model enum; 9:21 880x2048 (2K long
+    # edge) is the supported phone frame, so size lock does not false-alarm.
+    "mobile-app-visual-design": _out(880, 2048, "9:21", 2,
+        ("mobile-app-visual-design", "移动应用视觉设计", "Mobile APP Visual Design"),
+        refs="uploaded refs; phone-framed screens",
+        calls=[_call(880, 2048, "9:21", "home screen"),
+               _call(880, 2048, "9:21", "detail screen")]),
+    # --- 4:3 ---
+    "crt-interface": _out(1360, 1024, "4:3", 1,
+        ("crt-interface", "CRT 复古界面", "CRT Retro Interface"),
+        refs="uploaded refs"),
+    # --- video skills: still/image-call default only; film uses generate_video/animate_image ---
+    "product-tvc-advertisement-generator": _out(1824, 1024, "16:9", 1,
+        ("product-tvc-advertisement-generator", "产品广告片", "Product Commercial"),
+        refs="product image (always pass it)", media="video"),
+    "motion-poster-generator": _out(1360, 1024, "4:3", 1,
+        ("motion-poster-generator", "动态海报", "Motion Poster"),
+        refs="source_image (the static artwork)", media="video"),
+    "flash-cut-video": _out(1824, 1024, "16:9", 1,
+        ("flash-cut-video", "截图闪剪视频", "Screenshot Flash-Cut Video"),
+        refs="landscape 16:9 screenshot", media="video"),
+    # TODO(design 6874380577): video fallback still pending visual review; current 1:1.
+    "anim-2d": _out(1024, 1024, "1:1", 1,
+        ("anim-2d", "2D动画转换器", "2D Animation Converter"),
+        refs="primary visual", media="video"),
+    # TODO(design 6874380577): video fallback still pending visual review; current 4:3.
+    "animated-poster": _out(1360, 1024, "4:3", 1,
+        ("animated-poster", "动态海报生成器", "Animated Poster Generator"),
+        refs="source artwork", media="video"),
+    # TODO(design 6874380577): video fallback still pending visual review; current 1:1.
+    "logo-animation": _out(1024, 1024, "1:1", 1,
+        ("logo-animation", "LOGO动画视频", "Logo Animation Video"),
+        refs="logo image (image 1)", media="video"),
+    # --- follow-ref (server reads image 1; see FOLLOW_REF_SIZES) ---
+    "style-transfer": _out(1024, 1024, "1:1", 1,
+        ("style-transfer", "自适应风格迁移导演", "Adaptive Style Transfer Director"),
+        refs="content image first, style image second"),
+    "person-swap": _out(1024, 1360, "3:4", 3,
+        ("person-swap", "电商三图换人", "E-commerce 3-Image Person Swap"),
+        refs="scene/pose first, then face and outfit"),
+    # --- multi-asset kits (3 calls) ---
+    # TODO(design 6874380577): asset count pending visual review; current 3 calls.
+    "creator-identity": _out(1024, 1024, "1:1", 3,
+        ("creator-identity", "创作者视觉识别系统", "Creator Visual Identity System"),
+        refs="creator refs",
+        calls=[_call(1024, 1024, "1:1", "avatar 1:1"),
+               _call(1824, 1024, "16:9", "channel cover 16:9"),
+               _call(1024, 1280, "4:5", "social template 4:5")]),
+    # TODO(design 6874380577): asset count pending visual review; current 3 calls.
+    "live-promo-decor": _out(1824, 1024, "16:9", 3,
+        ("live-promo-decor", "电商直播素材", "Live Commerce Promo Decor"),
+        refs="product/stream refs",
+        calls=[_call(1824, 1024, "16:9", "background 16:9"),
+               _call(1024, 1024, "1:1", "price tag 1:1"),
+               _call(1024, 1024, "1:1", "corner badge 1:1")]),
+}
+
+# #982: last-resort neutral floor for a custom/unknown skill that is neither in
+# OUTPUTS nor managed by a registered pin. Known unpinned skills are typed in
+# TYPE_OUTPUTS_982 instead. The floor follows the page's card semantics (1024
+# SHORT side), never the old long-side interpretation that shrank wide/portrait
+# outputs; `size_lock` still makes a smaller provider file visible.
 FALLBACK_OUTPUT_982: dict[str, int | str] = {"width": 1024, "height": 1024, "ratio": "1:1"}
 OUTPUTS: dict[str, dict] = {
     "before-after": {
@@ -141,7 +306,7 @@ OUTPUTS: dict[str, dict] = {
     # #982: eight templates, eight plans, one sheet each. Flat fields are the
     # default turnaround template (also the dialog's first template).
     "character-sheet-design": {
-        "width": 1024, "height": 1024, "ratio": "1:1", "images": 1,
+        "width": 1536, "height": 1536, "ratio": "1:1", "images": 1,
         "presets": CHARACTER_PRESETS_982,
         "names": ("character-sheet-design", "真人角色设定与参考板",
                   "Realistic Human Character Design & Reference Sheets",
@@ -164,6 +329,7 @@ OUTPUTS: dict[str, dict] = {
                   "Brand Packaging Design System"),
     },
 }
+OUTPUTS.update(TYPE_OUTPUTS_982)
 
 _BY_NAME = {n.casefold(): sid for sid, row in OUTPUTS.items() for n in row["names"]}
 _DETOUR = frozenset({"list_models", "expand_image", "create_frame"})
@@ -183,6 +349,42 @@ def output_of(name: object) -> dict | None:
 PRESET_PLAN_SKILLS = frozenset(
     sid for sid, row in OUTPUTS.items() if row.get("presets") or row.get("stages")
 )
+# #982: rows whose default delivery is a set of calls, each with its own canvas
+# (ratio packs, phone screens, multi-asset kits). Flat row fields = call 1.
+CALL_PLAN_SKILLS = frozenset(sid for sid, row in OUTPUTS.items() if row.get("calls"))
+# #982: the six video skills. Their image call is a still/storyboard only; the
+# film itself is generate_video / animate_image, so they are never single-image.
+VIDEO_SKILLS = frozenset(sid for sid, row in OUTPUTS.items() if row.get("media") == "video")
+
+
+def call_plan(sid: str, ratio: object = "", width: object = 0, height: object = 0) -> dict:
+    """#982: the effective call for one generate_image of a multi-call default.
+
+    An explicit ratio (or a width/height pair the relay already filled) selects the
+    matching call; otherwise call 1. The model is told each call's ratio in the
+    Output lock, so the pack is reachable without a second table."""
+    row = OUTPUTS[sid]
+    calls = list(row.get("calls") or [])
+    if not calls:
+        raise KeyError(f"{sid} has no calls")
+    chosen = None
+    if ratio:
+        chosen = next((c for c in calls if str(c.get("ratio")) == str(ratio)), None)
+    if chosen is None and width and height:
+        chosen = next((c for c in calls
+                       if (int(c["width"]), int(c["height"])) == (int(width), int(height))), None)
+    if chosen is None:
+        chosen = calls[0]
+    return {
+        "width": int(chosen["width"]),
+        "height": int(chosen["height"]),
+        "ratio": chosen.get("ratio"),
+        "images": int(chosen.get("images") or 1),
+        "label": chosen.get("label", ""),
+        "index": calls.index(chosen) + 1,
+        "calls": calls,
+        "total_images": int(row["images"]),
+    }
 
 
 def _preset_row(sid: str, preset_id: object = "") -> tuple[str, dict, bool]:
@@ -231,26 +433,40 @@ def plan_for(sid: str, preset_id: object = "", stage: object = 1) -> dict:
     }
 
 
+# #982 / design 6874380577: the model enums do not name 9:19.5; the supported
+# phone frame is 9:21 at 880x2048 (2K long edge). Map the old wording to it so the
+# page's RATIOS gate and the size lock do not reject a size-less phone request.
+RATIO_ALIASES_982: dict[str, tuple[str, int, int]] = {
+    "9:19.5": ("9:21", 880, 2048),
+    "9:21": ("9:21", 880, 2048),
+}
+
+
 def pixels_for_ratio(ratio: object) -> tuple[int, int] | None:
-    """#982: a 16-multiple canvas with a 1024 long side at the given `a:b` ratio."""
-    m = re.fullmatch(r"\s*(\d{1,3})\s*[:：]\s*(\d{1,3})\s*", str(ratio or ""))
+    """#982: the page's targetSize semantics: 1024 SHORT side, long side snapped to 16.
+
+    16:9 -> 1824x1024, 3:4 -> 1024x1360, 9:16 -> 1024x1824, 4:3 -> 1360x1024.
+    This is deliberately not a 1024 long side: that shrank wide/portrait defaults.
+    """
+    m = re.fullmatch(r"\s*(\d{1,3}(?:\.\d+)?)\s*[:：]\s*(\d{1,3}(?:\.\d+)?)\s*", str(ratio or ""))
     if not m:
         return None
-    a, b = int(m.group(1)), int(m.group(2))
+    a, b = float(m.group(1)), float(m.group(2))
     if not a or not b:
         return None
+    snap = lambda v: max(64, round(v / 16) * 16)  # noqa: E731 - one-line 16px snap
     if a >= b:
-        return 1024, max(64, round(1024 * b / a / 16) * 16)
-    return max(64, round(1024 * a / b / 16) * 16), 1024
+        return snap(1024 * a / b), 1024
+    return 1024, snap(1024 * b / a)
 
 
 def fill_unpinned_fallback(args: dict, skill: object) -> dict:
     """#982: fill the documented floor for a skill that has no declared canvas.
 
-    A call that would otherwise submit no size gets pixels: the row's 1:1 default,
-    or the model's explicit ratio at a 1024 long side. Explicit width+height and a
-    resolution tier win. A registered skill pin owns its size (#708/#911), so
-    pinned skills are left untouched.
+    A call that would otherwise submit no size gets pixels: the neutral 1:1
+    default, or the model's explicit ratio at the page's 1024 SHORT side. Explicit
+    width+height and a resolution tier win. A registered skill pin owns its size
+    (#708/#911), so pinned skills are left untouched.
     """
     skill_id = str(skill or "").strip()
     if not skill_id:
@@ -264,10 +480,14 @@ def fill_unpinned_fallback(args: dict, skill: object) -> dict:
         return args
     ratio = args.get("ratio")
     if ratio:
-        pixels = pixels_for_ratio(ratio)
-        if not pixels:
-            return args
-        args["width"], args["height"] = pixels
+        alias = RATIO_ALIASES_982.get(str(ratio).strip())
+        if alias:
+            args["ratio"], args["width"], args["height"] = alias
+        else:
+            pixels = pixels_for_ratio(ratio)
+            if not pixels:
+                return args
+            args["width"], args["height"] = pixels
     else:
         args["width"] = int(FALLBACK_OUTPUT_982["width"])
         args["height"] = int(FALLBACK_OUTPUT_982["height"])
@@ -293,6 +513,10 @@ def preset_from_text(text: object) -> str:
 def is_single(name: object, preset_id: object = "") -> bool:
     sid = resolve(name)
     if not sid:
+        return False
+    if sid in VIDEO_SKILLS:
+        # #982: a video skill is never a one-shot still skill; its still path may
+        # legitimately run more than once (storyboard/style candidates).
         return False
     if sid in PRESET_PLAN_SKILLS:
         return int(plan_for(sid, preset_id)["images"]) == 1
@@ -339,6 +563,18 @@ FOLLOW_REF_SIZES: dict[str, dict[str, tuple[int, int]]] = {
         "9:16": (1152, 2048), "16:9": (2048, 1152),
     },
 }
+# #982: style-transfer follows the content image (image 1); person-swap follows
+# the scene/pose base (image 1). These are the page's card sizes at a 1024 short
+# side, so a readable reference never produces a smaller request than main.
+FOLLOW_REF_SIZES_982 = {
+    "1:1": (1024, 1024),
+    "4:5": (1024, 1280), "5:4": (1280, 1024),
+    "3:4": (1024, 1360), "4:3": (1360, 1024),
+    "2:3": (1024, 1536), "3:2": (1536, 1024),
+    "9:16": (1024, 1824), "16:9": (1824, 1024),
+}
+FOLLOW_REF_SIZES["style-transfer"] = FOLLOW_REF_SIZES_982
+FOLLOW_REF_SIZES["person-swap"] = FOLLOW_REF_SIZES_982
 # Marker so the relay pass (no image bytes) keeps the ratio the chat loop read.
 REF_RATIO_KEY = "_ref_ratio"
 
@@ -440,6 +676,16 @@ def apply_generate(args: dict | None, current_skill: str = "", user_text: str | 
     row = OUTPUTS[sid]
     if not named:
         args["skill"] = sid
+    # #982: a multi-call default (ratio pack / kit / screens) picks the call by
+    # explicit ratio or by the pixels the relay already filled; otherwise call 1.
+    call = None
+    if sid in CALL_PLAN_SKILLS:
+        try:
+            asked_w = int(args.get("width") or 0)
+            asked_h = int(args.get("height") or 0)
+        except (TypeError, ValueError):
+            asked_w = asked_h = 0
+        call = call_plan(sid, args.get("ratio"), asked_w, asked_h)
     # #979: resolve the template before anything else. An explicit arg wins (the relay
     # re-runs this function), then the lock line the client already received, then the
     # skill's default template. Unknown/no template never becomes 1024x1024.
@@ -495,10 +741,14 @@ def apply_generate(args: dict | None, current_skill: str = "", user_text: str | 
     else:
         picked = None
     if not picked:
-        # #979: a preset plan's own stage size; otherwise the row's flat default.
-        width = plan["width"] if plan else int(row["width"])
-        height = plan["height"] if plan else int(row["height"])
-        ratio = plan.get("ratio") if plan else row.get("ratio")
+        # #982: a call's own canvas; #979: a preset plan's stage size; otherwise the
+        # row's flat default.
+        if call:
+            width, height, ratio = call["width"], call["height"], call.get("ratio")
+        elif plan:
+            width, height, ratio = plan["width"], plan["height"], plan.get("ratio")
+        else:
+            width, height, ratio = int(row["width"]), int(row["height"]), row.get("ratio")
         args["width"], args["height"] = width, height
         if ratio:
             args["ratio"] = ratio
@@ -596,6 +846,39 @@ def _preset_hint(sid: str, preset_id: str, user_text: str) -> str:
     )
 
 
+def _calls_hint(sid: str, row: dict) -> str:
+    """#982: a default set of calls with different canvases (packs, kits, screens)."""
+    calls = list(row.get("calls") or [])
+    total = int(row["images"])
+    parts = []
+    for i, call in enumerate(calls, 1):
+        n = int(call.get("images") or 1)
+        label = f" ({call['label']})" if call.get("label") else ""
+        parts.append(f"call {i}{label} = {n} image(s) at "
+                     f"{_size_text(sid, int(call['width']), int(call['height']), call.get('ratio'))}")
+    refs = f" Refs: {row['refs']}." if row.get("refs") else ""
+    return (
+        f"Output lock: deliver exactly {total} separate images in {len(calls)} calls: "
+        + "; ".join(parts)
+        + f". Call generate_image exactly {total} times, count=1 each, with a different prompt per call; "
+          f"pass skill={sid!r} and that call's ratio on every call. Do not use 1024x1024 unless that call says so."
+        + refs
+    )
+
+
+def _video_hint(sid: str, row: dict) -> str:
+    """#982: a video skill's still/storyboard default, never a one-image film."""
+    size = _size_text(sid, int(row["width"]), int(row["height"]), row.get("ratio"))
+    refs = f" Refs: {row['refs']}." if row.get("refs") else ""
+    return (
+        f"Output lock: {sid!r} is a video skill. The final deliverable is a video via generate_video or "
+        f"animate_image, not a single generate_image. If you generate a still/storyboard frame, use "
+        f"skill={sid!r}, {size}, count=1; do not submit a size-less image. The film's own "
+        "ratio and duration belong to the generate_video/animate_image flow, not this image lock."
+        + refs
+    )
+
+
 def run_hint(name: object, user_text: str = "", ref_image: bytes | None = None,
              preset_id: str = "") -> str:
     """One line appended to the skill-start user text. Empty when the skill has no declared size.
@@ -610,9 +893,13 @@ def run_hint(name: object, user_text: str = "", ref_image: bytes | None = None,
     sid = resolve(name)
     if not sid:
         return ""
+    row = OUTPUTS[sid]
+    if sid in CALL_PLAN_SKILLS:
+        return _calls_hint(sid, row)
+    if sid in VIDEO_SKILLS:
+        return _video_hint(sid, row)
     if sid in PRESET_PLAN_SKILLS:
         return _preset_hint(sid, preset_id, user_text)
-    row = OUTPUTS[sid]
     if sid in FOLLOW_REF_SIZES:
         # #911: the server sets width/height/ratio from image 1; the model must not pick one.
         size = "the size and ratio of image 1 (the server fills width, height and ratio; do not pass them)"
@@ -629,11 +916,22 @@ def run_hint(name: object, user_text: str = "", ref_image: bytes | None = None,
             size = f"width={row['width']} height={row['height']}"
             if row.get("ratio"):
                 size += f" ratio={row['ratio']}"
+    refs = f" Refs: {row['refs']}." if row.get("refs") else ""
     if int(row["images"]) == 1:
         return (
             f"Output lock: call generate_image exactly once with skill={sid!r}, {size}, count=1. "
             "Do not call list_models, expand_image, or create_frame. Do not outpaint. "
             "Then wait_generation and finish. Lettering must be real words in quotes, large enough to read."
+            + refs
+        )
+    if sid in FOLLOW_REF_SIZES:
+        # #982: person-swap is a 3-frame set, not the generic pose-fission wording.
+        return (
+            f"Output lock: deliver exactly {int(row['images'])} separate images, each at the size and ratio "
+            "of image 1 (the server fills width, height and ratio; do not pass them), count=1. "
+            f"Call generate_image {int(row['images'])} times, one useful frame per call "
+            "(hero, side/detail, ...), with a different prompt each time; pass skill={sid!r} and every "
+            "uploaded ref on every call." + refs
         )
     if sid == "universal-multi-angle-grid":
         # #974: this skill's own wording, not pose-fission's. Four separate angle images, same reference each call.

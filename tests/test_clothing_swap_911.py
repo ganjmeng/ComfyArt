@@ -713,7 +713,10 @@ def test_qa5_image1_bytes_come_from_first_ref_or_first_attachment():
 def test_qa5_other_skills_do_not_follow_ref():
     from ComfyArt.bot.skill_output import FOLLOW_REF_SIZES, follows_ref
 
-    assert list(FOLLOW_REF_SIZES) == ["clothing-swap"]
+    # #982: product ruling adds style-transfer (content image) and person-swap
+    # (scene/pose image) to the follow-ref mechanism; the rest stay fixed.
+    assert set(FOLLOW_REF_SIZES) == {"clothing-swap", "style-transfer", "person-swap"}
+    assert all(follows_ref(s) for s in FOLLOW_REF_SIZES)
     assert follows_ref("clothing-swap") and follows_ref("AI服装换装")
     for sid in ("pose-fission", "before-after", "game-art", "linkedin-banner", "studio-model", "ai-model", ""):
         assert not follows_ref(sid)

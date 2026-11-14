@@ -1,37 +1,39 @@
-"""#982 — no-size fallback: no skill run may submit an undeclared canvas.
+"""#982 — no declared canvas must not fall back to a smaller default.
 
-The $0 audit (#911 comment 6873212793) found `logo-material-explorer` and
-`character-sheet-design` had no output declaration anywhere: `SKILL_OUTPUT`,
-`bot/skill_output.py::OUTPUTS`, `run_hint` and the skill read `output` were all
-empty. The model's `generate_image` therefore carried no width/height/ratio, the
-page built a 1:1 card, and the provider schema default decided the delivered
-pixels (the audit's mock returned 512x512).
+The $0 audit (#911 comment 6873212793) saw 512x512, but that was the fixed
+512 red image in `tests/test_e2e_comment_edit.py` (`RESULT`, line 45), not a
+production size. The real page always sends width/height: `GENERATOR_DEFAULTS`
+resolution 1K (`GeneratorShape.tsx:22`) -> `targetSize` short side 1024
+(`generate.ts:47-53`) -> `pixelSizeOf` (`:62-70`) -> the WaveSpeed request.
 
-This file locks the two product-minimal defaults plus the pipeline floor for every
-other unpinned skill:
-  logo-material-explorer: 1 x 1024x1024 (1:1), count=1. Additional Details may
-  change the finish, never the count/frame.
-  character-sheet-design: 8 templates x 1 sheet each, at each template's own
-  media ratio (1:1 turnaround/outfit/prop/editorial, 16:9 expression/modeling/
-  basic/technical), 1024x1024 or 2048x1152.
-  every other unpinned skill without OUTPUTS: 1024x1024 (1:1), size-locked, until
-  product rules its own default (#982 PR lists them).
+Product HOLD 6874283882: keep the floor mechanism, but floor != product default.
+- 8 skills are accepted at 1024x1024.
+- 25 get a typed default: 16:9 1824x1024, 3:4 1024x1360, multi-ratio packs,
+  9:19.5, 4:3, video stills, follow-ref, multi-asset kits.
+- 6 pinned skills stay untouched (paired follow-up card).
+- A custom/unknown skill gets a neutral 1024x1024 last-resort floor; its explicit
+  ratio uses the page's 1024 SHORT side, never a shrunken 1024 long side.
 
-The literals are deliberate: reverting a default to 512, or dropping the floor,
-turns these red.
+The literals are deliberate: reverting a type to 1:1, or changing
+`pixels_for_ratio` back to long-side semantics, turns these red.
 """
 from __future__ import annotations
 
+import io
 import re
 from pathlib import Path
 
 import pytest
+from PIL import Image
 
 from ComfyArt.bot.skill_output import (
+    CALL_PLAN_SKILLS,
     CHARACTER_PRESETS_982,
     FALLBACK_OUTPUT_982,
+    FOLLOW_REF_SIZES,
     OUTPUTS,
     PRESET_PLAN_SKILLS,
+    VIDEO_SKILLS,
     apply_generate,
     is_single,
     pixels_for_ratio,
@@ -51,43 +53,76 @@ needs_node = pytest.mark.skipif(
     reason="needs node + node_modules",
 )
 
-# Product-minimal ruling for this card. The two source rows are the contract.
 LOGO_SIZE = (1024, 1024, "1:1", 1)
 CHARACTER_EXPECTED = {
-    "turnaround": (1024, 1024, "1:1", 1),
+    # Design 6874380577: 1024 square made the face ~80 px; 1:1 stays at 1536
+    # square, editorial moves to 3:4 2K, the four 16:9 templates stay 2048x1152.
+    "turnaround": (1536, 1536, "1:1", 1),
     "expression": (2048, 1152, "16:9", 1),
     "modeling": (2048, 1152, "16:9", 1),
-    "outfit": (1024, 1024, "1:1", 1),
-    "prop": (1024, 1024, "1:1", 1),
+    "outfit": (1536, 1536, "1:1", 1),
+    "prop": (1536, 1536, "1:1", 1),
     "basic": (2048, 1152, "16:9", 1),
     "technical": (2048, 1152, "16:9", 1),
-    "editorial": (1024, 1024, "1:1", 1),
+    "editorial": (1536, 2048, "3:4", 1),
 }
 
-# Built-in skills that still have no OUTPUTS row after this card. Two are pinned
-# here; the rest are the product-ruling list in the PR. A new built-in skill fails
-# the list test below until it is triaged (declared, pinned, or floored).
-MISSING_AFTER_982 = [
-    "poster-differentiated-compiler", "rednote-cover-maker", "cover-design-director",
-    "banner-design-director", "product-tvc-advertisement-generator",
-    "motion-poster-generator", "meta-ads-creative-director",
-    "mobile-app-visual-design", "web-product-visual-design",
-    "marketing-campaign-generator", "flash-cut-video", "style-transfer",
-    "person-swap", "commerce-strategist", "lifestyle-scene",
-    "naive-illustration", "logo-abstract", "photo-split-poster", "ppt-visual",
-    "promo-ecommerce", "yingzao", "crt-interface", "crayon-sketch",
-    "fabric-collage", "taobao-product", "anim-2d", "creator-identity",
-    "product-website", "studio-model", "youtube-channel-banner", "ai-model",
-    "product-to-packaging", "portrait-studio", "premium-website",
-    "animated-poster", "live-promo-decor", "logo-animation",
-    "restaurant-website", "interior-architectural-visualization",
-]
-# #708/#911 pins own the size of these; the floor must not fight a pin.
+# Product HOLD 6874283882: 8 accepted 1:1, 25 typed. Total 33 unpinned students.
+SQUARE_1024 = {
+    "logo-abstract", "lifestyle-scene", "crayon-sketch", "fabric-collage",
+    "naive-illustration", "commerce-strategist", "promo-ecommerce", "taobao-product",
+}
+WIDE_16_9 = {
+    "banner-design-director", "ppt-visual", "web-product-visual-design",
+    "product-website", "premium-website", "restaurant-website",
+    "interior-architectural-visualization",
+}
+PORTRAIT_3_4 = {
+    "poster-differentiated-compiler", "photo-split-poster", "yingzao",
+}
+PACKS = {
+    "meta-ads-creative-director", "rednote-cover-maker", "marketing-campaign-generator",
+}
+PHONE = {"mobile-app-visual-design"}
+CRT = {"crt-interface"}
+VIDEO = {
+    "product-tvc-advertisement-generator", "motion-poster-generator", "flash-cut-video",
+    "anim-2d", "animated-poster", "logo-animation",
+}
+FOLLOW_REF = {"style-transfer", "person-swap"}
+MULTI_ASSET = {"creator-identity", "live-promo-decor"}
+TYPED = SQUARE_1024 | WIDE_16_9 | PORTRAIT_3_4 | PACKS | PHONE | CRT | VIDEO | FOLLOW_REF | MULTI_ASSET
+
+CALLS = {
+    "meta-ads-creative-director": [
+        (1024, 1024, "1:1"), (1024, 1280, "4:5"), (1024, 1824, "9:16")],
+    "rednote-cover-maker": [
+        (1024, 1024, "1:1"), (1024, 1280, "4:5"), (1024, 1824, "9:16")],
+    "marketing-campaign-generator": [
+        (1824, 1024, "16:9"), (1024, 1024, "1:1"), (1024, 1280, "4:5")],
+    # Design 6874380577: 9:19.5 is not enum-supported; 9:21 880x2048 is.
+    "mobile-app-visual-design": [
+        (880, 2048, "9:21"), (880, 2048, "9:21")],
+    "creator-identity": [
+        (1024, 1024, "1:1"), (1824, 1024, "16:9"), (1024, 1280, "4:5")],
+    "live-promo-decor": [
+        (1824, 1024, "16:9"), (1024, 1024, "1:1"), (1024, 1024, "1:1")],
+}
+VIDEO_STILL = {
+    "product-tvc-advertisement-generator": (1824, 1024, "16:9"),
+    "motion-poster-generator": (1360, 1024, "4:3"),
+    "flash-cut-video": (1824, 1024, "16:9"),
+    "anim-2d": (1024, 1024, "1:1"),
+    "animated-poster": (1360, 1024, "4:3"),
+    "logo-animation": (1024, 1024, "1:1"),
+}
+
+# Still missing after this card: only the six pinned skills. Their pins own size
+# (#708/#911/#912); a separate gap card covers their product defaults.
 PINNED_MISSING = [
     "cover-design-director", "studio-model", "youtube-channel-banner",
     "ai-model", "product-to-packaging", "portrait-studio",
 ]
-UNPINNED_MISSING = [sid for sid in MISSING_AFTER_982 if sid not in PINNED_MISSING]
 
 
 def _builtin_ids() -> list[str]:
@@ -100,12 +135,19 @@ def _builtin_ids() -> list[str]:
     return seen
 
 
-def test_the_skill_list_still_matches_this_card():
+def test_the_typed_table_covers_every_unpinned_missing_skill():
+    ids = _builtin_ids()
     declared = set(OUTPUTS)
-    missing = [sid for sid in _builtin_ids() if sid not in declared]
-    assert missing == MISSING_AFTER_982
-    assert len(_builtin_ids()) == 49
-    assert len(declared) == 10
+    assert len(ids) == 49
+    assert len(declared) == 43
+    assert [sid for sid in ids if sid not in declared] == PINNED_MISSING
+    assert TYPED == set(declared) - {  # 8 existing + 2 (logo/character) + 33 typed
+        "before-after", "universal-multi-angle-grid", "pose-fission", "game-art",
+        "linkedin-banner", "clothing-swap", "brand-identity-director",
+        "packaging-design-director", LOGO, CHARACTER,
+    }
+    assert CALL_PLAN_SKILLS == set(CALLS)
+    assert VIDEO_SKILLS == VIDEO
 
 
 def test_logo_default_is_one_1024_square_material_study():
@@ -116,8 +158,7 @@ def test_logo_default_is_one_1024_square_material_study():
                            "refs": ["shape:logo"], "count": 1}, LOGO)
     assert (args["width"], args["height"], args["ratio"], args["count"]) == LOGO_SIZE
     assert args["size_lock"] is True and args["skill"] == LOGO
-    assert args["refs"] == ["shape:logo"]  # the logo ref is not dropped by the lock
-    # Relay pass (no current skill): the same pixels, no drift.
+    assert args["refs"] == ["shape:logo"]
     again = apply_generate(dict(args))
     assert (again["width"], again["height"], again["ratio"], again["count"]) == LOGO_SIZE
     hint = run_hint("Logo Material Explorer")
@@ -132,9 +173,9 @@ def test_character_has_one_plan_per_template():
     assert set(CHARACTER_PRESETS_982) == set(CHARACTER_EXPECTED)
     assert PRESET_PLAN_SKILLS == {"brand-identity-director",
                                   "packaging-design-director", CHARACTER}
-    # Flat row = default turnaround, never a square placeholder for every template.
     assert (OUTPUTS[CHARACTER]["width"], OUTPUTS[CHARACTER]["height"],
             OUTPUTS[CHARACTER]["ratio"], OUTPUTS[CHARACTER]["images"]) == CHARACTER_EXPECTED["turnaround"]
+    assert (OUTPUTS[CHARACTER]["width"], OUTPUTS[CHARACTER]["height"]) == (1536, 1536)
     for pid, want in CHARACTER_EXPECTED.items():
         plan = plan_for(CHARACTER, pid)
         assert (plan["width"], plan["height"], plan["ratio"], plan["images"]) == want, pid
@@ -147,7 +188,6 @@ def test_character_each_template_fills_and_states_its_own_canvas(pid):
     args = apply_generate({"skill": CHARACTER, "preset": pid, "prompt": "character sheet"}, CHARACTER)
     assert (args["width"], args["height"], args["ratio"], args["count"]) == want
     assert args["size_lock"] is True and args["preset"] == pid and args["stage"] == 1
-    # Relay pass is idempotent.
     again = apply_generate(dict(args))
     assert (again["width"], again["height"], again["ratio"],
             again["preset"], again["stage"]) == (*want[:3], pid, 1)
@@ -167,15 +207,153 @@ def test_character_without_a_template_uses_turnaround():
     assert "template=turnaround" in hint and "skill default template" in hint
 
 
-@pytest.mark.parametrize("sid", UNPINNED_MISSING)
-def test_every_unpinned_undeclared_skill_gets_the_1024_floor(sid):
+@pytest.mark.parametrize("sid", sorted(SQUARE_1024))
+def test_accepted_square_skills_are_1024(sid):
     args = apply_generate({"skill": sid, "prompt": "a still"}, sid)
-    assert (args["width"], args["height"], args["ratio"]) == \
-        (FALLBACK_OUTPUT_982["width"], FALLBACK_OUTPUT_982["height"], FALLBACK_OUTPUT_982["ratio"])
+    assert (args["width"], args["height"], args["ratio"], args["count"]) == (1024, 1024, "1:1", 1)
     assert args["size_lock"] is True and args["skill"] == sid
-    assert args["width"] != 512 and args["height"] != 512  # the old provider default
-    again = apply_generate(dict(args))
-    assert (again["width"], again["height"], again["ratio"]) == (1024, 1024, "1:1")
+    assert is_single(sid) is True
+
+
+@pytest.mark.parametrize("sid", sorted(WIDE_16_9))
+def test_wide_skills_keep_1824x1024(sid):
+    args = apply_generate({"skill": sid, "prompt": "a wide frame"}, sid)
+    assert (args["width"], args["height"], args["ratio"], args["count"]) == (1824, 1024, "16:9", 1)
+    assert args["size_lock"] is True
+    assert (args["width"], args["height"]) != (1024, 1024)
+    assert is_single(sid) is True
+
+
+@pytest.mark.parametrize("sid", sorted(PORTRAIT_3_4))
+def test_portrait_skills_keep_1024x1360(sid):
+    args = apply_generate({"skill": sid, "prompt": "a portrait poster"}, sid)
+    assert (args["width"], args["height"], args["ratio"], args["count"]) == (1024, 1360, "3:4", 1)
+    assert args["size_lock"] is True
+    assert (args["width"], args["height"]) != (1024, 1024)
+    # poster's instruction says default 3:4; this is the regression the HOLD named.
+    assert args["ratio"] == "3:4"
+
+
+def test_crt_is_4_3():
+    args = apply_generate({"skill": "crt-interface", "prompt": "crt"}, "crt-interface")
+    assert (args["width"], args["height"], args["ratio"]) == (1360, 1024, "4:3")
+    assert is_single("crt-interface") is True
+
+
+@pytest.mark.parametrize("sid,want", sorted(VIDEO_STILL.items()))
+def test_video_skills_have_a_still_default_not_a_one_image_film(sid, want):
+    args = apply_generate({"skill": sid, "prompt": "a still"}, sid)
+    assert (args["width"], args["height"], args["ratio"], args["count"]) == (*want, 1)
+    assert OUTPUTS[sid]["media"] == "video"
+    assert is_single(sid) is False
+    # A second still is legitimate for storyboard/style candidates; never skip it.
+    assert single_image_skip("generate_image", sid, "en", 1) is None
+    hint = run_hint(sid)
+    assert "video skill" in hint and "generate_video" in hint and "animate_image" in hint
+    assert f"width={want[0]}" in hint and f"height={want[1]}" in hint
+
+
+@pytest.mark.parametrize("sid", sorted(CALLS))
+def test_multi_call_defaults_state_each_canvas(sid):
+    row = OUTPUTS[sid]
+    calls = CALLS[sid]
+    assert len(row["calls"]) == len(calls)
+    assert row["images"] == len(calls)
+    assert (row["width"], row["height"], row["ratio"]) == calls[0]
+    assert is_single(sid) is False
+    hint = run_hint(sid)
+    assert f"deliver exactly {len(calls)} separate images" in hint
+    for i, (w, h, r) in enumerate(calls, 1):
+        assert f"call {i}" in hint
+        assert f"width={w}" in hint and f"height={h}" in hint and f"ratio={r}" in hint
+        got = apply_generate({"skill": sid, "ratio": r, "prompt": f"call {i}"}, sid)
+        assert (got["width"], got["height"], got["ratio"], got["count"]) == (w, h, r, 1)
+        assert got["size_lock"] is True
+    # No ratio → call 1; relay keeps the chosen call.
+    first = apply_generate({"skill": sid, "prompt": "first"}, sid)
+    assert (first["width"], first["height"], first["ratio"]) == calls[0]
+    assert apply_generate(dict(first))["width"] == calls[0][0]
+
+
+def _png(w: int, h: int) -> bytes:
+    buf = io.BytesIO()
+    Image.new("RGB", (w, h), (200, 180, 160)).save(buf, format="PNG")
+    return buf.getvalue()
+
+
+@pytest.mark.parametrize("sid,fallback", [
+    ("style-transfer", (1024, 1024, "1:1")),
+    ("person-swap", (1024, 1360, "3:4")),
+])
+def test_follow_ref_skills_take_image_1_size(sid, fallback):
+    assert sid in FOLLOW_REF_SIZES
+    ref = _png(768, 1024)  # 3:4
+    got = apply_generate({"skill": sid, "prompt": "x", "refs": ["shape:1"]}, sid, ref_image=ref)
+    assert (got["width"], got["height"], got["ratio"]) == (1024, 1360, "3:4")
+    assert got["size_lock"] is True
+    bare = apply_generate({"skill": sid, "prompt": "x"}, sid)
+    assert (bare["width"], bare["height"], bare["ratio"]) == fallback
+    hint = run_hint(sid)
+    assert "image 1" in hint
+    if sid == "person-swap":
+        assert "exactly 3 separate images" in hint
+
+
+def test_pixels_for_ratio_uses_the_page_short_side_not_a_long_side():
+    # Product HOLD: the old 1024-long-edge math shrank 16:9 to 1024x576 and 3:4
+    # to 768x1024. The page's targetSize uses a 1024 SHORT side.
+    assert pixels_for_ratio("16:9") == (1824, 1024)
+    assert pixels_for_ratio("3:4") == (1024, 1360)
+    assert pixels_for_ratio("4:5") == (1024, 1280)
+    assert pixels_for_ratio("9:16") == (1024, 1824)
+    assert pixels_for_ratio("4:3") == (1360, 1024)
+    assert pixels_for_ratio("1:1") == (1024, 1024)
+    assert pixels_for_ratio("wide") is None and pixels_for_ratio("0:1") is None
+    assert pixels_for_ratio("16:9") != (1024, 576)
+    assert pixels_for_ratio("3:4") != (768, 1024)
+
+
+def test_typed_defaults_never_fall_below_the_main_card():
+    """HOLD: the floor must not shrink what main already delivered at 1K."""
+    card = {"1:1": (1024, 1024), "16:9": (1824, 1024), "3:4": (1024, 1360),
+            "4:5": (1024, 1280), "9:16": (1024, 1824), "4:3": (1360, 1024)}
+    checked = 0
+    for sid, row in OUTPUTS.items():
+        if sid in PINNED_MISSING or row.get("ratio") == "9:21":
+            continue
+        sizes = [row] + list(row.get("calls") or [])
+        for item in sizes:
+            if not item.get("ratio"):
+                continue
+            cw, ch = card[item["ratio"]]
+            assert item["width"] >= cw and item["height"] >= ch, (sid, item, (cw, ch))
+            checked += 1
+    assert checked >= 40
+    # The one design exception is the enum-supported phone frame.
+    assert (OUTPUTS["mobile-app-visual-design"]["width"],
+            OUTPUTS["mobile-app-visual-design"]["height"],
+            OUTPUTS["mobile-app-visual-design"]["ratio"]) == (880, 2048, "9:21")
+
+
+def test_mobile_ratio_is_enum_supported_and_aliases_the_old_wording():
+    # Design 6874380577: the page must accept 9:21 or startGenerator rejects it.
+    assert "'9:21'" in (ROOT / "src/genOptions.ts").read_text(encoding="utf-8")
+    got = apply_generate({"prompt": "x", "ratio": "9:19.5"}, "my-custom-skill")
+    assert (got["ratio"], got["width"], got["height"]) == ("9:21", 880, 2048)
+    assert got["size_lock"] is True
+
+
+def test_custom_skill_floor_is_neutral_but_ratio_aware():
+    custom = apply_generate({"prompt": "a still"}, "my-custom-skill")
+    assert (custom["width"], custom["height"], custom["ratio"], custom["skill"]) == \
+        (1024, 1024, "1:1", "my-custom-skill")
+    assert custom["size_lock"] is True
+    wide = apply_generate({"prompt": "x", "ratio": "16:9"}, "my-custom-skill")
+    assert (wide["width"], wide["height"], wide["ratio"]) == (1824, 1024, "16:9")
+    portrait = apply_generate({"prompt": "x", "ratio": "3:4"}, "my-custom-skill")
+    assert (portrait["width"], portrait["height"], portrait["ratio"]) == (1024, 1360, "3:4")
+    assert apply_generate({"prompt": "cat"}) == {"prompt": "cat"}
+    assert apply_generate({"prompt": "cat", "ratio": "1:1"}) == {"prompt": "cat", "ratio": "1:1"}
 
 
 @pytest.mark.parametrize("sid", PINNED_MISSING)
@@ -185,53 +363,44 @@ def test_pinned_skills_keep_their_pin_owned_size(sid):
     assert "ratio" not in args and "size_lock" not in args
 
 
-def test_custom_skill_run_gets_the_floor_but_direct_generation_does_not():
-    custom = apply_generate({"prompt": "a still"}, "my-custom-skill")
-    assert (custom["width"], custom["height"], custom["ratio"], custom["skill"]) == \
-        (1024, 1024, "1:1", "my-custom-skill")
-    assert custom["size_lock"] is True
-    # No skill (or explicit Auto text-to-image): nothing is invented.
-    assert apply_generate({"prompt": "cat"}) == {"prompt": "cat"}
-    assert apply_generate({"prompt": "cat", "ratio": "1:1"}) == {"prompt": "cat", "ratio": "1:1"}
-
-
-def test_explicit_size_or_ratio_still_wins_over_the_floor():
-    sid = UNPINNED_MISSING[0]
-    explicit = apply_generate({"skill": sid, "prompt": "x", "width": 1536, "height": 1024}, sid)
+def test_explicit_size_wins_only_for_a_custom_floor():
+    # A declared contract wins over a model-invented size (poster must stay 3:4).
+    poster = apply_generate({"skill": "poster-differentiated-compiler", "prompt": "x",
+                             "width": 1536, "height": 1024, "ratio": "1:1"}, "poster-differentiated-compiler")
+    assert (poster["width"], poster["height"], poster["ratio"]) == (1024, 1360, "3:4")
+    # A custom skill has no contract: explicit pixels and a tier are honored.
+    explicit = apply_generate({"prompt": "x", "width": 1536, "height": 1024}, "my-custom-skill")
     assert (explicit["width"], explicit["height"]) == (1536, 1024)
     assert "size_lock" not in explicit
-    # A ratio is an aspect, not a pixel size: keep the ratio and give it pixels.
-    ratio = apply_generate({"skill": sid, "prompt": "x", "ratio": "16:9"}, sid)
-    assert ratio["ratio"] == "16:9"
-    assert (ratio["width"], ratio["height"]) == pixels_for_ratio("16:9") == (1024, 576)
-    assert ratio["size_lock"] is True
-    # A resolution tier already constrains size; nothing is invented.
-    tier = apply_generate({"skill": sid, "prompt": "x", "resolution": "2k"}, sid)
+    tier = apply_generate({"prompt": "x", "resolution": "2k"}, "my-custom-skill")
     assert "width" not in tier and "height" not in tier
-    tier_ratio = apply_generate({"skill": sid, "prompt": "x", "ratio": "16:9", "resolution": "2k"}, sid)
+    tier_ratio = apply_generate({"prompt": "x", "ratio": "16:9", "resolution": "2k"}, "my-custom-skill")
     assert "width" not in tier_ratio and "height" not in tier_ratio
-    assert pixels_for_ratio("1:1") == (1024, 1024)
-    assert pixels_for_ratio("3:4") == (768, 1024)
-    assert pixels_for_ratio("wide") is None and pixels_for_ratio("0:1") is None
 
 
 @needs_node
-def test_character_preset_ids_are_the_ones_the_page_has():
-    """The Python table keys must be the real applyRaw748 template ids."""
+def test_ts_and_python_typed_rows_agree():
     from test_template_output_979 import js_report
     js = js_report()
+    ts = js["skillOutput"]
+    assert set(ts) == set(OUTPUTS)
+    for sid, row in OUTPUTS.items():
+        got = ts[sid]
+        for key in ("width", "height", "images"):
+            assert got[key] == row[key], (sid, key)
+        assert got.get("ratio") == row.get("ratio"), sid
+        assert got.get("media") == row.get("media"), sid
+        assert got.get("refs") == row.get("refs"), sid
+        assert got.get("calls") == row.get("calls"), sid
     assert [p["id"] for p in js["presets"]["character"]] == list(CHARACTER_EXPECTED)
-    for pid, want in CHARACTER_EXPECTED.items():
-        ts = js["skillOutput"][CHARACTER]["presets"][pid]
-        assert (ts["width"], ts["height"], ts["ratio"], ts["images"]) == want, pid
 
 
-def test_generate_image_description_documents_the_floor():
+def test_generate_image_description_documents_the_typed_contract():
     from ComfyArt.api.mcp_tools import canvas
     desc = canvas.SPECS["generate_image"]["description"]
-    assert "1024x1024 fallback" in desc
-    assert "size-locked to 1024x1024" in desc
-    assert "never submitted with no size" in desc
+    assert "type default" in desc or "typed" in desc or "16:9" in desc
+    assert "1024x1024" in desc
+    assert "custom" in desc.lower() or "unknown" in desc.lower()
 
 
 def test_no_declared_or_floored_output_is_512():
