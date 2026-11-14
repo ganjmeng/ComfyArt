@@ -31,9 +31,9 @@
   /* #335 soft select / scroll — QUESTION-CARD-MVP.md (RS/95); --ca-strong NOT for option stroke */
   --ca-opt-on: #ebebeb;
   /* #340 letter-on: #2d2d2d + #fff (void mid-gray+.55/dark-fg); ban tip #1a1a1a */
-  --ca-letter: rgba(0,0,0,.06);
-  --ca-letter-fg: rgba(0,0,0,.45);
-  --ca-letter-on: #2d2d2d;
+  --ca-letter: #F5F5F5;
+  --ca-letter-fg: #6F6F6F;
+  --ca-letter-on: #2C2C2C;
   --ca-letter-on-fg: #fff;
   --ca-scroll-thumb: rgba(0,0,0,.36);
   --ca-scroll-track: rgba(0,0,0,.06);

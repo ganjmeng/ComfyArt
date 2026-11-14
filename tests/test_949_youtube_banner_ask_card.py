@@ -3,7 +3,7 @@ Chinese first sentence in a Chinese conversation.
 
 Locks the three fixes from the #925 paid acceptance (issuecomment-6845366241):
 1. Card 1's three questions are always in a single ask; page_count 3 does not
-   leave pages 2 and 3 empty (all three stay on page 1, header 1 of 3).
+   leave pages 2 and 3 empty (one question per page, header 1 of 3, Next pages).
 2. Trailing typographic junk (`”,` / `",`) is stripped from card 1 and card 2
    placeholders.
 3. In a Chinese conversation, the agent's first visible sentence is Chinese
@@ -131,8 +131,8 @@ def test_mutation_passthrough_placeholders_fails_the_junk_lock(monkeypatch) -> N
     """If placeholders are passed through uncleaned, the #949 junk lock must go red."""
     real = bot_asks._yt_question
 
-    def dirty_question(raw, locked, lang):
-        q = real(raw if raw else {}, locked, lang)
+    def dirty_question(raw, locked, lang, page=1):
+        q = real(raw if raw else {}, locked, lang, page=page)
         # Revert: keep whatever the model sent, including `”,`.
         if raw and raw.get("placeholder"):
             q["placeholder"] = raw["placeholder"]
@@ -150,29 +150,29 @@ def test_mutation_passthrough_placeholders_fails_the_junk_lock(monkeypatch) -> N
 
 # --- card 1 is one ask, no empty pages ----------------------------------------------------------
 
-def test_card1_partial_ask_is_completed_to_three_questions_on_page_1(monkeypatch) -> None:
+def test_card1_partial_ask_is_completed_to_three_questions_one_per_page(monkeypatch) -> None:
     """The paid-run failure: first ask_user had only Q1 with page_count 3."""
     spec = _spec(monkeypatch, "zh", Q1_ONLY_DIRTY)
     assert [q["id"] for q in spec["questions"]] == [
         "yt_delivery", "yt_banner_text", "yt_brand_assets",
     ]
     assert spec["page_count"] == 3
-    assert all(q["page"] == 1 for q in spec["questions"])
-    # All three on one page + page_count 3 is header chrome only (no empty 2/3).
-    pages = {q["page"] for q in spec["questions"]}
-    assert pages == {1}
+    assert [q["page"] for q in spec["questions"]] == [1, 2, 3]
+    # One question per page fills 1/2/3 — no empty page, still a single ask.
+    assert len({q["page"] for q in spec["questions"]}) == len(spec["questions"]) == spec["page_count"]
 
 
-def test_card2_missing_text_mode_is_not_invented(monkeypatch) -> None:
-    """#934/#940: a card-2 ask that only sent yt_direction stays a single question."""
+def test_card2_missing_text_mode_is_completed_like_card1(monkeypatch) -> None:
+    """#934: a card-2 ask that only sent yt_direction is completed to both questions."""
     raw = {
         "questions": [dict(CARD2_DIRTY["questions"][0])],
         "allow_skip": True,
         "page_count": 2,
     }
     spec = _spec(monkeypatch, "zh", raw)
-    assert [q["id"] for q in spec["questions"]] == ["yt_direction"]
+    assert [q["id"] for q in spec["questions"]] == ["yt_direction", "yt_text_mode"]
     assert spec["page_count"] == 2
+    assert [q["page"] for q in spec["questions"]] == [1, 2]
 
 
 def test_mutation_keeping_only_sent_card1_questions_fails(monkeypatch) -> None:
@@ -202,7 +202,7 @@ def test_mutation_keeping_only_sent_card1_questions_fails(monkeypatch) -> None:
         assert [q["id"] for q in spec["questions"]] == [
             "yt_delivery", "yt_banner_text", "yt_brand_assets",
         ]
-        assert all(q["page"] == 1 for q in spec["questions"])
+        assert [q["page"] for q in spec["questions"]] == [1, 2, 3]
     except AssertionError:
         red = True
     assert red, "keeping only Q1 must fail the card-1 one-ask lock"

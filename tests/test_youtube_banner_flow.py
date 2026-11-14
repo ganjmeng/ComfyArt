@@ -80,9 +80,9 @@ def _assert_card(spec: dict, expected: list, page_count: int, live: dict) -> Non
     assert spec["allow_skip"] is True
     assert "defaults" not in spec
     assert [q["id"] for q in spec["questions"]] == [e[0] for e in expected]
-    for q, (qid, prompt, labels, placeholder) in zip(spec["questions"], expected):
+    for i, (q, (qid, prompt, labels, placeholder)) in enumerate(zip(spec["questions"], expected), start=1):
         assert q["prompt"] == prompt, qid
-        assert q["page"] == 1, qid
+        assert q["page"] == i, qid
         assert q["allow_other"] is True, qid
         assert q["placeholder"] == placeholder, qid
         assert "defaults" not in q, qid

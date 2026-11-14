@@ -160,6 +160,9 @@ def _parse_option(raw: dict, i: int, seen_ids: set[str]) -> dict:
     option = {"id": oid, "label": label}
     if raw.get("description"):
         option["description"] = str(raw["description"])
+    image_url = str(raw.get("image_url") or "").strip()
+    if image_url:
+        option["image_url"] = image_url
     if raw.get("recommended"):
         option["recommended"] = True
     return option
@@ -456,8 +459,9 @@ def normalize_clothing_swap_card(args: dict) -> dict:
 
 
 # youtube-channel-banner (reference run review-assets d7672d03): two cards.
-# Card 1 (pager 1 of 3, all on page 1): delivery, banner text, brand assets.
-# Card 2 (pager 1 of 2): direction, how the final text is set.
+# Card 1 (pager 1 of 3, one question per page): delivery, banner text, brand assets.
+# Card 2 (pager 1 of 2, one question per page): direction, how the final text is set.
+# #934: descriptions render under labels; direction options share the board image_url.
 # Code enforces the card SKELETON: ids, titles, fixed option labels, free-text rows
 # and their placeholders, nothing preselected. Live options (the banner-text tiers
 # from the user's words, the three directions from the board) stay as generated.
@@ -473,9 +477,12 @@ YT_CARD_1_BY_LANG: dict[str, list[dict]] = {
             "id": "yt_delivery",
             "prompt": "这次横幅想怎么交付？（影响后续步骤与文字精度）",
             "options": [
-                {"id": "A", "label": "先出三方向选择板，再做终稿"},
-                {"id": "B", "label": "直接出一张终稿，文字用精确排版渲染"},
-                {"id": "C", "label": "直接出一张终稿，文字由图像模型生成"},
+                {"id": "A", "label": "先出三方向选择板，再做终稿",
+                 "description": "推荐：一张板上放 3 个结构不同的方向，你选定后我做 2560×1440 终稿"},
+                {"id": "B", "label": "直接出一张终稿，文字用精确排版渲染",
+                 "description": "跳过选择板，文字层按像素安全区精确合成，较慢但不易出错字"},
+                {"id": "C", "label": "直接出一张终稿，文字由图像模型生成",
+                 "description": "最快，但英文/中文字形有出错风险，可能需要返修"},
             ],
             "placeholder": "其它想法（比如一次出多个方向终稿）...",
         },
@@ -489,9 +496,12 @@ YT_CARD_1_BY_LANG: dict[str, list[dict]] = {
             "id": "yt_brand_assets",
             "prompt": "有需要放进去的品牌资产吗？（Logo／头像／真人）",
             "options": [
-                {"id": "A", "label": "没有，纯图形＋文字构成识别"},
-                {"id": "B", "label": "有 Logo／头像，我上传给你"},
-                {"id": "C", "label": "需要预留真人出镜位置"},
+                {"id": "A", "label": "没有，纯图形＋文字构成识别",
+                 "description": "我用频道主题自绘图形化视觉元素"},
+                {"id": "B", "label": "有 Logo／头像，我上传给你",
+                 "description": "请发图，我会锁定外观不做改动"},
+                {"id": "C", "label": "需要预留真人出镜位置",
+                 "description": "目前无照片时按占位处理，不凭空捏造面容身份"},
             ],
             "placeholder": "其它（比如指定参考图／配色）...",
         },
@@ -501,9 +511,12 @@ YT_CARD_1_BY_LANG: dict[str, list[dict]] = {
             "id": "yt_delivery",
             "prompt": "How should this banner be delivered? (It changes the next steps and how precise the text can be)",
             "options": [
-                {"id": "A", "label": "Three-direction board first, then the final"},
-                {"id": "B", "label": "One final now, with text set by the exact-layout renderer"},
-                {"id": "C", "label": "One final now, with text drawn by the image model"},
+                {"id": "A", "label": "Three-direction board first, then the final",
+                 "description": "Recommended: put 3 structurally different directions on one board; after you pick, I'll make the 2560×1440 final"},
+                {"id": "B", "label": "One final now, with text set by the exact-layout renderer",
+                 "description": "Skip the board; type is composited exactly in the pixel-safe area — slower, but less likely to garble characters"},
+                {"id": "C", "label": "One final now, with text drawn by the image model",
+                 "description": "Fastest, but English/Chinese letterforms may come out wrong and may need a fix"},
             ],
             "placeholder": "Other ideas (e.g. several direction finals at once)...",
         },
@@ -517,9 +530,12 @@ YT_CARD_1_BY_LANG: dict[str, list[dict]] = {
             "id": "yt_brand_assets",
             "prompt": "Any brand assets to include? (Logo / avatar / real person)",
             "options": [
-                {"id": "A", "label": "None, graphics + type only"},
-                {"id": "B", "label": "I have a logo / avatar to upload"},
-                {"id": "C", "label": "Reserve a spot for a real person"},
+                {"id": "A", "label": "None, graphics + type only",
+                 "description": "I'll draw graphic visual elements from the channel's theme"},
+                {"id": "B", "label": "I have a logo / avatar to upload",
+                 "description": "Please send the image; I'll lock the look and won't change it"},
+                {"id": "C", "label": "Reserve a spot for a real person",
+                 "description": "If there's no photo yet, I'll treat it as a placeholder and won't invent a face or identity"},
             ],
             "placeholder": "Other (e.g. a reference image / colors)...",
         },
@@ -546,8 +562,10 @@ YT_CARD_2_BY_LANG: dict[str, list[dict]] = {
             "id": "yt_text_mode",
             "prompt": "终稿的文字怎么上？（中文＋三行信息，精度差异较大）",
             "options": [
-                {"id": "A", "label": "精确排版（推荐）"},
-                {"id": "B", "label": "图像模型直出"},
+                {"id": "A", "label": "精确排版（推荐）",
+                 "description": "先生成无字底图，再按像素安全区把三行文字确定性合上去，不会错字，但多一步"},
+                {"id": "B", "label": "图像模型直出",
+                 "description": "一次生成，快；中文有出错字风险，可能需要返修"},
             ],
             "placeholder": "其它要求...",
         },
@@ -563,8 +581,10 @@ YT_CARD_2_BY_LANG: dict[str, list[dict]] = {
             "id": "yt_text_mode",
             "prompt": "How should the final's text be set? (Chinese + three lines of info; accuracy varies a lot)",
             "options": [
-                {"id": "A", "label": "Exact layout (Recommended)"},
-                {"id": "B", "label": "Image model renders the text"},
+                {"id": "A", "label": "Exact layout (Recommended)",
+                 "description": "Generate a text-free base first, then composite the three lines deterministically in the pixel-safe area — no typo risk, but one extra step"},
+                {"id": "B", "label": "Image model renders the text",
+                 "description": "One-shot generation, fast; Chinese characters may come out wrong and may need a fix"},
             ],
             "placeholder": "Any other requirements...",
         },
@@ -664,13 +684,101 @@ def clean_ask_placeholder(text: str) -> str:
         out = nxt
 
 
-def _yt_question(raw: dict, locked: dict, lang: str) -> dict:
+
+_VIEW_URL_RE = re.compile(r"/api/view\?\S+")
+
+
+def _yt_chat_blocks(chat_id: str | None = None) -> list[dict]:
+    """Persisted messages, then the live turn (freshest), for board-image lookup."""
+    if not chat_id:
+        try:
+            from .mcp_tools._context import BOT_CHAT_ID, GUARD_CHAT_ID
+            for raw in (BOT_CHAT_ID.get(), GUARD_CHAT_ID.get()):
+                chat = str(raw or "").strip()
+                if chat and not chat.startswith("noturn:"):
+                    chat_id = chat
+                    break
+        except Exception:
+            chat_id = None
+    if not chat_id:
+        return []
+    blocks: list[dict] = []
+    try:
+        from . import chat_store
+        for msg in chat_store.list_messages(chat_id) or []:
+            for block in msg.get("blocks") or []:
+                if isinstance(block, dict):
+                    blocks.append(block)
+    except Exception:
+        pass
+    try:
+        from .bot_turns import ACTIVE_TURNS
+        state = ACTIVE_TURNS.get(chat_id)
+        if state is not None:
+            for block in getattr(state, "blocks", None) or []:
+                if isinstance(block, dict):
+                    blocks.append(block)
+    except Exception:
+        pass
+    return blocks
+
+
+def latest_youtube_board_image_url(chat_id: str | None = None) -> str:
+    """The selection-board image just generated in this run (/api/view URL), or "".
+
+    Looks for generate_image with banner_stage=board, then the matching
+    wait_generation (or generate_image) tool_result. Never invents or crops
+    a new image: the URL is the board already delivered to the canvas.
+    """
+    found = ""
+    pending = False
+    for block in _yt_chat_blocks(chat_id):
+        kind = str(block.get("type") or "")
+        name = str(block.get("name") or "")
+        if kind == "tool_use" and "generate_image" in name:
+            inp = block.get("input") if isinstance(block.get("input"), dict) else {}
+            stage = str(inp.get("banner_stage") or "").strip().lower()
+            pending = stage == "board"
+        if not pending or kind != "tool_result":
+            continue
+        text = str(block.get("text") or "")
+        urls = _VIEW_URL_RE.findall(text)
+        if urls:
+            found = urls[-1].rstrip(".,;)]}")
+            pending = False
+    return found
+
+
+def _yt_apply_board_thumbnails(questions: list[dict], board_url: str | None = None) -> None:
+    """Force every card-2 direction option to share the same board image_url.
+
+    The three directions are distinguished by the description (选择板顶部/中部/底部),
+    not by unique crops. If the run has no board URL yet, reuse the first
+    image_url the agent already sent (still one shared image, never three).
+    """
+    direction = next((q for q in questions if q.get("id") == YT_DIRECTION["id"]), None)
+    if direction is None:
+        return
+    options = [o for o in (direction.get("options") or []) if isinstance(o, dict)]
+    if not options:
+        return
+    url = (board_url if board_url is not None else latest_youtube_board_image_url()).strip()
+    if not url:
+        provided = [str(o.get("image_url") or "").strip() for o in options]
+        url = next((u for u in provided if u), "")
+    if not url:
+        return
+    for item in options:
+        item["image_url"] = url
+
+
+def _yt_question(raw: dict, locked: dict, lang: str, page: int = 1) -> dict:
     q = {
         "id": locked["id"],
         "prompt": locked["prompt"],
         "allow_other": True,
         "placeholder": clean_ask_placeholder(locked["placeholder"]),
-        "page": 1,
+        "page": page,
     }
     if locked["options"] is not None:
         q["options"] = [dict(o) for o in locked["options"]]
@@ -699,19 +807,27 @@ def normalize_youtube_banner_card(args: dict, lang: str | None = None) -> dict:
         if not any(_yt_match(q, lk) for q in questions for lk in card):
             continue
         kept = []
-        # Card 1 (#949): always emit all three questions in this one ask, even
+        # #949: always emit every question of this card in this one ask, even
         # when the model only sent Q1 (that used to render 1/3 with empty
         # pages 2 and 3, then a second ask for the remaining questions).
-        # Card 2: do not invent a missing yt_text_mode — that is #934/#940.
-        complete = card is YT_CARD_1_BY_LANG[lang]
-        for lk in card:
+        # #934: card 2 is completed the same way (yt_text_mode is no longer
+        # left missing). Each question gets its own page; page_count matches
+        # the question count so no page is empty. The user advances with
+        # Next and submits on the last question — still one ask, not two.
+        for index, lk in enumerate(card, start=1):
             raw = next((q for q in questions if _yt_match(q, lk)), None)
             if raw is not None:
-                kept.append(_yt_question(raw, lk, lang))
-            elif complete:
-                kept.append(_yt_question({}, lk, lang))
+                kept.append(_yt_question(raw, lk, lang, page=index))
+            else:
+                kept.append(_yt_question({}, lk, lang, page=index))
         if not kept:
             continue
+        if card is YT_CARD_2_BY_LANG[lang]:
+            _yt_apply_board_thumbnails(kept)
+            for q in kept:
+                if q["id"] == YT_TEXT_MODE["id"]:
+                    for item in q.get("options") or []:
+                        item.pop("image_url", None)
         args["questions"] = kept
         args["page_count"] = pages
         args["allow_skip"] = True

@@ -20,6 +20,7 @@ import pytest
 from conftest import FakeProvider, write_settings
 from test_e2e_comment_edit import app_url, mock_ws  # noqa: F401
 from test_skill_param_guard_e2e_956_957 import LOC, _bind_open_project, _call
+from ask_card_pages import inspect_and_answer, inspect_pages, wait_dock, read_page
 
 pw = pytest.importorskip("playwright.async_api")
 
@@ -227,30 +228,20 @@ async def _open_youtube(p, app_url, lang, sockets):  # noqa: F811
 
 
 async def _answer(pg, picks):
-    card = pg.locator('[data-testid="question-dock"] .ca-q')
-    blocks = card.locator(".ca-q__block")
-    for i, pick in enumerate(picks):
-        await blocks.nth(i).locator(".ca-q__opt").nth(pick).click()
-    await card.locator(".ca-q__body").evaluate("el => { el.scrollTop = el.scrollHeight }")
-    submit = card.locator(".ca-q__submit")
-    for _ in range(8):
-        if LOC["zh"]["chatMessage.submit"] in await submit.inner_text() or \
-                LOC["en"]["chatMessage.submit"] in await submit.inner_text():
-            break
-        await submit.click()
-        await pg.wait_for_timeout(400)
-    await submit.click()
+    await inspect_and_answer(pg, picks)
 
 
 async def _wait_card(pg, prompts):
     card = pg.locator('[data-testid="question-dock"] .ca-q')
     await card.wait_for(timeout=25000)
+    first = prompts[0] if isinstance(prompts, list) else prompts
+    got = []
     for _ in range(200):
         got = [t.strip() for t in await card.locator(".ca-q__prompt").all_inner_texts()]
-        if got == prompts:
+        if got and got[0] == first:
             return card
         await asyncio.sleep(0.1)
-    pytest.fail(f"card did not render the expected prompts, got {got!r}")
+    pytest.fail(f"card did not render the expected first prompt {first!r}, got {got!r}")
 
 
 @pytest.mark.parametrize("lang", ["zh", "en"])
@@ -269,30 +260,28 @@ async def test_fullapp_card2_is_in_the_ui_language(app_url, mock_ws, agent, ws_f
         # Card 1 (already fixed by #962): answer it, then card 2 appears through the real flow.
         await _wait_card(pg, EXP_START[lang])
         await _answer(pg, picks=(0, 0, 0))
-        card = await _wait_card(pg, EXPECTED[lang]["prompts"])
+        await _wait_card(pg, EXPECTED[lang]["prompts"])
         await pg.wait_for_timeout(400)
 
         expected = EXPECTED[lang]
-        head = await card.locator(".ca-q__head").inner_text()
-        assert re.search(r"1\s*(of|/)\s*2", head), head
-        prompts = [t.strip() for t in await card.locator(".ca-q__prompt").all_inner_texts()]
+        pages = await inspect_and_answer(pg, picks=(0, 0))
+        assert len(pages) == 2
+        assert re.search(r"1\s*(of|/)\s*2", pages[0]["head"]), pages[0]["head"]
+        prompts = [p["prompts"][0] for p in pages]
         assert prompts == expected["prompts"], prompts
-        blocks = card.locator(".ca-q__block")
-        assert await blocks.count() == 2
-        for i in range(2):
-            labels = [t.strip() for t in await blocks.nth(i).locator(".ca-q__text").all_inner_texts()]
-            assert labels == expected["labels"][i], (i, labels)
-            placeholder = await blocks.nth(i).locator("input.ca-q__input").get_attribute("placeholder")
-            assert placeholder == expected["placeholders"][i], (i, placeholder)
+        for i, snap in enumerate(pages):
+            assert snap["block_count"] == 1
+            assert snap["scroll_card"] is None
+            assert snap["labels"][0] == expected["labels"][i], (i, snap["labels"])
+            assert snap["placeholders"][0] == expected["placeholders"][i], (i, snap["placeholders"])
+            assert snap["selected"][0] == 0
         if lang == "en":
             # #966 AC: fixed card-2 copy is English — no CJK in prompts, labels or placeholders.
             for text in prompts + [t for row in expected["labels"] for t in row] + expected["placeholders"]:
                 assert not CJK.search(text), text
         await _shot(pg, f"card2-{lang}")
 
-        # Answer A / A: answers come back as option ids, so both languages carry the same
-        # meaning into the final stage (exact layout).
-        await _answer(pg, picks=(0, 0))
+        # Answer A / A already submitted above.
         for _ in range(200):
             if agent.asked2 is not None:
                 break

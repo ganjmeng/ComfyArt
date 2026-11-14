@@ -9,7 +9,7 @@ import { lang, t } from './i18n'
 import { wsBodyError } from './wsErrors'
 import { handleScheduleTurnDone, isSchedulePending, noteScheduleNotify } from './schedulePending'
 
-export interface AskOption { id: string; label: string; description?: string; recommended?: boolean }
+export interface AskOption { id: string; label: string; description?: string; image_url?: string; recommended?: boolean }
 export interface AskQuestion {
   id: string
   prompt: string

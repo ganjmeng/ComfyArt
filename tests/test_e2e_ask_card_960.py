@@ -24,6 +24,7 @@ import pytest
 from conftest import FakeProvider, write_settings
 from test_e2e_comment_edit import app_url, mock_ws  # noqa: F401
 from test_skill_param_guard_e2e_956_957 import LOC, _bind_open_project, _call
+from ask_card_pages import inspect_and_answer, inspect_pages, wait_dock, read_page
 
 pw = pytest.importorskip("playwright.async_api")
 
@@ -152,22 +153,7 @@ async def _open_youtube(p, app_url, lang, sockets):  # noqa: F811
 
 
 async def _answer(pg, picks):
-    card = pg.locator('[data-testid="question-dock"] .ca-q')
-    await card.wait_for(timeout=20000)
-    blocks = card.locator(".ca-q__block")
-    assert await blocks.count() == 3
-    for i, pick in enumerate(picks):
-        opts = blocks.nth(i).locator(".ca-q__opt")
-        await opts.nth(pick).click()
-    await card.locator(".ca-q__body").evaluate("el => { el.scrollTop = el.scrollHeight }")
-    submit = card.locator(".ca-q__submit")
-    for _ in range(8):
-        if LOC["zh"]["chatMessage.submit"] in await submit.inner_text() or \
-                LOC["en"]["chatMessage.submit"] in await submit.inner_text():
-            break
-        await submit.click()
-        await pg.wait_for_timeout(400)
-    await submit.click()
+    await inspect_and_answer(pg, picks)
 
 
 @pytest.mark.parametrize("lang", ["zh", "en"])
@@ -179,6 +165,16 @@ async def test_fullapp_card1_appears_answers_and_continues(app_url, mock_ws, age
         a.bad = bad
         read = await _call(a, emit, "skill", {"action": "read", "id": "youtube-channel-banner"}, 2)
         a.read = read
+        # #934 lengthened the skill text; follow the pager so later asserts can see every card-1 id.
+        chunks = [read.get("content") or ""]
+        offset = read.get("next_offset")
+        n = 10
+        while offset and n < 16:
+            more = await _call(a, emit, "skill", {"action": "read", "id": "youtube-channel-banner", "offset": offset}, n)
+            chunks.append(more.get("content") or "")
+            offset = more.get("next_offset")
+            n += 1
+        a.skill_text = "".join(chunks)
         answered = await _call(a, emit, "ask_user", CARD1, 3)
         a.answered = answered
         await emit(BotEvent(t="delta", text=DONE[lang]))
@@ -197,33 +193,31 @@ async def test_fullapp_card1_appears_answers_and_continues(app_url, mock_ws, age
         assert (BAD_ZH if lang == "zh" else BAD_EN) in raw, agent.bad
         assert mock_ws["submits"] == [] and mock_ws["quotes"] == []
 
-        # (2) the real skill read is paged, and page 1 carries the whole card-1 spec
+        # (2) the real skill read is paged, and the full text still has the card-1 spec
         r = agent.read
         assert r.get("has_more") is True and r.get("next_offset"), r
         assert r.get("total_chars", 0) > 3000
-        page = r.get("content") or ""
+        text = getattr(agent, "skill_text", "") or (r.get("content") or "")
         for needle in ("yt_delivery", "yt_banner_text", "yt_brand_assets"):
-            assert needle in page, needle
+            assert needle in text, needle
 
-        # (3) the card from the fixed call is real, 1 of 3, nothing preselected
-        head = await card.locator(".ca-q__head").inner_text()
-        assert re.search(r"1\s*(of|/)\s*3", head), head
-        prompts = [t.strip() for t in await card.locator(".ca-q__prompt").all_inner_texts()][:3]
+        # (3+4) the card from the fixed call is real, 1 of 3, one question per
+        # page, nothing preselected; answer B / C / A and the agent receives that.
+        pages = await inspect_and_answer(pg, picks=(1, 2, 0))
+        assert len(pages) == 3
+        assert re.search(r"1\s*(of|/)\s*3", pages[0]["head"]), pages[0]["head"]
+        prompts = [p["prompts"][0] for p in pages]
         if lang == "zh":
             assert prompts == [q["prompt"] for q in CARD1["questions"]]
         else:
             # #962: the server locks card 1 in the ask-card language, so an en turn renders the
             # en skeleton even when the scripted agent sent the zh copy.
             assert all(not re.search(r"[\u4e00-\u9fff]", p) for p in prompts), prompts
-        blocks = card.locator(".ca-q__block")
-        assert await blocks.count() == 3
-        for i in range(3):
-            assert await blocks.nth(i).locator(".ca-q__opt[data-on]").count() == 0
-        assert await card.locator(".ca-q__rec").count() == 0
+        for snap in pages:
+            assert snap["block_count"] == 1
+            assert snap["selected"][0] == 0
+            assert snap["scroll_card"] is None
         await _shot(pg, f"card1-{lang}")
-
-        # (4) answer B / C / A (not A/A/A) and the agent receives exactly that
-        await _answer(pg, picks=(1, 2, 0))
         for _ in range(200):
             if getattr(agent, "answered", None) is not None:
                 break
