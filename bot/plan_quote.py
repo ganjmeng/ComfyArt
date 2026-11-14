@@ -52,11 +52,19 @@ CANCEL_TEXT = {
 TOTAL_LABEL = {"zh": "总价", "en": "Total"}
 ABOUT = {"zh": "约", "en": "about"}
 # #968: the published table is the undiscounted list price. The charge is normally the price API's
-# discounted price, so a fallback on it is an upper bound, not the quote. Name it on the card.
-LIST_PRICE_NOTE = {"zh": "标价上限估算", "en": "list-price estimate"}
+# discounted price, so a fallback on it is an upper bound, not the quote. Name it on the row and
+# explain once on the card, so users do not read it as a confident price.
+LIST_PRICE_NOTE = {"zh": "标价上限（未打折）", "en": "list price (upper bound)"}
+LIST_PRICE_EXPLAIN = {
+    "zh": "实时价格暂不可用，按未打折标价估算，实际扣费可能更低。",
+    "en": "The live price is unavailable; this is an undiscounted list-price estimate and the actual charge may be lower.",
+}
 START_LABEL = {"zh": "开始", "en": "Start"}
 CANCEL_LABEL = {"zh": "取消", "en": "Cancel"}
 AUTO_LABEL = {"zh": "自动", "en": "Auto"}
+# #968: no price at all is not 0 — say 「未定价」 and never put a number in the total or prompt.
+UNPRICED_LABEL = {"zh": "未定价", "en": "Unpriced"}
+PARTIAL_UNPRICED = {"zh": "部分未定价", "en": "Partly unpriced"}
 _PROMPT = {
     # #397: credits only in the UI (1 credit = $0.01 via ui_credits); no $ sign.
     "zh": "这个任务共 {n} 步，预计约 {total} 积分，超过了你设置的 {threshold} 积分确认线。确定开始吗？",
@@ -66,6 +74,19 @@ _PROMPT = {
 _PROMPT_ONE = {
     "zh": "这次生成预计约 {total} 积分，达到了你设置的 {threshold} 积分确认线。确定开始吗？",
     "en": "This generation will cost about {total} credits, at or above your {threshold} credits confirm limit. Start?",
+}
+# #968: an unpriced step forces a confirm card without claiming any amount (never "约 0 积分").
+_PROMPT_UNPRICED = {
+    "zh": "这个任务共 {n} 步，价格暂未确定，需要你确认后按实际价格执行。确定开始吗？",
+    "en": "This task has {n} steps with no price available. Confirm to run at the actual price. Start?",
+}
+_PROMPT_PARTIAL_UNPRICED = {
+    "zh": "这个任务共 {n} 步，其中部分步骤暂未定价，需要你确认后按实际价格执行。确定开始吗？",
+    "en": "This task has {n} steps and some have no price available. Confirm to run at the actual price. Start?",
+}
+_PROMPT_UNPRICED_ONE = {
+    "zh": "这次生成的价格暂未确定，需要你确认后按实际价格执行。确定开始吗？",
+    "en": "This generation has no price available. Confirm to run at the actual price. Start?",
 }
 _PRICE_KEYS = ("duration", "resolution", "aspect_ratio", "ratio", "size", "quality", "output_format", "frame_count", "frame_duration_ms")
 _DROP_ARG = ("fallback", "fallback_model", "model")
@@ -93,8 +114,8 @@ def threshold_text(n: float) -> str:
 
 
 def credits_text(n: int, lang: str, *, approx: bool = False) -> str:
-    """#968: render an already-rounded credit count. Line credits are rounded once and the total is
-    their sum, so the card's rows always add up to the total it shows."""
+    """#968: render an already-rounded credit count (the total is rounded once from the USD sum and
+    the rows are apportioned from it, so no row re-rounds on its own)."""
     n = int(n)
     lang = _lang(lang)
     if lang == "zh":
@@ -108,6 +129,31 @@ def credits_label(amount_usd: float, lang: str, *, approx: bool = False) -> str:
     """#397: line / total price as UI credits. Spend 0 → 「积分 0」 / "0 credits"; no $."""
     from .run_budget import ui_credits
     return credits_text(ui_credits(amount_usd), lang, approx=approx)
+
+
+def credit_alloc(amounts: list[Optional[float]], total_credits: int) -> list[int]:
+    """#968: split one rounded total across the priced rows (largest remainder).
+
+    `total_credits` is `ui_credits(exact USD sum)` — the credits the account is charged — so the rows
+    must add up to it. Ceiling each row separately drifts above the charge (4 x $0.115 = 46 credits,
+    but ceil-per-row is 12+12+12+12 = 48). Rows with no price (None) get 0 and keep no amount.
+    """
+    micro = [None if a is None else int(round(max(0.0, float(a)) * 1_000_000)) for a in amounts]
+    credits = [0 if m is None else m // 10_000 for m in micro]
+    remainders = [0 if m is None else m % 10_000 for m in micro]
+    need = int(total_credits) - sum(credits)
+    if need > 0:
+        order = sorted((i for i, m in enumerate(micro) if m is not None),
+                       key=lambda i: (-remainders[i], i))
+        for i in order[:need]:
+            credits[i] += 1
+    elif need < 0:
+        # Defensive only: ui_credits(sum of the same amounts) cannot be below the floors.
+        order = sorted((i for i, m in enumerate(micro) if m is not None and credits[i] > 0),
+                       key=lambda i: (remainders[i], credits[i], i))
+        for i in order[:abs(need)]:
+            credits[i] -= 1
+    return credits
 
 
 def price_source(answer: object) -> tuple[Optional[float], str, str]:
@@ -508,7 +554,7 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
     for step, position in zip(prepared, positions):
         if step.get("svg_blocked"):
             lines.append(Line(
-                text=step["svg_blocked"]["message"], price=ABOUT[lang], amount=0.0, approx=True,
+                text=step["svg_blocked"]["message"], price="", amount=0.0, approx=True,
                 unpriced=True, key=canon_key(step["tool"], step["arguments"], step["model"], plan=True, plan_position=position),
                 units=0, source=SOURCE_UNPRICED, reason="svg_blocked",
             ))
@@ -519,7 +565,7 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
             # #956 / #957: required params are missing; name the real refusal and price nothing.
             lines.append(Line(
                 text=str(blocked.get("error") or blocked.get("user_message") or ""),
-                price=ABOUT[lang], amount=0.0, approx=True, unpriced=True,
+                price="", amount=0.0, approx=True, unpriced=True,
                 key=canon_key(step["tool"], step["arguments"], "", plan=True, plan_position=position),
                 units=0, source=SOURCE_UNPRICED, reason="param_blocked",
             ))
@@ -543,34 +589,45 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         # #968: an undiscounted list-price fallback is an upper bound, not this run's price.
         if source == SOURCE_ESTIMATE and reason == "list_price":
             text = f"{text} · {LIST_PRICE_NOTE[lang]}"
-        if unpriced:
-            price = ABOUT[lang]
-            amount_n = 0.0
-            credits = 0
-        else:
-            # #968: round once per line; the total below is the sum of these, never a re-rounding of USD.
-            credits = ui_credits(amount)
-            price = credits_text(credits, lang, approx=approx)
-            amount_n = float(amount or 0)
+        amount_n = 0.0 if unpriced else float(amount or 0)
         lines.append(Line(
-            text=text, price=price, amount=amount_n, approx=approx or unpriced,
+            text=text, price="", amount=amount_n, approx=approx or unpriced,
             unpriced=unpriced, key=canon_key(step["tool"], step["arguments"], step["model"], plan=True, plan_position=position),
-            units=units, source=source, reason=reason, credits=credits,
+            units=units, source=source, reason=reason, credits=0,
         ))
     total = round(sum(ln.amount for ln in lines), 4)
     ask = _needs_ask(total, threshold, any(ln.unpriced for ln in lines))
     if len(lines) == 1 and not ask:
         return None
-    # One estimated line makes the sum an estimate too: 「约 64 积分」 / "about 64 credits".
-    # #968: the displayed total is the sum of the line credits (not ui_credits(sum of USD)), so the rows
-    # and the total can never disagree: 4 x 0.115 is 12+12+12+12 = 48, not ceil(0.46) = 46/47.
-    total_credits = sum(ln.credits for ln in lines)
-    total_text = credits_text(total_credits, lang, approx=any(ln.approx for ln in lines))
+    # #968: the total is rounded ONCE from the exact USD sum — the credits the account is charged
+    # (`ui_credits` ceil). Rows are apportioned from that total (largest remainder), never ceil-per-row
+    # and never added up: #959's healthy path is 0.1035 + 0.117x3 = 0.4545 -> 46 credits, while
+    # 11 + 12x3 would show 47. Any estimate makes the total 「约」; only all-quote may be exact.
+    any_unpriced = any(ln.unpriced for ln in lines)
+    all_unpriced = all(ln.unpriced for ln in lines)
+    total_credits = 0 if all_unpriced else ui_credits(total)
+    for ln, credits in zip(lines, credit_alloc(
+            [None if ln.unpriced else ln.amount for ln in lines], total_credits)):
+        ln.credits = credits
+        ln.price = UNPRICED_LABEL[lang] if ln.unpriced else credits_text(credits, lang, approx=ln.approx)
+    any_estimate = any(ln.source == SOURCE_ESTIMATE for ln in lines)
+    if any_unpriced:
+        total_text = (UNPRICED_LABEL if all_unpriced else PARTIAL_UNPRICED)[lang]
+    else:
+        total_text = credits_text(total_credits, lang, approx=any_estimate)
+    if any_unpriced:
+        template = (_PROMPT_UNPRICED_ONE if len(lines) == 1 else
+                    (_PROMPT_UNPRICED if all_unpriced else _PROMPT_PARTIAL_UNPRICED))
+        prompt = template[lang].format(n=len(lines))
+    else:
+        prompt = (_PROMPT_ONE if len(lines) == 1 else _PROMPT)[lang].format(
+            n=len(lines), total=total_credits, threshold=ui_credits(threshold))
+    if any(ln.reason == "list_price" for ln in lines):
+        question = "确定开始吗？" if lang == "zh" else "Start?"
+        prompt = prompt.replace(question, f"{LIST_PRICE_EXPLAIN[lang]}{question}")
     return Quote(
         lines=lines, total=total, n=len(lines), ask=ask, lang=lang,
-        prompt=(_PROMPT_ONE if len(lines) == 1 else _PROMPT)[lang].format(
-            n=len(lines), total=total_credits, threshold=ui_credits(threshold),
-        ),
+        prompt=prompt,
         total_label=TOTAL_LABEL[lang], total_text=total_text,
         keys=[ln.key for ln in lines], cancel_text=CANCEL_TEXT[lang],
         units=sum(ln.units for ln in lines), total_credits=total_credits,

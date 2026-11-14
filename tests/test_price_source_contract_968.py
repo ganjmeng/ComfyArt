@@ -125,8 +125,11 @@ async def test_price_timeout_card_is_estimate_labelled_list_price_and_retries_on
     assert line.source == SOURCE_ESTIMATE
     assert line.reason == "list_price" and line.approx and not line.unpriced
     assert line.price == "约 5 积分"
-    assert "标价上限估算" in line.text
+    assert "标价上限（未打折）" in line.text
+    # The total is `ui_credits(exact USD sum)` = 5, marked 「约」 because a row is an estimate.
+    assert card.total_credits == ui_credits(LIST_USD) == 5
     assert card.total_text == "约 5 积分"
+    assert "实时价格暂不可用" in card.prompt and "实际扣费可能更低" in card.prompt
     spec_line = card.ask_spec()["lines"][0]
     assert spec_line["source"] == "estimate" and spec_line["price"] == "约 5 积分"
 
@@ -168,43 +171,95 @@ async def test_no_table_and_no_live_price_is_unpriced_never_a_number(slow_price)
                              pricer=_provider()._price_one, models_for=_no_models)
     assert card is not None and card.ask  # unknown price always asks, even under the line
     assert card.lines[0].unpriced and card.lines[0].source == SOURCE_UNPRICED
-    assert card.lines[0].price == "约" and "0" not in card.lines[0].price
+    # B (#968 HOLD): unpriced shows 「未定价」, not 「约」 and not 0 anywhere in the total/prompt.
+    assert card.lines[0].price == "未定价"
+    assert card.total_text == "未定价" and card.total_credits == 0
+    assert "0" not in card.total_text and "0 积分" not in card.prompt
+    assert "按实际价格执行" in card.prompt
 
 
-# ---- rounding: the rows and the total must agree ----
+# ---- rounding: total is the USD sum rounded once; rows are apportioned from it ----
 
-async def test_per_line_and_total_credits_share_one_rounding():
-    """4 x $0.115: each row ceilings to 12 credits, so the total is 48 — not ceil(0.46) = 46."""
+async def test_959_healthy_path_total_is_the_usd_sum_rounded_once():
+    """#959 real discounts: $0.1035 + $0.117 x 3 = $0.4545 -> 46 credits.
+
+    Ceil-per-row would show 11 + 12 x 3 = 47 and the account was charged 46. The rows are
+    apportioned from the single rounded total, so they still add up to it.
+    """
+    amounts = [0.1035, 0.117, 0.117, 0.117]
+    ids = ["acme/p0", "acme/p1", "acme/p2", "acme/p3"]
+
+    async def pricer(model, _inputs):
+        return amounts[ids.index(model)]
+
+    steps = [_step(mid, f"图 {i}", f"p{i}") for i, mid in enumerate(ids)]
+    card = await build_quote(steps, "zh", threshold=0.0, pricer=pricer, models_for=_no_models)
+    assert card is not None
+    assert card.total == pytest.approx(0.4545)
+    assert card.total_credits == ui_credits(card.total) == 46
+    assert sum(ln.credits for ln in card.lines) == 46  # rows add up to the total
+    assert card.total_text == "46 积分"  # all quote → exact, no 約
+    assert "预计约 46 积分" in card.prompt
+    assert [ln.source for ln in card.lines] == [SOURCE_QUOTE] * 4
+
+    en = await build_quote(steps, "en", threshold=0.0, pricer=pricer, models_for=_no_models)
+    assert en is not None and en.total_text == "46 credits" and sum(ln.credits for ln in en.lines) == 46
+
+
+async def test_a_4_x_0_115_plan_is_46_not_48():
+    """4 x $0.115 = $0.46 -> 46 credits. The old per-row ceiling displayed 12 x 4 = 48."""
     async def pricer(_model, _inputs):
         return 0.115
 
     steps = [_step("acme/poster", f"图 {i}", f"p{i}") for i in range(4)]
     card = await build_quote(steps, "zh", threshold=0.0, pricer=pricer, models_for=_no_models)
     assert card is not None
-    assert [ln.price for ln in card.lines] == ["12 积分"] * 4
-    assert [ln.credits for ln in card.lines] == [12, 12, 12, 12]
     assert card.total == pytest.approx(0.46)
-    assert card.total_credits == sum(ln.credits for ln in card.lines) == 48
-    assert card.total_text == "48 积分"
-    assert "预计约 48 积分" in card.prompt
-    # the old rendering rounded the USD sum instead: 46. The card may not show both numbers.
-    assert ui_credits(card.total) == 46 != card.total_credits
+    assert card.total_credits == ui_credits(card.total) == 46
+    assert sum(ln.credits for ln in card.lines) == 46
+    assert [ln.credits for ln in card.lines] == [12, 12, 11, 11]  # largest-remainder split
+    assert card.total_text == "46 积分" and "预计约 46 积分" in card.prompt
 
     en = await build_quote(steps, "en", threshold=0.0, pricer=pricer, models_for=_no_models)
-    assert en is not None and en.total_text == "48 credits"
-    assert [ln.price for ln in en.lines] == ["12 credits"] * 4
+    assert en is not None and en.total_text == "46 credits"
+    assert sum(ln.credits for ln in en.lines) == 46
 
 
-async def test_a_mixed_estimate_and_exact_card_sums_the_rounded_rows():
+async def test_a_mixed_estimate_and_quote_total_is_approx():
+    """One estimate row makes the total 「约」 even though the total itself is the USD-sum ceiling."""
     async def pricer(model, _inputs):
-        return 0.115 if model == "acme/a" else (0.115, "estimate", "base_price")
+        return 0.115 if model == "acme/a" else (0.115, "estimate", "list_price")
 
     steps = [_step("acme/a", "A"), _step("acme/b", "B")]
     card = await build_quote(steps, "zh", threshold=0.0, pricer=pricer, models_for=_no_models)
     assert card is not None
-    assert [ln.price for ln in card.lines] == ["12 积分", "约 12 积分"]
-    assert card.total_credits == 24 and card.total_text == "约 24 积分"
+    assert card.total == pytest.approx(0.23)
+    assert card.total_credits == ui_credits(card.total) == 23
+    assert sum(ln.credits for ln in card.lines) == 23
+    assert card.total_text == "约 23 积分"  # any estimate → 約
     assert [ln.source for ln in card.lines] == [SOURCE_QUOTE, SOURCE_ESTIMATE]
+    assert "标价上限（未打折）" in card.lines[1].text
+    assert "实时价格暂不可用" in card.prompt
+
+
+async def test_959_fallback_card_total_is_the_usd_sum_marked_approx():
+    """First row falls back to list $0.115, the other three are the $0.117 quote: $0.466 -> 47, 約."""
+    amounts = [0.115, 0.117, 0.117, 0.117]
+    ids = ["acme/p0", "acme/p1", "acme/p2", "acme/p3"]
+
+    async def pricer(model, _inputs):
+        i = ids.index(model)
+        return (amounts[i], "estimate", "list_price") if i == 0 else amounts[i]
+
+    steps = [_step(mid, f"棚拍 {i + 1}", f"p{i}") for i, mid in enumerate(ids)]
+    card = await build_quote(steps, "zh", threshold=0.0, pricer=pricer, models_for=_no_models)
+    assert card is not None
+    assert card.total == pytest.approx(0.466)
+    assert card.total_credits == ui_credits(card.total) == 47
+    assert sum(ln.credits for ln in card.lines) == 47
+    assert card.total_text == "约 47 积分"  # never an exact-looking price when any row is an estimate
+    assert "标价上限（未打折）" in card.lines[0].text
+    assert "标价上限" not in card.lines[1].text
 
 
 # ---- token-billed providers never get an invented exact per-run price ----
@@ -228,7 +283,23 @@ async def test_an_unknown_source_is_never_exact():
                              pricer=unknown_without_number, models_for=_no_models)
     assert card is not None and card.ask
     assert card.lines[0].unpriced and card.lines[0].source == SOURCE_UNPRICED
-    assert card.lines[0].amount == 0.0 and card.lines[0].price == "约"
+    assert card.lines[0].amount == 0.0 and card.lines[0].price == "未定价"
+    assert card.total_text == "未定价" and "0" not in card.total_text
+
+
+async def test_a_partly_unpriced_plan_has_no_numeric_total():
+    """A known $0.02 row + an unpriced row: the total says 部分未定价, never 「约 2 积分」."""
+    async def pricer(model, _inputs):
+        return 0.02 if model == "acme/known" else (None, "unpriced")
+
+    steps = [_step("acme/known", "已知"), _step("acme/unknown", "未知")]
+    card = await build_quote(steps, "zh", threshold=100.0, pricer=pricer, models_for=_no_models)
+    assert card is not None and card.ask  # an unknown price always asks, even far under the line
+    assert [ln.price for ln in card.lines] == ["2 积分", "未定价"]
+    assert card.total_text == "部分未定价" and card.total_credits == 2
+    assert "2 积分" not in card.prompt and "约 2 积分" not in card.prompt
+    assert "部分步骤暂未定价" in card.prompt
+    assert sum(ln.credits for ln in card.lines if not ln.unpriced) == 2
 
 
 # ---- the mutation guard: `_price_one` must carry the source, not just the amount ----

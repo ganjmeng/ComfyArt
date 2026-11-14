@@ -129,10 +129,13 @@ async def test_fully_unpriced_step_still_asks_without_a_fake_zero():
 
     quote = await build_quote(steps, "zh", threshold=100, pricer=pricer, models_for=models_for)
     assert quote is not None and quote.ask  # one step has no price at all, so ask even under the line
-    assert quote.lines[0].price == "约"
-    assert "$" not in quote.lines[0].price and "积分 0" not in quote.lines[0].price
+    # #968 HOLD B: unknown is 「未定价」, never 「约」/0 — and the total is not a number either.
+    assert quote.lines[0].price == "未定价"
+    assert "$" not in quote.lines[0].price and "0" not in quote.lines[0].price
     assert quote.lines[1].price == "10 积分"
-    assert quote.total_text == "约 10 积分"  # the unpriced line makes the sum an estimate too
+    assert quote.total_text == "部分未定价"
+    assert "0 积分" not in quote.prompt and "约 10 积分" not in quote.prompt
+    assert "部分步骤暂未定价" in quote.prompt
 
 
 async def test_an_estimate_line_prefixes_the_total():
