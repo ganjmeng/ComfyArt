@@ -146,7 +146,7 @@ AGENT_GUIDE = (
     "clickable suggestion chips or pill buttons for alternatives, and never "
     "use a red error toast as the primary refuse path. Leave the canvas / "
     "media hero unchanged.\n"
-    "Reply in the user's language and keep replies short."
+    "Reply in the user's language, including your first sentence, and keep replies short."
 )
 
 CORE_MCP_TOOLS = [
