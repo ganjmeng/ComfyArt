@@ -4,7 +4,7 @@ Real Full App (native chat + real `ChatInlineConfirm` + app CSS, 1600x1000 light
 WaveSpeed. **No key, no network, no paid call, $0.** No user key appears in the shots.
 
 - `before/` = PR #970 first head `cea304781564bf1ced978d8495762aa3459cfb4c` (the HOLD revision).
-- `after/`  = `4d3e350c43b5dd7c4888b6ed69324976cfcd7c0c` (the HOLD fix).
+- `after/`  = `ce047e1f03c990ebabfa158091e33ea3b5aee281` (HOLD fix + QA copy nits: one-word 「上限」/"cap" tag before the model copy, en "…lower. Start?").
 - scenarios: `healthy` = #959 discounted rows $0.1035 + $0.117x3; `fallback` = first row on the
   undiscounted list price $0.115, rest $0.117; `unpriced` = one unknown price; `partial` = one known
   $0.02 + one unknown. zh/en each.
