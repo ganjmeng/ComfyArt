@@ -208,8 +208,13 @@ async def test_fullapp_card1_appears_answers_and_continues(app_url, mock_ws, age
         # (3) the card from the fixed call is real, 1 of 3, nothing preselected
         head = await card.locator(".ca-q__head").inner_text()
         assert re.search(r"1\s*(of|/)\s*3", head), head
-        assert [t.strip() for t in await card.locator(".ca-q__prompt").all_inner_texts()][:3] == \
-            [q["prompt"] for q in CARD1["questions"]]
+        prompts = [t.strip() for t in await card.locator(".ca-q__prompt").all_inner_texts()][:3]
+        if lang == "zh":
+            assert prompts == [q["prompt"] for q in CARD1["questions"]]
+        else:
+            # #962: the server locks card 1 in the ask-card language, so an en turn renders the
+            # en skeleton even when the scripted agent sent the zh copy.
+            assert all(not re.search(r"[\u4e00-\u9fff]", p) for p in prompts), prompts
         blocks = card.locator(".ca-q__block")
         assert await blocks.count() == 3
         for i in range(3):

@@ -461,32 +461,73 @@ def normalize_clothing_swap_card(args: dict) -> dict:
 # and their placeholders, nothing preselected. Live options (the banner-text tiers
 # from the user's words, the three directions from the board) stay as generated.
 YT_SKILL = "youtube-channel-banner"
-YT_DELIVERY = {
-    "id": "yt_delivery",
-    "prompt": "这次横幅想怎么交付？（影响后续步骤与文字精度）",
-    "options": [
-        {"id": "A", "label": "先出三方向选择板，再做终稿"},
-        {"id": "B", "label": "直接出一张终稿，文字用精确排版渲染"},
-        {"id": "C", "label": "直接出一张终稿，文字由图像模型生成"},
+# Card 1 fixed text per ask-card language (#962). zh is verbatim from the reference card
+# (review-assets d7672d03); en is the same card translated for the en UI. Both sides use
+# the same question ids and the
+# same A/B/C option ids with the same meaning, so an en pick maps to the same step as zh.
+# `yt_banner_text` options stay live: the three tiers are built from the user's own words.
+YT_CARD_1_BY_LANG: dict[str, list[dict]] = {
+    "zh": [
+        {
+            "id": "yt_delivery",
+            "prompt": "这次横幅想怎么交付？（影响后续步骤与文字精度）",
+            "options": [
+                {"id": "A", "label": "先出三方向选择板，再做终稿"},
+                {"id": "B", "label": "直接出一张终稿，文字用精确排版渲染"},
+                {"id": "C", "label": "直接出一张终稿，文字由图像模型生成"},
+            ],
+            "placeholder": "其它想法（比如一次出多个方向终稿）...",
+        },
+        {
+            "id": "yt_banner_text",
+            "prompt": "横幅上实际要出现哪些文字？",
+            "options": None,  # live: three tiers from the user's words, full text down to channel name only
+            "placeholder": "自己指定文案（含大小写、符号、换行）...",
+        },
+        {
+            "id": "yt_brand_assets",
+            "prompt": "有需要放进去的品牌资产吗？（Logo／头像／真人）",
+            "options": [
+                {"id": "A", "label": "没有，纯图形＋文字构成识别"},
+                {"id": "B", "label": "有 Logo／头像，我上传给你"},
+                {"id": "C", "label": "需要预留真人出镜位置"},
+            ],
+            "placeholder": "其它（比如指定参考图／配色）...",
+        },
     ],
-    "placeholder": "其它想法（比如一次出多个方向终稿）...",
-}
-YT_BANNER_TEXT = {
-    "id": "yt_banner_text",
-    "prompt": "横幅上实际要出现哪些文字？",
-    "options": None,  # live: three tiers from the user's words, full text down to channel name only
-    "placeholder": "自己指定文案（含大小写、符号、换行）...",
-}
-YT_BRAND_ASSETS = {
-    "id": "yt_brand_assets",
-    "prompt": "有需要放进去的品牌资产吗？（Logo／头像／真人）",
-    "options": [
-        {"id": "A", "label": "没有，纯图形＋文字构成识别"},
-        {"id": "B", "label": "有 Logo／头像，我上传给你"},
-        {"id": "C", "label": "需要预留真人出镜位置"},
+    "en": [
+        {
+            "id": "yt_delivery",
+            "prompt": "How should this banner be delivered? (It changes the next steps and how precise the text can be)",
+            "options": [
+                {"id": "A", "label": "Three-direction board first, then the final"},
+                {"id": "B", "label": "One final now, with text set by the exact-layout renderer"},
+                {"id": "C", "label": "One final now, with text drawn by the image model"},
+            ],
+            "placeholder": "Other ideas (e.g. several direction finals at once)...",
+        },
+        {
+            "id": "yt_banner_text",
+            "prompt": "What text should actually appear on the banner?",
+            "options": None,  # live: three tiers from the user's words
+            "placeholder": "Your own copy (including case, symbols and line breaks)...",
+        },
+        {
+            "id": "yt_brand_assets",
+            "prompt": "Any brand assets to include? (Logo / avatar / real person)",
+            "options": [
+                {"id": "A", "label": "None, graphics + type only"},
+                {"id": "B", "label": "I have a logo / avatar to upload"},
+                {"id": "C", "label": "Reserve a spot for a real person"},
+            ],
+            "placeholder": "Other (e.g. a reference image / colors)...",
+        },
     ],
-    "placeholder": "其它（比如指定参考图／配色）...",
 }
+# Backward-compatible aliases (zh) used by banner_compose for answer lookup.
+YT_DELIVERY = next(q for q in YT_CARD_1_BY_LANG["zh"] if q["id"] == "yt_delivery")
+YT_BANNER_TEXT = next(q for q in YT_CARD_1_BY_LANG["zh"] if q["id"] == "yt_banner_text")
+YT_BRAND_ASSETS = next(q for q in YT_CARD_1_BY_LANG["zh"] if q["id"] == "yt_brand_assets")
 YT_DIRECTION = {
     "id": "yt_direction",
     "prompt": "选哪个方向做 2560×1440 终稿？",
@@ -502,10 +543,27 @@ YT_TEXT_MODE = {
     ],
     "placeholder": "其它要求...",
 }
-YT_CARD_1 = (YT_DELIVERY, YT_BANNER_TEXT, YT_BRAND_ASSETS)
+# Every locked card-1 question in every language, for matching answered/legacy blocks.
+YT_CARD_1 = tuple(q for card in YT_CARD_1_BY_LANG.values() for q in card)
 YT_CARD_2 = (YT_DIRECTION, YT_TEXT_MODE)
 YT_RECOMMENDED = "（推荐）"
 _YT_LIVE_MAX = 3
+
+
+def yt_card1_lang(lang: str | None = None) -> str:
+    """Card-1 language: explicit, else the ask-card language (`card_lang`, #962)."""
+    if lang in YT_CARD_1_BY_LANG:
+        return lang
+    got = card_lang()
+    return got if got in YT_CARD_1_BY_LANG else "zh"
+
+
+def _yt_prompt_head(prompt: object) -> str:
+    """Fixed title without the parenthetical qualifier and trailing punctuation."""
+    text = str(prompt or "").strip()
+    for mark in ("（", " ("):
+        text = text.split(mark)[0]
+    return text.rstrip("？? ").strip()
 
 
 def _yt_match(raw: object, locked: dict) -> bool:
@@ -513,8 +571,8 @@ def _yt_match(raw: object, locked: dict) -> bool:
         return False
     qid = str(raw.get("id") or "").strip()
     prompt = str(raw.get("prompt") or "").strip()
-    base = locked["prompt"].split("（")[0].rstrip("？?")
-    return qid == locked["id"] or (bool(prompt) and prompt.startswith(base))
+    base = _yt_prompt_head(locked["prompt"])
+    return qid == locked["id"] or (bool(prompt) and bool(base) and prompt.startswith(base))
 
 
 def _yt_strip_recommended(text: str) -> str:
@@ -564,8 +622,9 @@ def _yt_question(raw: dict, locked: dict) -> dict:
     return q
 
 
-def normalize_youtube_banner_card(args: dict) -> dict:
-    """Force the youtube-channel-banner card skeletons (review-assets d7672d03)."""
+def normalize_youtube_banner_card(args: dict, lang: str | None = None) -> dict:
+    """Force the youtube-channel-banner card skeletons in the ask-card language (review-assets d7672d03)."""
+    lang = yt_card1_lang(lang)
     args = dict(args or {})
     questions = args.get("questions")
     if not isinstance(questions, list) or not questions:
@@ -574,7 +633,7 @@ def normalize_youtube_banner_card(args: dict) -> dict:
             questions = [legacy]
         else:
             return args
-    for card, pages in ((YT_CARD_1, 3), (YT_CARD_2, 2)):
+    for card, pages in ((YT_CARD_1_BY_LANG[lang], 3), (YT_CARD_2, 2)):
         if not any(_yt_match(q, lk) for q in questions for lk in card):
             continue
         kept = []
