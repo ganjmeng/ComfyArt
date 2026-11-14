@@ -1568,6 +1568,12 @@ async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
                                         timeout=aiohttp.ClientTimeout(total=QUOTE_TIMEOUT_S)) as res:
                     data = ((await _json(res)) or {}).get("data") or {} if res.status < 400 else {}
                     if res.status >= 400:
+                        if res.status >= 500 and attempt < QUOTE_RETRIES:
+                            # #968: a 5xx can be transient (cold start / upstream blip): retry once.
+                            log.warning("WaveSpeed price API %s for %s (attempt %d); retrying once",
+                                        res.status, model, attempt + 1)
+                            await asyncio.sleep(QUOTE_RETRY_BACKOFF_S)
+                            continue
                         log.warning("WaveSpeed price API %s for %s %s; showing an estimate", res.status, model, priced)
                         break
             price = data.get("discounted_price", data.get("price")) if isinstance(data, dict) else None

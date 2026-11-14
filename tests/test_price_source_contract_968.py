@@ -162,6 +162,14 @@ async def test_a_4xx_price_error_is_not_retried_and_the_fallback_is_still_an_est
     assert slow_price["price_posts"] == 1  # a 4xx will fail the same way: no retry
 
 
+async def test_a_5xx_price_error_retries_once_then_estimates(slow_price):
+    slow_price["hang"] = False
+    slow_price["status"] = 503
+    price, source, reason = await _provider()._price_one(FLARE_T2I, {})
+    assert (price, source, reason) == (LIST_USD, SOURCE_ESTIMATE, "list_price")
+    assert slow_price["price_posts"] == 2  # transient 5xx: one retry, then the labelled fallback
+
+
 async def test_no_table_and_no_live_price_is_unpriced_never_a_number(slow_price):
     slow_price["hang"] = False
     slow_price["status"] = 400
