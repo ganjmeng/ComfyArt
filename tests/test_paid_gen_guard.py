@@ -179,8 +179,15 @@ async def test_stop_text_follows_ui_language_en(monkeypatch, submits):
 
 
 async def test_count_argument_counts_images(monkeypatch, submits):
-    steps = [_s8_gen(0, refs=["shape:src"], count=3), _s8_gen(1, refs=["shape:src"], count=2)]
-    error, *_ = await _local(monkeypatch, steps)
+    # The cap must honor generate_image count=. A declared OUTPUTS skill (#985)
+    # forces count=1, so this uses a custom skill (no contract) to keep the
+    # argument visible to the guard: count=3 then count=2 exceeds the 4-image cap
+    # after the first paid submit.
+    steps = [
+        ("generate_image", {"prompt": "shot 0", "skill": "my-custom-skill", "count": 3}),
+        ("generate_image", {"prompt": "shot 1", "skill": "my-custom-skill", "count": 2}),
+    ]
+    error, *_ = await _local(monkeypatch, steps, user_text="画一组图")
     assert len(_paid(submits)) == 1 and error.startswith(ZH_STOP)
 
 

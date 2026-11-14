@@ -416,6 +416,13 @@ export interface SkillOutput extends SkillOutputStage {
   refs?: string
   /** #982: design has not finished visual review; never treat this value as final. */
   provisional?: string
+  /** #982: accepted delivered-image range when a brief may yield 1 or 2 (poster). */
+  images_min?: number
+  images_max?: number
+  /** #982: ratio-mode size lock (tier-only models cannot hit exact pixels). */
+  lock?: 'ratio'
+  /** #982: default material studies for logo-material-explorer. */
+  materials?: readonly string[]
 }
 /** #979: product ruling #911 comment 6872615903 — brand is a two-step 4-image set:
  *  3×1024×1024 (1:1) direction proposals, then 1×2048×1152 (16:9) guideline board. */
@@ -428,6 +435,16 @@ export const PACKAGING_PLAYFUL_STAGES_979: SkillOutputStage[] = [
   { width: 1536, height: 2048, ratio: '3:4', images: 3 },
   { width: 2048, height: 1152, ratio: '16:9', images: 1 },
 ]
+/** #982 product: the measured logo-material sample is 1254×1254. ONE switch
+ *  (1024 = 1k tier); flare/edit cannot hit exact pixels, so 1254 selects the 2k tier.
+ *  Mirror bot/skill_output.py::LOGO_MATERIAL_SIZE_982. */
+export const LOGO_MATERIAL_SIZE_982 = 1254
+export const LOGO_MATERIALS_982 = [
+  'brushed metal',
+  'clear glass',
+  'woven fabric / embroidered emblem',
+  'glazed ceramic',
+] as const
 /** #982: eight character templates, one sheet each, at the ratio the template's own
  *  media declares (1:1 turnaround/outfit/prop, 3:4 editorial, 16:9 expression/
  *  modeling/basic/technical). Design 6874380577 raised 1:1; QA HOLD 6874585151
@@ -457,7 +474,8 @@ export const SKILL_OUTPUT: Record<string, SkillOutput> = {
   // the default path submitted no size and the provider picked the pixels. Minimal
   // product default: one 1:1 1024x1024 brushed-metal study; Additional Details may
   // name another finish, never a second frame.
-  'logo-material-explorer': { width: 1024, height: 1024, ratio: '1:1', images: 1 },
+  // #996 / #982: 4 separate 1:1 studies at the measured 1254² (2k tier on flare/edit). Dead presets removed (#981).
+  'logo-material-explorer': { width: LOGO_MATERIAL_SIZE_982, height: LOGO_MATERIAL_SIZE_982, ratio: '1:1', images: 4, lock: 'ratio', materials: [...LOGO_MATERIALS_982] },
   // #982: eight templates, eight plans, one sheet each. Flat fields are the default
   // turnaround template (also the dialog's first template).
   'character-sheet-design': {
@@ -496,7 +514,7 @@ export const SKILL_OUTPUT: Record<string, SkillOutput> = {
   'naive-illustration': { width: 1024, height: 1024, ratio: '1:1', images: 1, refs: 'uploaded refs' },
   'commerce-strategist': { width: 1024, height: 1024, ratio: '1:1', images: 1, refs: 'optional ref assets' },
   'promo-ecommerce': { width: 1024, height: 1024, ratio: '1:1', images: 1, refs: 'product image' },
-  'taobao-product': { width: 1024, height: 1024, ratio: '1:1', images: 1, refs: 'product image (main image is 1:1)' },
+  'taobao-product': { width: 1024, height: 1024, ratio: '1:1', images: 4, refs: 'product image (main image is 1:1)' },
   'banner-design-director': { width: 2048, height: 1152, ratio: '16:9', images: 1, refs: 'uploaded refs; pass every one' },
   'ppt-visual': { width: 2048, height: 1152, ratio: '16:9', images: 3, refs: 'uploaded refs; pass every one', provisional: 'page count pending visual review; current 3', calls: [{width: 2048, height: 1152, ratio: '16:9', images: 1, label: 'cover'}, {width: 2048, height: 1152, ratio: '16:9', images: 1, label: 'section'}, {width: 2048, height: 1152, ratio: '16:9', images: 1, label: 'comparison'}] },
   'web-product-visual-design': { width: 2048, height: 1152, ratio: '16:9', images: 1, refs: 'uploaded refs; pass every one' },
@@ -504,7 +522,7 @@ export const SKILL_OUTPUT: Record<string, SkillOutput> = {
   'premium-website': { width: 2048, height: 1152, ratio: '16:9', images: 2, refs: 'uploaded refs; pass every one', provisional: 'page count pending visual review; current 2', calls: [{width: 2048, height: 1152, ratio: '16:9', images: 1, label: 'hero'}, {width: 2048, height: 1152, ratio: '16:9', images: 1, label: 'first-screen system'}] },
   'restaurant-website': { width: 2048, height: 1152, ratio: '16:9', images: 3, refs: 'uploaded refs; pass every one', provisional: 'page count pending visual review; current 3', calls: [{width: 2048, height: 1152, ratio: '16:9', images: 1, label: 'mood hero'}, {width: 2048, height: 1152, ratio: '16:9', images: 1, label: 'menu board'}, {width: 2048, height: 1152, ratio: '16:9', images: 1, label: 'reserve/CTA'}] },
   'interior-architectural-visualization': { width: 2048, height: 1152, ratio: '16:9', images: 1, refs: 'uploaded refs; eye-level wide shot, detail vignette is 4:3' },
-  'poster-differentiated-compiler': { width: 1536, height: 2048, ratio: '3:4', images: 1, refs: 'uploaded refs; instruction says default 3:4' },
+  'poster-differentiated-compiler': { width: 1536, height: 2048, ratio: '3:4', images: 1, images_min: 1, images_max: 2, refs: 'uploaded refs; instruction says default 3:4' },
   'photo-split-poster': { width: 1638, height: 2048, ratio: '4:5', images: 1, refs: 'photo (image 1); keep the photo/geometry split', provisional: '4:5 vs 3:4 pending visual review; current 4:5' },
   'yingzao': { width: 1536, height: 2048, ratio: '3:4', images: 1, refs: 'photo (image 1); no invented architecture' },
   'meta-ads-creative-director': { width: 1024, height: 1024, ratio: '1:1', images: 3, refs: 'product/person refs, same on every call', calls: [{width: 1024, height: 1024, ratio: '1:1', images: 1, label: 'feed 1:1'}, {width: 1638, height: 2048, ratio: '4:5', images: 1, label: 'feed 4:5'}, {width: 1152, height: 2048, ratio: '9:16', images: 1, label: 'story/reel 9:16'}] },
@@ -525,7 +543,7 @@ export const SKILL_OUTPUT: Record<string, SkillOutput> = {
 }
 
 export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
-  { id: 'poster-differentiated-compiler', name: t('skills.posterDesign'), instructions: 'You are a production poster designer. Deliver print-ready compositions, not loose mood sketches.\n1) Brief: pull headline, subject, audience and use (event, promo, editorial) from the upload and notes.\n2) Hierarchy: one hero subject, strong headline typography in quotes, clear subcopy ladder, generous margins.\n3) Ratio: default 3:4; keep safe margins for print crop. Offer 2 distinct art directions when the brief is open.\n4) Finish: high contrast, legible at arm length, no clipped type. Put every on-art phrase in quotes.\n5) Refs: when the user uploaded a file, pass its shape id in refs (ref_modes content) on every generate_image call.',
+  { id: 'poster-differentiated-compiler', name: t('skills.posterDesign'), instructions: 'You are a production poster designer. Deliver print-ready compositions, not loose mood sketches.\n1) Brief: pull headline, subject, audience and use (event, promo, editorial) from the upload and notes.\n2) Hierarchy: one hero subject, strong headline typography in quotes, clear subcopy ladder, generous margins.\n3) Ratio: default 3:4; keep safe margins for print crop. Deliver 1 poster when the brief is clear, or 2 distinct art directions when it is open; either count is valid.\n4) Finish: high contrast, legible at arm length, no clipped type. Put every on-art phrase in quotes.\n5) Refs: when the user uploaded a file, pass its shape id in refs (ref_modes content) on every generate_image call.',
     category: 'ads', cover: cover('poster-differentiated-compiler'), quickStartCover: quickStartCover('poster-differentiated-compiler'), featured: feedCovers('poster-differentiated-compiler'), video: video('poster-differentiated-compiler'),
     inputs: REF_CARD_INPUTS_687 },
   // #635 Phase2-S2 A: deepen `social` Fashion UGC (candid / off-duty) + keep RedNote covers/set; DO NOT invent fashion-ugc.
@@ -569,11 +587,10 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
     cover: cover('universal-multi-angle-grid'), quickStartCover: quickStartCover('universal-multi-angle-grid'), quickStartCoverFit: 'contain',
     featured: feedCovers('universal-multi-angle-grid'), video: video594('universal-multi-angle-grid'),
     inputs: MULTI_ANGLE_INPUTS },
-  { id: 'logo-material-explorer', name: t('skills.logoMaterialExplorer'), instructions: 'You are a production 3D material artist for logo finish studies. Explore materials only — never redesign the mark.\n1) Lock geometry: keep logo paths, proportions and negative space identical to the provided file.\n2) Materials: vary finish only (metal, glass, plastic, fabric, ceramic) from Additional Details; when it names none, use brushed metal. Never redesign the mark.\n3) Stage: neutral studio turntable or soft gradient; soft product lighting; no busy brand scenes.\n4) Scope: one material study per frame; do not invent a full VI kit or packaging system.\n5) Refs: pass the logo shape id in refs (ref_modes content) on every generate_image call.\n6) Delivery: exactly one 1:1 1024×1024 material study per run, count=1; pass skill: "logo-material-explorer" and the logo shape id in refs.',
+  { id: 'logo-material-explorer', name: t('skills.logoMaterialExplorer'), instructions: 'You are a production 3D material artist for logo finish studies. Explore materials only — never redesign the mark.\n1) Lock geometry: keep logo paths, proportions and negative space identical to the provided file.\n2) Materials: vary finish only (metal, glass, plastic, fabric, ceramic) from Additional Details; when it names none, deliver four default studies: brushed metal, clear glass, woven fabric / embroidered emblem, and glazed ceramic. Never redesign the mark.\n3) Stage: neutral studio turntable or soft gradient; soft product lighting; no busy brand scenes.\n4) Scope: one material study per frame; do not invent a full VI kit or packaging system.\n5) Refs: pass the logo shape id in refs (ref_modes content) on every generate_image call.\n6) Delivery: four separate 1:1 material studies of the SAME uploaded logo at the locked 1254×1254 canvas (2k tier on flare/edit), one material per generate_image call, count=1; pass skill: "logo-material-explorer" and the logo shape id in refs on every call. Never merge the materials into one grid.',
     category: 'branding',
     cover: cover('logo-material-explorer'), quickStartCover: quickStartCover('logo-material-explorer'), quickStartCoverFit: 'contain',
     featured: feedCovers('logo-material-explorer'), video: pinned('wash-lm/logo-material', WASH_LM, 'hero.mp4'), /* VELA liquid-chrome hero I2V (r2; was ffmpeg cover push-in) */  // #748: left = 1 video + 3 examples; hl0=video → this mp4
-    presets: [P('metal', '金属拉丝', 'Brushed metal', 'Style: brushed metal 3D logo material study on a neutral turntable, identical mark geometry, soft studio light, no redesign.'), P('glass', '透明玻璃', 'Clear glass', 'Style: clear glass 3D logo material study with soft refraction, identical mark geometry, soft gradient backdrop.'), P('fabric', '织物绣章', 'Fabric emblem', 'Style: woven fabric or embroidered emblem material study of the same logo, identical geometry, soft studio light.'), P('ceramic', '陶瓷釉面', 'Ceramic glaze', 'Style: glazed ceramic 3D logo material study, identical mark geometry, soft highlight, neutral seamless set.')],
     inputs: REF_CARD_INPUTS_687 },
   { id: 'meta-ads-creative-director', name: t('skills.metaAdsCreative'), instructions: 'You are a production Meta paid-social creative director. Ship a ratio pack that shares one idea.\n1) Brief: pull product, audience, offer and CTA from Additional Details; put every on-art phrase in quotes.\n2) Ratios: deliver 1:1 feed, 4:5 feed and 9:16 story/reel that share motif, palette and CTA.\n3) Treatment: prefer photo-led UGC or product-hero; avoid static website-banner layouts.\n4) Mobile: short high-contrast type; safe margins for UI chrome; one clear CTA.\n5) Refs: when files are uploaded, pass each shape id in refs (ref_modes content) on every generate_image call.',
     category: 'ads',
@@ -676,7 +693,7 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
     presets: [P('craft', '手工桌面', 'Craft table', 'Style: fabric collage on a craft table, ≥5 textiles, visible stitches and frayed edges.'), P('wall', '布艺墙饰', 'Textile wall', 'Style: textile wall collage, mixed fabrics, handmade stitch character, tactile depth.')],
     inputs: [I('brief', ['主题说明', 'Theme brief'], 'text', true, ['拼贴主题与材质偏好', 'Collage theme and material prefs']), I('refs', ['参考', 'References'], 'image'), VISUAL] },
   // #640/#642/#643 Phase3 — 19 NEW skills; cover643 pins; NEARMISS_INPUTS (Upload+Additional); examples/featured empty until fuller gold; no competitor copy. Dropped-13 out.
-  { id: 'taobao-product', name: t('skills.taobaoProduct'), instructions: 'You are a production Taobao listing visual designer. Ship a Chinese PDP set — not an Amazon white-bg catalog set.\n1) Brief: product, selling points and module list from productImage + sellPoints; keep product identity locked.\n2) Modules: main image, carousel frames, lifestyle scene and detail-page benefit blocks with Chinese claim hierarchy.\n3) Division: this is Taobao page system work; leave Amazon/A+ listing grids to the product skill.\n4) Copy: put every on-art Chinese phrase in quotes; mobile-legible. Any promo copy the user asks for (e.g. 「买一送一」) MUST be written verbatim inside quotes in that image prompt as on-image text, e.g. sticker in the top-right corner reading "买一送一", large bold, exact characters, clearly legible; never drop or paraphrase it, and check the result shows it.\n5) Main image: 1:1, product above center filling over 60% of the frame, selling-point sticker fixed in a corner; category locked to the uploaded product.\n6) Refs: pass product shape ids in refs (ref_modes content) on every generate_image call.',
+  { id: 'taobao-product', name: t('skills.taobaoProduct'), instructions: 'You are a production Taobao listing visual designer. Ship a Chinese PDP set — not an Amazon white-bg catalog set.\n1) Brief: product, selling points and module list from productImage + sellPoints; keep product identity locked.\n2) Modules: deliver 4 separate 1:1 images (main image, carousel frame, lifestyle scene, detail-page benefit block) with Chinese claim hierarchy; one module per generate_image call, count=1.\n3) Division: this is Taobao page system work; leave Amazon/A+ listing grids to the product skill.\n4) Copy: put every on-art Chinese phrase in quotes; mobile-legible. Any promo copy the user asks for (e.g. 「买一送一」) MUST be written verbatim inside quotes in that image prompt as on-image text, e.g. sticker in the top-right corner reading "买一送一", large bold, exact characters, clearly legible; never drop or paraphrase it, and check the result shows it.\n5) Main image: 1:1, product above center filling over 60% of the frame, selling-point sticker fixed in a corner; category locked to the uploaded product.\n6) Refs: pass product shape ids in refs (ref_modes content) on every generate_image call.',
     category: 'ecommerce', cover: cover643('taobao-product'), examples: ex643('taobao-product', [1, 2, 3, 4, 5, 6, 7, 8]), featured: [],
     video: pinned('805/reuse/taobao-product', 'b2ec2a5c7aeb294257087216057de4bb4105d944', 'cover.mp4'), /* #805 hover */
     presets: [P('main', '主图', 'Main image', 'Style: Taobao 1:1 main image, clean product hero, Chinese claim space reserved, high thumb-stop contrast.'), P('scene', '场景图', 'Scene', 'Style: Taobao lifestyle scene with product in use, Chinese benefit callout in quotes.'), P('detail', '详情模块', 'Detail module', 'Style: Taobao detail-page benefit module, stacked claims in quotes, product truth locked.')],

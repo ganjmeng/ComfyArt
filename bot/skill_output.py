@@ -99,8 +99,19 @@ CHARACTER_PRESETS_982: dict[str, dict] = {
     "editorial": {"width": 1536, "height": 2048, "ratio": "3:4", "images": 1,
                   "name": "Editorial Fashion Sheet"},
 }
+# #996 / #982: Lovart-measured 1254². ONE switch: set to 1024 for the 1k tier
+# (tier-only models: 1254 -> 2k, 1024 -> 1k; see api/wavespeed._resolution).
+# flare/edit cannot hit exact pixels, so the row is ratio-locked. Mirror in src/skills.ts.
+LOGO_MATERIAL_SIZE_982 = 1254
+LOGO_MATERIALS_982: tuple[str, ...] = (
+    "brushed metal", "clear glass", "woven fabric / embroidered emblem", "glazed ceramic",
+)
+RATIO_LOCK = "ratio"
+
+
 def _out(width: int, height: int, ratio: str, images: int, names: tuple[str, ...],
-         *, refs: str = "", calls: list[dict] | None = None, media: str = "") -> dict:
+         *, refs: str = "", calls: list[dict] | None = None, media: str = "",
+         images_min: int | None = None, images_max: int | None = None) -> dict:
     row: dict = {"width": width, "height": height, "ratio": ratio, "images": images, "names": names}
     if refs:
         row["refs"] = refs
@@ -108,6 +119,10 @@ def _out(width: int, height: int, ratio: str, images: int, names: tuple[str, ...
         row["calls"] = calls
     if media:
         row["media"] = media
+    if images_min is not None:
+        row["images_min"] = images_min
+    if images_max is not None:
+        row["images_max"] = images_max
     return row
 
 
@@ -145,7 +160,7 @@ TYPE_OUTPUTS_982: dict[str, dict] = {
     "promo-ecommerce": _out(1024, 1024, "1:1", 1,
         ("promo-ecommerce", "电商促销主视觉", "E-commerce Promo Key Visual"),
         refs="product image"),
-    "taobao-product": _out(1024, 1024, "1:1", 1,
+    "taobao-product": _out(1024, 1024, "1:1", 4,
         ("taobao-product", "淘宝商品视觉", "Taobao Product Visuals"),
         refs="product image (main image is 1:1)"),
     # --- wide 16:9 (provider 2K: 2048x1152) ---
@@ -181,9 +196,12 @@ TYPE_OUTPUTS_982: dict[str, dict] = {
         ("interior-architectural-visualization", "室内与建筑可视化", "Interior & Architectural Visualization"),
         refs="uploaded refs; eye-level wide shot, detail vignette is 4:3"),
     # --- portrait 3:4 (product: 1024x1360 / 2k) ---
+    # #996: ratio stays 3:4; count is 1 when the brief is clear, or 2 art directions
+    # when it is open. Either delivered count is valid (images_min/images_max).
     "poster-differentiated-compiler": _out(1536, 2048, "3:4", 1,
         ("poster-differentiated-compiler", "海报设计", "Poster Design"),
-        refs="uploaded refs; instruction says default 3:4"),
+        refs="uploaded refs; instruction says default 3:4",
+        images_min=1, images_max=2),
     # PROVISIONAL 982: 4:5 vs 3:4 pending visual review; current 4:5.
     "photo-split-poster": _out(1638, 2048, "4:5", 1,
         ("photo-split-poster", "照片对半抽象海报", "Photo Split Abstract Poster"),
@@ -305,12 +323,12 @@ OUTPUTS: dict[str, dict] = {
         "width": 1536, "height": 2048, "ratio": "3:4", "images": 1,
         "names": ("clothing-swap", "AI服装换装", "AI Clothing Swap"),
     },
-    # #982: the example-type skill lost its 4 dead presets (applyRaw748) and had no
-    # output contract, so the default path submitted no size. Product-minimal
-    # default: one 1:1 1024x1024 brushed-metal study; Additional Details may name
-    # another finish, but never a second frame.
+    # #996 / #982: 4 separate 1:1 material studies of the same uploaded logo at
+    # Lovart's measured 1254×1254 (product confirmed 2K). Dead presets are gone
+    # (#981). Ratio-locked because flare/edit cannot hit exact 1254 pixels.
     "logo-material-explorer": {
-        "width": 1024, "height": 1024, "ratio": "1:1", "images": 1,
+        "width": LOGO_MATERIAL_SIZE_982, "height": LOGO_MATERIAL_SIZE_982, "ratio": "1:1",
+        "images": 4, "lock": RATIO_LOCK, "materials": LOGO_MATERIALS_982,
         "names": ("logo-material-explorer", "徽标材质探索器", "Logo Material Explorer"),
     },
     # #982: eight templates, eight plans, one sheet each. Flat fields are the
@@ -552,6 +570,23 @@ def preset_from_text(text: object) -> str:
     return m.group(1) if m else ""
 
 
+def accepted_image_counts(name: object, preset_id: object = "") -> tuple[int, int] | None:
+    """Inclusive (min, max) delivered-image counts that must not turn red.
+
+    Most skills have min == max == images. Poster allows 1 or 2 (#996 product ruling).
+    """
+    sid = resolve(name)
+    if not sid:
+        return None
+    if sid in PRESET_PLAN_SKILLS:
+        n = int(plan_for(sid, preset_id)["images"])
+        return n, n
+    row = OUTPUTS[sid]
+    lo = int(row.get("images_min", row["images"]))
+    hi = int(row.get("images_max", row["images"]))
+    return lo, hi
+
+
 def is_single(name: object, preset_id: object = "") -> bool:
     sid = resolve(name)
     if not sid:
@@ -560,9 +595,8 @@ def is_single(name: object, preset_id: object = "") -> bool:
         # #982: a video skill is never a one-shot still skill; its still path may
         # legitimately run more than once (storyboard/style candidates).
         return False
-    if sid in PRESET_PLAN_SKILLS:
-        return int(plan_for(sid, preset_id)["images"]) == 1
-    return int(OUTPUTS[sid]["images"]) == 1
+    counts = accepted_image_counts(name, preset_id)
+    return counts == (1, 1)
 
 # #905: a ratio the user wrote in their own message overrides the default.
 # One exact size per ratio. A ratio the chat model wrote is ignored; a ratio not in the table falls back.
@@ -800,6 +834,12 @@ def apply_generate(args: dict | None, current_skill: str = "", user_text: str | 
     args["count"] = 1
     # The page audits the downloaded file against these pixels. This does not change the model.
     args["size_lock"] = True
+    if row.get("lock") == RATIO_LOCK:
+        # flare/edit and other tier-only models cannot hit exact pixels (e.g. 1254²).
+        from ..api.skill_size import RATIO_MODE
+        args["size_lock_mode"] = RATIO_MODE
+    else:
+        args.pop("size_lock_mode", None)
     if plan:
         # #979: keep the resolved template/stage on the args so the relay pass
         # (api/mcp_tools/canvas.py applies this a second time) is idempotent.
@@ -960,6 +1000,35 @@ def _run_hint_declared(name: object, user_text: str = "", ref_image: bytes | Non
             if row.get("ratio"):
                 size += f" ratio={row['ratio']}"
     refs = f" Refs: {row['refs']}." if row.get("refs") else ""
+    if sid == "poster-differentiated-compiler":
+        # #996: do not say "exactly 1" — a clear brief is 1, an open brief is 2.
+        lo = int(row.get("images_min", 1))
+        hi = int(row.get("images_max", 2))
+        return (
+            f"Output lock: each poster is {size}, count=1, skill={sid!r}. "
+            f"Deliver {lo} poster when the brief is clear, or {hi} distinct art directions when it is open. "
+            f"Either count is valid; do not treat {hi} as a failure. "
+            "Do not call list_models, expand_image, or create_frame. Do not outpaint."
+            + refs
+        )
+    if sid == "logo-material-explorer":
+        mats = ", ".join(row["materials"])
+        return (
+            f"Output lock: deliver exactly {int(row['images'])} separate images, each {size}, count=1, "
+            f"skill={sid!r}. Call generate_image {int(row['images'])} times, one material per call "
+            f"(default: {mats}; materials named in Additional Details replace these), with a different "
+            "prompt each time. Pass the uploaded logo shape id in refs (ref_modes content) on every call; "
+            "keep the mark geometry identical. Never merge the materials into one grid. Do not use another size."
+            + refs
+        )
+    if sid == "taobao-product":
+        return (
+            f"Output lock: deliver exactly {int(row['images'])} separate 1:1 images, each {size}, count=1, "
+            f"skill={sid!r}. Call generate_image {int(row['images'])} times, one module per call "
+            "(main image, carousel frame, lifestyle scene, detail-page benefit block), with a different "
+            "prompt each time. Pass product shape ids in refs (ref_modes content) on every call."
+            + refs
+        )
     if int(row["images"]) == 1:
         return (
             f"Output lock: call generate_image exactly once with skill={sid!r}, {size}, count=1. "

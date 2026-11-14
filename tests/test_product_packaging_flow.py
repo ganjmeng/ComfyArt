@@ -508,7 +508,7 @@ PINNED_SHA256 = {
     "api/skill_size.py": "43c130b1aa05cd6736d28564e743feaa41e0ce26e61ea2ad0960ada01203c3df",
     "api/curated_models.json": "fb5c6a1acd2782cb3d7da42837bef92bd4485fe90abd84dd272de1170f9fe04b",
     "api/wavespeed_models.json": "8be944b91aeaf2f4fc24fb5099e36664d2136004dc828737c95ff7943a7363fb",
-    "bot/skill_output.py": "2568ab87a7bb6b0906cde689fdab0589009eb59eb7c66734a72ffbc7aae7d1b8",  # #905 size-notice; #974 multi-angle; #978 template block; #979 template plans; #982 typed defaults
+    "bot/skill_output.py": "4e27e5c347138450aca8597a2bada6afbb9ccbc73c64068eaf0449202a72bdb5",  # #905 size-notice; #974 multi-angle; #978 template block; #979 template plans; #982 typed defaults; #996 logo/taobao/poster increment
     "api/portrait_studio.py": "61257848a9e23d13c066d01c103c565d6804e58c926d3905c6ed8b0890569224",
     "bot/self_check.py": "1a9b4f7eda7e915adf83df42ff31ccf3c27e83253d9636ba5c85aead447993b6",
 }

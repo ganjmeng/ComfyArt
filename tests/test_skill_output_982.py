@@ -31,9 +31,12 @@ from ComfyArt.bot.skill_output import (
     CHARACTER_PRESETS_982,
     FALLBACK_OUTPUT_982,
     FOLLOW_REF_SIZES,
+    LOGO_MATERIAL_SIZE_982,
+    LOGO_MATERIALS_982,
     OUTPUTS,
     PRESET_PLAN_SKILLS,
     VIDEO_SKILLS,
+    accepted_image_counts,
     apply_generate,
     is_single,
     pixels_for_ratio,
@@ -53,7 +56,7 @@ needs_node = pytest.mark.skipif(
     reason="needs node + node_modules",
 )
 
-LOGO_SIZE = (1024, 1024, "1:1", 1)
+LOGO_SIZE = (LOGO_MATERIAL_SIZE_982, LOGO_MATERIAL_SIZE_982, "1:1", 4)
 CHARACTER_EXPECTED = {
     # Design 6874380577 raised 1:1; QA HOLD 6874585151 aligns it to the provider's
     # real 2K square (2048), editorial 3:4 is 1536x2048, 16:9 stays 2048x1152.
@@ -70,8 +73,10 @@ CHARACTER_EXPECTED = {
 # Product HOLD 6874283882: 8 accepted 1:1, 25 typed. Total 33 unpinned students.
 SQUARE_1024 = {
     "logo-abstract", "lifestyle-scene", "crayon-sketch", "fabric-collage",
-    "naive-illustration", "commerce-strategist", "promo-ecommerce", "taobao-product",
+    "naive-illustration", "commerce-strategist", "promo-ecommerce",
 }
+# #996: still 1:1 1024, but 4 images (main / carousel / lifestyle / detail).
+TAOBAO = {"taobao-product"}
 WIDE_16_9 = {
     "banner-design-director", "ppt-visual", "web-product-visual-design",
     "product-website", "premium-website", "restaurant-website",
@@ -94,7 +99,7 @@ VIDEO = {
 }
 FOLLOW_REF = {"style-transfer", "person-swap"}
 MULTI_ASSET = {"creator-identity", "live-promo-decor"}
-TYPED = (SQUARE_1024 | WIDE_16_9 | PORTRAIT_3_4 | PHOTO_SPLIT | PACKS | PHONE
+TYPED = (SQUARE_1024 | TAOBAO | WIDE_16_9 | PORTRAIT_3_4 | PHOTO_SPLIT | PACKS | PHONE
          | CRT | VIDEO | FOLLOW_REF | MULTI_ASSET)
 
 # #982 design 6874380577: not final. These are the current provisional values;
@@ -193,23 +198,34 @@ def test_the_typed_table_covers_every_unpinned_missing_skill():
     assert VIDEO_SKILLS == VIDEO
 
 
-def test_logo_default_is_one_1024_square_material_study():
+def test_logo_default_is_four_1254_square_material_studies():
+    assert LOGO_MATERIAL_SIZE_982 == 1254
     assert (OUTPUTS[LOGO]["width"], OUTPUTS[LOGO]["height"],
             OUTPUTS[LOGO]["ratio"], OUTPUTS[LOGO]["images"]) == LOGO_SIZE
     assert OUTPUTS[LOGO]["names"] == (LOGO, "徽标材质探索器", "Logo Material Explorer")
+    assert tuple(OUTPUTS[LOGO]["materials"]) == LOGO_MATERIALS_982
+    assert OUTPUTS[LOGO]["lock"] == "ratio"
+    # Per-call count stays 1; four calls make the set. 1254 selects the 2k tier.
     args = apply_generate({"skill": LOGO, "prompt": "brushed metal logo",
                            "refs": ["shape:logo"], "count": 1}, LOGO)
-    assert (args["width"], args["height"], args["ratio"], args["count"]) == LOGO_SIZE
+    assert (args["width"], args["height"], args["ratio"], args["count"]) == (
+        LOGO_MATERIAL_SIZE_982, LOGO_MATERIAL_SIZE_982, "1:1", 1)
     assert args["size_lock"] is True and args["skill"] == LOGO
+    assert args["size_lock_mode"] == "ratio"
     assert args["refs"] == ["shape:logo"]
     again = apply_generate(dict(args))
-    assert (again["width"], again["height"], again["ratio"], again["count"]) == LOGO_SIZE
+    assert (again["width"], again["height"], again["ratio"], again["count"]) == (
+        LOGO_MATERIAL_SIZE_982, LOGO_MATERIAL_SIZE_982, "1:1", 1)
     hint = run_hint("Logo Material Explorer")
-    assert "exactly once" in hint and "width=1024 height=1024 ratio=1:1" in hint
+    assert "exactly once" not in hint
+    assert f"width={LOGO_MATERIAL_SIZE_982} height={LOGO_MATERIAL_SIZE_982} ratio=1:1" in hint
     assert "skill='logo-material-explorer'" in hint and "count=1" in hint
-    assert is_single(LOGO) is True
-    second = single_image_skip("generate_image", LOGO, "en", 1)
-    assert second and "did not submit" in second
+    assert "exactly 4 separate images" in hint
+    for mat in LOGO_MATERIALS_982:
+        assert mat in hint
+    assert is_single(LOGO) is False
+    assert accepted_image_counts(LOGO) == (4, 4)
+    assert single_image_skip("generate_image", LOGO, "en", 1) is None
 
 
 def test_character_has_one_plan_per_template():
@@ -256,6 +272,77 @@ def test_accepted_square_skills_are_1024(sid):
     assert (args["width"], args["height"], args["ratio"], args["count"]) == (1024, 1024, "1:1", 1)
     assert args["size_lock"] is True and args["skill"] == sid
     assert is_single(sid) is True
+
+
+def test_taobao_product_is_four_1024_squares():
+    sid = "taobao-product"
+    assert (OUTPUTS[sid]["width"], OUTPUTS[sid]["height"],
+            OUTPUTS[sid]["ratio"], OUTPUTS[sid]["images"]) == (1024, 1024, "1:1", 4)
+    args = apply_generate({"skill": sid, "prompt": "main image"}, sid)
+    assert (args["width"], args["height"], args["ratio"], args["count"]) == (1024, 1024, "1:1", 1)
+    assert args["size_lock"] is True and args["skill"] == sid
+    assert is_single(sid) is False
+    assert accepted_image_counts(sid) == (4, 4)
+    assert single_image_skip("generate_image", sid, "en", 1) is None
+    hint = run_hint(sid)
+    assert "exactly once" not in hint
+    assert "exactly 4 separate 1:1 images" in hint
+    assert "width=1024 height=1024 ratio=1:1" in hint
+
+
+def test_poster_allows_one_or_two_images_at_3_to_4():
+    sid = "poster-differentiated-compiler"
+    row = OUTPUTS[sid]
+    assert (row["width"], row["height"], row["ratio"]) == (1536, 2048, "3:4")
+    assert row["images"] == 1 and row["images_min"] == 1 and row["images_max"] == 2
+    assert accepted_image_counts(sid) == (1, 2)
+    assert is_single(sid) is False
+    # A 1-poster run is valid (clear brief); a 2-poster run is also valid (open brief).
+    assert single_image_skip("generate_image", sid, "en", 0) is None
+    assert single_image_skip("generate_image", sid, "en", 1) is None
+    assert single_image_skip("generate_image", sid, "en", 2) is None
+    args = apply_generate({"skill": sid, "prompt": "a poster"}, sid)
+    assert (args["width"], args["height"], args["ratio"], args["count"]) == (1536, 2048, "3:4", 1)
+    hint = run_hint(sid)
+    assert "exactly once" not in hint and "exactly 1" not in hint
+    assert "width=1536 height=2048 ratio=3:4" in hint
+    assert "1 poster" in hint and "2 distinct art directions" in hint
+
+
+def test_flash_cut_stays_16_9_2k_and_is_not_a_1_1_todo():
+    sid = "flash-cut-video"
+    assert (OUTPUTS[sid]["width"], OUTPUTS[sid]["height"], OUTPUTS[sid]["ratio"]) == (2048, 1152, "16:9")
+    assert OUTPUTS[sid]["media"] == "video"
+    args = apply_generate({"skill": sid, "prompt": "a still"}, sid)
+    assert (args["width"], args["height"], args["ratio"]) == (2048, 1152, "16:9")
+    assert (args["width"], args["height"]) != (1024, 1024)
+    hint = run_hint(sid)
+    assert "16:9" in hint and "width=2048" in hint
+    # Must not fall back to a 1:1 TODO allowlist.
+    assert "TODO" not in hint and "1:1" not in hint
+
+
+def test_mobile_app_keeps_main_9_21_two_screens():
+    sid = "mobile-app-visual-design"
+    assert (OUTPUTS[sid]["width"], OUTPUTS[sid]["height"],
+            OUTPUTS[sid]["ratio"], OUTPUTS[sid]["images"]) == (880, 2048, "9:21", 2)
+    assert accepted_image_counts(sid) == (2, 2)
+
+
+def test_character_and_rednote_sizes_are_unchanged_from_985():
+    assert (OUTPUTS["character-sheet-design"]["width"],
+            OUTPUTS["character-sheet-design"]["height"],
+            OUTPUTS["character-sheet-design"]["ratio"]) == (2048, 2048, "1:1")
+    assert CHARACTER_PRESETS_982["turnaround"]["width"] == 2048
+    assert CHARACTER_PRESETS_982["editorial"] == {
+        "width": 1536, "height": 2048, "ratio": "3:4", "images": 1,
+        "name": "Editorial Fashion Sheet",
+    }
+    # rednote/meta 4:5 and 9:16 stay on the #985 provider-2K convention.
+    red = [c for c in OUTPUTS["rednote-cover-maker"]["calls"] if c["ratio"] in {"4:5", "9:16"}]
+    meta = [c for c in OUTPUTS["meta-ads-creative-director"]["calls"] if c["ratio"] in {"4:5", "9:16"}]
+    assert {(c["width"], c["height"], c["ratio"]) for c in red} == {(1638, 2048, "4:5"), (1152, 2048, "9:16")}
+    assert {(c["width"], c["height"], c["ratio"]) for c in meta} == {(1638, 2048, "4:5"), (1152, 2048, "9:16")}
 
 
 @pytest.mark.parametrize("sid", sorted(WIDE_16_9_SINGLE))
@@ -462,6 +549,10 @@ def test_ts_and_python_typed_rows_agree():
         assert got.get("refs") == row.get("refs"), sid
         assert got.get("calls") == row.get("calls"), sid
         assert got.get("provisional") == row.get("provisional"), sid
+        assert got.get("images_min") == row.get("images_min"), sid
+        assert got.get("images_max") == row.get("images_max"), sid
+        assert got.get("lock") == row.get("lock"), sid
+        assert tuple(got.get("materials") or ()) == tuple(row.get("materials") or ()), sid
     assert [p["id"] for p in js["presets"]["character"]] == list(CHARACTER_EXPECTED)
 
 
@@ -477,3 +568,11 @@ def test_no_declared_or_floored_output_is_512():
     for sid, row in OUTPUTS.items():
         assert (row["width"], row["height"]) != (512, 512), sid
     assert (FALLBACK_OUTPUT_982["width"], FALLBACK_OUTPUT_982["height"]) == (1024, 1024)
+
+
+def test_logo_1254_selects_the_2k_tier_on_tier_only_models():
+    from ComfyArt.api.wavespeed import _resolution
+    assert _resolution(["1k", "2k", "4k"], 1254) == "2k"
+    assert _resolution(["1k", "2k", "4k"], 1024) == "1k"
+    # 1254 * 0.9 = 1128.6, so 1k (1024) does not qualify.
+    assert 1024 < 1254 * 0.9 <= 2048

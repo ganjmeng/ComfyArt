@@ -10,7 +10,7 @@ width/height (`GENERATOR_DEFAULTS.resolution='1K'` -> `targetSize` -> `pixelSize
 this file asserts the *typed* size the contract chooses, not the mock file.
 
 Covered:
-  logo-material-explorer: 1x1024x1024 (1:1), count=1, logo ref preserved.
+  logo-material-explorer: 4x1254x1254 (1:1), 2k tier, logo ref preserved.
   character-sheet-design (expression): 1x2048x1152 (16:9), preset=expression.
   poster-differentiated-compiler: 1x1024x1360 (3:4), poster's instruction default.
   banner-design-director: 1x1824x1024 (16:9), the wide type default.
@@ -88,6 +88,28 @@ def _pack_script(state: dict, sid: str, ratios: tuple[str, ...]):
     return respond
 
 
+def _repeat_script(state: dict, sid: str, n: int, prompt: str):
+    """n generate_image calls at the contract canvas, then wait. Used for logo-material (4)."""
+    def respond(messages: list, k: int):
+        attached = _attached(messages)
+        if attached:
+            state["attached"] = attached
+        if k == 0:
+            return _calls(("skill", {"action": "read", "name": sid}))
+        if 1 <= k <= n:
+            return _calls(("generate_image", {
+                "prompt": f"{prompt} ({k} of {n})",
+                "skill": sid,
+                "refs": _refs(state.get("attached") or []),
+                # width/height/ratio/count deliberately omitted.
+            }))
+        if k == n + 1:
+            return _calls(("wait_generation", {"ids": _all_ids(messages)}))
+        return _reply("done")
+
+    return respond
+
+
 def _gen_args(state: dict) -> list[dict]:
     return [args for name, args in state["mcp"] if name == "generate_image"]
 
@@ -129,11 +151,14 @@ def _add_flare_models(monkeypatch) -> None:
     monkeypatch.setattr(ce, "MODELS", current)
 
 
-async def test_fullapp_logo_default_is_one_1024_square(app_url, mock_ws, local_agent,  # noqa: F811
-                                                       ws_forward, monkeypatch, tmp_path):
+async def test_fullapp_logo_default_is_four_1254_squares(app_url, mock_ws, local_agent,  # noqa: F811
+                                                        ws_forward, monkeypatch, tmp_path):
     _add_flare_models(monkeypatch)
+    import test_e2e_comment_edit as ce
+    # Ratio-mode lock requires long side >= 1254; a 2k square is what flare/edit returns.
+    monkeypatch.setattr(ce, "RESULT", _png(2048, 2048))
     _provider, state = local_agent
-    state["respond"] = _still_script(state, LOGO, "brushed metal logo material study")
+    state["respond"] = _repeat_script(state, LOGO, 4, "logo material study")
     logo = tmp_path / "logo-982.png"
     img = Image.new("RGB", (1024, 1024), (246, 246, 246))
     d = ImageDraw.Draw(img)
@@ -146,22 +171,24 @@ async def test_fullapp_logo_default_is_one_1024_square(app_url, mock_ws, local_a
                                         dialog_ref=logo, dialog_text="brushed metal, neutral studio")
         try:
             await _send_default(pg)
-            await _wait(lambda: len(mock_ws["submits"]) >= 1, timeout=150.0)
+            await _wait(lambda: len(mock_ws["submits"]) >= 4, timeout=150.0)
             await _wait(lambda: state.get("wait"), timeout=150.0)
             gens = _gen_args(state)
-            assert len(gens) == 1, gens
-            args = gens[0]
-            assert (args.get("width"), args.get("height"), args.get("ratio"), args.get("count")) == \
-                (1024, 1024, "1:1", 1), args
-            assert args.get("size_lock") is True and args.get("skill") == LOGO
+            assert len(gens) == 4, gens
+            for args in gens:
+                assert (args.get("width"), args.get("height"), args.get("ratio"), args.get("count")) == \
+                    (1254, 1254, "1:1", 1), args
+                assert args.get("size_lock") is True and args.get("skill") == LOGO
+                assert args.get("size_lock_mode") == "ratio"
             base_refs = _refs(state.get("attached") or [])
-            assert base_refs and args.get("refs") == base_refs, (base_refs, args)
+            assert base_refs and all(a.get("refs") == base_refs for a in gens), (base_refs, gens)
             read = _last_tool_json(state["messages"], "output")
-            assert read and read["output"] == {"width": 1024, "height": 1024, "ratio": "1:1", "images": 1}, read
-            assert len(mock_ws["submits"]) == 1, mock_ws["submits"]
-            # 1:1 1024x1024/1k is also what main already submitted, so the provider
-            # body is NOT discriminating for this skill. The contract is the MCP args
-            # and skill-read output above; 3:4 / 16:9 below are the discriminating cases.
+            out = (read or {}).get("output") or {}
+            assert (out.get("width"), out.get("height"), out.get("ratio"), out.get("images")) == \
+                (1254, 1254, "1:1", 4), read
+            assert len(mock_ws["submits"]) == 4, mock_ws["submits"]
+            for body in (b for _m, b in mock_ws["submits"]):
+                _assert_provider_canvas(body, 1254, 1254)
         finally:
             await browser.close()
 

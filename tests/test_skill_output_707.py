@@ -39,9 +39,12 @@ def test_declared_sizes():
 
 def test_ts_table_matches_python():
     block = re.search(r"export const SKILL_OUTPUT[\s\S]*?\n\}", SKILLS).group(0)
+    # Logo canvas uses a named constant so 1k/2k is one switch; expand it for the literal check.
+    m = re.search(r"export const LOGO_MATERIAL_SIZE_982 = (\d+)", SKILLS)
+    block_lit = block.replace("LOGO_MATERIAL_SIZE_982", m.group(1)) if m else block
     for sid, row in OUTPUTS.items():
         assert f"'{sid}'" in block
-        assert f"width: {row['width']}" in block and f"height: {row['height']}" in block
+        assert f"width: {row['width']}" in block_lit and f"height: {row['height']}" in block_lit
         assert f"images: {row['images']}" in block
         if row.get("ratio"):
             assert f"ratio: '{row['ratio']}'" in block
