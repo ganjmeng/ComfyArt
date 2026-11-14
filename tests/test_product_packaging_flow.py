@@ -421,7 +421,7 @@ def test_count_is_one_per_call():
     assert out["count"] == 1 and out["ratio"] == "3:4"
 
 
-@pytest.mark.parametrize("skill", [None, "studio-model", "portrait-studio", "packaging-design-director", "ai-model"])
+@pytest.mark.parametrize("skill", [None, "studio-model", "portrait-studio", "ai-model"])
 def test_other_skills_are_not_locked(relay, skill):
     args = {"prompt": "x", "count": 1, "refs": ["shape:a"], "ratio": "1:1"}
     if skill:
@@ -429,8 +429,23 @@ def test_other_skills_are_not_locked(relay, skill):
     before = dict(pk._LOCKS)
     _run_turn("zh", [args, args])
     assert pk._LOCKS == before
-    if skill in (None, "studio-model", "packaging-design-director"):
+    if skill in (None, "studio-model"):
         assert all(r.get("ratio") == "1:1" for _, r in SENT), SENT
+
+
+def test_packaging_skill_is_locked_by_its_own_template_contract(relay):
+    """#979: packaging-design-director is no longer unfilled; its default 主款 is 1536×2048 3:4.
+
+    It still is not product-to-packaging's lock (_LOCKS unchanged); the size comes from
+    bot/skill_output.py's template plan.
+    """
+    args = {"prompt": "x", "count": 1, "refs": ["shape:a"], "ratio": "1:1",
+            "skill": "packaging-design-director"}
+    before = dict(pk._LOCKS)
+    _run_turn("zh", [args])
+    assert pk._LOCKS == before
+    assert SENT and all(r.get("ratio") == "3:4" and r.get("width") == 1536
+                        and r.get("height") == 2048 for _, r in SENT), SENT
 
 
 # --- goal self-check: counts the 4 images like any delivery (#926 rules) -------------------------
@@ -493,7 +508,7 @@ PINNED_SHA256 = {
     "api/skill_size.py": "43c130b1aa05cd6736d28564e743feaa41e0ce26e61ea2ad0960ada01203c3df",
     "api/curated_models.json": "fb5c6a1acd2782cb3d7da42837bef92bd4485fe90abd84dd272de1170f9fe04b",
     "api/wavespeed_models.json": "8be944b91aeaf2f4fc24fb5099e36664d2136004dc828737c95ff7943a7363fb",
-    "bot/skill_output.py": "5bddf4a22f1971d1de6da7395fa88a3a2ac3643205cab07ca0a5d14e960789ec",  # #905 size-notice; #974 multi-angle; #978 template block is not user intent
+    "bot/skill_output.py": "a2b6a1213fc1fd43c569e867b02113e12ab5dd2704000414e6069cb62f4ca801",  # #905 size-notice; #974 multi-angle; #978 template block; #979 template plans
     "api/portrait_studio.py": "61257848a9e23d13c066d01c103c565d6804e58c926d3905c6ed8b0890569224",
     "bot/self_check.py": "1a9b4f7eda7e915adf83df42ff31ccf3c27e83253d9636ba5c85aead447993b6",
 }

@@ -110,9 +110,18 @@ def parse_preset(raw) -> str:
     return prompt.strip()[:PRESET_PROMPT_MAX] if isinstance(prompt, str) else ""
 
 
+def parse_preset_id(raw) -> str:
+    """#979: the selected template id from the same send body; unset/invalid → '' (skill default)."""
+    if not isinstance(raw, dict):
+        return ""
+    pid = raw.get("id")
+    return pid.strip()[:80] if isinstance(pid, str) else ""
+
+
 def compose_provider_text(text: str, *, skill_name: str = "", memory: str = "",
                           lines: list[str] = (), review: bool | None = None,
-                          ref_image: bytes | None = None, preset_prompt: str = "") -> str:
+                          ref_image: bytes | None = None, preset_prompt: str = "",
+                          preset_id: str = "") -> str:
     # #911: a selected skill with no typed text gets a neutral, model-only line
     # (no image-content words) so the skill runs instead of a describe-and-stop.
     # No skill + empty text keeps the original line; typed text is never rewritten.
@@ -126,7 +135,7 @@ def compose_provider_text(text: str, *, skill_name: str = "", memory: str = "",
         provider_text = "Look at the attached images and tell me what you see."
     if skill_name:
         from ..bot.skill_output import TEMPLATE_BLOCK_END, TEMPLATE_BLOCK_START, run_hint
-        hint = run_hint(skill_name, text or "", ref_image)
+        hint = run_hint(skill_name, text or "", ref_image, preset_id=preset_id)
         provider_text = (
             f"Use the ComfyArt skill {skill_name!r} for this task: first call "
             f"the comfyart MCP tool skill with action='read' and "
