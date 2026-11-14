@@ -841,7 +841,13 @@ span.arti-mascot { cursor: default; pointer-events: none; }
 }
 .ca-chat__dock .ca-q__body {
   max-height: none; /* flex child of the 442px card; questions scroll here */
-  padding-right: 8px;
+  /* #940: inter-question ink-top pitch is distinct from the block's
+     prompt-to-first-option gap. Keep description wrapping/typography intact. */
+  gap: 9px;
+  /* Move only the native scrollbar into the card's right padding. The added
+     padding cancels the negative margin so question content keeps its width. */
+  margin-right: -12px;
+  padding-right: 20px;
   scrollbar-width: thin;
   scrollbar-color: #DFE0E2 transparent;
 }
