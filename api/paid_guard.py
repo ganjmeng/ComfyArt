@@ -82,12 +82,32 @@ _ITEM_BEFORE_RE = re.compile(
     r"(?:主图|副图|场景图|模特图|上身图|细节图|白底图|首图|轮播图|详情图|"
     r"正面图|侧面图|背面图|平铺图|场景|模特|上身|细节)"
     r"\s*(?:要|做|出|来|是|有)?\s*$", re.I)
-# English item counts carry a word between the number and the measure
-# ("2 scene shots"), so _COUNT_RE alone does not see them.
-_EN_ITEM_COUNT_RE = re.compile(
-    r"\b(\d+|\b(?:" + "|".join(_EN_NUM) + r")\b)\s+"
-    r"(?:main|hero|primary|cover|scene|lifestyle|model|detail|product)\s+"
-    r"(?:images?|shots?|photos?|visuals?)\b", re.I)
+# English item counts carry adjectives between the number and the measure
+# ("one clean hero image"), so _COUNT_RE alone does not see them. Allow 0-2
+# adjectives before an item noun; do not let "one of …" or another number
+# become a modifier (that would turn a part list into a total).
+_EN_NUM_PAT = r"\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)\b"
+_EN_MOD_WORD = r"[A-Za-z][A-Za-z-]*"
+_EN_FUNCTION = (r"(?!(?:of|and|or|plus|with|without|to|for|the|a|an|"
+                r"one|two|three|four|five|six|seven|eight|nine|ten|\d+)\b)")
+_EN_ITEM_WORD = r"(?:main|hero|primary|cover|scene|lifestyle|model|detail|product)"
+_EN_SHOT_WORD = r"(?:images?|pictures?|photos?|shots?|visuals?)"
+_EN_ITEM_ADJ_RE = re.compile(
+    r"(" + _EN_NUM_PAT + r")(?!\s+of\b)"
+    r"(?:\s+" + _EN_FUNCTION + _EN_MOD_WORD + r"){0,2}\s+"
+    + _EN_ITEM_WORD + r"\s+" + _EN_SHOT_WORD + r"\b", re.I)
+_EN_ADJ_COUNT_RE = re.compile(
+    r"(" + _EN_NUM_PAT + r")(?!\s+of\b)"
+    r"(?:\s+" + _EN_FUNCTION + r"(?!" + _EN_ITEM_WORD + r"\b)"
+    + _EN_MOD_WORD + r"){1,2}\s+" + _EN_SHOT_WORD + r"\b", re.I)
+_EN_SCENE_COUNT_RE = re.compile(
+    r"(" + _EN_NUM_PAT + r")\s+(?:scenes?)\b(?!\s+(?:shots?|images?|pictures?|photos?))",
+    re.I)
+# "one of two images" / "one of the 3 images": the number names a subset, not
+# a request for that many. Do not turn it into a cap.
+_PART_OF_BEFORE_RE = re.compile(
+    r"\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+"
+    r"(?:out\s+)?of\s+(?:the\s+|these\s+|those\s+|my\s+)?$", re.I)
 # "两张图" / "3 images": a generic count names the set itself, not one item.
 _GENERIC_AFTER_RE = re.compile(r"^\s*(?:图|图片|照片|画面|海报|插画|作品|设计)", re.I)
 _EN_MEASURE_RE = re.compile(
@@ -162,6 +182,8 @@ def requested_count(user_text: str) -> int:
             continue
         before = text[max(0, m.start() - 16):m.start()]
         after = text[m.end():m.end() + 16]
+        if _PART_OF_BEFORE_RE.search(before):
+            continue  # "one of two images" names a subset, not a total
         if _TOTAL_BEFORE_RE.search(before) or _TOTAL_AFTER_RE.search(after):
             totals.append(n)
             continue
@@ -176,10 +198,18 @@ def requested_count(user_text: str) -> int:
             generics.append(n)
         else:
             plain.append(n)
-    for m in _EN_ITEM_COUNT_RE.finditer(text):
+    for m in _EN_ITEM_ADJ_RE.finditer(text):
         n = _count_value(m.group(1))
-        if n:
+        if n and not _PART_OF_BEFORE_RE.search(text[max(0, m.start() - 16):m.start()]):
             items.append(n)
+    for m in _EN_SCENE_COUNT_RE.finditer(text):
+        n = _count_value(m.group(1))
+        if n and not _PART_OF_BEFORE_RE.search(text[max(0, m.start() - 16):m.start()]):
+            items.append(n)
+    for m in _EN_ADJ_COUNT_RE.finditer(text):
+        n = _count_value(m.group(1))
+        if n and not _PART_OF_BEFORE_RE.search(text[max(0, m.start() - 16):m.start()]):
+            generics.append(n)
     vague_item = bool(_VAGUE_ITEM_RE.search(text) or _EN_VAGUE_ITEM_RE.search(text))
     if totals:
         return max(totals)

@@ -51,6 +51,7 @@ PLAN = [
     ("一张主图", 1),
     ("主图一张", 1),
     ("一张干净的主图", 1),
+    ("做一张干净的主图", 1),
     # A parallel item list with no whole-group total: follow the plan.
     ("一张主图，两张场景图", 0),
     ("帮我做一张主图，两张场景图", 0),
@@ -91,6 +92,14 @@ def test_requested_count_zh(text, want):
 
 @pytest.mark.parametrize("text,want", [
     ("just one hero image", 1),
+    ("one clean hero image", 1),
+    ("just one clean hero image", 1),
+    ("make one clean main image", 1),
+    ("one clean single hero image", 1),
+    ("one clean image", 1),
+    ("one of the images", 0),
+    ("one of the two clean hero images", 0),
+    ("one image, two scenes", 0),
     ("one image", 1),
     ("two pictures", 2),
     ("make 3 images", 3),
@@ -304,8 +313,11 @@ def _plan(n: int) -> list[tuple[str, str]]:
     return [(f"规划图 {i + 1}", f"planned image {i + 1}") for i in range(n)]
 
 
-@pytest.mark.parametrize("text", ["做一张主图", "帮我做一张淘宝主图", "就要一张主图",
-                                  "just one hero image"])
+@pytest.mark.parametrize("text", [
+    "做一张主图", "帮我做一张淘宝主图", "就要一张主图", "just one hero image",
+    "one clean hero image", "just one clean hero image",
+    "make one clean main image", "做一张干净的主图",
+])
 async def test_lone_item_request_submits_one_of_a_four_image_plan(monkeypatch, text):
     """Product HOLD: a lone item request is 1, not 0 (which would release all 4)."""
     result, stop, specs, paid, _events, before = await _run_taobao_plan(
@@ -329,6 +341,7 @@ async def test_stated_total_caps_the_four_image_plan(monkeypatch, text, want):
     ("帮我做三张主图，两张场景图", 5),
     ("一张主图，再做三张场景图", 4),
     ("主图一张，场景图两张", 3),
+    ("one image, two scenes", 3),
 ])
 async def test_parallel_item_list_follows_the_planned_count(monkeypatch, text, n):
     """QA HOLD: no whole-group total -> all n planned images submit, not the part count."""
@@ -346,3 +359,13 @@ async def test_parallel_item_list_follows_the_planned_count(monkeypatch, text, n
     rows = [e for e in events
             if e.t == "tool_result" and e.name == "generate_image"]
     assert len(rows) == n and not any(r.is_error for r in rows), rows
+
+
+async def test_one_of_the_images_is_not_a_single_image_total(monkeypatch):
+    """Ownership ("one of the images") must not cap a 4-image plan at 1."""
+    result, stop, specs, paid, _events, before = await _run_taobao_plan(
+        monkeypatch, plan=_plan(4), user_text="one of the images")
+    assert stop == "" and result.error == "", stop
+    assert len(paid) == 4, paid
+    assert len(specs) == 1 and len(specs[0]["lines"]) == 4, specs
+    assert before == [0]
