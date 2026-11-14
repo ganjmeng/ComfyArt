@@ -1,18 +1,23 @@
 """#419 e2e (Chromium): the post-stop grey hits only the streamed text, never the #391 stop card.
 
 The DOM is the real recovered case-a bot message captured from the running app on main 7e9058f (#391 card with
-「继续」, zh, light and dark). It is rendered with main's built CSS and with ours (dist/), then the computed styles are
-compared: while `.ca-chat__bot--stopping` is on, only `.ca-md` (the streamed text) turns grey; the card, the 继续
-button and the billing note keep main's colour and opacity, and after recovery (class removed) they match main."""
+「继续」, zh, light and dark). It is rendered with main's built CSS (pinned as a tests/fixtures copy, sha256 literal,
+so a shallow clone needs no git object) and with ours (dist/), then the computed styles are compared: while
+`.ca-chat__bot--stopping` is on, only `.ca-md` (the streamed text) turns grey; the card, the 继续 button and the
+billing note keep main's colour and opacity, and after recovery (class removed) they match main."""
+import hashlib
 import json
 import re
-import subprocess
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 MAIN = "7e9058f"
+# #935: main's three built CSS files, concatenated in sorted-name order and captured
+# once. The sha256 literal pins the snapshot; no historical git object is opened.
+MAIN_CSS = (ROOT / "tests/fixtures/stop_fade_419_main.css").read_text(encoding="utf-8")
+MAIN_CSS_SHA256 = "a3ff2904af0613a149e4976d595080ac55c817422efcb77988cd034cb15cf657"
 apw = pytest.importorskip("playwright.sync_api")
 NOTE = '<div class="ca-chat__hint" data-stopped="submitted">已提交的生成仍会完成并计费</div>'
 TEXT = '<div class="ca-md"><p>正在为你生成橘猫海报</p></div>'
@@ -24,12 +29,11 @@ PROBE = """() => { const q = (s) => document.querySelector(s); const st = (e) =>
 
 
 def css_at(rev):
-    """All built stylesheets of a revision (rev=None: the working tree's dist/)."""
+    """All built stylesheets of a revision (rev=None: the working tree's dist/, else the pinned main copy)."""
     if rev is None:
         return "\n".join(f.read_text() for f in sorted((ROOT / "dist/assets").glob("*.css")))
-    names = subprocess.run(["git", "ls-tree", "--name-only", f"{rev}:dist/assets"], cwd=ROOT, capture_output=True, text=True).stdout.split()
-    return "\n".join(subprocess.run(["git", "show", f"{rev}:dist/assets/{n}"], cwd=ROOT, capture_output=True, text=True).stdout
-                     for n in sorted(names) if n.endswith(".css"))
+    assert hashlib.sha256(MAIN_CSS.encode()).hexdigest() == MAIN_CSS_SHA256
+    return MAIN_CSS
 
 
 def page_html(fx, css, cls):
@@ -64,8 +68,6 @@ def probe(browser, html):
 
 @pytest.mark.parametrize("theme", ["light", "dark"])
 def test_grey_only_hits_streamed_text_and_card_matches_main(browser, theme):
-    if subprocess.run(["git", "cat-file", "-e", f"{MAIN}:dist/index.html"], cwd=ROOT).returncode:
-        pytest.skip("main commit not available")
     fx = json.loads((ROOT / f"tests/fixtures/stop_card_dom_419_{theme}.json").read_text())
     main = probe(browser, page_html(fx, css_at(MAIN), "ca-chat__bot"))
     ours_css = css_at(None)

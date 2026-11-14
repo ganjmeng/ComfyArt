@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import hashlib
 import re
-import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,7 +18,10 @@ SKILLS = (ROOT / "src/skills.ts").read_text(encoding="utf-8")
 AUTO_MODELS = ROOT / "api/auto_models.json"
 
 # Locked to origin/main 33d28eab5 (same bytes as PR #912's lock), except skills.ai-model.
+# #935: literal hashes of the base bytes; no git object is opened.
 PORTRAIT_SHOTS_708_CONST_SHA256 = "97edb7c18215e4a283b86633908872f3b3c4146d9bb748d71c0d3510798cfc8b"
+STUDIO_MODEL_TAIL_SHA256 = "ae5a43e7574fd1939edcb7217d8f434e07ffc094cd3d14d217e0f1b3b7090cf2"
+AUTO_MODELS_SHA256 = "9ef106b6133d427f04347d0c31c31931e641e1cd47d2a86c0d0769cde48c5d7b"
 
 STUDIO_EXAMPLES = "examples: ex643('studio-model', [1, 2], '9ca3c35db7868e9fe73fb98bf85058c8fa2e048e')"
 STUDIO_VIDEO = "video: pinned('805/reuse/studio-model', '44a5caa051ad8c4bd51152afba8ef853e9c77fd8', 'cover.mp4')"
@@ -109,18 +111,6 @@ def _portrait_shots_708_const(src: str) -> str:
     return m.group(1)
 
 
-MAIN_SHA = "33d28eab5d75b8ab0526776abd496f4565d6e756"
-
-
-def _main_skills() -> str:
-    # Pin the exact main tip (do not use a possibly stale local origin/main ref).
-    return subprocess.check_output(
-        ["git", "-C", str(ROOT), "show", f"{MAIN_SHA}:src/skills.ts"],
-        text=True,
-        encoding="utf-8",
-    )
-
-
 def _forbidden_hits(entry: str) -> list[str]:
     hits: list[str] = []
     lower = entry.lower()
@@ -156,9 +146,8 @@ def _studio_has_no_708(src: str) -> None:
     assert "just above the knee" not in instr
 
 
-def _708_const_matches_main(src: str, main: str) -> None:
+def _708_const_matches_pinned(src: str) -> None:
     """Shared #708 block stays byte-identical; clothing-swap no longer appends it (#911)."""
-    assert _portrait_shots_708_const(src) == _portrait_shots_708_const(main)
     assert hashlib.sha256(_portrait_shots_708_const(src).encode()).hexdigest() == PORTRAIT_SHOTS_708_CONST_SHA256
 
 
@@ -543,33 +532,23 @@ def test_qa_no_708_on_studio_model():
 
 
 def test_qa_708_constant_byte_identical_and_clothing_swap_detached():
-    _708_const_matches_main(SKILLS, _main_skills())
+    _708_const_matches_pinned(SKILLS)
     _clothing_swap_has_no_708(SKILLS)
 
 
 def test_pins_and_auto_models_unchanged():
     entry = _skill_entry(SKILLS, "studio-model")
-    main_entry = _skill_entry(_main_skills(), "studio-model")
-    assert STUDIO_EXAMPLES in entry and STUDIO_EXAMPLES in main_entry
-    assert STUDIO_VIDEO in entry and STUDIO_VIDEO in main_entry
+    assert STUDIO_EXAMPLES in entry
+    assert STUDIO_VIDEO in entry
     assert STUDIO_COVER in entry
     # Everything from category: onward (cover, examples, featured, video, presets, inputs)
-    # stays byte-identical to origin/main. Only the instructions string (and the
-    # dropped 708 append) may change.
+    # stays byte-identical to the pinned base. Only the instructions string (and the
+    # dropped 708 append) may change. The hashes are literal (#935); no git object.
     ours_tail = entry[entry.find("category:"):]
-    main_tail = main_entry[main_entry.find("category:"):]
-    assert ours_tail == main_tail
+    assert hashlib.sha256(ours_tail.encode()).hexdigest() == STUDIO_MODEL_TAIL_SHA256
     import json
+    assert hashlib.sha256(AUTO_MODELS.read_bytes()).hexdigest() == AUTO_MODELS_SHA256
     ours_auto = json.loads(AUTO_MODELS.read_text(encoding="utf-8"))
-    main_auto = json.loads(
-        subprocess.check_output(
-            ["git", "-C", str(ROOT), "show", f"{MAIN_SHA}:api/auto_models.json"],
-            text=True,
-            encoding="utf-8",
-        )
-    )
-    assert ours_auto["features"] == main_auto["features"]
-    assert ours_auto.get("_comment") == main_auto.get("_comment")
     assert ours_auto["skills"]["studio-model"] == EXPECTED_STUDIO_MODEL_PIN
     assert ours_auto["skills"]["studio-model"]["model"] == SUNBURST_T2I
     assert ours_auto["skills"]["studio-model"]["edit_model"] == SUNBURST_EDIT
@@ -589,15 +568,6 @@ def test_pins_and_auto_models_unchanged():
     assert ours_auto["skills"]["portrait-studio"]["resolution"] == "2k"
     assert ours_auto["skills"]["portrait-studio"]["ratio"] == "3:4"
     assert "edit_model" not in ours_auto["skills"]["portrait-studio"]
-    ours_skills = dict(ours_auto.get("skills") or {})
-    main_skills = dict(main_auto.get("skills") or {})
-    for key in ("ai-model", "clothing-swap", "studio-model", "product-to-packaging", "cover-design-director", "youtube-channel-banner", "portrait-studio"):
-        ours_skills.pop(key, None)
-        main_skills.pop(key, None)
-    assert ours_skills == main_skills, (
-        "features and every other skills entry stay byte-identical to the locked snapshot"
-    )
-
 
 def test_ai_model_rule5_names_registered_sunburst():
     """#915 Rule 5 must name the registered Sunburst model; the pre-#915 wording must not remain."""
@@ -615,10 +585,9 @@ def test_ai_model_rule5_names_registered_sunburst():
 
 def test_mutation_red_then_green():
     """Re-adding 708, editing clothing-swap, or baking in garment words turns red; restore is green."""
-    main = _main_skills()
     # Green on the real tree first.
     _studio_has_no_708(SKILLS)
-    _708_const_matches_main(SKILLS, main)
+    _708_const_matches_pinned(SKILLS)
     _clothing_swap_has_no_708(SKILLS)
     assert _forbidden_hits(_skill_entry(SKILLS, "studio-model")) == []
 
@@ -670,7 +639,7 @@ def test_mutation_red_then_green():
 
     # Green: the on-disk tree is unchanged and still passes.
     _studio_has_no_708(SKILLS)
-    _708_const_matches_main(SKILLS, main)
+    _708_const_matches_pinned(SKILLS)
     _clothing_swap_has_no_708(SKILLS)
     assert _forbidden_hits(_skill_entry(SKILLS, "studio-model")) == []
     assert SKILLS == (ROOT / "src/skills.ts").read_text(encoding="utf-8")

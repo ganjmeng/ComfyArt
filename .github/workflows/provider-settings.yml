@@ -25,3 +25,10 @@ jobs:
         run: python -m pytest tests/test_provider_admin.py -q
         env:
           COMFYART_SKIP_NODE_TESTS: "1"
+      # #935: the packaging pin locks used to read `e8c4a855:...` from history, which a
+      # depth-1 checkout cannot resolve. They now compare literal sha256 values, so
+      # run that pin file in CI (still depth 1; no fetch-depth change).
+      - name: Packaging pin tests (shallow clone, no git history)
+        run: python -m pytest tests/test_product_packaging_flow.py -q
+        env:
+          COMFYART_SKIP_NODE_TESTS: "1"

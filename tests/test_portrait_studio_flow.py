@@ -6,15 +6,14 @@ Sunburst delivers 3 images (question 1, option A). Without a reference photo the
 the user to upload one and does not generate.
 
 $0: no WaveSpeed call. submit_command and the run approval are mocked; the no-ref path is
-asserted to submit nothing and ask for no approval. Pins, api/auto_models.json and
-api/skill_size.py are compared byte for byte with main 30ade316.
+asserted to submit nothing and ask for no approval. Pins and the shared untouched files are
+locked by literal sha256 values (no historical git objects, so a depth-1 clone works).
 """
 from __future__ import annotations
 
 import asyncio
 import hashlib
 import re
-import subprocess
 import uuid
 from pathlib import Path
 
@@ -27,7 +26,6 @@ from ComfyArt.api.mcp_tools._context import GUARD_CHAT_ID
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = (ROOT / "src/skills.ts").read_text(encoding="utf-8")
-MAIN = "30ade316437f7cb9afe941c5d737fdd78f063566"
 SUNBURST_EDIT = "openai/gpt-image-2.6-sunburst/edit"
 
 # Lovart 7fc60c86 card (911/lovart-ai/portrait-studio/notes.txt + card-1..3.png), verbatim.
@@ -526,14 +524,21 @@ def test_shot_never_reaches_the_request_for_other_skills(relay, skill):
 
 # --- untouched -----------------------------------------------------------------------------------
 
-def _main_bytes(path: str) -> bytes:
-    return subprocess.run(["git", "show", f"{MAIN}:{path}"], cwd=ROOT, check=True, capture_output=True).stdout
+# #935: a shallow (depth-1) clone has no 30ade316 object. These locks used to read
+# api/* from that commit; they are now literal sha256 values computed once from the same
+# pinned bytes. A one-byte edit still fails.
+PINNED_SHA256 = {
+    "api/auto_models.json": "9ef106b6133d427f04347d0c31c31931e641e1cd47d2a86c0d0769cde48c5d7b",
+    "api/skill_size.py": "43c130b1aa05cd6736d28564e743feaa41e0ce26e61ea2ad0960ada01203c3df",
+    "api/curated_models.json": "fb5c6a1acd2782cb3d7da42837bef92bd4485fe90abd84dd272de1170f9fe04b",
+    "api/wavespeed_models.json": "8be944b91aeaf2f4fc24fb5099e36664d2136004dc828737c95ff7943a7363fb",
+}
 
 
 @pytest.mark.parametrize("path", ["api/auto_models.json", "api/skill_size.py", "api/curated_models.json",
                                   "api/wavespeed_models.json"])
-def test_pins_sizes_and_model_tables_are_unchanged_from_main(path):
-    assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == hashlib.sha256(_main_bytes(path)).hexdigest(), path
+def test_pins_sizes_and_model_tables_match_pinned_sha256(path):
+    assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == PINNED_SHA256[path], path
 
 
 def test_skill_output_keeps_follow_ref_and_905_user_ratio():
