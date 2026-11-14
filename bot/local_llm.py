@@ -280,6 +280,73 @@ def _ask_card_lang_directive(lang: str) -> str:
     )
 
 
+# #949: English skill-read openers the model copies off the English skill-start hint.
+# When the conversation is Chinese, the first visible sentence must be Chinese.
+_ZH_SKILL_FIRST = "我先看一下技能说明。"
+_EN_SKILL_FIRST_RE = re.compile(
+    r"(?is)^\s*(?:"
+    r"(?:i(?:['\u2019]ll| will)|let me) read(?: the)? skill(?: file)?(?: first)?"
+    r"|read(?:ing)(?: the)? skill(?: file)? first"
+    r"|read the skill first"
+    r")\s*[.!]?"
+)
+_EN_SKILL_FIRST_NORMS = (
+    "i'll read the skill first",
+    "i will read the skill first",
+    "let me read the skill first",
+    "i'll read the skill",
+    "i will read the skill",
+    "reading the skill first",
+    "read the skill first",
+)
+
+
+def _norm_skill_first(text: str) -> str:
+    t = (text or "").strip().lower().replace("\u2019", "'")
+    return re.sub(r"\s+", " ", t).rstrip(".!")
+
+
+def is_english_skill_first_prefix(text: str) -> bool:
+    """True while streamed first-text may still become a known English boot line."""
+    n = _norm_skill_first(text)
+    if not n:
+        return True
+    return any(p.startswith(n) for p in _EN_SKILL_FIRST_NORMS)
+
+
+def localize_first_sentence(text: str, lang: str) -> str:
+    """Rewrite a leading English 'I'll read the skill first.' when the turn is Chinese."""
+    if lang != "zh" or not text:
+        return text
+    m = _EN_SKILL_FIRST_RE.match(text)
+    if not m:
+        return text
+    rest = text[m.end():].lstrip()
+    if not rest:
+        return _ZH_SKILL_FIRST
+    return _ZH_SKILL_FIRST + rest
+
+
+_REPLY_LANG_FIRST_RULE = (
+    "Reply language: your first visible sentence must be in the same language "
+    "as the user. If the user wrote Chinese, do not open with English such as "
+    "\"I'll read the skill first.\""
+)
+
+
+def _reply_lang_first_directive(lang: str) -> str:
+    if lang == "zh":
+        return (
+            "Reply language for this turn is Chinese (zh). Your first visible "
+            "sentence must also be Chinese. Do not open with English such as "
+            "\"I'll read the skill first.\""
+        )
+    return (
+        "Reply language for this turn is English (en). Your first visible "
+        "sentence must also be English."
+    )
+
+
 def _call_key(name: str, args: dict) -> str:
     return name + "\x00" + json.dumps(args, sort_keys=True, ensure_ascii=False)
 
@@ -713,12 +780,14 @@ _PLAN_QUOTE_RULE = (
     "Do not tell the user a per-step or running cost; the confirm card is the "
     "only cost display, and only when the total reaches the threshold."
 )
-_SYSTEM_PROMPT = AGENT_GUIDE + "\n\n" + _PLAN_QUOTE_RULE + "\n\n" + _ASK_CARD_LANG_RULE
+_SYSTEM_PROMPT = AGENT_GUIDE + "\n\n" + _PLAN_QUOTE_RULE + "\n\n" + _ASK_CARD_LANG_RULE + "\n\n" + _REPLY_LANG_FIRST_RULE
 
 
 def system_prompt_for_turn(goal_text: str = "", ui_lang: str = "") -> str:
+    lang = ask_card_lang(goal_text, ui_lang)
     return (_SYSTEM_PROMPT + "\n\n"
-            + _ask_card_lang_directive(ask_card_lang(goal_text, ui_lang)))
+            + _ask_card_lang_directive(lang) + "\n\n"
+            + _reply_lang_first_directive(lang))
 
 
 _PLAN_REFUSE = {

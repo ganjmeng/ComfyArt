@@ -8,7 +8,10 @@ from typing import Optional
 from server import PromptServer
 
 from ..bot import BotEvent, TurnHandle, TurnRequest, get_provider
-from ..bot.local_llm import turn_result_from_blocks
+from ..bot.local_llm import (
+    ask_card_lang, is_english_skill_first_prefix, localize_first_sentence,
+    turn_result_from_blocks,
+)
 from ..bot._cli_common import resolve_comfy_mcp_argv
 from ..bot.agent_host import COMFY_MCP_ALLOWED_TOOLS
 from . import bot_asks, chat_store, paid_guard
@@ -31,6 +34,9 @@ class _TurnState:
         self.tool_started: dict[str, float] = {}
         self.run_budget: dict = {}
         self.awaiting = ""  # #418: "confirm" while a quote card waits for the user
+        self.lang = ""  # #949: ask-card / reply language for the first visible sentence
+        self._first_buf = ""
+        self._first_flushed = False
 
 
 ACTIVE_TURNS: dict[str, _TurnState] = {}
@@ -290,8 +296,37 @@ def _counts(b: dict) -> dict:
     return b
 
 
+def flush_first_sentence(state: _TurnState) -> Optional[dict]:
+    """#949: emit a buffered first text block, rewritten if it is the English boot line."""
+    if state._first_flushed:
+        return None
+    if not state._first_buf:
+        # No text yet: a later first sentence may still need rewriting.
+        return None
+    text = localize_first_sentence(state._first_buf, state.lang)
+    state._first_buf = ""
+    state._first_flushed = True
+    if state.blocks and state.blocks[-1].get("type") == "text":
+        state.blocks[-1]["text"] += text
+    else:
+        state.blocks.append({"type": "text", "text": text})
+    return {"event": "turn_delta", "text": text}
+
+
 def _apply_event(state: _TurnState, ev: BotEvent) -> Optional[dict]:
+
     if ev.t == "delta":
+        # #949: buffer a possible English "I'll read the skill first." until we
+        # know it is complete (or that it is not that boot line), then rewrite
+        # it when the conversation is Chinese so the UI never appends English.
+        if not state._first_flushed and state.lang == "zh":
+            state._first_buf += ev.text or ""
+            rewritten = localize_first_sentence(state._first_buf, state.lang)
+            diverged = not is_english_skill_first_prefix(state._first_buf)
+            ended = state._first_buf.rstrip().endswith((".", "!", "?", "。", "！", "？")) or "\n" in state._first_buf
+            if rewritten != state._first_buf or diverged or ended:
+                return flush_first_sentence(state)
+            return None
         if state.blocks and state.blocks[-1].get("type") == "text":
             state.blocks[-1]["text"] += ev.text
         else:
@@ -368,13 +403,22 @@ async def _run_turn(chat: dict, text: str, state: _TurnState, *,
             if chat_store.update_chat(chat_id, resume_token=ev.id) is None:
                 raise RuntimeError("bot chat no longer exists")
             return
+        payloads = []
+        if ev.t != "delta" and not state._first_flushed:
+            flushed = flush_first_sentence(state)
+            if flushed is not None:
+                payloads.append(flushed)
         payload = _apply_event(state, ev)
-        if payload is None:
+        if payload is not None:
+            payloads.append(payload)
+        if not payloads:
             return
-        payload.update({"chat_id": chat_id, "message_id": state.message_id})
-        broadcast(payload.pop("event"), payload)
         now = time.monotonic()
-        if ev.t in ("tool_use", "tool_result", "retry", "run_stop", "notify") or now - state.last_persist > _PERSIST_INTERVAL_S:
+        persist = ev.t in ("tool_use", "tool_result", "retry", "run_stop", "notify") or now - state.last_persist > _PERSIST_INTERVAL_S
+        for payload in payloads:
+            payload.update({"chat_id": chat_id, "message_id": state.message_id})
+            broadcast(payload.pop("event"), payload)
+        if persist:
             state.last_persist = now
             chat_store.update_message(chat_id, state.message_id, blocks=state.blocks)
 
@@ -451,6 +495,11 @@ async def _run_turn(chat: dict, text: str, state: _TurnState, *,
         notice = unverified_write_notice(state.blocks)
         if notice:
             state.blocks.append(notice)
+    if not state._first_flushed and state._first_buf:
+        leftover = flush_first_sentence(state)
+        if leftover is not None:
+            leftover.update({"chat_id": chat_id, "message_id": state.message_id})
+            broadcast(leftover.pop("event"), leftover)
     chat_store.update_message(chat_id, state.message_id, blocks=state.blocks, status=status,
                               resume_token_after=token, usage=usage)
     updates: dict = {"resume_token": token} if token else {}
@@ -481,6 +530,7 @@ def begin_turn(chat: dict, *, text: str, provider_text: str,
         parent_id=user_msg["id"],
     )
     state = _TurnState(TurnHandle(), chat["id"], assistant_msg["id"])
+    state.lang = ask_card_lang(text, lang)
     ACTIVE_TURNS[chat["id"]] = state
     broadcast("turn_start", {
         "chat_id": chat["id"],

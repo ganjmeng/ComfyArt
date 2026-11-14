@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 import time
 import uuid
 from typing import Optional
@@ -648,12 +649,27 @@ def _yt_live_options(raw_opts: object, *, one_recommended: bool, lang: str) -> l
     return opts
 
 
+# #949: the model often copies a trailing typographic quote + comma off the
+# skill JSON (`…”,` / `...",`) into both card-1 and card-2 placeholders.
+_PLACEHOLDER_TRAILING_JUNK = re.compile(r"[\u201d\u201c\"\047]+,?\s*$")
+
+
+def clean_ask_placeholder(text: str) -> str:
+    """Strip trailing `”,` / `",` junk from an ask-card placeholder."""
+    out = str(text or "").rstrip()
+    while True:
+        nxt = _PLACEHOLDER_TRAILING_JUNK.sub("", out).rstrip()
+        if nxt == out:
+            return out
+        out = nxt
+
+
 def _yt_question(raw: dict, locked: dict, lang: str) -> dict:
     q = {
         "id": locked["id"],
         "prompt": locked["prompt"],
         "allow_other": True,
-        "placeholder": locked["placeholder"],
+        "placeholder": clean_ask_placeholder(locked["placeholder"]),
         "page": 1,
     }
     if locked["options"] is not None:
@@ -683,10 +699,19 @@ def normalize_youtube_banner_card(args: dict, lang: str | None = None) -> dict:
         if not any(_yt_match(q, lk) for q in questions for lk in card):
             continue
         kept = []
+        # Card 1 (#949): always emit all three questions in this one ask, even
+        # when the model only sent Q1 (that used to render 1/3 with empty
+        # pages 2 and 3, then a second ask for the remaining questions).
+        # Card 2: do not invent a missing yt_text_mode — that is #934/#940.
+        complete = card is YT_CARD_1_BY_LANG[lang]
         for lk in card:
             raw = next((q for q in questions if _yt_match(q, lk)), None)
             if raw is not None:
                 kept.append(_yt_question(raw, lk, lang))
+            elif complete:
+                kept.append(_yt_question({}, lk, lang))
+        if not kept:
+            continue
         args["questions"] = kept
         args["page_count"] = pages
         args["allow_skip"] = True
