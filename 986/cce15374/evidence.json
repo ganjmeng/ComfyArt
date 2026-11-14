@@ -1,0 +1,8 @@
+{
+  "issue": 986,
+  "main": "cce15374174f8e02028474ec4c70cb81897ad7d9",
+  "created": "2026-11-14T16:03:00+08:00",
+  "kind": "source-render",
+  "paid_calls": 0,
+  "note": "Dead presets in 5 example-kind skills (rednote, meta-ads, mobile-app, web-product, marketing): skills.ts still declares P() presets, skills-748.json marks kind=example, applyRaw748 sets presets undefined. Rendered from origin/main source; no app start, no WaveSpeed/Replicate/DeepSeek/Lovart calls, no keys in the image."
+}
