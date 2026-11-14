@@ -2103,7 +2103,8 @@ class LocalLlmProvider(AgentProvider):
                 # attachment) is passed through; apply_generate uses it for before-after
                 # card orientation and for FOLLOW_REF_SIZES skills (clothing-swap).
                 args = apply_generate(args, current_skill, user_text=_ut,
-                                      ref_image=ref_image_bytes(args.get("refs"), _ut, getattr(turn, "attachments", None)))
+                                      ref_image=ref_image_bytes(args.get("refs"), _ut, getattr(turn, "attachments", None)),
+                                      current_preset=getattr(run, "current_preset", "") if run is not None else "")
                 preview, early_refuse = bind_generate(run, args, consume=False)
                 if not early_refuse:
                     args = preview
@@ -2137,8 +2138,12 @@ class LocalLlmProvider(AgentProvider):
                 reject = "[tool error] " + unknown_tool_message(name, args, known=_KNOWN_TOOLS, lang=lang)
             from .skill_output import is_single, single_image_skip
             base_gens = int(getattr(run, "single_image_gens", 0) or 0) if run is not None else 0
-            skip = single_image_skip(_tool_base(name), args.get("skill") or current_skill, lang, base_gens + accepted_single)
-            if skip is None and _tool_base(name) == "generate_image" and is_single(args.get("skill") or current_skill):
+            # #979: single-image is per template (packaging eco is 1, gold is 3).
+            call_preset = str(args.get("preset") or getattr(run, "current_preset", "") or "")
+            skip = single_image_skip(_tool_base(name), args.get("skill") or current_skill, lang,
+                                     base_gens + accepted_single, call_preset)
+            if skip is None and _tool_base(name) == "generate_image" and is_single(
+                    args.get("skill") or current_skill, call_preset):
                 accepted_single += 1
             parsed.append({"name": name, "args": args, "id": tc_id,
                            "skill_key": skill_key, "cached": cached, "reject": reject,
@@ -2266,7 +2271,8 @@ class LocalLlmProvider(AgentProvider):
                     continue
                 it["args"] = bound
                 from .skill_output import is_single
-                if run_for_plan is not None and is_single(bound.get("skill")):
+                if run_for_plan is not None and is_single(
+                        bound.get("skill"), str(bound.get("preset") or "")):
                     run_for_plan.single_image_gens = int(getattr(run_for_plan, "single_image_gens", 0) or 0) + 1
             await run_mcp(i)
 
@@ -2491,6 +2497,10 @@ class LocalLlmProvider(AgentProvider):
                 skill_cache: dict[str, str] = {}
                 gens: dict[str, dict] = {}
                 run_ctx = self._paid_run_context(turn, window=window, lang=lang, policy=policy)
+                # #979: same run-scoped skill/template the budget loop resolves from the first turn.
+                from .agent_loop import current_preset_from_messages, current_skill_from_messages
+                run_ctx.current_skill = current_skill_from_messages(messages)
+                run_ctx.current_preset = current_preset_from_messages(messages)
                 loop = {"repeat": 0, "last_key": "", "cache_hits": 0, "gens": gens, "run": run_ctx}
                 gate = _PlanGate(turn.chat_id)
                 limit = self._max_steps()

@@ -392,7 +392,31 @@ export function withTemplateInputs(skill: Skill, presetId: string | null | undef
   return p?.inputs ? { ...skill, inputs: p.inputs } : skill
 }
 /** #707 — pixels generate_image must use. images=1 means one call, no list_models / expand / extra frame. */
-export const SKILL_OUTPUT: Record<string, { width: number; height: number; ratio?: string; images: number }> = {
+export interface SkillOutputStage { width: number; height: number; ratio?: string; images: number }
+/** #979 — one template's plan. A staged template carries `stages`; flat fields are its stage 1. */
+export interface SkillOutputPlan extends Partial<SkillOutputStage> {
+  stages?: SkillOutputStage[]
+  name?: string
+}
+/** #979 — the deliverable is per template, not per skill. Flat fields are the default
+ *  template (and stage 1); `presets` overrides per selected template; `stages` is the
+ *  ordered plan (brand = 3×1:1 direction proposals, then 1×16:9 guideline board). */
+export interface SkillOutput extends SkillOutputStage {
+  presets?: Record<string, SkillOutputPlan>
+  stages?: SkillOutputStage[]
+}
+/** #979: product ruling #911 comment 6872615903 — brand is a two-step 4-image set:
+ *  3×1024×1024 (1:1) direction proposals, then 1×2048×1152 (16:9) guideline board. */
+export const BRAND_STAGES_979: SkillOutputStage[] = [
+  { width: 1024, height: 1024, ratio: '1:1', images: 3 },
+  { width: 2048, height: 1152, ratio: '16:9', images: 1 },
+]
+/** #979: packaging multi-SKU t3 = 3×1536×2048 (3:4) + 1×2048×1152 (16:9). */
+export const PACKAGING_PLAYFUL_STAGES_979: SkillOutputStage[] = [
+  { width: 1536, height: 2048, ratio: '3:4', images: 3 },
+  { width: 2048, height: 1152, ratio: '16:9', images: 1 },
+]
+export const SKILL_OUTPUT: Record<string, SkillOutput> = {
   'before-after': { width: 1920, height: 1080, ratio: '16:9', images: 1 },
   // #974: product ruling (#911 comment 6872065790) — four separate 3:4 1536x2048 images, never one grid.
   'universal-multi-angle-grid': { width: 1536, height: 2048, ratio: '3:4', images: 4 },
@@ -400,6 +424,31 @@ export const SKILL_OUTPUT: Record<string, { width: number; height: number; ratio
   'game-art': { width: 1024, height: 1824, ratio: '9:16', images: 1 },
   'linkedin-banner': { width: 1584, height: 396, images: 1 },
   'clothing-swap': { width: 1536, height: 2048, ratio: '3:4', images: 1 },
+  // #979: template-level output contract (#911 comment 6872615903). The six brand
+  // templates share one staged plan; brand is never a single landscape board.
+  'brand-identity-director': {
+    width: 1024, height: 1024, ratio: '1:1', images: 4,
+    stages: BRAND_STAGES_979,
+    presets: {
+      geometric: { stages: BRAND_STAGES_979 },
+      handmade: { stages: BRAND_STAGES_979 },
+      tech: { stages: BRAND_STAGES_979 },
+      beauty: { stages: BRAND_STAGES_979 },
+      foodbev: { stages: BRAND_STAGES_979 },
+      pet: { stages: BRAND_STAGES_979 },
+    },
+  },
+  // #979: five packaging templates, five plans. Flat fields = the default 主款 (eco/t1).
+  'packaging-design-director': {
+    width: 1536, height: 2048, ratio: '3:4', images: 1,
+    presets: {
+      eco: { width: 1536, height: 2048, ratio: '3:4', images: 1 },
+      gold: { width: 2048, height: 1152, ratio: '16:9', images: 3 },
+      playful: { width: 1536, height: 2048, ratio: '3:4', images: 4, stages: PACKAGING_PLAYFUL_STAGES_979 },
+      panels: { width: 2048, height: 1152, ratio: '16:9', images: 1 },
+      shelf: { width: 2048, height: 1152, ratio: '16:9', images: 1 },
+    },
+  },
 }
 
 export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
