@@ -857,6 +857,8 @@ span.arti-mascot { cursor: default; pointer-events: none; }
 .ca-chat__dock .ca-q__chev { color: #737373; }
 .ca-chat__dock .ca-q__chev:disabled { color: #C5C5C5; opacity: 1; } /* disabled tone only; do not stack extra opacity */
 .ca-chat__dock .ca-q__prompt { padding: 0; font-size: 14px; line-height: 20px; font-weight: 400; color: #191919; }
+/* #940 numeric table: 20px prompt line + 16px gap = 36px first-option pitch. */
+.ca-chat__dock .ca-q__block { gap: 16px; }
 .ca-chat__dock .ca-q__opt { box-sizing: border-box; padding: 0 9px; border-radius: 8px; }
 .ca-chat__dock .ca-q__letter { background: #F5F5F5; color: #6F6F6F; }
 .ca-chat__dock .ca-q__opt[data-on] .ca-q__letter { background: #2C2C2C; color: #fff; }
