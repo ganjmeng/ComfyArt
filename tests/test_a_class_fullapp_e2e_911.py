@@ -372,7 +372,8 @@ async def _bind_open_project(pg):
     return project, bound
 
 
-async def _open_skill(p, app_url, lang, sid, sockets, dialog_ref=None):  # noqa: F811
+async def _open_skill(p, app_url, lang, sid, sockets, dialog_ref=None, dialog_text=None,
+                      preset_id=None, composer_name=None):  # noqa: F811
     try:
         browser = await p.chromium.launch()
     except Exception as e:  # noqa: BLE001
@@ -392,18 +393,36 @@ async def _open_skill(p, app_url, lang, sid, sockets, dialog_ref=None):  # noqa:
     await card.get_by_test_id("skills-card-try").click()
     dlg = pg.locator(f'[data-testid="skill-run-dialog"][data-skill="{sid}"]')
     await dlg.wait_for(timeout=15000)
+    if preset_id is not None:
+        tile = dlg.locator(f'[data-testid="skill-run-preset"][data-preset="{preset_id}"]')
+        await tile.scroll_into_view_if_needed()
+        await tile.click()
     # Default input: the dialog's one upload field when the skill needs one base photo.
     if dialog_ref is not None:
         await dlg.locator('input[type="file"]').first.set_input_files(str(dialog_ref))
+    if dialog_text is not None:
+        await dlg.locator('textarea').first.fill(dialog_text)
+    if dialog_ref is not None or dialog_text is not None:
         await pg.wait_for_function(
             "() => { const b = document.querySelector('[data-testid=skill-run-go]');"
             " return b && !b.disabled && !b.getAttribute('data-missing'); }"
         )
     await dlg.get_by_test_id("skill-run-go").click()
     await pg.locator(".ca-composer__input").wait_for(timeout=20000)
-    label_key = {"clothing-swap": "skills.clothingSwap", "universal-multi-angle-grid": "skills.multiAngleImageGenerator"}.get(sid, "skills.poseFission")
-    label = LOC[lang][label_key]
-    await pg.locator(".ca-composer").get_by_text(label).first.wait_for(timeout=15000)
+    label_key = {
+        "clothing-swap": "skills.clothingSwap",
+        "universal-multi-angle-grid": "skills.multiAngleImageGenerator",
+        "logo-material-explorer": "skills.logoMaterialExplorer",
+        "character-sheet-design": "skills.characterSheet",
+        "poster-differentiated-compiler": "skills.posterDesign",
+        "banner-design-director": "skills.bannerDesign",
+        "meta-ads-creative-director": "skills.metaAdsCreative",
+        "mobile-app-visual-design": "skills.mobileAppVisualDesign",
+    }.get(sid, "skills.poseFission")
+    chip = pg.locator('.ca-composer [data-testid="composer-skill-chip"]')
+    await chip.wait_for(timeout=15000)
+    label = composer_name or LOC[lang][label_key]
+    await chip.get_by_text(label).first.wait_for(timeout=15000)
     # The Agent provider list must have arrived before the composer can send (#294).
     await pg.locator('.ca-composer__mode[data-agent="local-llm"]').wait_for(timeout=20000)
     await _bind_open_project(pg)

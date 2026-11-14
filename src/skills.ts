@@ -401,9 +401,21 @@ export interface SkillOutputPlan extends Partial<SkillOutputStage> {
 /** #979 — the deliverable is per template, not per skill. Flat fields are the default
  *  template (and stage 1); `presets` overrides per selected template; `stages` is the
  *  ordered plan (brand = 3×1:1 direction proposals, then 1×16:9 guideline board). */
+/** #982: one image in a multi-call default (pack/kit/screens); label is prose only. */
+export interface SkillOutputCall extends SkillOutputStage {
+  label?: string
+}
 export interface SkillOutput extends SkillOutputStage {
   presets?: Record<string, SkillOutputPlan>
   stages?: SkillOutputStage[]
+  /** #982: a default set of calls with different canvases (ratio pack, kit, screens). */
+  calls?: SkillOutputCall[]
+  /** #982: video skill — the image call is only a still/storyboard, never the film. */
+  media?: 'image' | 'video'
+  /** #982: which reference(s) this default expects, for the agent's read output. */
+  refs?: string
+  /** #982: design has not finished visual review; never treat this value as final. */
+  provisional?: string
 }
 /** #979: product ruling #911 comment 6872615903 — brand is a two-step 4-image set:
  *  3×1024×1024 (1:1) direction proposals, then 1×2048×1152 (16:9) guideline board. */
@@ -416,6 +428,23 @@ export const PACKAGING_PLAYFUL_STAGES_979: SkillOutputStage[] = [
   { width: 1536, height: 2048, ratio: '3:4', images: 3 },
   { width: 2048, height: 1152, ratio: '16:9', images: 1 },
 ]
+/** #982: eight character templates, one sheet each, at the ratio the template's own
+ *  media declares (1:1 turnaround/outfit/prop, 3:4 editorial, 16:9 expression/
+ *  modeling/basic/technical). Design 6874380577 raised 1:1; QA HOLD 6874585151
+ *  aligns it to the provider's real 2K square (2048x2048), 16:9 stays 2048x1152,
+ *  editorial is 1536x2048 (2K 3:4). */
+export const CHARACTER_PRESETS_982: Record<string, SkillOutputPlan> = {
+  turnaround: { width: 2048, height: 2048, ratio: '1:1', images: 1, name: 'Character Turnaround Sheet' },
+  expression: { width: 2048, height: 1152, ratio: '16:9', images: 1, name: 'Expression & Pose Sheet' },
+  modeling: { width: 2048, height: 1152, ratio: '16:9', images: 1, name: 'Modeling Detail Reference Sheet' },
+  outfit: { width: 2048, height: 2048, ratio: '1:1', images: 1, name: 'Outfit / Form Variation Sheet' },
+  prop: { width: 2048, height: 2048, ratio: '1:1', images: 1, name: 'Prop Interaction Sheet' },
+  basic: { width: 2048, height: 1152, ratio: '16:9', images: 1, name: 'Basic Character Sheet' },
+  technical: { width: 2048, height: 1152, ratio: '16:9', images: 1, name: 'Complete Technical Character Sheet' },
+  // Design review 6874380577: 1024 square made the face ~80 px; 1:1 stays for
+  // turnaround/outfit/prop at 1536 square, editorial is 3:4 at 2K.
+  editorial: { width: 1536, height: 2048, ratio: '3:4', images: 1, name: 'Editorial Fashion Sheet' },
+}
 export const SKILL_OUTPUT: Record<string, SkillOutput> = {
   'before-after': { width: 1920, height: 1080, ratio: '16:9', images: 1 },
   // #974: product ruling (#911 comment 6872065790) — four separate 3:4 1536x2048 images, never one grid.
@@ -424,6 +453,17 @@ export const SKILL_OUTPUT: Record<string, SkillOutput> = {
   'game-art': { width: 1024, height: 1824, ratio: '9:16', images: 1 },
   'linkedin-banner': { width: 1584, height: 396, images: 1 },
   'clothing-swap': { width: 1536, height: 2048, ratio: '3:4', images: 1 },
+  // #982: no presets on the UI (applyRaw748 example branch) and no output contract;
+  // the default path submitted no size and the provider picked the pixels. Minimal
+  // product default: one 1:1 1024x1024 brushed-metal study; Additional Details may
+  // name another finish, never a second frame.
+  'logo-material-explorer': { width: 1024, height: 1024, ratio: '1:1', images: 1 },
+  // #982: eight templates, eight plans, one sheet each. Flat fields are the default
+  // turnaround template (also the dialog's first template).
+  'character-sheet-design': {
+    width: 2048, height: 2048, ratio: '1:1', images: 1,
+    presets: CHARACTER_PRESETS_982,
+  },
   // #979: template-level output contract (#911 comment 6872615903). The six brand
   // templates share one staged plan; brand is never a single landscape board.
   'brand-identity-director': {
@@ -449,6 +489,39 @@ export const SKILL_OUTPUT: Record<string, SkillOutput> = {
       shelf: { width: 2048, height: 1152, ratio: '16:9', images: 1 },
     },
   },
+  'logo-abstract': { width: 1024, height: 1024, ratio: '1:1', images: 1, refs: 'reference photo (image 1)' },
+  'lifestyle-scene': { width: 1024, height: 1024, ratio: '1:1', images: 1, refs: 'product image (when provided)' },
+  'crayon-sketch': { width: 1024, height: 1024, ratio: '1:1', images: 1, refs: 'subject image (image 1)' },
+  'fabric-collage': { width: 1024, height: 1024, ratio: '1:1', images: 1, refs: 'uploaded refs' },
+  'naive-illustration': { width: 1024, height: 1024, ratio: '1:1', images: 1, refs: 'uploaded refs' },
+  'commerce-strategist': { width: 1024, height: 1024, ratio: '1:1', images: 1, refs: 'optional ref assets' },
+  'promo-ecommerce': { width: 1024, height: 1024, ratio: '1:1', images: 1, refs: 'product image' },
+  'taobao-product': { width: 1024, height: 1024, ratio: '1:1', images: 1, refs: 'product image (main image is 1:1)' },
+  'banner-design-director': { width: 2048, height: 1152, ratio: '16:9', images: 1, refs: 'uploaded refs; pass every one' },
+  'ppt-visual': { width: 2048, height: 1152, ratio: '16:9', images: 3, refs: 'uploaded refs; pass every one', provisional: 'page count pending visual review; current 3', calls: [{width: 2048, height: 1152, ratio: '16:9', images: 1, label: 'cover'}, {width: 2048, height: 1152, ratio: '16:9', images: 1, label: 'section'}, {width: 2048, height: 1152, ratio: '16:9', images: 1, label: 'comparison'}] },
+  'web-product-visual-design': { width: 2048, height: 1152, ratio: '16:9', images: 1, refs: 'uploaded refs; pass every one' },
+  'product-website': { width: 2048, height: 1152, ratio: '16:9', images: 3, refs: 'uploaded refs; pass every one', provisional: 'page count pending visual review; current 3', calls: [{width: 2048, height: 1152, ratio: '16:9', images: 1, label: 'hero'}, {width: 2048, height: 1152, ratio: '16:9', images: 1, label: 'spec grid'}, {width: 2048, height: 1152, ratio: '16:9', images: 1, label: 'supporting section'}] },
+  'premium-website': { width: 2048, height: 1152, ratio: '16:9', images: 2, refs: 'uploaded refs; pass every one', provisional: 'page count pending visual review; current 2', calls: [{width: 2048, height: 1152, ratio: '16:9', images: 1, label: 'hero'}, {width: 2048, height: 1152, ratio: '16:9', images: 1, label: 'first-screen system'}] },
+  'restaurant-website': { width: 2048, height: 1152, ratio: '16:9', images: 3, refs: 'uploaded refs; pass every one', provisional: 'page count pending visual review; current 3', calls: [{width: 2048, height: 1152, ratio: '16:9', images: 1, label: 'mood hero'}, {width: 2048, height: 1152, ratio: '16:9', images: 1, label: 'menu board'}, {width: 2048, height: 1152, ratio: '16:9', images: 1, label: 'reserve/CTA'}] },
+  'interior-architectural-visualization': { width: 2048, height: 1152, ratio: '16:9', images: 1, refs: 'uploaded refs; eye-level wide shot, detail vignette is 4:3' },
+  'poster-differentiated-compiler': { width: 1536, height: 2048, ratio: '3:4', images: 1, refs: 'uploaded refs; instruction says default 3:4' },
+  'photo-split-poster': { width: 1638, height: 2048, ratio: '4:5', images: 1, refs: 'photo (image 1); keep the photo/geometry split', provisional: '4:5 vs 3:4 pending visual review; current 4:5' },
+  'yingzao': { width: 1536, height: 2048, ratio: '3:4', images: 1, refs: 'photo (image 1); no invented architecture' },
+  'meta-ads-creative-director': { width: 1024, height: 1024, ratio: '1:1', images: 3, refs: 'product/person refs, same on every call', calls: [{width: 1024, height: 1024, ratio: '1:1', images: 1, label: 'feed 1:1'}, {width: 1638, height: 2048, ratio: '4:5', images: 1, label: 'feed 4:5'}, {width: 1152, height: 2048, ratio: '9:16', images: 1, label: 'story/reel 9:16'}] },
+  'rednote-cover-maker': { width: 1024, height: 1024, ratio: '1:1', images: 3, refs: 'product/person refs, same on every call', calls: [{width: 1024, height: 1024, ratio: '1:1', images: 1, label: 'feed 1:1'}, {width: 1638, height: 2048, ratio: '4:5', images: 1, label: 'post 4:5'}, {width: 1152, height: 2048, ratio: '9:16', images: 1, label: 'story 9:16'}] },
+  'marketing-campaign-generator': { width: 2048, height: 1152, ratio: '16:9', images: 3, refs: 'brand/product refs, same on every call', provisional: 'pack pending visual review; current 16:9+4:5+9:16', calls: [{width: 2048, height: 1152, ratio: '16:9', images: 1, label: 'hero KV 16:9'}, {width: 1638, height: 2048, ratio: '4:5', images: 1, label: 'display 4:5'}, {width: 1152, height: 2048, ratio: '9:16', images: 1, label: 'social 9:16'}] },
+  'mobile-app-visual-design': { width: 880, height: 2048, ratio: '9:21', images: 2, refs: 'uploaded refs; phone-framed screens', calls: [{width: 880, height: 2048, ratio: '9:21', images: 1, label: 'home screen'}, {width: 880, height: 2048, ratio: '9:21', images: 1, label: 'detail screen'}] },
+  'crt-interface': { width: 2048, height: 1536, ratio: '4:3', images: 1, refs: 'uploaded refs' },
+  'product-tvc-advertisement-generator': { width: 2048, height: 1152, ratio: '16:9', images: 1, refs: 'product image (always pass it)', media: 'video' },
+  'motion-poster-generator': { width: 1536, height: 2048, ratio: '3:4', images: 1, refs: 'source_image (the static artwork)', media: 'video', provisional: 'still ratio pending visual review; current 3:4' },
+  'flash-cut-video': { width: 2048, height: 1152, ratio: '16:9', images: 1, refs: 'landscape 16:9 screenshot', media: 'video' },
+  'anim-2d': { width: 2048, height: 1152, ratio: '16:9', images: 1, refs: 'primary visual', media: 'video', provisional: 'still ratio pending visual review; current 16:9' },
+  'animated-poster': { width: 1536, height: 2048, ratio: '3:4', images: 1, refs: 'source artwork', media: 'video', provisional: 'still ratio pending visual review; current 3:4' },
+  'logo-animation': { width: 2048, height: 1152, ratio: '16:9', images: 1, refs: 'logo image (image 1)', media: 'video', provisional: 'still ratio pending visual review; current 16:9' },
+  'style-transfer': { width: 1024, height: 1024, ratio: '1:1', images: 1, refs: 'content image first, style image second' },
+  'person-swap': { width: 1536, height: 2048, ratio: '3:4', images: 3, refs: 'scene/pose first, then face and outfit' },
+  'creator-identity': { width: 1024, height: 1024, ratio: '1:1', images: 3, refs: 'creator refs', provisional: 'asset set pending visual review; current avatar+cover+1:1', calls: [{width: 1024, height: 1024, ratio: '1:1', images: 1, label: 'avatar 1:1'}, {width: 2048, height: 1152, ratio: '16:9', images: 1, label: 'channel cover 16:9'}, {width: 1024, height: 1024, ratio: '1:1', images: 1, label: 'social template 1:1'}] },
+  'live-promo-decor': { width: 1152, height: 2048, ratio: '9:16', images: 3, refs: 'product/stream refs', provisional: 'asset set pending visual review; current 3x 9:16', calls: [{width: 1152, height: 2048, ratio: '9:16', images: 1, label: 'background 9:16'}, {width: 1152, height: 2048, ratio: '9:16', images: 1, label: 'price tag 9:16'}, {width: 1152, height: 2048, ratio: '9:16', images: 1, label: 'corner badge 9:16'}] },
 }
 
 export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
@@ -474,7 +547,7 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
   { id: 'banner-design-director', name: t('skills.bannerDesign'), instructions: 'You are a production banner designer for web and campaign placement. Deliver crop-safe wide frames, not square posts.\n1) Brief: campaign goal, offer and placement width from the upload and notes.\n2) Layout: wide 21:9 or 16:9; headline on one side, visual on the other; clear CTA text in quotes.\n3) Safe margins: protect type and logo from edge crop across common ad slots.\n4) Hierarchy: one focal product or scene; avoid cluttered multi-offer walls.\n5) Refs: when a file is uploaded, pass its shape id in refs (ref_modes content) on every generate_image call.',
     category: 'ads', cover: cover('banner-design-director'), quickStartCover: quickStartCover('banner-design-director'), featured: feedCovers('banner-design-director')?.map((u, i) => (i === 2 ? pinned('778/wash/banner/featured', WASH_778, '03.webp') : u)), /* #778: 精选03 single brand */ video: pinned('778/wash/banner/examples', WASH_778_EX01, '01.mp4'), /* #778: ex01 + hover = fintech banner wash (was supplement-jar 494 mp4) */
     inputs: REF_CARD_INPUTS_687 },
-  { id: 'character-sheet-design', name: t('skills.characterSheet'), instructions: 'You are a production character-sheet designer. Deliver turnaround-ready reference boards for downstream art and IP.\n1) Lock identity: from the provided file and Additional Details, freeze face, body, outfit colors and key props.\n2) Board: follow the selected template (turnaround, expression, modeling detail, outfit, prop, basic, technical, editorial).\n3) Consistency: identical proportions, palette and costume language across every cell in the sheet.\n4) Presentation: prefer clean backgrounds; label nothing with stray UI chrome; keep sheets readable as production refs.\n5) Refs: when files are uploaded, pass each shape id in refs (ref_modes content) on every generate_image call.',
+  { id: 'character-sheet-design', name: t('skills.characterSheet'), instructions: 'You are a production character-sheet designer. Deliver turnaround-ready reference boards for downstream art and IP.\n1) Lock identity: from the provided file and Additional Details, freeze face, body, outfit colors and key props.\n2) Board: follow the selected template (turnaround, expression, modeling detail, outfit, prop, basic, technical, editorial).\n3) Consistency: identical proportions, palette and costume language across every cell in the sheet.\n4) Presentation: prefer clean backgrounds; label nothing with stray UI chrome; keep sheets readable as production refs.\n5) Refs: when files are uploaded, pass each shape id in refs (ref_modes content) on every generate_image call.\n6) Delivery: exactly one sheet per run at the selected template\'s declared canvas (the output lock states it; default turnaround 1024×1024 1:1), count=1; pass skill: "character-sheet-design" and every uploaded character ref.',
     cover: cover('character-sheet-design'), quickStartCover: quickStartCover('character-sheet-design'), featured: feedCovers('character-sheet-design')?.map((u, i) => (i === 2 ? pinned('788/wash-r2/character/featured', WASH_788_F03, '03.webp') : u)), /* #788 r2 */ video: video('character-sheet-design'), featuredPreset: 'editorial', presets: [P('turnaround', '角色转身板', 'Character Turnaround Sheet', 'Template: character turnaround sheet, full-body front, side and back views evenly spaced in one row on a white background.', wash569('character-sheet-design', 0)), P('expression', '表情动作板', 'Expression & Pose Sheet', 'Template: expression and pose sheet, a row of head-shot expressions above full-body poses (standing, walking, sitting).', wash569('character-sheet-design', 1)), P('modeling', '建模细节参考板', 'Modeling Detail Reference Sheet', 'Template: modeling detail reference sheet, full-body angles on the left and close-up cells of face, eyes, lips, ears, hair, hands and shoes on the right.', wash569('character-sheet-design', 2)), P('outfit', '服装/形态变体板', 'Outfit / Form Variation Sheet', 'Template: outfit variation sheet, the same character in three different outfits shown full body side by side.', wash569('character-sheet-design', 3)), P('prop', '道具互动板', 'Prop Interaction Sheet', 'Template: prop interaction sheet, full-body poses holding a prop on top and close-up cells of hands and prop below.', wash569('character-sheet-design', 4)), P('basic', '基础角色板', 'Basic Character Sheet', 'Template: basic character sheet, full-body three views on the left and four head-shot expressions on the right.', wash569('character-sheet-design', 5)), P('technical', '完整技术角色板', 'Complete Technical Character Sheet', 'Template: complete technical character sheet, multi-angle full body, an expression grid, outfit items, color swatches and detail close-ups.', wash569('character-sheet-design', 6)), P('editorial', '时装大片角色板', 'Editorial Fashion Sheet', 'Template: editorial fashion sheet, the reference character as the lead in a luxury-brand fashion campaign style; full-body standing pose, half-body and face close-ups of the same person, keeping facial features, hairstyle and body shape consistent, soft studio lighting, clean light background, no text or logos.', wash569('character-sheet-design', 7))],
     inputs: REF_CARD_INPUTS_687 },
   { id: 'product-tvc-advertisement-generator', name: t('skills.eCommerceProductImages'), instructions: 'You are a production product-commercial director. Deliver finished advertisement films for beauty, fashion, food & beverage, electronics, home, outdoor and software.\n1) Lock the product: from productImage and productInfo, keep silhouette, materials, logo and color truthful in every frame.\n2) Form: one RESULT advertisement film matching the selected category template (not a white-background still packshot).\n3) Narrative: show confirmed benefits and real usage; never invent performance claims or unseen structure.\n4) Apply the selected template focus (beauty, fashion, foodbev, electronics, home, outdoor, software).\n5) Refs: ALWAYS pass the product image shape id in refs (ref_modes content) on every generate_image / animate_image call; describing it in the prompt does not send the image.',
@@ -496,7 +569,7 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
     cover: cover('universal-multi-angle-grid'), quickStartCover: quickStartCover('universal-multi-angle-grid'), quickStartCoverFit: 'contain',
     featured: feedCovers('universal-multi-angle-grid'), video: video594('universal-multi-angle-grid'),
     inputs: MULTI_ANGLE_INPUTS },
-  { id: 'logo-material-explorer', name: t('skills.logoMaterialExplorer'), instructions: 'You are a production 3D material artist for logo finish studies. Explore materials only — never redesign the mark.\n1) Lock geometry: keep logo paths, proportions and negative space identical to the provided file.\n2) Materials: vary finish only (metal, glass, plastic, fabric, ceramic) per selected preset or Additional Details.\n3) Stage: neutral studio turntable or soft gradient; soft product lighting; no busy brand scenes.\n4) Scope: one material study per frame; do not invent a full VI kit or packaging system.\n5) Refs: pass the logo shape id in refs (ref_modes content) on every generate_image call.',
+  { id: 'logo-material-explorer', name: t('skills.logoMaterialExplorer'), instructions: 'You are a production 3D material artist for logo finish studies. Explore materials only — never redesign the mark.\n1) Lock geometry: keep logo paths, proportions and negative space identical to the provided file.\n2) Materials: vary finish only (metal, glass, plastic, fabric, ceramic) from Additional Details; when it names none, use brushed metal. Never redesign the mark.\n3) Stage: neutral studio turntable or soft gradient; soft product lighting; no busy brand scenes.\n4) Scope: one material study per frame; do not invent a full VI kit or packaging system.\n5) Refs: pass the logo shape id in refs (ref_modes content) on every generate_image call.\n6) Delivery: exactly one 1:1 1024×1024 material study per run, count=1; pass skill: "logo-material-explorer" and the logo shape id in refs.',
     category: 'branding',
     cover: cover('logo-material-explorer'), quickStartCover: quickStartCover('logo-material-explorer'), quickStartCoverFit: 'contain',
     featured: feedCovers('logo-material-explorer'), video: pinned('wash-lm/logo-material', WASH_LM, 'hero.mp4'), /* VELA liquid-chrome hero I2V (r2; was ffmpeg cover push-in) */  // #748: left = 1 video + 3 examples; hl0=video → this mp4

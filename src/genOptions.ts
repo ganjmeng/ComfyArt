@@ -15,7 +15,7 @@ export const STYLES: [string, string, string][] = [
   ['illustration', t('common.illustration'), 'editorial illustration, clean shapes'], ['3d', '3D', 'high quality 3D render, soft studio light'], ['anime', t('common.anime'), 'anime style, cel shading'],
   ['minimal', t('generate.minimal'), 'minimalist design, generous negative space'], ['retro', t('generate.retro'), 'retro vintage print, muted colors, halftone texture'],
 ]
-export const RATIOS = ['1:1', '3:2', '2:3', '4:3', '3:4', '16:9', '9:16', '4:5', '5:4', '21:9']
+export const RATIOS = ['1:1', '3:2', '2:3', '4:3', '3:4', '16:9', '9:16', '9:21', '4:5', '5:4', '21:9']
 export const VIDEO_RATIOS = ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9']
 export const DURATIONS = [5, 10, 15]
 

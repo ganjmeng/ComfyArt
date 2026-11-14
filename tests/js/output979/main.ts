@@ -11,5 +11,6 @@ console.log(JSON.stringify({
   presets: {
     brand: presets('brand-identity-director'),
     packaging: presets('packaging-design-director'),
+    character: presets('character-sheet-design'),
   },
 }))
