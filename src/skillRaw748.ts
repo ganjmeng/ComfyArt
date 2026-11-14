@@ -27,10 +27,11 @@ interface Ours { description?: Loc; prompt?: Loc; placeholders?: Record<string, 
 const COPY = copy as Record<string, Ours>
 const loc = (l?: Loc) => (l ? (lang === 'zh' ? l.zh : l.en) : undefined)
 
-function toInput(q: RawInput, ours?: Record<string, Loc>): SkillInput {
+function toInput(q: RawInput, ours?: Record<string, Loc>, optional?: ReadonlySet<string>): SkillInput {
   const long = q.type === 'text' && (q.maxLength ?? 0) > 200
   return {
-    key: q.key, label: q.label, type: q.type === 'image' ? 'image' : long ? 'textarea' : 'text', ...(q.required ? { required: true } : {}),
+    key: q.key, label: q.label, type: q.type === 'image' ? 'image' : long ? 'textarea' : 'text',
+    ...(q.required && !optional?.has(q.key) ? { required: true } : {}),
     // OUR generic placeholder (reference long copy → COPY-REWRITE.md, pending product rewrite)
     ...(q.type === 'text' ? { placeholder: ours?.[q.key] ?? { zh: `请填写${q.label.zh}`, en: `Enter ${q.label.en.toLowerCase()}` } } : {}),
     ...(q.maxLength ? { maxLength: q.maxLength } : {}), ...(q.type === 'image' ? { accept: 'image' as const } : {}),
@@ -62,13 +63,21 @@ function examplesFromHighlights(skill: Skill, r: RefSkill748): { examples?: stri
   return { examples, pendingWash }
 }
 
+/** #974 / #693 — product-signed optional fields that must survive the raw override.
+ *  The 748 dump is reference metadata; a product decision ("Upload stays optional", no asterisk, Generate
+ *  never blocked) must not be silently turned back into required by a raw regeneration. Keys are raw keys. */
+export const PRODUCT_OPTIONAL_748: Record<string, readonly string[]> = {
+  'universal-multi-angle-grid': ['user_image', 'user_requirement'],
+}
+
 export function applyRaw748(skill: Skill): Skill {
   const r = SKILLS_748[skill.id]
   if (!r) return skill
   const name = lang === 'zh' ? r.title.zh : r.title.en
   const ours = COPY[skill.id] ?? {}
   const description = loc(ours.description) ?? skill.description
-  if (r.kind === 'example') return { ...skill, name, description, presets: undefined, inputs: (r.inputs ?? []).map((q) => toInput(q, ours.placeholders)), ...examplesFromHighlights(skill, r) }
+  const optional = new Set(PRODUCT_OPTIONAL_748[skill.id] ?? [])
+  if (r.kind === 'example') return { ...skill, name, description, presets: undefined, inputs: (r.inputs ?? []).map((q) => toInput(q, ours.placeholders, optional)), ...examplesFromHighlights(skill, r) }
   const tpls = r.templates ?? []
   if (!tpls.length) return { ...skill, name, description }
   const presets = tpls.map((t, i): SkillPreset => {
@@ -93,7 +102,7 @@ export function applyRaw748(skill: Skill): Skill {
       ...(ours.templates?.[i + 1]?.description ? { description: ours.templates[i + 1].description } : {}),
       image, ...(vid ? { video: vid } : {}), ...(stack ? { stack } : {}), ...(stackOrient ? { stackOrient } : {}), ...(mediaOrient ? { mediaOrient } : {}),
       ...(pendingWash.length ? { pendingWash } : {}),
-      inputs: t.inputs.map((q) => toInput(q, ours.templates?.[i + 1]?.placeholders)),
+      inputs: t.inputs.map((q) => toInput(q, ours.templates?.[i + 1]?.placeholders, optional)),
     }
   })
   return { ...skill, name, description, presets, inputs: presets[0].inputs }

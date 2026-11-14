@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.lovart_fields_687 import MOTION_DESC, MOTION_FEATURED_806, MOTION_FEATURED_REMOVED, OURS_PH, RAW_748, REF12, SPEC
+from tests.lovart_fields_687 import MOTION_DESC, MOTION_FEATURED_806, MOTION_FEATURED_REMOVED, OURS_PH, PRODUCT_OPTIONAL_748, RAW_748, REF12, SPEC
 
 ROOT = Path(__file__).resolve().parents[1]
 needs_node = pytest.mark.skipif(
@@ -33,6 +33,19 @@ def rows(fields: list[dict]) -> list[tuple]:
 @pytest.mark.parametrize("sid", sorted(SPEC))
 def test_dialog_fields_match_lovart_spec_687(got, sid):
     assert rows(got[sid]["fields"]) == SPEC[sid], sid
+
+
+@needs_node
+def test_multi_angle_upload_additional_optional_974(got):
+    """#974 / #693: the raw 748 dump marks user_image + user_requirement required; applyRaw748 must
+    keep the product-signed optional form. The guard names exactly the raw keys, so a raw key rename
+    cannot silently re-block the dialog either."""
+    raw_keys = {q["key"] for q in RAW_748["universal-multi-angle-grid"]["inputs"]}
+    assert raw_keys == {"user_image", "user_requirement"}
+    assert set(PRODUCT_OPTIONAL_748["universal-multi-angle-grid"]) == raw_keys
+    fields = got["universal-multi-angle-grid"]["fields"]
+    assert [f["key"] for f in fields] == ["user_image", "user_requirement"]
+    assert not any(f["required"] for f in fields), fields
 
 
 @needs_node

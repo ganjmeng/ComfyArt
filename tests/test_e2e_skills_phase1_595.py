@@ -74,6 +74,32 @@ async def test_multi_angle_carousel_and_brand_dialog_to_agent(app_url):  # noqa:
         await browser.close()
 
 
+async def test_multi_angle_form_optional_no_missing_974(app_url):  # noqa: F811
+    """#974 / #693: no asterisk, data-missing is never 2, Generate is never greyed; Additional alone hands off."""
+    from urllib.parse import unquote_plus
+    async with pw.async_playwright() as p:
+        browser, pg = await _open_home(p, app_url, "en")
+        await pg.locator('[data-testid="home-skill-card"][data-skill="universal-multi-angle-grid"]').click()
+        dlg = pg.get_by_test_id("skill-run-dialog")
+        await dlg.wait_for()
+        fields = pg.get_by_test_id("skill-run-field")
+        assert await fields.evaluate_all("fs => fs.map(f => [f.dataset.key, f.dataset.type])") == [["user_image", "image"], ["user_requirement", "textarea"]]
+        assert await dlg.locator(".ca-skillrun__req").count() == 0  # #693: Upload + Additional carry no star
+        go = pg.get_by_test_id("skill-run-go")
+        assert await go.get_attribute("data-missing") is None  # was 2 after the #748 raw override
+        assert await go.get_attribute("aria-disabled") is None
+        assert await go.evaluate("b => !b.disabled")
+        # No upload: the Additional subject must still open the fallback path (instruction: use it or ask).
+        await pg.locator('[data-key="user_requirement"]').fill("A ceramic mug, white seamless studio")
+        assert await go.get_attribute("data-missing") is None and await go.evaluate("b => !b.disabled")
+        await go.click()
+        await pg.wait_for_url(re.compile(r"[?&]skill=universal-multi-angle-grid"), timeout=10_000)
+        assert "mode=agent" in pg.url
+        assert "ref=" not in pg.url, pg.url  # no upload -> no reference, Additional drives the fallback
+        assert "ceramic mug" in unquote_plus(pg.url).lower(), pg.url
+        await browser.close()
+
+
 async def test_multi_angle_upload_reaches_handoff_ref_691(app_url):  # noqa: F811
     # #691/#693: the Upload block (key `file`) feeds the same `ref` handoff param the old 主体图片 field did
     from pathlib import Path

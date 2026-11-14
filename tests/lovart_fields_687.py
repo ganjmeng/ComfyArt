@@ -12,11 +12,17 @@ _C = _json.loads((_Path(__file__).resolve().parents[1] / "src/data/copy-748.json
 def _ours_ph(sid):
     c = _C.get(sid, {})
     return (c.get("templates", {}).get("1", {}) or c).get("placeholders", {}) if c.get("templates") else c.get("placeholders", {})
+# #974 / #693 — product-signed optional fields that survive the raw override (applyRaw748 in
+# src/skillRaw748.ts). The raw dump still marks both required; the live form must not.
+PRODUCT_OPTIONAL_748 = {"universal-multi-angle-grid": {"user_image", "user_requirement"}}
+
+
 def _raw_row(q, sid=None):
     ph = _ours_ph(sid).get(q["key"]) if sid else None
     ph = ph or ({"en": f"Enter {q['label']['en'].lower()}"} if q["type"] == "text" else None)  # generic fallback
     t = "image" if q["type"] == "image" else ("textarea" if (q.get("maxLength") or 0) > 200 else "text")
-    return (q["key"], t, bool(q["required"]), "image" if q["type"] == "image" else None, q.get("maxLength"),
+    required = bool(q["required"]) and q["key"] not in PRODUCT_OPTIONAL_748.get(sid or "", set())
+    return (q["key"], t, required, "image" if q["type"] == "image" else None, q.get("maxLength"),
             q["label"]["zh"], q["label"]["en"], ph["en"] if ph else None)
 RAW_748 = _R
 def _inputs(v):

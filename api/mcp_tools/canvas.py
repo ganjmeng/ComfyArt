@@ -206,6 +206,9 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
                 args["auto_model"] = True
         elif choice and choice["auto"] and choice["category"] != "references" and "model" not in args and choice["model"] != load_config()["features"][tool_feature(action)]["default"]:
             args = {**args, "model": choice["model"], "auto_model": True} if "edit_model" not in choice else {**args, "edit_model": choice["edit_model"]}
+    if choice and choice.get("category") == "references" and choice.get("edit_model") and "model" not in args:
+        # #974: keep the edit model on a size-locked refs call (see _auto_table_choice).
+        args = {**args, "edit_model": choice["edit_model"], "auto_model": True}
     if choice and choice.get("category") in ("skill", "skill_fallback"):
         args = _pin_args(args, choice)
     args.pop("skill", None)
@@ -703,7 +706,14 @@ def _auto_table_choice(action: str, args: dict, cfg: dict | None = None) -> dict
         else:
             reason = {"zh": "只有 1 张参考图（或底图），用图片编辑的默认模型就够了",
                       "en": "there is one reference (or base) image, which the image-edit default model handles"}
-        return {"model": cfg["features"]["image_edit"]["default"], "auto": not named, "category": "references", "reason": reason}
+        default = cfg["features"]["image_edit"]["default"]
+        out = {"model": default, "auto": not named, "category": "references", "reason": reason}
+        # #974: a size-locked refs call (a skill with a declared canvas) must tell the page which
+        # image_edit model to run. Without edit_model the page's size-lock branch falls back to the
+        # text-to-image workflow id and the edit submit is rejected as an unknown image_edit model.
+        if not named and args.get("size_lock"):
+            out["edit_model"] = default
+        return out
     masked = action in (load_table()[feature].get("masked") or {}).get("tools", [])
     return choose(feature, str(args.get("prompt") or ""), named, cfg, masked=masked)
 
