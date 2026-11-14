@@ -63,6 +63,13 @@ _RATIO_WORDS = {"横版": "16:9", "竖版": "9:16", "方图": "1:1", "正方形"
 _RATIO_RE = re.compile(r"(?<![\d.])(\d{1,2})\s*[:：]\s*(\d{1,2})(?![\d.])")
 # Text the app adds to the user turn (skill start hint, output lock); never the user's own words.
 _INJECTED_RE = re.compile(r"Use the ComfyArt skill [\s\S]*?then follow those instructions\.|Output lock:[^\n]*")
+# #978 HOLD: the selected template prompt is also app-added text, not the user's words. Size/ratio parsing
+# must not read it: a template's 16:9 must never override the 4:5 the user typed this turn. The markers are
+# emitted by api/bot_send.compose_provider_text (keep the two in sync).
+TEMPLATE_BLOCK_START = "[ComfyArt selected template]"
+TEMPLATE_BLOCK_END = "[/ComfyArt selected template]"
+_TEMPLATE_BLOCK_PATTERN = re.escape(TEMPLATE_BLOCK_START) + r"[\s\S]*?" + re.escape(TEMPLATE_BLOCK_END)
+TEMPLATE_BLOCK_RE = re.compile(_TEMPLATE_BLOCK_PATTERN + r"[ \t]*\n?")
 USER_RATIO_KEY = "_user_ratio"
 
 # #911: skills whose output ratio follows image 1 (the first reference). The
@@ -88,7 +95,9 @@ def user_ratio(sid: str, user_text: object) -> str | None:
     table = USER_RATIOS.get(sid)
     if not table:
         return None
-    text = _INJECTED_RE.sub(" ", str(user_text or ""))
+    # #978 HOLD: user_text may be the whole provider turn, including our template block; strip it first.
+    text = TEMPLATE_BLOCK_RE.sub(" ", str(user_text or ""))
+    text = _INJECTED_RE.sub(" ", text)
     for m in _RATIO_RE.finditer(text):
         r = f"{int(m.group(1))}:{int(m.group(2))}"
         if r in table:

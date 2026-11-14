@@ -19,6 +19,7 @@ from . import robustness as _rb
 from .agent_host import AgentHost
 from .guide import AGENT_GUIDE, CORE_MCP_TOOLS, PAID_TOOLS, resolve_host  # noqa: F401
 from .plan_quote import CANCEL_TEXT, QUOTE_TOOL, canon_key
+from .skill_output import TEMPLATE_BLOCK_END, TEMPLATE_BLOCK_START
 from .providers import (
     AgentProvider,
     BotEvent,
@@ -237,8 +238,11 @@ _STEP_LABELS: dict[str, tuple[str, str]] = {
     'quote_plan': ('确认费用', 'Confirm cost'),
 }
 _CJK_RE = re.compile(r"[\u3400-\u9fff\uf900-\ufaff]")
+# #978 HOLD: strip both app-added blocks (skill-start hint and the selected-template block) before reading
+# the user's own words (reply language, requested count, product refs). Keep markers in sync with bot/skill_output.
 _SKILL_HINT_RE = re.compile(
-    r"Use the ComfyArt skill [\s\S]*?then follow those instructions\.")
+    r"Use the ComfyArt skill [\s\S]*?then follow those instructions\."
+    r"|" + re.escape(TEMPLATE_BLOCK_START) + r"[\s\S]*?" + re.escape(TEMPLATE_BLOCK_END))
 
 
 def _reply_lang(user_text: str) -> str:

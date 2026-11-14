@@ -1198,6 +1198,9 @@ export function withPreset(skill: Skill, presetId?: string | null): Skill {
 /** #978 — placeholders a template prompt can carry: `{{input_key}}` of that template's own text fields.
  *  Image fields are references, not variables. Unknown names and empty values are dropped (never `{{x}}`). */
 const PRESET_PLACEHOLDER_RE = /\{\{\s*([A-Za-z0-9_.-]+)\s*\}\}/g
+/** A placeholder directly preceded by its own label (`Motion: {{motion_brief}}`): when the value is empty the
+ *  label goes with it, so an unfilled optional field never leaves a `Motion: Look:` shell in the prompt. */
+const PRESET_LABEL_PLACEHOLDER_RE = /([^\s:：]{1,16})[:：][ \t]*\{\{\s*([A-Za-z0-9_.-]+)\s*\}\}/g
 
 /** #978 — read this run's template input values back from the sent text. `skillRunParams` writes every filled
  *  text/select field as `label: value`; that text is the only run state that survives the new-project handoff
@@ -1223,11 +1226,17 @@ export function presetInputValues(preset: SkillPreset, text: string): Record<str
   return values
 }
 
-/** #978 — replace `{{key}}` with this run's value; a missing/blank/unknown variable becomes '' and the leftover
- *  whitespace is collapsed, so a template prompt never reaches the agent with `{{x}}`, `undefined` or an empty slot. */
+/** #978 — replace `{{key}}` with this run's value; a missing/blank/unknown variable becomes '' (and a labeled
+ *  one takes its label with it), so a template prompt never reaches the agent with `{{x}}`, `undefined`, an empty
+ *  slot or a `Motion: Look:` shell. Whitespace/punctuation left behind is collapsed. */
 export function interpolatePresetPrompt(prompt: string, values: Record<string, string>): string {
+  const fill = (key: string) => (values[key] ?? '').trim()
   return prompt
-    .replace(PRESET_PLACEHOLDER_RE, (_m, key: string) => (values[key] ?? '').trim())
+    .replace(PRESET_LABEL_PLACEHOLDER_RE, (_m, label: string, key: string) => {
+      const value = fill(key)
+      return value ? `${label}: ${value}` : ''
+    })
+    .replace(PRESET_PLACEHOLDER_RE, (_m, key: string) => fill(key))
     .replace(/[ \t]{2,}/g, ' ')
     .replace(/[ \t]+([,.;:!?，。；：！？])/g, '$1')
     .replace(/[ \t]+\n/g, '\n')

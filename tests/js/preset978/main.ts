@@ -77,6 +77,27 @@ for (const s of BUILTIN_SKILLS) {
     out.allPresets.push({ skill: s.id, preset: p.id, delivered: payload.preset?.id === p.id, prompt: payload.preset?.prompt ?? null, raw: p.prompt ?? null })
   }
 }
+// #978 P2: an unfilled optional field must not leave its label behind (`Motion: Look:` shells).
+const motion = by('motion-poster-generator')
+const motionT1 = motion.presets!.find((p) => p.id === 't1')!
+out.motionShells = {
+  raw: motionT1.prompt,
+  none: interpolatePresetPrompt(motionT1.prompt!, {}),
+  motionOnly: interpolatePresetPrompt(motionT1.prompt!, { motion_brief: 'slow push-in' }),
+  lookOnly: interpolatePresetPrompt(motionT1.prompt!, { visual_direction: 'warm film grain' }),
+}
+// #980 HOLD/QA: `product-tvc` optional fields, same empty-label rule as motion-poster.
+const ptvc = by('product-tvc-advertisement-generator')
+const ptvcT1 = ptvc.presets!.find((p) => p.id === 'beauty')!
+out.productShells = {
+  raw: ptvcT1.prompt,
+  none: interpolatePresetPrompt(ptvcT1.prompt!, {}),
+  infoOnly: interpolatePresetPrompt(ptvcT1.prompt!, { product_info: 'AURELIA 30ml serum' }),
+  briefOnly: interpolatePresetPrompt(ptvcT1.prompt!, { brief: 'slow push-in on the bottle' }),
+  lookOnly: interpolatePresetPrompt(ptvcT1.prompt!, { visual_direction: 'warm film grain' }),
+}
+// #980 HOLD/QA 9-group matrix: the three real before-after templates.
+out.beforeAfterTemplates = (by('before-after').presets ?? []).map((p) => ({ id: p.id, prompt: p.prompt ?? '' }))
 out.presets = {
   brandCount: brand.presets?.length ?? 0,
   packagingCount: packaging.presets?.length ?? 0,

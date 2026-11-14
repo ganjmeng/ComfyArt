@@ -101,9 +101,130 @@ def test_every_builtin_preset_is_delivered_and_every_variable_is_defined():
     for row in rows:
         assert row["delivered"] is True, row
         assert row["prompt"] is not None and "{{" not in row["prompt"] and "undefined" not in row["prompt"], row
+        assert not re.search(r"(?:^|\s)[^\s:：]{1,16}[:：]\s*$", row["prompt"]), row  # no empty `Label:` shell
         seen.update(PLACEHOLDER.findall(row["raw"] or ""))
     # the supported variable list is exactly the template input keys used by OUR copy (5 long prompts)
     assert seen == SUPPORTED_VARS
+
+
+def test_template_ratio_never_overrides_this_turns_user_ratio():
+    """#980 HOLD: the template block lives in the provider turn but must not be read as user intent."""
+    from ComfyArt.api.bot_send import compose_provider_text
+    from ComfyArt.bot.skill_output import TEMPLATE_BLOCK_END, TEMPLATE_BLOCK_START, apply_generate, user_ratio
+    provider = compose_provider_text("做成 4:5 的前后对比图", skill_name="before-after",
+                                     preset_prompt="Generate 3 direction boards at 16:9, then 1 system board at 16:9.")
+    # the agent still sees the template (delivery kept), it is just not user intent
+    assert TEMPLATE_BLOCK_START in provider and TEMPLATE_BLOCK_END in provider
+    assert "16:9" in provider and "4:5" in provider
+    assert user_ratio("before-after", provider) == "4:5"
+    args = apply_generate({"prompt": "before after"}, "before-after", user_text=provider)
+    assert (args["width"], args["height"], args["ratio"]) == (1024, 1280, "4:5")
+    assert args["count"] == 1 and args["size_lock"] is True
+
+
+def test_template_without_ratio_keeps_the_users_ratio():
+    from ComfyArt.api.bot_send import compose_provider_text
+    from ComfyArt.bot.skill_output import apply_generate, user_ratio
+    provider = compose_provider_text("做成 4:5 的前后对比图", skill_name="before-after",
+                                     preset_prompt="Generate a clean comparison board.")
+    assert user_ratio("before-after", provider) == "4:5"
+    args = apply_generate({"prompt": "before after"}, "before-after", user_text=provider)
+    assert (args["width"], args["height"], args["ratio"]) == (1024, 1280, "4:5")
+
+
+def test_template_ratio_is_only_a_fallback_when_the_user_wrote_none():
+    from ComfyArt.api.bot_send import compose_provider_text
+    from ComfyArt.bot.skill_output import apply_generate, user_ratio
+    provider = compose_provider_text("做一张前后对比图", skill_name="before-after",
+                                     preset_prompt="Generate 3 boards at 4:5, then a system board.")
+    # the template is not user intent: fall back to the existing declared default, not the template's 4:5
+    assert user_ratio("before-after", provider) is None
+    args = apply_generate({"prompt": "before after"}, "before-after", user_text=provider)
+    assert (args["width"], args["height"], args["ratio"]) == (1920, 1080, "16:9")
+
+
+def test_template_counts_and_language_are_not_user_intent():
+    from ComfyArt.api.bot_send import compose_provider_text
+    from ComfyArt.api.paid_guard import requested_count
+    from ComfyArt.bot.local_llm import _reply_lang
+    provider = compose_provider_text("make it", skill_name="before-after",
+                                     preset_prompt="生成 4 张中文模板，16:9")
+    assert requested_count(provider) == 0  # a template's count is not a user count
+    assert _reply_lang(provider) == "en"   # a template's language is not the user's language
+
+
+def _png(w: int, h: int) -> bytes:
+    import io
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.new("RGB", (w, h), (210, 190, 170)).save(buf, format="PNG")
+    return buf.getvalue()
+
+
+@needs_node
+@pytest.mark.parametrize(("ratio", "size"), [("4:5", (1024, 1280)), ("1:1", (1024, 1024)), ("9:16", (1080, 1920))])
+def test_before_after_three_templates_never_override_the_user_ratio(ratio, size):
+    """QA 9-group matrix: 3 real templates x 3 user ratios; every combination must follow the user's ratio."""
+    from ComfyArt.api.bot_send import compose_provider_text
+    from ComfyArt.bot.skill_output import apply_generate, user_ratio
+    templates = report("en")["beforeAfterTemplates"]
+    assert len(templates) == 3
+    for tpl in templates:
+        assert "16:9" in tpl["prompt"]  # the polluted template really carries 16:9
+        provider = compose_provider_text(f"做成 {ratio} 的前后对比图", skill_name="before-after",
+                                         preset_prompt=tpl["prompt"])
+        assert provider.count("16:9") >= 1 and ratio in provider
+        assert user_ratio("before-after", provider) == ratio
+        args = apply_generate({"prompt": "before after"}, "before-after", user_text=provider)
+        assert (args["width"], args["height"], args["ratio"]) == (*size, ratio)
+
+
+@needs_node
+def test_before_after_reference_without_user_ratio_follows_the_card_not_the_template():
+    from ComfyArt.api.bot_send import compose_provider_text
+    from ComfyArt.bot.skill_output import apply_generate, user_ratio
+    template = report("en")["beforeAfterTemplates"][0]["prompt"]
+    provider = compose_provider_text("做一张前后对比图", skill_name="before-after", preset_prompt=template)
+    assert user_ratio("before-after", provider) is None
+    args = apply_generate({"prompt": "before after", "refs": ["/api/view?filename=ref.png&type=input"]},
+                          "before-after", user_text=provider, ref_image=_png(1024, 1280))
+    # reference card is portrait -> 4:5; the template's 16:9 must not override it
+    assert (args["width"], args["height"], args["ratio"]) == (1024, 1280, "4:5")
+
+
+@needs_node
+@pytest.mark.parametrize(("lang", "labels", "motion"), [
+    ("en", ("Motion:", "Look:"), "Motion: slow push-in"),
+    ("zh", ("运动要求:", "画面效果:"), "运动要求: slow push-in"),
+])
+def test_motion_optional_fields_empty_leave_no_label_shell(lang, labels, motion):
+    case = report(lang)["motionShells"]
+    both = case["none"]
+    assert "{{" not in both and "  " not in both and not both.endswith(" ")
+    for label in labels:
+        assert label not in both
+    assert motion in case["motionOnly"] and labels[1] not in case["motionOnly"]
+    look = "Look: warm film grain" if lang == "en" else "画面效果: warm film grain"
+    assert look in case["lookOnly"] and labels[0] not in case["lookOnly"]
+
+
+@needs_node
+@pytest.mark.parametrize(("lang", "labels", "value"), [
+    ("en", ("Product:", "Requirements:", "Look:"), "AURELIA 30ml serum"),
+    ("zh", ("商品信息:", "其他要求:", "画面效果:"), "AURELIA 30ml serum"),
+])
+def test_product_tvc_optional_fields_empty_leave_no_label_shell(lang, labels, value):
+    case = report(lang)["productShells"]
+    assert "{{" not in case["none"]
+    for label in labels:
+        assert label not in case["none"], (label, case["none"])
+    assert f"{labels[0]} {value}" in case["infoOnly"]
+    for label in labels[1:]:
+        assert label not in case["infoOnly"]
+    brief = case["briefOnly"]
+    assert labels[1] in brief and labels[0] not in brief and labels[2] not in brief
+    look = case["lookOnly"]
+    assert labels[2] in look and labels[0] not in look and labels[1] not in look
 
 
 @needs_node

@@ -125,7 +125,7 @@ def compose_provider_text(text: str, *, skill_name: str = "", memory: str = "",
     else:
         provider_text = "Look at the attached images and tell me what you see."
     if skill_name:
-        from ..bot.skill_output import run_hint
+        from ..bot.skill_output import TEMPLATE_BLOCK_END, TEMPLATE_BLOCK_START, run_hint
         hint = run_hint(skill_name, text or "", ref_image)
         provider_text = (
             f"Use the ComfyArt skill {skill_name!r} for this task: first call "
@@ -134,8 +134,9 @@ def compose_provider_text(text: str, *, skill_name: str = "", memory: str = "",
             + (f"\n{hint}" if hint else "")
             # #978: the template the user selected is part of this run's task, not display-only. It arrives
             # already interpolated by the client (values of this run); the base skill remains the read payload.
-            + (f"\n\nSelected template instructions (apply these to this run; where they conflict with "
-               f"the skill's base instructions, follow the template):\n{preset_prompt}" if preset_prompt else "")
+            + (f"\n\n{TEMPLATE_BLOCK_START}\nSelected template instructions (apply these to this run; "
+               f"where they conflict with the skill's base instructions, follow the template):\n"
+               f"{preset_prompt}\n{TEMPLATE_BLOCK_END}" if preset_prompt else "")
             + "\n\n"
             + provider_text)
     if lines:
