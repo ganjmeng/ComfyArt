@@ -401,7 +401,8 @@ async def _open_skill(p, app_url, lang, sid, sockets, dialog_ref=None):  # noqa:
         )
     await dlg.get_by_test_id("skill-run-go").click()
     await pg.locator(".ca-composer__input").wait_for(timeout=20000)
-    label = LOC[lang]["skills.clothingSwap" if sid == "clothing-swap" else "skills.poseFission"]
+    label_key = {"clothing-swap": "skills.clothingSwap", "universal-multi-angle-grid": "skills.multiAngleImageGenerator"}.get(sid, "skills.poseFission")
+    label = LOC[lang][label_key]
     await pg.locator(".ca-composer").get_by_text(label).first.wait_for(timeout=15000)
     # The Agent provider list must have arrived before the composer can send (#294).
     await pg.locator('.ca-composer__mode[data-agent="local-llm"]').wait_for(timeout=20000)

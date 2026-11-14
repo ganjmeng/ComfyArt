@@ -3,7 +3,7 @@
 // #569: poster is now an effect skill (no presets), so the preset checks run on brand (template skill).
 import { BUILTIN_SKILLS, hasSkillDialog, missingInputs, presetImage, skillDefaults, skillPreset, skillRunParams, withPreset } from '../../src/skills'
 const by = (id: string) => BUILTIN_SKILLS.find((s) => s.id === id)!
-const poster = by('poster-differentiated-compiler'), brand = by('brand-identity-director'), cw = { id: 'brief-only', name: 'Brief', instructions: 'Brief rules.', inputs: [{ key: 'brief', type: 'textarea' as const, required: true, label: { zh: '需求描述', en: 'Brief' } }] }
+const poster = by('poster-differentiated-compiler'), brand = by('brand-identity-director'), multi = by('universal-multi-angle-grid'), cw = { id: 'brief-only', name: 'Brief', instructions: 'Brief rules.', inputs: [{ key: 'brief', type: 'textarea' as const, required: true, label: { zh: '需求描述', en: 'Brief' } }] }
 const old = { id: 'old-skill', name: 'Old', instructions: 'Old rules.', custom: true }
 const r: Record<string, unknown> = {}
 r.fields = Object.fromEntries(BUILTIN_SKILLS.map((s) => [s.id, (s.inputs ?? []).map((f) => [f.key, f.type, !!f.required, f.label.zh, f.label.en ?? null, f.placeholder?.en ?? null])]))
@@ -17,6 +17,10 @@ r.brandMissing = missingInputs(brand, skillDefaults(brand))
 r.brandFilled = missingInputs(brand, { ...skillDefaults(brand), brand_info: 'Wildpeak Coffee' })  // #748 Final: brand-identity-director template 1 (brand_info/subject_image/visual_direction)
 r.posterPresets = poster.presets?.length ?? 0
 r.cwMissing = missingInputs(cw, { brief: '  ' })
+// #974 / #693: multi-angle Upload + Additional stay optional even though the 748 raw marks both required.
+r.multiDefaults = skillDefaults(multi)
+r.multiMissing = missingInputs(multi, skillDefaults(multi))
+r.multiRun = skillRunParams(multi, { ...skillDefaults(multi), user_requirement: 'Product 500ml bottle' }, null)
 r.dialog = [hasSkillDialog(poster), hasSkillDialog(cw), hasSkillDialog(old), hasSkillDialog(brand)]
 const second = brand.presets![1]
 r.withPreset = withPreset(brand, second.id).instructions

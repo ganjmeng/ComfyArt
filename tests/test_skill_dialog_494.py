@@ -3,7 +3,7 @@ plus wiring greps for the Skills page / dialog / handoff. Harness needs node + n
 from __future__ import annotations
 
 import json
-from tests.lovart_fields_687 import RAW_748
+from tests.lovart_fields_687 import RAW_748, SPEC
 from tests.skill_ids_748 import FINAL_IDS, asset_dir
 import os
 import shutil
@@ -58,8 +58,8 @@ def test_every_field_is_bilingual_data(got):
     for sid, fields in got["fields"].items():
         assert fields, sid
         # #569: effect skills (upload + note) and character carry no required field, like the reference.
-        if sid in FINAL_IDS:  # #748 Final: required flags come from the raw
-            assert any(req for _, _, req, *_ in fields) == any(q["required"] for q in (RAW_748[sid]["templates"][0]["inputs"] if RAW_748[sid]["kind"] == "template" else RAW_748[sid]["inputs"])), sid
+        if sid in FINAL_IDS:  # #748 Final: required flags come from the raw, except product-signed optional overrides (#974/#693)
+            assert any(req for _, _, req, *_ in fields) == any(row[2] for row in SPEC[sid]), sid
             continue
         assert any(req for _, _, req, *_ in fields) == (sid not in EFFECT and sid not in NEARMISS and sid not in {"character-sheet-design", "rednote-cover-maker", "universal-multi-angle-grid", "meta-ads-creative-director", "marketing-campaign-generator", "web-product-visual-design", "mobile-app-visual-design"}), sid  # #687-1 reference-card fields optional  # #635 social optional refs; #691 multi-angle upload optional
         for key, typ, req, zh, en, ph in fields:
@@ -110,6 +110,10 @@ def test_defaults_and_required(got):
     assert got["cwDefaults"] == {"brief": ""}
     assert got["posterMissing"] == ["user_image", "user_requirement"] and got["posterFilled"] == ["user_image"]  # #748: both required
     assert got["cwMissing"] == ["brief"]  # whitespace is empty
+    # #974 / #693: Upload + Additional are optional; no upload still hands off with the Additional subject.
+    assert got["multiDefaults"] == {"user_image": "", "user_requirement": ""}
+    assert got["multiMissing"] == []
+    assert got["multiRun"] == {"skill": "universal-multi-angle-grid", "mode": "agent", "ask": "Additional Details: Product 500ml bottle"}
     assert got["dialog"] == [True, True, False, True]  # old personal skill: no dialog, main's direct start
 
 
