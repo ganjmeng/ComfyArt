@@ -14,7 +14,6 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -27,8 +26,32 @@ AUTO_MODELS = ROOT / "api/auto_models.json"
 BOT_SEND = ROOT / "api/bot_send.py"
 
 # Same lock as tests/test_studio_model_911.py — the shared block must not drift.
+# #935: these are literal hashes of the base bytes; no git object is opened.
 PORTRAIT_SHOTS_708_CONST_SHA256 = "97edb7c18215e4a283b86633908872f3b3c4146d9bb748d71c0d3510798cfc8b"
-MAIN_SHA = "dbed74e11b158917e7cf82b44bd4dbf6829af90d"
+CLOTHING_SWAP_TAIL_SHA256 = "f3036b3d1ebcb3320bcee7d76c961014b38cbb443783ae53485261625c0627fe"
+AUTO_MODELS_SHA256 = "9ef106b6133d427f04347d0c31c31931e641e1cd47d2a86c0d0769cde48c5d7b"
+OTHER_SKILL_ENTRIES_SHA256 = "f088dd000ad53f7802bec2675b815cb40d0343da3127c413fadc12b40895488a"
+UNCHANGED_SKILL_ENTRIES_SHA256 = "58b747361ace041a7f05381069fd7ef6699f4ccd3f85516d8d4d606982cf7328"
+SHARED_CONST_SHA256 = {
+    "NEARMISS_INPUTS": "4fe64962178b3c0404f163a02b5a0cdfff1c072d1be399e9f6acbbf597730722",
+    "EFFECT_INPUTS": "bbca63995ca34766f0f0ac21ae1baf8cf66df417c9ddaa3f584a128c619eacb6",
+    "REF_CARD_INPUTS_687": "80442219a1b27d729c9d9fe72e78fabc588aefde9b0a8740e0e6c135bf0af2c1",
+}
+ALL_SKILL_IDS = [
+    "poster-differentiated-compiler", "rednote-cover-maker", "brand-identity-director",
+    "packaging-design-director", "cover-design-director", "banner-design-director",
+    "character-sheet-design", "product-tvc-advertisement-generator", "motion-poster-generator",
+    "universal-multi-angle-grid", "logo-material-explorer", "meta-ads-creative-director",
+    "mobile-app-visual-design", "web-product-visual-design", "marketing-campaign-generator",
+    "flash-cut-video", "style-transfer", "person-swap", "commerce-strategist", "lifestyle-scene",
+    "naive-illustration", "logo-abstract", "photo-split-poster", "ppt-visual", "promo-ecommerce",
+    "yingzao", "crt-interface", "crayon-sketch", "fabric-collage", "taobao-product",
+    "before-after", "anim-2d", "creator-identity", "product-website", "studio-model",
+    "youtube-channel-banner", "ai-model", "product-to-packaging", "game-art", "portrait-studio",
+    "premium-website", "animated-poster", "pose-fission", "live-promo-decor", "linkedin-banner",
+    "logo-animation", "restaurant-website", "clothing-swap",
+    "interior-architectural-visualization",
+]
 
 # Lovart person photo for this skill (review-assets 9967bf48). Exactly 3:4.
 PERSON_PHOTO_SIZE = (1776, 2368)
@@ -78,19 +101,10 @@ def _portrait_shots_708_const(src: str) -> str:
     return m.group(1)
 
 
-def _main_skills() -> str:
-    return subprocess.check_output(
-        ["git", "-C", str(ROOT), "show", f"{MAIN_SHA}:src/skills.ts"],
-        text=True,
-        encoding="utf-8",
-    )
-
-
 def test_rule6_and_708_detached_from_clothing_swap_only():
     """1: clothing-swap no longer appends Rule 6 or PORTRAIT_SHOTS_708; the const stays."""
     entry = _skill_entry(SKILLS, "clothing-swap")
     instr = _clothing_swap_instructions()
-    main = _main_skills()
 
     assert "+ PORTRAIT_SHOTS_708 +" not in entry
     assert "PORTRAIT_SHOTS_708" not in entry
@@ -104,17 +118,13 @@ def test_rule6_and_708_detached_from_clothing_swap_only():
     assert "45°" not in instr and "45 deg" not in instr.lower()
 
     # Shared block itself is untouched (initializer bytes + sha).
-    assert _portrait_shots_708_const(SKILLS) == _portrait_shots_708_const(main)
     assert hashlib.sha256(_portrait_shots_708_const(SKILLS).encode()).hexdigest() == PORTRAIT_SHOTS_708_CONST_SHA256
     assert "const PORTRAIT_SHOTS_708 =" in SKILLS
 
     # Other skill entries stay byte-identical to the branch base.
     # before-after is rewritten by #905/#908 (Rule 2 wording + typography/camera);
     # locked in tests/test_before_after_905.py and tests/test_ref_orientation_905.py.
-    for sid in OTHER_SKILL_IDS:
-        if sid == "before-after":
-            continue
-        assert _skill_entry(SKILLS, sid) == _skill_entry(main, sid), sid
+    assert _entries_sha256(SKILLS, [sid for sid in OTHER_SKILL_IDS if sid != "before-after"]) == OTHER_SKILL_ENTRIES_SHA256
 
 
 def test_card_skeleton_is_one_live_upper_body_question():
@@ -505,26 +515,15 @@ def test_pins_and_auto_models_unchanged():
     """Angela 07:27 lock: clothing-swap, studio-model, product-to-packaging
     (Lovart e304e2fa7), cover-design-director (Lovart 98af4eee),
     youtube-channel-banner (Lovart d7672d03), and portrait-studio
-    (Lovart 7fc60c86) are Sunburst pins; features and every other skills
-    entry stay byte-identical to MAIN_SHA. Skill-entry assets in
-    src/skills.ts stay unchanged.
+    (Lovart 7fc60c86) are Sunburst pins. The clothing-swap tail and the whole
+    auto_models table are locked by literal sha256 values (#935); no git object.
     """
-    main_entry = _skill_entry(_main_skills(), "clothing-swap")
     entry = _skill_entry(SKILLS, "clothing-swap")
     ours_tail = entry[entry.find("category:"):]
-    main_tail = main_entry[main_entry.find("category:"):]
-    assert ours_tail == main_tail
+    assert hashlib.sha256(ours_tail.encode()).hexdigest() == CLOTHING_SWAP_TAIL_SHA256
+    assert hashlib.sha256(AUTO_MODELS.read_bytes()).hexdigest() == AUTO_MODELS_SHA256
 
     ours_auto = json.loads(AUTO_MODELS.read_text(encoding="utf-8"))
-    main_auto = json.loads(
-        subprocess.check_output(
-            ["git", "-C", str(ROOT), "show", f"{MAIN_SHA}:api/auto_models.json"],
-            text=True,
-            encoding="utf-8",
-        )
-    )
-    assert ours_auto["features"] == main_auto["features"]
-    assert ours_auto.get("_comment") == main_auto.get("_comment")
     assert ours_auto["skills"]["clothing-swap"] == EXPECTED_CLOTHING_SWAP_PIN
     assert ours_auto["skills"]["clothing-swap"]["model"] == "openai/gpt-image-2.6-sunburst/edit"
     assert ours_auto["skills"]["studio-model"] == EXPECTED_STUDIO_MODEL_PIN
@@ -544,26 +543,9 @@ def test_pins_and_auto_models_unchanged():
     assert ours_auto["skills"]["portrait-studio"]["resolution"] == "2k"
     assert ours_auto["skills"]["portrait-studio"]["ratio"] == "3:4"
     assert "edit_model" not in ours_auto["skills"]["portrait-studio"]
-    ours_rest = dict(ours_auto["skills"])
-    main_rest = dict(main_auto["skills"])
-    ours_rest.pop("clothing-swap")
-    ours_rest.pop("studio-model")
-    ours_rest.pop("product-to-packaging")
-    ours_rest.pop("cover-design-director")
-    ours_rest.pop("youtube-channel-banner")
-    ours_rest.pop("portrait-studio")
-    main_rest.pop("clothing-swap", None)
-    main_rest.pop("studio-model", None)
-    main_rest.pop("product-to-packaging", None)
-    main_rest.pop("cover-design-director", None)
-    main_rest.pop("youtube-channel-banner", None)
-    main_rest.pop("portrait-studio", None)
-    assert ours_rest == main_rest
-
 
 def test_mutation_red_then_green():
     """Re-appending 708 or baking in option labels turns red; the on-disk tree stays green."""
-    main = _main_skills()
     entry = _skill_entry(SKILLS, "clothing-swap")
     instr = _clothing_swap_instructions()
     assert "+ PORTRAIT_SHOTS_708 +" not in entry
@@ -590,7 +572,7 @@ def test_mutation_red_then_green():
     assert "宝蓝" not in entry
 
     # Green: on-disk tree still passes the 708-const and detach locks.
-    assert _portrait_shots_708_const(SKILLS) == _portrait_shots_708_const(main)
+    assert hashlib.sha256(_portrait_shots_708_const(SKILLS).encode()).hexdigest() == PORTRAIT_SHOTS_708_CONST_SHA256
     assert "+ PORTRAIT_SHOTS_708 +" not in _skill_entry(SKILLS, "clothing-swap")
     assert SKILLS == (ROOT / "src/skills.ts").read_text(encoding="utf-8")
     assert instr == _clothing_swap_instructions()
@@ -607,12 +589,20 @@ def _shared_const(src: str, name: str) -> str:
     return m.group(0).removeprefix("export ")
 
 
-SHARED_BLOCKS = ("PORTRAIT_SHOTS_708", "NEARMISS_INPUTS", "EFFECT_INPUTS", "REF_CARD_INPUTS_687")
+def _entries_sha256(src: str, ids) -> str:
+    """One digest over the named skill entries, in order; the literals above are from base."""
+    parts = []
+    for sid in ids:
+        entry = _skill_entry(src, sid)
+        if entry is None:
+            entry = re.search(rf"^.*\{{ id: '{re.escape(sid)}'.*$", src, re.M).group(0)
+        parts.append(sid + "\0" + entry)
+    return hashlib.sha256("\n\0".join(parts).encode()).hexdigest()
+
 
 
 def test_qa4_clothing_swap_drops_rule6_and_708_others_unchanged():
     """QA 4: clothing-swap has no Rule 6 / #708 content; every other skill and shared block unchanged."""
-    main = _main_skills()
     entry = _skill_entry(SKILLS, "clothing-swap")
     instr = _clothing_swap_instructions()
     for needle in (
@@ -631,40 +621,17 @@ def test_qa4_clothing_swap_drops_rule6_and_708_others_unchanged():
         assert needle not in entry, needle
         assert needle not in instr, needle
 
-    # Shared blocks: initializer bytes identical to base.
-    for name in SHARED_BLOCKS:
-        assert _shared_const(SKILLS, name) == _shared_const(main, name), name
+    # Shared blocks: initializer bytes identical to the pinned base hashes.
+    for name, expected in SHARED_CONST_SHA256.items():
+        assert hashlib.sha256(_shared_const(SKILLS, name).encode()).hexdigest() == expected, name
     assert hashlib.sha256(_portrait_shots_708_const(SKILLS).encode()).hexdigest() == PORTRAIT_SHOTS_708_CONST_SHA256
 
-    # Every other skill entry (studio-model, ai-model, and the rest) byte-identical to base.
-    ids = _all_skill_ids(main)
-    assert "studio-model" in ids and "ai-model" in ids and "clothing-swap" in ids
-    assert _all_skill_ids(SKILLS) == ids
-    changed = []
-    for sid in ids:
-        # youtube-channel-banner: rewritten by the banner-flow PR; locked in tests/test_youtube_banner_flow.py.
-        if sid in ("clothing-swap", "youtube-channel-banner"):
-            continue
-        # portrait-studio flow: rewritten by the portrait-studio flow PR; locked in tests/test_portrait_studio_flow.py.
-        if sid == "portrait-studio":
-            continue
-        # #905/#908 before-after Rule 2 wording + typography/camera; locked in
-        # tests/test_before_after_905.py and tests/test_ref_orientation_905.py.
-        if sid == "before-after":
-            continue
-        # product-to-packaging flow: rewritten by the product-to-packaging flow PR; locked in tests/test_product_packaging_flow.py.
-        if sid == "product-to-packaging":
-            continue
-        try:
-            ours, base = _skill_entry(SKILLS, sid), _skill_entry(main, sid)
-        except AssertionError:
-            # Entries this regex cannot parse: compare the raw id line instead.
-            line = rf"^.*\{{ id: '{re.escape(sid)}'.*$"
-            ours = re.search(line, SKILLS, re.M).group(0)
-            base = re.search(line, main, re.M).group(0)
-        if ours != base:
-            changed.append(sid)
-    assert changed == []
+    # Every other skill entry (studio-model, ai-model, and the rest) is locked by one digest.
+    ids = _all_skill_ids(SKILLS)
+    assert ids == ALL_SKILL_IDS
+    excluded = {"clothing-swap", "youtube-channel-banner", "portrait-studio", "before-after",
+                "product-to-packaging"}
+    assert _entries_sha256(SKILLS, [sid for sid in ids if sid not in excluded]) == UNCHANGED_SKILL_ENTRIES_SHA256
 
 
 def _png(w: int, h: int) -> bytes:
@@ -812,17 +779,36 @@ EMPTY_TEXT_LINE = "Look at the attached images and tell me what you see."
 SKILL_EMPTY_LINE = "Process the attached images with the selected skill."
 
 
+# Captured from api/bot_send.py on base dbed74e1; a literal copy so a shallow clone
+# needs no git object. Package context makes its relative `run_hint` import resolve.
+COMPOSE_PROVIDER_TEXT_BASE = r"""def compose_provider_text(text: str, *, skill_name: str = "", memory: str = "",
+                          lines: list[str] = (), review: bool | None = None) -> str:
+    provider_text = text or "Look at the attached images and tell me what you see."
+    if skill_name:
+        from ..bot.skill_output import run_hint
+        hint = run_hint(skill_name)
+        provider_text = (
+            f"Use the ComfyArt skill {skill_name!r} for this task: first call "
+            f"the comfyart MCP tool skill with action='read' and "
+            f"name={skill_name!r}, then follow those instructions."
+            + (f"\n{hint}" if hint else "")
+            + "\n\n"
+            + provider_text)
+    if lines:
+        provider_text += "\n\n" + "\n".join(lines)
+    if memory:
+        provider_text = memory + "\n\n" + provider_text
+    # #364: Agent Review (审核) — ON inserts post-image 审图思考; OFF skips it
+    if review is not None:
+        provider_text = f"[Review: {'ON' if review else 'OFF'}]\n\n" + provider_text
+    return provider_text
+"""
+
+
 def _main_compose():
     """compose_provider_text as it was on the base, exec'd standalone (no package import)."""
-    src = subprocess.check_output(
-        ["git", "-C", str(ROOT), "show", f"{MAIN_SHA}:api/bot_send.py"], text=True, encoding="utf-8"
-    )
-    m = re.search(r"^def compose_provider_text\(.*?(?=^def )", src, re.M | re.S)
-    assert m
-    # Package context so its relative `run_hint` import resolves (this branch's run_hint on
-    # both sides; the comparison is about compose_provider_text's own text handling).
     ns: dict = {"__name__": "ComfyArt.api.bot_send", "__package__": "ComfyArt.api"}
-    exec(m.group(0), ns)  # noqa: S102 — test harness
+    exec(COMPOSE_PROVIDER_TEXT_BASE, ns)  # noqa: S102 — test harness
     return ns["compose_provider_text"]
 
 

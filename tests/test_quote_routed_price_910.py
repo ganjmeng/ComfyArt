@@ -10,9 +10,9 @@ Mocks only: no key, no network, $0.
 """
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -372,7 +372,10 @@ def test_price_endpoint_ignores_size_string_endpoint_behavior_only():
     assert gif_image.documented_usd(SUNBURST_EDIT, "medium", "1k", 2) == 0.08
 
 
-MAIN_SUBMIT_SHA = "88cbd35874028f0c9f30a33c7f8dbd7fcc91ca3f"
+# #935: captured api/wavespeed.py from main 88cbd358 into tests/fixtures so a
+# shallow clone never has to open that commit. The sha256 literal keeps the snapshot honest.
+PINNED_WAVESPEED_SHA256 = "bccb0dae14340865d223a75cb58be21dc9efab1d58687224a09734f5135a242a"
+PINNED_WAVESPEED = FIX / "wavespeed_88cbd358.py"
 
 # clothing-swap generate_image shapes used by the parity and main-byte-identical tests
 _PAYLOAD_BASE = {
@@ -405,7 +408,7 @@ def _effective_tier(payload_or_inputs, schema, *, from_payload=False):
 
 
 def _main_wavespeed():
-    """Load api/wavespeed.py as of main 88cbd358, as a sibling of the current api package.
+    """Load the pinned api/wavespeed.py (main 88cbd358 fixture), as a sibling of the current api package.
 
     JSON catalogs are the current tree's files (symlinked next to the temp module) so
     model_defaults match; the comparison is the submit logic, not catalog drift.
@@ -413,7 +416,8 @@ def _main_wavespeed():
     name = "ComfyArt.api._wavespeed_main_88cbd358"
     if name in sys.modules and hasattr(sys.modules[name], "build_payload"):
         return sys.modules[name]
-    src = subprocess.check_output(["git", "show", f"{MAIN_SUBMIT_SHA}:api/wavespeed.py"], cwd=ROOT)
+    src = PINNED_WAVESPEED.read_bytes()
+    assert hashlib.sha256(src).hexdigest() == PINNED_WAVESPEED_SHA256
     tmp = Path(tempfile.mkdtemp(prefix="ws-main-88cbd358-"))
     path = tmp / "wavespeed.py"
     path.write_bytes(src)

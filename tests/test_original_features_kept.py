@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-# Extracted from `git show 5231d59:api/mcp_tools/canvas.py` (39 `_tool(` keys).
+# Extracted from upstream 5231d59 `api/mcp_tools/canvas.py` (39 `_tool(` keys).
 UPSTREAM_TOOLS = [
     "get_canvas",
     "view_canvas",
@@ -52,7 +52,7 @@ UPSTREAM_TOOLS = [
     "custom_workflow",
 ]
 
-# Extracted from `git show 5231d59:src/botCommands.ts` (frontend handler keys).
+# Extracted from upstream 5231d59 `src/botCommands.ts` (frontend handler keys).
 UPSTREAM_FRONTEND_HANDLERS = [
     "animate_image",
     "change_angle",
@@ -81,7 +81,7 @@ UPSTREAM_FRONTEND_HANDLERS = [
     "wait_generation",
 ]
 
-# From `git show 5231d59:bot/guide.py` (host ComfyUI MCP tools, kept as-is).
+# From upstream 5231d59 `bot/guide.py` (host ComfyUI MCP tools, kept as-is).
 UPSTREAM_COMFY_MCP_ALLOWED_TOOLS = [
     "server_info", "nodes", "validate_workflow", "search_models",
     "search_templates", "get_template", "list_workflow_slots",

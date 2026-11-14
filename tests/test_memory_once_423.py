@@ -1,4 +1,5 @@
 """#423 one 记忆已更新 › row per turn; dedupe before write; saved note tells the model to answer now. $0, mocks only."""
+import hashlib
 import json
 import os
 import re
@@ -115,9 +116,16 @@ def test_block_carries_no_undo_payload():
     assert "previous" not in b and b["updated_ids"] == ["u1"]
 
 
-def _git_main(p):
-    r = subprocess.run(["git", "show", f"origin/main:{p}"], cwd=ROOT, capture_output=True, text=True)
-    return r.stdout if r.returncode == 0 else None
+# #935: the origin/main locale bytes are pinned as a canonical-JSON sha256 per file.
+# The test still compares every non-memory key; only the source of the baseline changed.
+LOCALE_NORMALIZED_SHA256 = {
+    "src/locales/zh.json": "c17a956096a202147c7ef735da273a81d93211ed4d133423488f999c55bf4b20",
+    "src/locales/en.json": "73dc5cf753dd752f1037b4815695ef62282260a0f0289cda026224f2c478071e",
+}
+
+
+def _canonical_json(value) -> bytes:
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
 
 
 def test_dialog_and_click_entry_identical_to_main():
@@ -217,27 +225,23 @@ def test_locales_only_add_memory_retrieved_430():
         "runStop.stillGenerating",  # #943
     }
     for p, v in (("src/locales/zh.json", "记忆已读取"), ("src/locales/en.json", "Memory retrieved")):
-        m = _git_main(p)
-        if m is None:
-            pytest.skip("origin/main not available")
-        cur, base = json.loads(_src(p)), json.loads(m)
-        assert cur.pop("chatMessage.memoryRetrieved") == v; base.pop("chatMessage.memoryRetrieved", None)
-        cur.pop("chatMessage.memoryUpdated"); base.pop("chatMessage.memoryUpdated")  # #441: › moved to an svg
+        cur = json.loads(_src(p))
+        assert cur.pop("chatMessage.memoryRetrieved") == v
+        cur.pop("chatMessage.memoryUpdated")  # #441: › moved to an svg
         cur.pop("chatMessage.memoryUpdating", None)
-        base.pop("chatMessage.memoryUpdating", None)
         for k in allow:
             cur.pop(k, None)
-            base.pop(k, None)
-        for d in (cur, base):  # #463 skill import copy is its own namespace, not memory copy
-            for k in [k for k in d if k.startswith("skillsImport.")]:
-                d.pop(k)
-            # #751 Final-16 hard cut: only Final skillKeys (+ their old assetDir aliases) leave the cat/desc check
-            final_slugs = set(FINAL_IDS) | {asset_dir(sid) for sid in FINAL_IDS}
-            for k in [k for k in d if k.startswith(("skills.cat.", "skills.desc."))]:
-                slug = k.split(".", 2)[-1]
-                if slug in final_slugs:
-                    d.pop(k)
-        assert cur == base
+        # #463 skill import copy is its own namespace, not memory copy
+        for k in [k for k in cur if k.startswith("skillsImport.")]:
+            cur.pop(k)
+        # #751 Final-16 hard cut: only Final skillKeys (+ their old assetDir aliases) leave the cat/desc check
+        final_slugs = set(FINAL_IDS) | {asset_dir(sid) for sid in FINAL_IDS}
+        for k in [k for k in cur if k.startswith(("skills.cat.", "skills.desc."))]:
+            slug = k.split(".", 2)[-1]
+            if slug in final_slugs:
+                cur.pop(k)
+        digest = hashlib.sha256(_canonical_json(cur)).hexdigest()
+        assert digest == LOCALE_NORMALIZED_SHA256[p], (p, digest)
     zh, en = json.loads(_src("src/locales/zh.json")), json.loads(_src("src/locales/en.json"))
     assert zh["chatMessage.memoryUpdated"] == "记忆已更新" and en["chatMessage.memoryUpdated"] == "Memory updated"
     assert zh["chatMessage.memoryUpdating"] == "记忆更新中" and en["chatMessage.memoryUpdating"] == "Updating memory"

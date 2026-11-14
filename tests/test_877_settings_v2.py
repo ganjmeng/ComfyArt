@@ -4,6 +4,7 @@ Mocks only, $0. Does not reopen the closed issue; covers ACs 1–18 and 20 (AC19
 """
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from urllib.parse import urlparse
@@ -15,6 +16,12 @@ from ComfyArt.api.provider_admin import CUSTOM_LLM_NOT_SETUP, CUSTOM_LLM_NOT_SET
 
 ROOT = Path(__file__).resolve().parent.parent
 FORBIDDEN_SOURCE = ("官方默认", "官方模型", "切回官方默认", "Official default", "official model")
+# #935: baseline captured from origin/main at the branch point, so a depth-1 clone
+# never needs to open a historical/remote git object. The digest covers every key
+# except the intended pin rows below; one byte anywhere else still fails.
+AUTO_MODELS_BASE_SHA256 = "6de88e5372e16d6381cf58da5faacc4d7a859e197cd00578023a4647c85d1c0d"
+ALLOWED_PIN_SKILLS = ("ai-model", "clothing-swap", "studio-model", "product-to-packaging",
+                      "cover-design-director", "youtube-channel-banner", "portrait-studio")
 
 
 def _locales():
@@ -25,39 +32,24 @@ def _locales():
 
 
 def test_ac18_pins_and_auto_untouched():
-    import subprocess
-
-    def git(*args, **kw):
-        return subprocess.check_output(["git", *args], cwd=ROOT, **kw)
-
-    # Compare to origin/main (or the merge-base), not HEAD. A pin/Auto
-    # change committed on this branch must still fail this test.
+    # A pin/Auto change committed on this branch must still fail this test.
     # Skill model pins and Auto routing both live in api/auto_models.json;
     # do not byte-compare src/skills.ts (template/preset copy may change).
-    try:
-        base = git("merge-base", "HEAD", "origin/main", text=True).strip()
-    except subprocess.CalledProcessError:
-        base = git("rev-parse", "origin/main", text=True).strip()
-    assert base
     # #911/#912 pins ai-model; Angela 07:27 also pins clothing-swap,
     # studio-model, product-to-packaging (Lovart e304e2fa7),
     # cover-design-director (Lovart 98af4eee), youtube-channel-banner
     # (Lovart d7672d03), and portrait-studio (Lovart 7fc60c86) to
-    # GPT Image 2.6 Sunburst.
-    # Everything else — features, pose-fission, and every other skills
-    # row — must stay byte-identical to origin/main.
+    # GPT Image 2.6 Sunburst. Everything else — features, pose-fission, and
+    # every other skills row — stays byte-identical to the pinned baseline.
     current = json.loads((ROOT / "api/auto_models.json").read_text(encoding="utf-8"))
-    origin = json.loads(git("show", f"{base}:api/auto_models.json"))
-    assert current["features"] == origin["features"]
-    assert current.get("_comment") == origin.get("_comment")
-    allowed = ("ai-model", "clothing-swap", "studio-model", "product-to-packaging", "cover-design-director", "youtube-channel-banner", "portrait-studio")
-    ours_skills = dict(current.get("skills") or {})
-    main_skills = dict(origin.get("skills") or {})
-    for key in allowed:
-        ours_skills.pop(key, None)
-        main_skills.pop(key, None)
-    assert ours_skills == main_skills, (
-        "only skills.ai-model, clothing-swap, studio-model, product-to-packaging, cover-design-director, youtube-channel-banner, and portrait-studio may differ from origin/main"
+    normalized = dict(current)
+    normalized["skills"] = {k: v for k, v in (current.get("skills") or {}).items()
+                            if k not in ALLOWED_PIN_SKILLS}
+    digest = hashlib.sha256(json.dumps(normalized, ensure_ascii=False, sort_keys=True,
+                                       separators=(",", ":")).encode()).hexdigest()
+    assert digest == AUTO_MODELS_BASE_SHA256, (
+        "only skills.ai-model, clothing-swap, studio-model, product-to-packaging, "
+        "cover-design-director, youtube-channel-banner, and portrait-studio may differ from the baseline"
     )
 
 

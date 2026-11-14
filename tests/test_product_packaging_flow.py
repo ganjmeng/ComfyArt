@@ -8,8 +8,9 @@ Question 1's product noun and the options of questions 1 and 2 are written from 
 (Lovart: 「这瓶滴管产品」, 护肤精华油 / 口服酊剂 / 香氛, 琥珀棕 / 琥珀为主 / 深墨绿); the server keeps them and
 locks everything else.
 
-$0: no WaveSpeed call. submit_command and the run approval are mocked. Pins, api/auto_models.json,
-api/skill_size.py is compared byte for byte with main e8c4a855; bot/skill_output.py is pinned to the #905 revision.
+$0: no WaveSpeed call. submit_command and the run approval are mocked. Pins and the untouched
+files are locked by literal sha256 values (no historical git objects, so a depth-1 clone works);
+bot/skill_output.py is pinned to the #905 revision.
 """
 from __future__ import annotations
 
@@ -17,7 +18,6 @@ import asyncio
 import hashlib
 import json
 import re
-import subprocess
 import uuid
 from pathlib import Path
 
@@ -30,7 +30,6 @@ from ComfyArt.api.mcp_tools._context import GUARD_CHAT_ID
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = (ROOT / "src/skills.ts").read_text(encoding="utf-8")
-MAIN = "e8c4a85529043bccfa94670733bab1eebeecf345"
 SUNBURST_EDIT = "openai/gpt-image-2.6-sunburst/edit"
 SUNBURST_T2I = "openai/gpt-image-2.6-sunburst/text-to-image"
 
@@ -486,27 +485,24 @@ def test_self_check_still_reports_a_failed_set(lang, goal, warn):
 
 # --- untouched -----------------------------------------------------------------------------------
 
-def _git_bytes(rev: str, path: str) -> bytes:
-    return subprocess.run(["git", "show", f"{rev}:{path}"], cwd=ROOT, check=True, capture_output=True).stdout
-
-
-def _main_bytes(path: str) -> bytes:
-    return _git_bytes(MAIN, path)
-
-
-@pytest.mark.parametrize("path", ["api/auto_models.json", "api/skill_size.py", "api/curated_models.json",
-                                  "api/wavespeed_models.json"])
-def test_pins_sizes_and_model_tables_are_unchanged_from_main(path):
-    assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == hashlib.sha256(_main_bytes(path)).hexdigest(), path
-
-
-# #927 versions of these two files, pinned by literal sha256 of the working-tree
-# bytes (no git-object lookup — the lock tip will not be on main after squash).
+# #935: a shallow (depth-1) clone has no e8c4a855 object. These locks used to run
+# read e8c4a855:<path> from history and compared bytes; they are now literal sha256 values
+# computed once from those same pinned bytes. A one-byte edit still fails.
 PINNED_SHA256 = {
+    "api/auto_models.json": "9ef106b6133d427f04347d0c31c31931e641e1cd47d2a86c0d0769cde48c5d7b",
+    "api/skill_size.py": "43c130b1aa05cd6736d28564e743feaa41e0ce26e61ea2ad0960ada01203c3df",
+    "api/curated_models.json": "fb5c6a1acd2782cb3d7da42837bef92bd4485fe90abd84dd272de1170f9fe04b",
+    "api/wavespeed_models.json": "8be944b91aeaf2f4fc24fb5099e36664d2136004dc828737c95ff7943a7363fb",
     "bot/skill_output.py": "25ff9cab4780ebd7b1532d89246acd085ef63a493808abf1de20be8befaf6dd0",  # #905 size-notice handling
     "api/portrait_studio.py": "61257848a9e23d13c066d01c103c565d6804e58c926d3905c6ed8b0890569224",
     "bot/self_check.py": "1a9b4f7eda7e915adf83df42ff31ccf3c27e83253d9636ba5c85aead447993b6",
 }
+
+
+@pytest.mark.parametrize("path", ["api/auto_models.json", "api/skill_size.py", "api/curated_models.json",
+                                  "api/wavespeed_models.json"])
+def test_pins_sizes_and_model_tables_match_pinned_sha256(path):
+    assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == PINNED_SHA256[path], path
 
 
 @pytest.mark.parametrize("path", ["api/portrait_studio.py", "bot/self_check.py", "bot/skill_output.py"])
@@ -518,6 +514,7 @@ def test_portrait_studio_and_self_check_match_pinned_sha256(path):
 # still adds none. Allowed extras only:
 # - youtube-channel-banner: bot.composeBannerText
 # - portrait-studio redo/follow-up (#927): bot.portraitStudioPlan / Done / Redo
+# - #943: runStop.stillGenerating
 BANNER_LOCALE = {"zh": "排版横幅文字", "en": "Set banner text"}
 PORTRAIT_LOCALE = {
     "zh": {
@@ -531,19 +528,33 @@ PORTRAIT_LOCALE = {
         "bot.portraitStudioRedo": "Redo one image",
     },
 }
+RUN_STOP_LOCALE = {
+    "zh": "图片还在生成，生成好后会自动出现在画布上，不会重复扣费。",
+    "en": "The image is still generating. It will appear on the canvas when it's ready, with no extra charge.",
+}
+LOCALE_EXTRAS = {
+    lang: {"bot.composeBannerText": BANNER_LOCALE[lang], **PORTRAIT_LOCALE[lang],
+           "runStop.stillGenerating": RUN_STOP_LOCALE[lang]}
+    for lang in ("zh", "en")
+}
+# sha256 of the canonical JSON of main e8c4a855's locale files (minus the extras above).
+LOCALE_BASE_SHA256 = {
+    "src/locales/zh.json": "4a96ca4d146ccb8c8a336c643ebd9e1d830ebee5d843d5f5719062209472755a",
+    "src/locales/en.json": "887b52a29e5a337c54d2ca86e650971eea7e78a7acb71cafd78ac984eca4369e",
+}
+
+
+def _canonical_json(value) -> bytes:
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
 
 
 @pytest.mark.parametrize("path,lang", [("src/locales/zh.json", "zh"), ("src/locales/en.json", "en")])
-def test_locales_match_main_except_banner_and_portrait_studio_keys(path, lang):
+def test_locales_match_pinned_sha256_except_allowed_extras(path, lang):
     ours = json.loads((ROOT / path).read_text(encoding="utf-8"))
-    main = json.loads(_main_bytes(path))
-    assert {k: main[k] for k in main} == {k: ours[k] for k in main}
-    extra = {k: ours[k] for k in ours if k not in main}
-    assert extra == {"bot.composeBannerText": BANNER_LOCALE[lang], **PORTRAIT_LOCALE[lang],
-                     "runStop.stillGenerating": {
-                         "zh": "图片还在生成，生成好后会自动出现在画布上，不会重复扣费。",
-                         "en": "The image is still generating. It will appear on the canvas when it's ready, with no extra charge.",
-                     }[lang]}
+    extras = LOCALE_EXTRAS[lang]
+    assert {k: ours.get(k) for k in extras} == extras, path
+    base = {k: v for k, v in ours.items() if k not in extras}
+    assert hashlib.sha256(_canonical_json(base)).hexdigest() == LOCALE_BASE_SHA256[path], path
 
 
 # --- question 3: live wording per letter, locked skeleton (Product, final) ----------------------
