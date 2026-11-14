@@ -39,6 +39,9 @@ def test_declared_sizes():
 
 def test_ts_table_matches_python():
     block = re.search(r"export const SKILL_OUTPUT[\s\S]*?\n\}", SKILLS).group(0)
+    # #982: the logo size is one switchable constant; check its literal value instead of its name.
+    logo = re.search(r"export const LOGO_MATERIAL_SIZE_982 = (\d+)", SKILLS).group(1)
+    block = block.replace("LOGO_MATERIAL_SIZE_982", logo)
     for sid, row in OUTPUTS.items():
         assert f"'{sid}'" in block
         assert f"width: {row['width']}" in block and f"height: {row['height']}" in block

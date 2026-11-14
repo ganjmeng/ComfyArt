@@ -392,11 +392,13 @@ export function withTemplateInputs(skill: Skill, presetId: string | null | undef
   return p?.inputs ? { ...skill, inputs: p.inputs } : skill
 }
 /** #707 — pixels generate_image must use. images=1 means one call, no list_models / expand / extra frame. */
-export interface SkillOutputStage { width: number; height: number; ratio?: string; images: number }
+export interface SkillOutputStage { width: number; height: number; ratio?: string; images: number; lock?: 'ratio' }
 /** #979 — one template's plan. A staged template carries `stages`; flat fields are its stage 1. */
 export interface SkillOutputPlan extends Partial<SkillOutputStage> {
   stages?: SkillOutputStage[]
   name?: string
+  /** #982: this template has no declared ratio yet (generic 1:1 lock, TODO). */
+  todo?: boolean
 }
 /** #979 — the deliverable is per template, not per skill. Flat fields are the default
  *  template (and stage 1); `presets` overrides per selected template; `stages` is the
@@ -415,6 +417,30 @@ export const BRAND_STAGES_979: SkillOutputStage[] = [
 export const PACKAGING_PLAYFUL_STAGES_979: SkillOutputStage[] = [
   { width: 1536, height: 2048, ratio: '3:4', images: 3 },
   { width: 2048, height: 1152, ratio: '16:9', images: 1 },
+]
+/** #982 — mirror of bot/skill_output.py. Size convention: 1:1 1024², 3:4 1536×2048, 16:9 2048×1152,
+ *  9:16 1024×1824, 4:5 1600×2000, 4:3 2048×1536. lock 'ratio' = ratio-mode size audit. */
+/** #982 product: the measured reference sample is 1254×1254. ONE switch (1024 = 1k tier); mirror LOGO_MATERIAL_SIZE_982. */
+export const LOGO_MATERIAL_SIZE_982 = 1254
+export const SOCIAL_RATIO_PACK_982: SkillOutputStage[] = [
+  { width: 1024, height: 1024, ratio: '1:1', images: 1 },
+  { width: 1600, height: 2000, ratio: '4:5', images: 1 },
+  { width: 1024, height: 1824, ratio: '9:16', images: 1 },
+]
+export const INTERIOR_STAGES_982: SkillOutputStage[] = [
+  { width: 2048, height: 1152, ratio: '16:9', images: 1 },
+  { width: 2048, height: 1536, ratio: '4:3', images: 1 },
+]
+const SQ_982 = { width: 1024, height: 1024, ratio: '1:1', images: 1 }
+const WIDE_982 = { width: 2048, height: 1152, ratio: '16:9', images: 1 }
+/** #982 — a built-in image skill with no declared delivery gets this explicit lock (never the page's
+ *  silent fallback). The TODO list may only shrink (tests/test_skill_output_982.py). */
+export const GENERIC_SKILL_OUTPUT: SkillOutput = { width: 1024, height: 1024, ratio: '1:1', images: 1, lock: 'ratio' }
+export const TODO_SKILL_OUTPUT_982: readonly string[] = [
+  'marketing-campaign-generator', 'style-transfer', 'person-swap', 'commerce-strategist', 'lifestyle-scene',
+  'naive-illustration', 'logo-abstract', 'photo-split-poster', 'promo-ecommerce', 'crt-interface', 'crayon-sketch',
+  'fabric-collage', 'live-promo-decor', 'creator-identity', 'product-website', 'premium-website', 'restaurant-website',
+  'flash-cut-video', 'animated-poster',
 ]
 export const SKILL_OUTPUT: Record<string, SkillOutput> = {
   'before-after': { width: 1920, height: 1080, ratio: '16:9', images: 1 },
@@ -449,6 +475,31 @@ export const SKILL_OUTPUT: Record<string, SkillOutput> = {
       shelf: { width: 2048, height: 1152, ratio: '16:9', images: 1 },
     },
   },
+  // #982: product ruling — every built-in image skill declares its delivery.
+  'logo-material-explorer': { width: LOGO_MATERIAL_SIZE_982, height: LOGO_MATERIAL_SIZE_982, ratio: '1:1', images: 4, lock: 'ratio' },
+  'character-sheet-design': {
+    width: 1024, height: 1024, ratio: '1:1', images: 1, lock: 'ratio',
+    presets: {
+      turnaround: SQ_982, expression: WIDE_982, modeling: WIDE_982, outfit: SQ_982,
+      prop: SQ_982, basic: WIDE_982, technical: WIDE_982, editorial: { ...SQ_982, todo: true },
+    },
+  },
+  'poster-differentiated-compiler': { width: 1536, height: 2048, ratio: '3:4', images: 1, lock: 'ratio' },
+  'rednote-cover-maker': { width: 1024, height: 1024, ratio: '1:1', images: 3, lock: 'ratio', stages: SOCIAL_RATIO_PACK_982 },
+  'banner-design-director': { width: 2048, height: 1152, ratio: '16:9', images: 1, lock: 'ratio' },
+  'cover-design-director': { width: 2048, height: 1152, ratio: '16:9', images: 1, lock: 'ratio' },
+  'meta-ads-creative-director': { width: 1024, height: 1024, ratio: '1:1', images: 3, lock: 'ratio', stages: SOCIAL_RATIO_PACK_982 },
+  'mobile-app-visual-design': { width: 1024, height: 1824, ratio: '9:16', images: 3, lock: 'ratio' },
+  'web-product-visual-design': { width: 2048, height: 1152, ratio: '16:9', images: 1, lock: 'ratio' },
+  'ppt-visual': { width: 2048, height: 1152, ratio: '16:9', images: 3, lock: 'ratio' },
+  'yingzao': { width: 1536, height: 2048, ratio: '3:4', images: 1, lock: 'ratio' },
+  'taobao-product': { width: 1024, height: 1024, ratio: '1:1', images: 4, lock: 'ratio' },
+  'interior-architectural-visualization': { width: 2048, height: 1152, ratio: '16:9', images: 2, lock: 'ratio', stages: INTERIOR_STAGES_982 },
+}
+
+/** #982 — what skill read reports: the declared row, else the generic lock for a TODO built-in. */
+export function skillOutputOf(id: string): SkillOutput | undefined {
+  return SKILL_OUTPUT[id] ?? (TODO_SKILL_OUTPUT_982.includes(id) ? GENERIC_SKILL_OUTPUT : undefined)
 }
 
 export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
@@ -1037,7 +1088,7 @@ export async function skillTool(args: Record<string, unknown>): Promise<unknown>
     if (page) return { id: skill.id, name: skill.name, path: args.path, ...page }
     return { id: skill.id, name: skill.name, path: args.path, content }
   }
-  const output = SKILL_OUTPUT[skill.id]
+  const output = SKILL_OUTPUT[skill.id] ?? (skill.custom ? undefined : skillOutputOf(skill.id))
   const page = skillReadPage(skill.instructions, args)
   if (page) {
     // files stay (the agent needs the path names); images are display assets that were already

@@ -67,6 +67,38 @@ PACKAGING_PRESETS_979: dict[str, dict] = {
         "name": "包装货架展示 / Packaging Shelf Display",
     },
 }
+# #982: rows locked in ratio mode (see apply_generate / api/wavespeed.py size audit).
+RATIO_LOCK = "ratio"
+# Product (#982): Lovart's measured 1254×1254. ONE switch: set to 1024 for the 1k tier
+# (tier-only models: 1254 -> 2k, 1024 -> 1k; see api/wavespeed._resolution). Mirror in src/skills.ts.
+LOGO_MATERIAL_SIZE_982 = 1254
+LOGO_MATERIALS_982: tuple[str, ...] = ("brushed metal", "clear glass", "woven fabric / embroidered emblem",
+                                       "glazed ceramic")
+# Size convention (#707/#974/#979): 1:1 1024², 3:4 1536×2048, 16:9 2048×1152, 9:16 1024×1824,
+# 4:5 1600×2000, 4:3 2048×1536.
+SOCIAL_RATIO_PACK_982: tuple[dict, ...] = (
+    {"width": 1024, "height": 1024, "ratio": "1:1", "images": 1, "label": "1:1 feed"},
+    {"width": 1600, "height": 2000, "ratio": "4:5", "images": 1, "label": "4:5 feed post"},
+    {"width": 1024, "height": 1824, "ratio": "9:16", "images": 1, "label": "9:16 story / reel"},
+)
+INTERIOR_STAGES_982: tuple[dict, ...] = (
+    {"width": 2048, "height": 1152, "ratio": "16:9", "images": 1, "label": "eye-level wide render"},
+    {"width": 2048, "height": 1536, "ratio": "4:3", "images": 1, "label": "detail vignette"},
+)
+_SQ = {"width": 1024, "height": 1024, "ratio": "1:1", "images": 1}
+_WIDE = {"width": 2048, "height": 1152, "ratio": "16:9", "images": 1}
+# Template ids are the ids applyRaw748 keeps (src/skills.ts presets, skills-748.json order);
+# ratios = the Lovart template media (1.0 / 1.7778). editorial: no measured ratio -> generic.
+CHARACTER_PRESETS_982: dict[str, dict] = {
+    "turnaround": {**_SQ, "name": "角色转身板 / Character Turnaround Sheet"},
+    "expression": {**_WIDE, "name": "表情动作板 / Expression & Pose Sheet"},
+    "modeling": {**_WIDE, "name": "建模细节参考板 / Modeling Detail Reference Sheet"},
+    "outfit": {**_SQ, "name": "服装/形态变体板 / Outfit / Form Variation Sheet"},
+    "prop": {**_SQ, "name": "道具互动板 / Prop Interaction Sheet"},
+    "basic": {**_WIDE, "name": "基础角色板 / Basic Character Sheet"},
+    "technical": {**_WIDE, "name": "完整技术角色板 / Complete Technical Character Sheet"},
+    "editorial": {**_SQ, "todo": True, "name": "时装大片角色板 / Editorial Fashion Sheet"},
+}
 OUTPUTS: dict[str, dict] = {
     "before-after": {
         "width": 1920, "height": 1080, "ratio": "16:9", "images": 1,
@@ -112,10 +144,143 @@ OUTPUTS: dict[str, dict] = {
         "names": ("packaging-design-director", "品牌包装设计系统",
                   "Brand Packaging Design System"),
     },
+    # ---- #982 product ruling: every built-in image skill declares its delivery. ----
+    # Rows marked lock=ratio are size-locked in ratio mode: most default models take only
+    # aspect_ratio + 1k/2k/4k (no exact pixels), so the audit accepts ratio error <= 1% with
+    # the long side >= the declared long side (same rule as the #911 Sunburst pins).
+    # logo-material-explorer: product ruling — 4 separate 1:1 images at Lovart's measured
+    # 1254×1254 (/workspace/lovart-inputs/982 example02/03.webp), one material each
+    # (brushed metal, clear glass, fabric, glazed ceramic); the uploaded logo is refs on
+    # every call. A tier-only model gets the lowest tier >= 1254 (2k).
+    "logo-material-explorer": {
+        "width": LOGO_MATERIAL_SIZE_982, "height": LOGO_MATERIAL_SIZE_982, "ratio": "1:1", "images": 4,
+        "lock": RATIO_LOCK,
+        "materials": LOGO_MATERIALS_982,
+        "names": ("logo-material-explorer", "徽标材质探索器", "Logo Material Explorer"),
+    },
+    # character-sheet-design: one image per template, ratio from the Lovart template media
+    # (skills-748.json). editorial has no measured ratio: it stays on the generic default
+    # and is listed in TODO_ALLOWLIST_982 (character-sheet-design:editorial).
+    "character-sheet-design": {
+        "width": 1024, "height": 1024, "ratio": "1:1", "images": 1, "lock": RATIO_LOCK,
+        "presets": CHARACTER_PRESETS_982,
+        "names": ("character-sheet-design", "角色设定表", "Character Sheet",
+                  "真人角色设定与参考板", "Realistic Human Character Design & Reference Sheets"),
+    },
+    # Class A: the ratio each skill's own instruction states, now locked in code.
+    "poster-differentiated-compiler": {
+        "width": 1536, "height": 2048, "ratio": "3:4", "images": 1, "lock": RATIO_LOCK,
+        "names": ("poster-differentiated-compiler", "海报设计", "Poster Design"),
+    },
+    "rednote-cover-maker": {
+        "width": 1024, "height": 1024, "ratio": "1:1", "images": 3, "lock": RATIO_LOCK,
+        "stages": SOCIAL_RATIO_PACK_982,
+        "names": ("rednote-cover-maker", "社交媒体套图", "Social Media Set",
+                  "小红书封面制作器", "RedNote Cover Maker"),
+    },
+    "banner-design-director": {
+        "width": 2048, "height": 1152, "ratio": "16:9", "images": 1, "lock": RATIO_LOCK,
+        "names": ("banner-design-director", "横幅设计", "Banner Design"),
+    },
+    "cover-design-director": {
+        "width": 2048, "height": 1152, "ratio": "16:9", "images": 1, "lock": RATIO_LOCK,
+        "names": ("cover-design-director", "YouTube 缩略图", "YouTube Thumbnail",
+                  "封面设计总监", "Cover Design Director"),
+    },
+    "meta-ads-creative-director": {
+        "width": 1024, "height": 1024, "ratio": "1:1", "images": 3, "lock": RATIO_LOCK,
+        "stages": SOCIAL_RATIO_PACK_982,
+        "names": ("meta-ads-creative-director", "Meta 投放创意", "Meta Ads Creative", "Meta广告创意"),
+    },
+    # "phone-framed mockups at about 9:19.5": 9:19.5 is not in the page ratio list nor in
+    # every model's aspect_ratio enum; 9:16 (1024×1824, game-art convention) is the nearest
+    # common one. "cover 2–4 key screens" -> 3.
+    "mobile-app-visual-design": {
+        "width": 1024, "height": 1824, "ratio": "9:16", "images": 3, "lock": RATIO_LOCK,
+        "names": ("mobile-app-visual-design", "移动端应用视觉设计", "Mobile APP Visual Design",
+                  "移动应用视觉设计"),
+    },
+    "web-product-visual-design": {
+        "width": 2048, "height": 1152, "ratio": "16:9", "images": 1, "lock": RATIO_LOCK,
+        "names": ("web-product-visual-design", "Web 产品视觉设计", "Web Product Visual Design",
+                  "Web产品视觉设计"),
+    },
+    # cover, section divider, comparison
+    "ppt-visual": {
+        "width": 2048, "height": 1152, "ratio": "16:9", "images": 3, "lock": RATIO_LOCK,
+        "names": ("ppt-visual", "高级感 PPT 视觉", "Premium PPT Visual"),
+    },
+    "yingzao": {
+        "width": 1536, "height": 2048, "ratio": "3:4", "images": 1, "lock": RATIO_LOCK,
+        "names": ("yingzao", "营造·在地编辑海报", "Yingzao Local Editorial Poster"),
+    },
+    # main image, carousel frame, lifestyle scene, detail benefit block — all 1:1
+    "taobao-product": {
+        "width": 1024, "height": 1024, "ratio": "1:1", "images": 4, "lock": RATIO_LOCK,
+        "names": ("taobao-product", "淘宝商品视觉", "Taobao Product Visuals"),
+    },
+    "interior-architectural-visualization": {
+        "width": 2048, "height": 1152, "ratio": "16:9", "images": 2, "lock": RATIO_LOCK,
+        "stages": INTERIOR_STAGES_982,
+        "names": ("interior-architectural-visualization", "室内与建筑可视化",
+                  "Interior & Architectural Visualization"),
+    },
 }
 
 _BY_NAME = {n.casefold(): sid for sid, row in OUTPUTS.items() for n in row["names"]}
 _DETOUR = frozenset({"list_models", "expand_image", "create_frame"})
+
+# #982 product ruling: a built-in image skill with no declared delivery is no longer a silent
+# page fallback. It gets this explicit lock (1:1, count=1, size-locked in ratio mode) and is
+# listed here as a TODO. This list may only shrink: tests/test_skill_output_982.py hard-codes
+# it, so adding a skill here (instead of declaring its delivery) turns the coverage test red.
+# Mirrored in src/skills.ts (GENERIC_SKILL_OUTPUT / TODO_SKILL_OUTPUT_982).
+GENERIC_DEFAULT_982: dict = {"width": 1024, "height": 1024, "ratio": "1:1", "images": 1, "lock": RATIO_LOCK}
+TODO_ALLOWLIST_982: dict[str, tuple[str, ...]] = {
+    # class B: the instruction states no ratio
+    "marketing-campaign-generator": ("marketing-campaign-generator", "营销战役生成器",
+                                     "Marketing Campaign Generator", "营销活动生成器"),
+    "style-transfer": ("style-transfer", "自适应风格迁移导演", "Adaptive Style Transfer Director"),
+    "person-swap": ("person-swap", "电商三图换人", "E-commerce 3-Image Person Swap"),
+    "commerce-strategist": ("commerce-strategist", "电商视觉策略师", "Commerce Visual Strategist"),
+    "lifestyle-scene": ("lifestyle-scene", "电商生活场景设计师", "E-commerce Lifestyle Scene Designer"),
+    "naive-illustration": ("naive-illustration", "稚拙手绘插画", "Naive Illustration"),
+    "logo-abstract": ("logo-abstract", "极简几何抽象 Logo", "Minimal Geometric Abstract Logo"),
+    "photo-split-poster": ("photo-split-poster", "照片对半抽象海报", "Photo Split Abstract Poster"),
+    "promo-ecommerce": ("promo-ecommerce", "电商促销主视觉", "E-commerce Promo Key Visual"),
+    "crt-interface": ("crt-interface", "CRT 复古界面", "CRT Retro Interface"),
+    "crayon-sketch": ("crayon-sketch", "潦草蜡笔画风", "Rough Crayon Sketch"),
+    "fabric-collage": ("fabric-collage", "布艺拼贴画", "Fabric Collage"),
+    "live-promo-decor": ("live-promo-decor", "电商直播素材", "Live Commerce Promo Decor"),
+    "creator-identity": ("creator-identity", "创作者视觉识别系统", "Creator Visual Identity System"),
+    "product-website": ("product-website", "产品网站设计师", "Product Website Designer"),
+    "premium-website": ("premium-website", "高端网站艺术总监", "Premium Website Art Director"),
+    "restaurant-website": ("restaurant-website", "餐厅网站创建器", "Restaurant Website Builder"),
+    # video skills: only their still (generate_image) step
+    "flash-cut-video": ("flash-cut-video", "截图闪剪视频", "Screenshot Flash-Cut Video"),
+    "animated-poster": ("animated-poster", "动态海报生成器", "Animated Poster Generator"),
+}
+# Template-level TODO (the template plan itself uses GENERIC_DEFAULT_982's size).
+TODO_TEMPLATES_982: frozenset[str] = frozenset({"character-sheet-design:editorial"})
+_GENERIC_BY_NAME = {n.casefold(): sid for sid, names in TODO_ALLOWLIST_982.items() for n in names}
+
+
+def resolve_generic(name: object) -> str | None:
+    """#982: the allowlisted (TODO) built-in skill id for a name, or None."""
+    return _GENERIC_BY_NAME.get(str(name or "").strip().casefold())
+
+
+def _apply_generic(args: dict, gid: str) -> dict:
+    """#982: explicit lock for an allowlisted skill — never the page's silent 1:1 fallback."""
+    args["skill"] = gid
+    args.pop(USER_RATIO_KEY, None)
+    args.pop(REF_RATIO_KEY, None)
+    args["width"], args["height"] = GENERIC_DEFAULT_982["width"], GENERIC_DEFAULT_982["height"]
+    args["ratio"] = GENERIC_DEFAULT_982["ratio"]
+    args["count"] = 1
+    args["size_lock"] = True
+    args["size_lock_mode"] = RATIO_LOCK
+    return args
 
 
 def resolve(name: object) -> str | None:
@@ -309,8 +474,13 @@ def apply_generate(args: dict | None, current_skill: str = "", user_text: str | 
     raw = str(args.get("skill") or "").strip()
     named = resolve(raw)
     if raw and not named:
-        return args
+        # #982: an allowlisted built-in skill gets the explicit generic lock; anything else
+        # (a custom skill, an unknown id) is left alone.
+        gid = resolve_generic(raw)
+        return _apply_generic(args, gid) if gid else args
     sid = named or resolve(current_skill)
+    if not sid and not raw and resolve_generic(current_skill):
+        return _apply_generic(args, resolve_generic(current_skill))
     if not sid:
         # #911 / #912: studio-model and ai-model are not in OUTPUTS (no
         # declared canvas). Still pass skill= on generate_image so the call
@@ -398,10 +568,18 @@ def apply_generate(args: dict | None, current_skill: str = "", user_text: str | 
     args["count"] = 1
     # The page audits the downloaded file against these pixels. This does not change the model.
     args["size_lock"] = True
+    if row.get("lock") == RATIO_LOCK:
+        # #982: tier-only models (aspect_ratio + 1k/2k/4k) cannot submit exact pixels; the
+        # audit checks ratio <= 1% and long side >= the declared long side instead.
+        args["size_lock_mode"] = RATIO_LOCK
+    else:
+        args.pop("size_lock_mode", None)
     if plan:
         # #979: keep the resolved template/stage on the args so the relay pass
         # (api/mcp_tools/canvas.py applies this a second time) is idempotent.
-        args["preset"] = plan["preset"]
+        # #982: a staged row without templates has no template id to carry.
+        if plan["preset"]:
+            args["preset"] = plan["preset"]
         args["stage"] = plan["stage"]
     return args
 
@@ -431,6 +609,25 @@ def _preset_hint(sid: str, preset_id: str, user_text: str) -> str:
     stages = plan["stages"]
     total = plan["total_images"]
     default = " (skill default template: none was selected)" if plan["default_template"] else ""
+    if not row.get("presets"):
+        # #982: a staged row without templates (ratio packs) names no template.
+        parts = []
+        call_at = 1
+        for i, st in enumerate(stages, 1):
+            n = int(st["images"])
+            size = _size_text(sid, int(st["width"]), int(st["height"]), st.get("ratio"))
+            label = f" ({st['label']})" if st.get("label") else ""
+            calls = f"calls {call_at}-{call_at + n - 1}" if n > 1 else f"call {call_at}"
+            parts.append(f"stage {i}{label} = {n} image(s) at {size} (pass stage={i} on {calls})")
+            call_at += n
+        return (
+            f"Output lock: deliver exactly {total} separate images in {len(stages)} stages: "
+            + "; ".join(parts) + ". "
+            f"Call generate_image exactly {total} times, count=1 each, with skill={sid!r}; the set "
+            "shares one idea, palette and type. Use each stage's declared size and no other size."
+        )
+    if (row.get("presets") or {}).get(preset, {}).get("todo"):
+        default += " (TODO #982: this template has no declared ratio yet; generic 1:1 lock)"
     if sid == "brand-identity-director":
         sizes = []
         for i, s in enumerate(stages, 1):
@@ -500,6 +697,14 @@ def run_hint(name: object, user_text: str = "", ref_image: bytes | None = None,
     """
     sid = resolve(name)
     if not sid:
+        gid = resolve_generic(name)
+        if gid:
+            g = GENERIC_DEFAULT_982
+            return (
+                f"Output lock: skill {gid} has no per-skill delivery yet (TODO #982), so every "
+                f"generate_image passes skill={gid!r}, width={g['width']} height={g['height']} "
+                f"ratio={g['ratio']}, count=1. The server enforces this size."
+            )
         return ""
     if sid in PRESET_PLAN_SKILLS:
         return _preset_hint(sid, preset_id, user_text)
@@ -525,6 +730,16 @@ def run_hint(name: object, user_text: str = "", ref_image: bytes | None = None,
             f"Output lock: call generate_image exactly once with skill={sid!r}, {size}, count=1. "
             "Do not call list_models, expand_image, or create_frame. Do not outpaint. "
             "Then wait_generation and finish. Lettering must be real words in quotes, large enough to read."
+        )
+    if sid == "logo-material-explorer":
+        # #982: four separate material studies of the SAME uploaded logo, one material per call.
+        mats = ", ".join(OUTPUTS[sid]["materials"])
+        return (
+            f"Output lock: deliver exactly {int(row['images'])} separate images, each {size}, count=1, "
+            f"skill={sid!r}. Call generate_image {int(row['images'])} times, one material per call "
+            f"(default: {mats}; materials named in Additional Details replace these), with a different "
+            "prompt each time. Pass the uploaded logo shape id in refs (ref_modes content) on every call; "
+            "keep the mark geometry identical. Never merge the materials into one grid. Do not use another size."
         )
     if sid == "universal-multi-angle-grid":
         # #974: this skill's own wording, not pose-fission's. Four separate angle images, same reference each call.
