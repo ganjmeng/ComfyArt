@@ -38,7 +38,12 @@ DONE = {"zh": "已收到你的选择，继续下一步。", "en": "Got your choi
 
 
 def _board_data_uri() -> str:
-    """A 16:9 LOCAL FIXTURE board (three stacked bands). Never a paid generation."""
+    """A 16:9 board. Default is a LOCAL FIXTURE; ASK934_BOARD points at an existing PNG
+    (the published Lovart board on review-assets) so PR stills can reuse that image, $0."""
+    extra = os.environ.get("ASK934_BOARD")
+    if extra:
+        data = Path(extra).read_bytes()
+        return "data:image/png;base64," + base64.b64encode(data).decode("ascii")
     img = Image.new("RGB", (512, 288), (240, 244, 255))
     d = ImageDraw.Draw(img)
     bands = [(80, 140, 230), (40, 90, 180), (20, 50, 120)]
