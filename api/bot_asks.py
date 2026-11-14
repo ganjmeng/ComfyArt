@@ -528,34 +528,72 @@ YT_CARD_1_BY_LANG: dict[str, list[dict]] = {
 YT_DELIVERY = next(q for q in YT_CARD_1_BY_LANG["zh"] if q["id"] == "yt_delivery")
 YT_BANNER_TEXT = next(q for q in YT_CARD_1_BY_LANG["zh"] if q["id"] == "yt_banner_text")
 YT_BRAND_ASSETS = next(q for q in YT_CARD_1_BY_LANG["zh"] if q["id"] == "yt_brand_assets")
-YT_DIRECTION = {
-    "id": "yt_direction",
-    "prompt": "选哪个方向做 2560×1440 终稿？",
-    "options": None,  # live: directions A/B/C from the board, one-line description each
-    "placeholder": "想调整（说哪里改）或让我直接定...",
-}
-YT_TEXT_MODE = {
-    "id": "yt_text_mode",
-    "prompt": "终稿的文字怎么上？（中文＋三行信息，精度差异较大）",
-    "options": [
-        {"id": "A", "label": "精确排版（推荐）"},
-        {"id": "B", "label": "图像模型直出"},
+# Card 2 fixed text per ask-card language (#966), same single-source rule as card 1: zh is
+# verbatim from the reference card (review-assets d7672d03); en is the translation for the en
+# UI. Same question ids and same A/B option ids in the same order, so an en pick maps to the
+# same step as zh. `yt_direction` options stay live: the three direction labels/descriptions
+# are agent-authored from the board (and the user's copy), never translated by the server.
+YT_CARD_2_BY_LANG: dict[str, list[dict]] = {
+    "zh": [
+        {
+            "id": "yt_direction",
+            "prompt": "选哪个方向做 2560×1440 终稿？",
+            "options": None,  # live: directions A/B/C from the board, one-line description each
+            "placeholder": "想调整（说哪里改）或让我直接定...",
+        },
+        {
+            "id": "yt_text_mode",
+            "prompt": "终稿的文字怎么上？（中文＋三行信息，精度差异较大）",
+            "options": [
+                {"id": "A", "label": "精确排版（推荐）"},
+                {"id": "B", "label": "图像模型直出"},
+            ],
+            "placeholder": "其它要求...",
+        },
     ],
-    "placeholder": "其它要求...",
+    "en": [
+        {
+            "id": "yt_direction",
+            "prompt": "Which direction should become the 2560×1440 final?",
+            "options": None,  # live: the agent writes the labels/descriptions in the card language
+            "placeholder": "Want changes (say what to adjust), or let me decide...",
+        },
+        {
+            "id": "yt_text_mode",
+            "prompt": "How should the final's text be set? (Chinese + three lines of info; accuracy varies a lot)",
+            "options": [
+                {"id": "A", "label": "Exact layout (Recommended)"},
+                {"id": "B", "label": "Image model renders the text"},
+            ],
+            "placeholder": "Any other requirements...",
+        },
+    ],
 }
-# Every locked card-1 question in every language, for matching answered/legacy blocks.
+# Backward-compatible aliases (zh) used by banner_compose for answer lookup.
+YT_DIRECTION = next(q for q in YT_CARD_2_BY_LANG["zh"] if q["id"] == "yt_direction")
+YT_TEXT_MODE = next(q for q in YT_CARD_2_BY_LANG["zh"] if q["id"] == "yt_text_mode")
+# Every locked card-1 / card-2 question in every language, for matching answered/legacy blocks.
 YT_CARD_1 = tuple(q for card in YT_CARD_1_BY_LANG.values() for q in card)
-YT_CARD_2 = (YT_DIRECTION, YT_TEXT_MODE)
-YT_RECOMMENDED = "（推荐）"
+YT_CARD_2 = tuple(q for card in YT_CARD_2_BY_LANG.values() for q in card)
+YT_TEXT_MODES = tuple(q for q in YT_CARD_2 if q["id"] == "yt_text_mode")
+# The recommended marker is fixed copy too: zh（推荐） / en (Recommended). Strip both when a
+# live direction carries one, then re-add only the card language's marker to one description.
+YT_RECOMMENDED_BY_LANG = {"zh": "（推荐）", "en": "(Recommended)"}
+YT_RECOMMENDED = YT_RECOMMENDED_BY_LANG["zh"]
+_YT_RECOMMENDED_MARKS = ("（推荐）", "(推荐)", "(Recommended)", "(recommended)")
 _YT_LIVE_MAX = 3
 
 
-def yt_card1_lang(lang: str | None = None) -> str:
-    """Card-1 language: explicit, else the ask-card language (`card_lang`, #962)."""
+def yt_card_lang(lang: str | None = None) -> str:
+    """Ask-card language for both youtube cards: explicit, else `card_lang()` (#962/#966)."""
     if lang in YT_CARD_1_BY_LANG:
         return lang
     got = card_lang()
     return got if got in YT_CARD_1_BY_LANG else "zh"
+
+
+# #962 kept the card-1-only name; same single helper, no second language rule.
+yt_card1_lang = yt_card_lang
 
 
 def _yt_prompt_head(prompt: object) -> str:
@@ -576,10 +614,13 @@ def _yt_match(raw: object, locked: dict) -> bool:
 
 
 def _yt_strip_recommended(text: str) -> str:
-    return str(text or "").replace(YT_RECOMMENDED, "").strip()
+    out = str(text or "")
+    for mark in _YT_RECOMMENDED_MARKS:
+        out = out.replace(mark, "")
+    return out.strip()
 
 
-def _yt_live_options(raw_opts: object, *, one_recommended: bool) -> list:
+def _yt_live_options(raw_opts: object, *, one_recommended: bool, lang: str) -> list:
     opts = []
     for o in raw_opts if isinstance(raw_opts, list) else []:
         if not isinstance(o, dict):
@@ -588,23 +629,26 @@ def _yt_live_options(raw_opts: object, *, one_recommended: bool) -> list:
         opts.append(item)
     opts = opts[:_YT_LIVE_MAX]
     if one_recommended:
-        # Reference card: （推荐） goes at the start of one direction's description, never in the label.
+        # Reference card: （推荐） goes at the start of one direction's description, never in
+        # the label. The marker is fixed copy, so it follows the card language; the rest of the
+        # live label/description is kept verbatim.
+        mark = YT_RECOMMENDED_BY_LANG["zh" if lang == "zh" else "en"]
         seen = False
         for item in opts:
             label = str(item.get("label") or "")
             desc = str(item.get("description") or "")
-            marked = YT_RECOMMENDED in label or YT_RECOMMENDED in desc
+            marked = any(m in label or m in desc for m in _YT_RECOMMENDED_MARKS)
             item["label"] = _yt_strip_recommended(label)
             desc = _yt_strip_recommended(desc)
             if marked and not seen:
-                item["description"] = YT_RECOMMENDED + desc
+                item["description"] = mark + (" " if lang != "zh" and desc else "") + desc
                 seen = True
             elif "description" in item:
                 item["description"] = desc
     return opts
 
 
-def _yt_question(raw: dict, locked: dict) -> dict:
+def _yt_question(raw: dict, locked: dict, lang: str) -> dict:
     q = {
         "id": locked["id"],
         "prompt": locked["prompt"],
@@ -615,7 +659,9 @@ def _yt_question(raw: dict, locked: dict) -> dict:
     if locked["options"] is not None:
         q["options"] = [dict(o) for o in locked["options"]]
     else:
-        q["options"] = _yt_live_options(raw.get("options"), one_recommended=locked is YT_DIRECTION)
+        q["options"] = _yt_live_options(
+            raw.get("options"), one_recommended=locked["id"] == YT_DIRECTION["id"], lang=lang
+        )
     for k in ("min_selections", "max_selections"):
         if k in raw:
             q[k] = raw[k]
@@ -624,7 +670,7 @@ def _yt_question(raw: dict, locked: dict) -> dict:
 
 def normalize_youtube_banner_card(args: dict, lang: str | None = None) -> dict:
     """Force the youtube-channel-banner card skeletons in the ask-card language (review-assets d7672d03)."""
-    lang = yt_card1_lang(lang)
+    lang = yt_card_lang(lang)
     args = dict(args or {})
     questions = args.get("questions")
     if not isinstance(questions, list) or not questions:
@@ -633,14 +679,14 @@ def normalize_youtube_banner_card(args: dict, lang: str | None = None) -> dict:
             questions = [legacy]
         else:
             return args
-    for card, pages in ((YT_CARD_1_BY_LANG[lang], 3), (YT_CARD_2, 2)):
+    for card, pages in ((YT_CARD_1_BY_LANG[lang], 3), (YT_CARD_2_BY_LANG[lang], 2)):
         if not any(_yt_match(q, lk) for q in questions for lk in card):
             continue
         kept = []
         for lk in card:
             raw = next((q for q in questions if _yt_match(q, lk)), None)
             if raw is not None:
-                kept.append(_yt_question(raw, lk))
+                kept.append(_yt_question(raw, lk, lang))
         args["questions"] = kept
         args["page_count"] = pages
         args["allow_skip"] = True
