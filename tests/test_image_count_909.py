@@ -4,11 +4,10 @@
 every "N 张 / N images" match, so the taobao-product message's 「一张」 became
 count=1 and the four-image plan stopped after the first submit.
 
-The pure cases lock the split between a whole-group total ("做 3 张") and a
-description of one item ("一张主图，再加几张…"). The last test replays the real
-built-in agent path with a scripted LLM (mock MCP handlers, no LLM, no
-WaveSpeed): the quote card shows four planned images, Start is answered, and
-all four submits are allowed. $0.
+The pure cases lock the split between a whole-group total ("做 3 张"), a lone
+item request ("做一张主图" = 1), and a parallel item list with no total
+("一张主图，两张场景图" = 0, follow the plan). The e2e replays the real built-in
+agent path with a scripted LLM (mock MCP handlers, no LLM, no WaveSpeed). $0.
 """
 from __future__ import annotations
 
@@ -43,21 +42,45 @@ PLAN = [
 
 
 @pytest.mark.parametrize("text,want", [
-    (TAOBAO_ZH, 0),                      # AC2: one item of the set, no total
+    (TAOBAO_ZH, 0),                      # AC2: item list, no total
     ("一张干净的主图，再加几张模特上身和场景图", 0),
-    ("一张主图", 0),                      # item description, not a group total
-    ("再做两张主图，另外一张场景图", 0),   # a list of parts, no total
-    ("做 3 张", 3),                       # AC1
+    # A lone item request is still one image (product HOLD).
+    ("做一张主图", 1),
+    ("帮我做一张淘宝主图", 1),
+    ("就要一张主图", 1),
+    ("一张主图", 1),
+    ("主图一张", 1),
+    ("一张干净的主图", 1),
+    # A parallel item list with no whole-group total: follow the plan.
+    ("一张主图，两张场景图", 0),
+    ("帮我做一张主图，两张场景图", 0),
+    ("一张主图，再做三张场景图", 0),
+    ("帮我做三张主图，两张场景图", 0),
+    ("主图一张，场景图两张", 0),
+    ("一张主图一张场景", 0),
+    ("一张主图，几张场景图", 0),
+    ("再做两张主图，另外一张场景图", 0),
+    ("帮我做三张主图，几张场景图", 0),
+    # An explicit total still wins over the list.
+    ("两张图，一张主图一张场景", 2),
+    ("做 3 张", 3),
     ("一共 2 张", 2),
     ("总共四张", 4),
-    ("做 3 张主图", 3),                   # plural item = explicit count
+    ("做五张", 5),
+    ("就要 1 张", 1),
+    ("只做 1 张", 1),
+    ("做 3 张主图", 3),                   # one item, no list
     ("一共 4 张：一张主图，再加两张场景图", 4),
+    ("一张主图，两张场景图，共 4 张", 4),
+    ("做 3 张，一张主图两张场景图", 3),
+    ("做 3 张：一张主图，再做两张场景图", 3),
     ("画 6 张猫的插画", 6),
     ("做 12 张商品图", 12),
     ("做一张猫的海报", 1),                # #142 regression: one image stays one
     ("做一张海报 1:1", 1),
     ("第二张图再亮一点", 0),              # ordinal: refers to one image
     ("几张", 0),                          # vague quantities are not totals
+    ("若干", 0),
     ("再加几张场景图", 0),
     ("做若干张", 0),
     ("用这张商品图做一组淘宝商品图，风格统一", 0),
@@ -67,14 +90,18 @@ def test_requested_count_zh(text, want):
 
 
 @pytest.mark.parametrize("text,want", [
+    ("just one hero image", 1),
+    ("one image", 1),
+    ("two pictures", 2),
     ("make 3 images", 3),
     ("3 images total", 3),
     ("a set of 5 images", 5),
-    ("one image", 1),
-    ("two pictures", 2),
     (TAOBAO_EN, 0),  # item + "plus": the parts are not a total
     ("1 main image, plus a few model and scene shots", 0),
     ("one clean hero image, plus a few model and scene shots", 0),
+    ("one main image, two scene shots", 0),
+    ("1 image, 2 scene shots", 0),
+    ("2 images, one main image and one scene shot", 2),
     ("several images", 0),
     ("a few photos", 0),
     ("make the set", 0),
@@ -271,3 +298,51 @@ async def test_a_six_image_plan_without_a_user_total_is_not_capped_at_four(monke
     assert specs[0]["total"] == "84 积分", specs[0]
     assert stop == "" and result.error == ""
     assert [args["prompt"] for args in paid] == [p for _t, p in PLAN6]
+
+
+def _plan(n: int) -> list[tuple[str, str]]:
+    return [(f"规划图 {i + 1}", f"planned image {i + 1}") for i in range(n)]
+
+
+@pytest.mark.parametrize("text", ["做一张主图", "帮我做一张淘宝主图", "就要一张主图",
+                                  "just one hero image"])
+async def test_lone_item_request_submits_one_of_a_four_image_plan(monkeypatch, text):
+    """Product HOLD: a lone item request is 1, not 0 (which would release all 4)."""
+    result, stop, specs, paid, _events, before = await _run_taobao_plan(
+        monkeypatch, plan=_plan(4), user_text=text)
+    assert len(specs) == 1 and before == [0], specs
+    assert len(paid) == 1, paid
+    assert stop.startswith("已生成 1 张"), stop
+
+
+@pytest.mark.parametrize("text,want", [("做 3 张", 3), ("就要 1 张", 1), ("只做 1 张", 1)])
+async def test_stated_total_caps_the_four_image_plan(monkeypatch, text, want):
+    _result, stop, _specs, paid, _events, _before = await _run_taobao_plan(
+        monkeypatch, plan=_plan(4), user_text=text)
+    assert len(paid) == want, paid
+    assert stop.startswith(f"已生成 {want} 张"), stop
+
+
+@pytest.mark.parametrize("text,n", [
+    ("帮我做一张主图，两张场景图", 3),
+    ("帮我做一张主图，两张场景图", 4),
+    ("帮我做三张主图，两张场景图", 5),
+    ("一张主图，再做三张场景图", 4),
+    ("主图一张，场景图两张", 3),
+])
+async def test_parallel_item_list_follows_the_planned_count(monkeypatch, text, n):
+    """QA HOLD: no whole-group total -> all n planned images submit, not the part count."""
+    plan = _plan(n)
+    result, stop, specs, paid, events, before = await _run_taobao_plan(
+        monkeypatch, plan=plan, user_text=text)
+    assert stop == "" and result.error == "", stop
+    assert [args["prompt"] for args in paid] == [p for _t, p in plan], paid
+    if n * UNIT >= THRESHOLD:
+        assert len(specs) == 1 and len(specs[0]["lines"]) == n, specs
+        assert specs[0]["total"] == f"{n * 14} 积分", specs[0]
+        assert before == [0]
+    else:
+        assert specs == []
+    rows = [e for e in events
+            if e.t == "tool_result" and e.name == "generate_image"]
+    assert len(rows) == n and not any(r.is_error for r in rows), rows

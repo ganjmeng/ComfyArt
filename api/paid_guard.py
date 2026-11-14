@@ -64,11 +64,11 @@ _COUNT_RE = re.compile(
     r"(\d+|\b(?:" + "|".join(_EN_NUM) + r")\b|[一两二三四五六七八九十])"
     r"\s*(?:张|幅|款|个版本|images?\b|pictures?\b|photos?\b|versions?\b"
     r"|variations?\b)", re.I)
-# #909: a count followed (within its clause) by one concrete item of the set is a
-# description of that item, not the whole group's total.
+# #909: a count attached (within its clause) to one concrete item of the set
+# describes that item, not the whole group's total.
 _ITEM_AFTER_RE = re.compile(
     r"(?:主图|副图|场景图|模特图|上身图|细节图|白底图|首图|轮播图|详情图|"
-    r"正面图|侧面图|背面图|平铺图|"
+    r"正面图|侧面图|背面图|平铺图|场景|模特|上身|细节|"
     r"\bhero\s+(?:image|shot|photo|visual)\b|"
     r"\bmain\s+(?:image|shot|photo|visual)\b|"
     r"\bprimary\s+(?:image|shot|photo)\b|"
@@ -77,12 +77,39 @@ _ITEM_AFTER_RE = re.compile(
     r"\blifestyle\s+(?:image|shot|photo)\b|"
     r"\bmodel\s+(?:image|shot|photo)\b|"
     r"\bdetail\s+(?:image|shot|photo)\b)", re.I)
+# "主图一张" / "场景图两张": the item comes before its count.
+_ITEM_BEFORE_RE = re.compile(
+    r"(?:主图|副图|场景图|模特图|上身图|细节图|白底图|首图|轮播图|详情图|"
+    r"正面图|侧面图|背面图|平铺图|场景|模特|上身|细节)"
+    r"\s*(?:要|做|出|来|是|有)?\s*$", re.I)
+# English item counts carry a word between the number and the measure
+# ("2 scene shots"), so _COUNT_RE alone does not see them.
+_EN_ITEM_COUNT_RE = re.compile(
+    r"\b(\d+|\b(?:" + "|".join(_EN_NUM) + r")\b)\s+"
+    r"(?:main|hero|primary|cover|scene|lifestyle|model|detail|product)\s+"
+    r"(?:images?|shots?|photos?|visuals?)\b", re.I)
+# "两张图" / "3 images": a generic count names the set itself, not one item.
+_GENERIC_AFTER_RE = re.compile(r"^\s*(?:图|图片|照片|画面|海报|插画|作品|设计)", re.I)
+_EN_MEASURE_RE = re.compile(
+    r"(?:images?|pictures?|photos?|versions?|variations?)\s*$", re.I)
+# "一张主图，几张场景图": a vague part still makes the message an enumeration.
+_VAGUE = r"(?:几|若干|数|一些)"
+_ITEM_ZH = (r"主图|副图|场景图|模特图|上身图|细节图|白底图|首图|轮播图|详情图|"
+            r"正面图|侧面图|背面图|平铺图|场景|模特|上身|细节")
+_VAGUE_ITEM_RE = re.compile(
+    _VAGUE + r"\s*(?:张|幅|款)\s*(?:" + _ITEM_ZH + r")|"
+    r"(?:" + _ITEM_ZH + r")\s*" + _VAGUE + r"\s*(?:张|幅|款)", re.I)
+_EN_VAGUE_ITEM_RE = re.compile(
+    r"\b(?:a few|several|some|a couple of)\s+"
+    r"(?:main|hero|primary|cover|scene|lifestyle|model|detail|product)\s+"
+    r"(?:images?|shots?|photos?|visuals?)\b", re.I)
 # #909: "…，再加几张…" describes parts of a group; without an explicit total it
 # must not turn the first part into a whole-turn cap.
 _COMPOSITION_RE = re.compile(
-    r"(?:再加|再加上|再出|再生成|再画|再拍|另外|还有|以及|分别|外加|另加|"
-    r"\bplus\b|\bas well as\b|\balong with\b|\band also\b|\bseparately\b|"
-    r"\bin addition\b|\band a few\b|\band several\b|\band some\b)", re.I)
+    r"(?:再做|再要|再补|再加|再加上|再出|再生成|再画|再拍|另做|另外|还有|"
+    r"以及|分别|外加|另加|\+|\bplus\b|\bas well as\b|\balong with\b|"
+    r"\band also\b|\bseparately\b|\bin addition\b|\band a few\b|"
+    r"\band several\b|\band some\b)", re.I)
 # A number right after one of these is the entire group's total even when the
 # message also lists its parts ("一共 4 张：一张主图，再加两张场景图").
 _TOTAL_BEFORE_RE = re.compile(
@@ -92,9 +119,15 @@ _TOTAL_BEFORE_RE = re.compile(
     r"set\s+of|series\s+of|altogether|overall|total)\b)\s*$", re.I)
 _TOTAL_AFTER_RE = re.compile(
     r"^\s*(?:in\s+total|total\b|altogether\b|一共|总共|合计|共)", re.I)
+# "做 3 张" / "就要 1 张": a making/asking verb turns a bare count into the
+# whole-group total, so it wins over a later item list.
+_VERB_BEFORE_RE = re.compile(
+    r"(?:帮我|给我|就要|只做|只要|只出|只画|需要|想要|想做|做|要|来|出|画|"
+    r"生成|拍|设计|制作|输出|make|generate|create|produce|draw|paint|render|"
+    r"give|need|want)\s*$", re.I)
 _ORDINAL_BEFORE_RE = re.compile(r"(?:第|the)\s*$", re.I)
 _CLAUSE_END_RE = re.compile(
-    r"[，。；、！？,;.!?\n]|再加|另外|还有|以及|分别|\bplus\b", re.I)
+    r"[，。；、：！？,;:.!?\n]|再加|另外|还有|以及|分别|\bplus\b", re.I)
 _SHAPE_ID_RE = re.compile(r"shape:[A-Za-z0-9_\-]+")
 _PRODUCT_RE = re.compile(r"产品|商品|电商|\bproducts?\b", re.I)
 REF_FIELDS = {
@@ -103,24 +136,28 @@ REF_FIELDS = {
 }
 
 
+def _count_value(raw: str) -> int:
+    raw = (raw or "").strip()
+    if raw.isdigit():
+        return int(raw)
+    return _ZH_NUM.get(raw) or _EN_NUM.get(raw.lower(), 0)
+
+
 def requested_count(user_text: str) -> int:
     """The whole group's image count ("做 6 张", "3 images"), else 0.
 
-    #909: a count that only describes one image of a larger set is not the
-    group total. "一张干净的主图，再加几张模特上身和场景图" has no total, so
-    this returns 0 and the paid-guard cap follows the model's planned set
-    instead of capping the whole turn at 1. Vague amounts (几张 / a few) never
-    become a number here.
+    #909: only an explicit whole-group total sets the paid-guard cap. A count
+    that belongs to one item of a list ("一张主图，两张场景图") must not become
+    the total; a lone item request ("做一张主图") still counts as 1. Vague
+    amounts (几张 / a few) never become a number.
     """
     text = _SKILL_HINT_RE.sub("", user_text or "")
-    matches = list(_COUNT_RE.finditer(text))
-    if not matches:
-        return 0
     totals: list[int] = []
-    counted: list[int] = []
-    for m in matches:
-        raw = m.group(1)
-        n = int(raw) if raw.isdigit() else (_ZH_NUM.get(raw) or _EN_NUM.get(raw.lower(), 0))
+    generics: list[int] = []
+    plain: list[int] = []
+    items: list[int] = []
+    for m in _COUNT_RE.finditer(text):
+        n = _count_value(m.group(1))
         if not n:
             continue
         before = text[max(0, m.start() - 16):m.start()]
@@ -131,14 +168,36 @@ def requested_count(user_text: str) -> int:
         if _ORDINAL_BEFORE_RE.search(before):
             continue  # 第二张图 / the 2 images name one of them, not a new total
         clause = _CLAUSE_END_RE.split(after, 1)[0]
-        if n == 1 and _ITEM_AFTER_RE.search(clause):
-            continue  # "一张主图" describes the main image, not the whole set
-        counted.append(n)
+        if _ITEM_AFTER_RE.search(clause) or _ITEM_BEFORE_RE.search(before):
+            items.append(n)
+        elif _VERB_BEFORE_RE.search(before):
+            totals.append(n)  # "做 3 张": an explicit whole-group total
+        elif _GENERIC_AFTER_RE.search(clause) or _EN_MEASURE_RE.search(m.group(0)):
+            generics.append(n)
+        else:
+            plain.append(n)
+    for m in _EN_ITEM_COUNT_RE.finditer(text):
+        n = _count_value(m.group(1))
+        if n:
+            items.append(n)
+    vague_item = bool(_VAGUE_ITEM_RE.search(text) or _EN_VAGUE_ITEM_RE.search(text))
     if totals:
         return max(totals)
     if _COMPOSITION_RE.search(text):
         return 0  # "…，再加…" / "… plus …": parts of a set, no stated total
-    return max(counted, default=0)
+    if generics:
+        total = max(generics)
+        # "两张图，一张主图一张场景" states 2; parts that already exceed it do not.
+        if items and sum(items) > total:
+            return 0
+        return total
+    if plain:
+        return max(plain)
+    if len(items) >= 2 or (items and vague_item):
+        return 0  # several parallel items, no whole-group total
+    if items:
+        return items[0]  # one item only: "做一张主图" is still 1
+    return 0
 
 
 def product_refs(provider_text: str) -> list[str]:
