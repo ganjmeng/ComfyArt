@@ -1,0 +1,104 @@
+{
+  "unselected": {
+    "card": {
+      "maxHeight": "442px",
+      "minHeight": "0px",
+      "borderRadius": "18px",
+      "borderTopWidth": "1px",
+      "borderTopColor": "rgb(229, 229, 229)",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "paddingLeft": "16px",
+      "paddingRight": "12px",
+      "paddingBottom": "14px",
+      "overflow": "hidden"
+    },
+    "body": {
+      "overflowY": "auto",
+      "minHeight": "0px",
+      "scrollbarWidth": "thin",
+      "scrollbarColor": "rgb(223, 224, 226) rgba(0, 0, 0, 0)"
+    },
+    "scrollbar": {
+      "width": "6px"
+    },
+    "thumb": {
+      "backgroundColor": "rgb(223, 224, 226)",
+      "borderRadius": "3px"
+    },
+    "label": {
+      "color": "rgb(115, 115, 115)",
+      "fontSize": "14px"
+    },
+    "icon": {
+      "width": "14px",
+      "height": "14px",
+      "strokeWidth": "1.5px",
+      "color": "rgb(115, 115, 115)"
+    },
+    "page": {
+      "color": "rgb(115, 115, 115)",
+      "fontSize": "14px"
+    },
+    "disabledArrow": {
+      "color": "rgb(197, 197, 197)",
+      "opacity": "1"
+    },
+    "prompt": {
+      "fontSize": "14px",
+      "lineHeight": "20px",
+      "color": "rgb(25, 25, 25)"
+    },
+    "row": {
+      "height": "76px",
+      "minHeight": "36px",
+      "paddingLeft": "9px",
+      "paddingRight": "9px",
+      "borderRadius": "8px",
+      "backgroundColor": "rgba(0, 0, 0, 0)"
+    },
+    "text": {
+      "fontSize": "14px",
+      "color": "rgb(25, 25, 25)"
+    },
+    "badge": {
+      "width": "20px",
+      "height": "20px",
+      "backgroundColor": "rgb(245, 245, 245)",
+      "color": "rgb(111, 111, 111)"
+    },
+    "primary": {
+      "height": "32px",
+      "minWidth": "76px",
+      "borderRadius": "10px",
+      "backgroundColor": "rgb(44, 44, 44)",
+      "color": "rgb(255, 255, 255)",
+      "fontSize": "14px",
+      "gap": "8px"
+    },
+    "key": {
+      "width": "14px",
+      "height": "14px",
+      "fontSize": "14px"
+    },
+    "skip": {
+      "width": "60px",
+      "height": "32px",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "borderTopColor": "rgb(229, 229, 229)",
+      "borderTopWidth": "1px",
+      "color": "rgb(25, 25, 25)"
+    },
+    "footer": {
+      "gap": "8px"
+    },
+    "scroll": {
+      "height": 338,
+      "content": 880
+    }
+  },
+  "selected": {
+    "row": "rgb(235, 235, 235)",
+    "bg": "rgb(44, 44, 44)",
+    "fg": "rgb(255, 255, 255)"
+  }
+}
