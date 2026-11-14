@@ -39,23 +39,26 @@ def test_declared_sizes():
 
 def test_ts_table_matches_python():
     block = re.search(r"export const SKILL_OUTPUT[\s\S]*?\n\}", SKILLS).group(0)
-    # #982: the logo size is one switchable constant; check its literal value instead of its name.
-    logo = re.search(r"export const LOGO_MATERIAL_SIZE_982 = (\d+)", SKILLS).group(1)
-    block = block.replace("LOGO_MATERIAL_SIZE_982", logo)
+    # Logo canvas uses a named constant so 1k/2k is one switch; expand it for the literal check.
+    m = re.search(r"export const LOGO_MATERIAL_SIZE_982 = (\d+)", SKILLS)
+    block_lit = block.replace("LOGO_MATERIAL_SIZE_982", m.group(1)) if m else block
     for sid, row in OUTPUTS.items():
         assert f"'{sid}'" in block
-        assert f"width: {row['width']}" in block and f"height: {row['height']}" in block
+        assert f"width: {row['width']}" in block_lit and f"height: {row['height']}" in block_lit
         assert f"images: {row['images']}" in block
         if row.get("ratio"):
             assert f"ratio: '{row['ratio']}'" in block
     assert "output } : {})" in SKILLS or "output } : {} }" in SKILLS
 
 
-def test_apply_fills_from_display_name_and_leaves_other_skills():
+def test_apply_fills_from_display_name_and_floors_unknown_skills():
     bare = apply_generate({"prompt": "cat", "ratio": "1:1"})
     assert bare == {"prompt": "cat", "ratio": "1:1"}
+    # #982: an unknown/custom skill no longer reaches the provider with no pixels.
     custom = apply_generate({"skill": "poster", "prompt": "x", "ratio": "1:1"}, "LinkedIn Banner")
-    assert custom == {"skill": "poster", "prompt": "x", "ratio": "1:1"}
+    assert (custom["width"], custom["height"], custom["ratio"], custom["size_lock"]) == \
+        (1024, 1024, "1:1", True)
+    assert custom["skill"] == "poster" and custom["prompt"] == "x"
     ba = apply_generate({"prompt": "x"}, "前后对比视觉")
     assert ba["skill"] == "before-after" and (ba["width"], ba["height"], ba["ratio"], ba["count"]) == (1920, 1080, "16:9", 1)
     assert ba["size_lock"] is True

@@ -32,7 +32,7 @@ CLOTHING_SWAP_TAIL_SHA256 = "f3036b3d1ebcb3320bcee7d76c961014b38cbb443783ae53485
 AUTO_MODELS_SHA256 = "9ef106b6133d427f04347d0c31c31931e641e1cd47d2a86c0d0769cde48c5d7b"
 OTHER_SKILL_ENTRIES_SHA256 = "f088dd000ad53f7802bec2675b815cb40d0343da3127c413fadc12b40895488a"
 # #974: multi-angle instruction rewrite (four separate 3:4 1536x2048 images, its own wording).
-UNCHANGED_SKILL_ENTRIES_SHA256 = "3bf91d0e8eef2000e5b45c393a4db95020f1f7f06a8d2a2d329780f978749cd7"  # #981: logo-material-explorer drops dead presets + "per selected preset"
+UNCHANGED_SKILL_ENTRIES_SHA256 = "9631f4a03048808da994ddbff1533533e97651edfae91dd8624440117731e627"  # #996: poster 1-or-2 and taobao 4×1:1 instruction tweaks; logo/character still excluded
 SHARED_CONST_SHA256 = {
     "NEARMISS_INPUTS": "4fe64962178b3c0404f163a02b5a0cdfff1c072d1be399e9f6acbbf597730722",
     "EFFECT_INPUTS": "bbca63995ca34766f0f0ac21ae1baf8cf66df417c9ddaa3f584a128c619eacb6",
@@ -631,7 +631,9 @@ def test_qa4_clothing_swap_drops_rule6_and_708_others_unchanged():
     ids = _all_skill_ids(SKILLS)
     assert ids == ALL_SKILL_IDS
     excluded = {"clothing-swap", "youtube-channel-banner", "portrait-studio", "before-after",
-                "product-to-packaging"}
+                "product-to-packaging",
+                # #982: the two output contracts deliberately add a Delivery line.
+                "logo-material-explorer", "character-sheet-design"}
     assert _entries_sha256(SKILLS, [sid for sid in ids if sid not in excluded]) == UNCHANGED_SKILL_ENTRIES_SHA256
 
 
@@ -711,7 +713,10 @@ def test_qa5_image1_bytes_come_from_first_ref_or_first_attachment():
 def test_qa5_other_skills_do_not_follow_ref():
     from ComfyArt.bot.skill_output import FOLLOW_REF_SIZES, follows_ref
 
-    assert list(FOLLOW_REF_SIZES) == ["clothing-swap"]
+    # #982: product ruling adds style-transfer (content image) and person-swap
+    # (scene/pose image) to the follow-ref mechanism; the rest stay fixed.
+    assert set(FOLLOW_REF_SIZES) == {"clothing-swap", "style-transfer", "person-swap"}
+    assert all(follows_ref(s) for s in FOLLOW_REF_SIZES)
     assert follows_ref("clothing-swap") and follows_ref("AI服装换装")
     for sid in ("pose-fission", "before-after", "game-art", "linkedin-banner", "studio-model", "ai-model", ""):
         assert not follows_ref(sid)

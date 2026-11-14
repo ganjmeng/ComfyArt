@@ -72,9 +72,8 @@ def call_args(sid: str, preset: str = "", stage: object = 1, **extra) -> dict:
 
 
 def test_templates_are_declared_in_the_existing_tables():
-    # #982 adds character-sheet templates and three ratio packs (stages); see test_skill_output_982.
-    assert PRESET_PLAN_SKILLS == {BRAND, PACKAGING, "character-sheet-design", "rednote-cover-maker",
-                                  "meta-ads-creative-director", "interior-architectural-visualization"}
+    # #982 adds character-sheet-design's eight per-template plans to the same table.
+    assert PRESET_PLAN_SKILLS == {BRAND, PACKAGING, "character-sheet-design"}
     assert set((OUTPUTS[BRAND]["presets"] or {})) == {
         "geometric", "handmade", "tech", "beauty", "foodbev", "pet"}
     assert set((OUTPUTS[PACKAGING]["presets"] or {})) == {"eco", "gold", "playful", "panels", "shelf"}

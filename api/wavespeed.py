@@ -2019,10 +2019,10 @@ async def submit(inputs: dict) -> str:
         _jobs[task]["expect_pixels"] = (w, h) if w > 0 and h > 0 else None
         # P1 hotfix (#911): Sunburst cannot take exact pixels. A ratio-mode lock (set by the
         # Sunburst skill pins) checks ratio <= 1% and long side >= target instead.
-        from .skill_size import RATIO_MODE, is_sunburst
         # #982: the same ratio-mode audit for any tier-only model (its payload carries no exact
         # `size`, only aspect_ratio + 1k/2k/4k), e.g. GPT Image Flare / Nano Banana / Recraft.
         # A model that took exact pixels (`size` in the payload) keeps the exact check.
+        from .skill_size import RATIO_MODE, is_sunburst
         tier_only = "size" not in payload
         if inputs.get("size_lock_mode") == RATIO_MODE and (is_sunburst(model) or tier_only):
             _jobs[task]["size_mode"] = RATIO_MODE

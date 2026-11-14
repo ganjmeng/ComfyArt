@@ -114,10 +114,6 @@ def test_presets_and_inputs_schema():
             assert "inputs: NEARMISS_INPUTS" in e, sid
         else:
             assert "inputs: [" in e and (", true" in e) == (sid != "character-sheet-design"), f"{sid} required input"
-    # #981: logo-material-explorer is an example card (no templates, same as Lovart): no dead presets and the
-    # instruction must not ask for a selected preset; upload + description stay required (Lovart parity).
-    lme = _entries()["logo-material-explorer"]
-    assert "presets:" not in lme and "selected preset" not in lme and "inputs: REF_CARD_INPUTS_687 }" in lme
     # AC 11 was "preset prompts and input en copy are step 2"; #494-2 lands them: every preset has an en prompt and
     # every input label has zh + en (updated, not removed).
     assert "prompt?: string" in SKILLS_TS

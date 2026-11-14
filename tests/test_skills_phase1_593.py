@@ -68,7 +68,7 @@ def test_new6_production_instructions_and_presets():
             # #691/#687: reference-card parity → Upload + Additional only, no presets
             assert "presets:" not in head and "inputs: MULTI_ANGLE_INPUTS }" in e, sid
         elif sid == "logo-material-explorer":
-            # #981: example card (0 templates, Lovart parity) → no dead presets
+            # #981: example card, no dead material presets; Upload + Additional only.
             assert "presets:" not in head and "inputs: REF_CARD_INPUTS_687 }" in e, sid
         else:
             assert "presets:" in head, sid

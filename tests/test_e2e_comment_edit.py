@@ -87,8 +87,14 @@ async def mock_ws(monkeypatch, fresh_user_dir):
     app.router.add_post("/api/v3/media/upload/binary", upload)
     app.router.add_get("/api/v3/predictions/{id}/result", result)
     app.router.add_post("/api/v3/{model:.+}", submit)
-    for name, data in (("mask", MASK), ("out", RESULT), ("up", SOURCE)):
-        app.router.add_get(f"/cdn/{name}.png", _bytes(data))
+    async def cdn(r):
+        # Resolve RESULT at request time so a test can return a contract-sized
+        # image (the #982 delivery-pixel assertion) without a second mock.
+        name = r.match_info["name"]
+        body = {"mask": MASK, "out": RESULT, "up": SOURCE}[name]
+        return web.Response(body=body, content_type="image/png")
+
+    app.router.add_get("/cdn/{name}.png", cdn)
     server = TestServer(app)
     await server.start_server()
     monkeypatch.setenv("WAVESPEED_BASE_URL", str(server.make_url("")))
