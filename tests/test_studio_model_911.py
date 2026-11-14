@@ -652,7 +652,8 @@ def test_first_card_reuses_912_same_page_scroll_renderer():
     assert "const shown = scrollCard ? questions : onPage" in chat
     assert "onScrollNext" in chat
     assert "data-scroll-card={scrollCard || undefined}" in chat
-    assert ".ca-chat__dock .ca-q__body { max-height: none; }" in css
+    body = css.split(".ca-chat__dock .ca-q__body {")[1].split("}")[0]
+    assert "max-height: none" in body  # #912 scroll hook kept; #940 second cut adds in-card scrollbar rules
     instr = _studio_model_instructions()
     first = instr[instr.index("First card"):instr.index("Second card")]
     assert "page_count 3" in first

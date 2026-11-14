@@ -117,8 +117,8 @@ def test_youtube_card1_is_three_answerable_questions_zh(monkeypatch) -> None:
     assert spec["page_count"] == 3 and spec["allow_skip"] is True
     assert [q["id"] for q in spec["questions"]] == ["yt_delivery", "yt_banner_text", "yt_brand_assets"]
     assert "defaults" not in spec and not any("defaults" in q for q in spec["questions"])
+    assert [q["page"] for q in spec["questions"]] == [1, 1, 1]
     for q in spec["questions"]:
-        assert q["page"] == 1
         assert q["prompt"] and q["placeholder"]
         assert q["allow_other"] is True
         assert len(q["options"]) >= 2

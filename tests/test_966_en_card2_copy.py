@@ -119,7 +119,7 @@ def test_en_card2_prompt_options_and_placeholders_are_english(monkeypatch) -> No
         assert not CJK.search(q["prompt"]), q["prompt"]
         assert q["placeholder"] == placeholder, q["id"]
         assert not CJK.search(q["placeholder"]), q["placeholder"]
-        assert q["page"] == 1 and q["allow_other"] is True
+        assert q["page"] == (1 if q["id"] == "yt_direction" else 2) and q["allow_other"] is True
         if labels is not None:
             assert [o["label"] for o in q["options"]] == labels
         for o in q["options"]:
@@ -168,7 +168,7 @@ def test_zh_card2_keeps_the_reference_text(monkeypatch) -> None:
         prompt, labels, placeholder = ZH_LOCKED[q["id"]]
         assert q["prompt"] == prompt
         assert q["placeholder"] == placeholder
-        assert q["page"] == 1 and q["allow_other"] is True
+        assert q["page"] == (1 if q["id"] == "yt_direction" else 2) and q["allow_other"] is True
         if labels is not None:
             assert [o["label"] for o in q["options"]] == labels
     directions = spec["questions"][0]["options"]

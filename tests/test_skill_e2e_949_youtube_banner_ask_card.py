@@ -5,7 +5,7 @@ Walks the official skill-page path with a scripted in-process agent (no LLM)
 and the mock WaveSpeed server (no submit, no quote). Replays the #925 failure:
 the agent opens with "I'll read the skill first." and calls ask_user with only
 Q1, page_count 3, and placeholders ending in `”,`. The real server + UI must
-show all three questions on one 1/3 scroll card, strip the junk, and (in zh)
+show all three questions as one scrolling 1/3 ask (all on page 1, no empty pages), strip the junk, and (in zh)
 rewrite the first sentence into Chinese.
 
 ASK949_SHOTS=/dir keeps the zh/en after-fix screenshots. Chromium is required;
@@ -24,6 +24,7 @@ import pytest
 from conftest import FakeProvider, write_settings
 from test_e2e_comment_edit import app_url, mock_ws  # noqa: F401
 from test_skill_param_guard_e2e_956_957 import LOC, _bind_open_project, _call
+from ask_card_pages import inspect_scroll_card
 
 pw = pytest.importorskip("playwright.async_api")
 
@@ -196,18 +197,14 @@ async def test_fullapp_card1_one_ask_clean_placeholders_zh_first_sentence(
         else:
             await pg.get_by_text("I'll read the skill first.").first.wait_for(timeout=20000)
 
-        # (2) one ask, 1/3 header, all three questions visible, no empty pages
-        head = await card.locator(".ca-q__head").inner_text()
-        assert re.search(r"1\s*(of|/)\s*3", head), head
-        blocks = card.locator(".ca-q__block")
-        assert await blocks.count() == 3
-        assert await card.get_attribute("data-scroll-card") is not None
-        # Chevrons are disabled on a scroll card — the user cannot page into an empty 2/3.
-        chevs = card.locator(".ca-q__chev")
-        assert await chevs.count() == 2
-        assert await chevs.nth(0).is_disabled()
-        assert await chevs.nth(1).is_disabled()
-        prompts = [t.strip() for t in await card.locator(".ca-q__prompt").all_inner_texts()][:3]
+        # (2) one ask, scrolling card, 1/3 header chrome, all three questions visible
+        snap = await inspect_scroll_card(pg, 3)
+        assert re.search(r"1\s*(of|/)\s*3", snap["head"]), snap["head"]
+        assert not re.search(r"2\s*(of|/)\s*3", snap["head"]), snap["head"]
+        assert snap["block_count"] == 3
+        assert snap["scroll_card"] is not None
+        assert snap["chevrons_disabled"] is True
+        prompts = snap["prompts"]
         assert len(prompts) == 3
         if lang == "zh":
             assert prompts[0].startswith("这次横幅想怎么交付")
@@ -217,12 +214,9 @@ async def test_fullapp_card1_one_ask_clean_placeholders_zh_first_sentence(
             assert all(not CJK.search(p) for p in prompts), prompts
             assert "delivered" in prompts[0].lower() or "How should" in prompts[0]
 
-        # (3) placeholders have no trailing `”,`
-        placeholders = await card.locator("input, textarea").evaluate_all(
-            "els => els.map(e => e.getAttribute('placeholder') || '')"
-        )
-        visible = [p for p in placeholders if p]
-        assert visible, placeholders
+        # (3) placeholders have no trailing `”,` on any question
+        visible = [ph for ph in snap["placeholders"] if ph]
+        assert visible, snap
         for ph in visible:
             assert JUNK not in ph, ph
             assert "\u201d" not in ph, ph
@@ -230,10 +224,7 @@ async def test_fullapp_card1_one_ask_clean_placeholders_zh_first_sentence(
             assert not ph.rstrip().endswith('"'), ph
 
         await _shot(pg, f"card1-first-{lang}")
-        # Scroll the card so all three questions are in frame for the after-fix still.
-        await card.locator(".ca-q__body").evaluate("el => { el.scrollTop = 0 }")
         await _shot(pg, f"card1-top-{lang}")
-        await card.locator(".ca-q__body").evaluate("el => { el.scrollTop = el.scrollHeight }")
         await _shot(pg, f"card1-bottom-{lang}")
 
         assert mock_ws["submits"] == [] and mock_ws["quotes"] == []

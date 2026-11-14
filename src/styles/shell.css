@@ -831,15 +831,49 @@ span.arti-mascot { cursor: default; pointer-events: none; }
 
 /* #763: pending question card docks directly above the composer (same width); bottom gap clears the 29px Arti mascot */
 .ca-chat__dock { margin: 0 12px 30px; box-sizing: border-box; align-self: stretch; flex: none; display: flex; flex-direction: column; gap: 8px; max-height: 55%; min-height: 0; }
-.ca-chat__dock .ca-q { box-sizing: border-box; overflow: hidden; padding: 16px 8px; gap: 10px; border-radius: 16px; --ca-opt-h: 36px; --ca-opt-gap: 4px; }
-.ca-chat__dock .ca-q__body { max-height: none; }
-.ca-chat__dock .ca-q__head, .ca-chat__dock .ca-q__prompt, .ca-chat__dock .ca-q__foot { padding: 0 8px; }
-.ca-chat__dock .ca-q__opt { box-sizing: border-box; padding: 0 8px; }
-.ca-chat__dock .ca-q__opt[data-on] .ca-q__letter { color: var(--ca-letter-fg); background: var(--ca-letter); }
+/* #940 second cut (shared ask-card chrome; product 6857343342 / design 6857404832). #934 uses this, does not close #940. */
+.ca-chat__dock .ca-q {
+  box-sizing: border-box; overflow: hidden;
+  max-height: 442px; /* upper bound; shorter cards stay natural, no min-height */
+  padding: 16px 12px 14px 16px; gap: 10px;
+  border: 1px solid #E5E5E5; border-radius: 18px;
+  --ca-opt-h: 36px; --ca-opt-gap: 4px; --ca-block-gap: 16px; --ca-btn-h: 32px;
+}
+.ca-chat__dock .ca-q__body {
+  max-height: none; /* flex child of the 442px card; questions scroll here */
+  padding-right: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: #DFE0E2 transparent;
+}
+.ca-chat__dock .ca-q__body::-webkit-scrollbar { width: 6px; }
+.ca-chat__dock .ca-q__body::-webkit-scrollbar-track { background: transparent; }
+.ca-chat__dock .ca-q__body::-webkit-scrollbar-thumb { background: #DFE0E2; border-radius: 3px; }
+.ca-chat__dock .ca-q__head { color: #737373; }
+.ca-chat__dock .ca-q__label { color: #737373; font-size: 14px; line-height: 20px; font-weight: 400; }
+.ca-chat__dock .ca-q__label .ca-icon { width: 14px; height: 14px; opacity: 1; color: #737373; stroke-width: 1.5; }
+.ca-chat__dock .ca-q__page { color: #737373; font-size: 14px; line-height: 20px; }
+.ca-chat__dock .ca-q__chev { color: #737373; }
+.ca-chat__dock .ca-q__chev:disabled { color: #C5C5C5; opacity: 1; } /* disabled tone only; do not stack extra opacity */
+.ca-chat__dock .ca-q__prompt { padding: 0; font-size: 14px; line-height: 20px; font-weight: 400; color: #191919; }
+.ca-chat__dock .ca-q__opt { box-sizing: border-box; padding: 0 9px; border-radius: 8px; }
+.ca-chat__dock .ca-q__letter { background: #F5F5F5; color: #6F6F6F; }
+.ca-chat__dock .ca-q__opt[data-on] .ca-q__letter { background: #2C2C2C; color: #fff; }
+.ca-chat__dock .ca-q__opt[data-on] { background: #EBEBEB; }
+.ca-chat__dock .ca-q__text { font-size: 14px; line-height: 20px; color: #191919; }
+.ca-chat__dock .ca-q__desc { font-size: 13px; line-height: 18px; color: #191919; }
 .ca-chat__dock .ca-q__opt[data-off] { cursor: default; }
 .ca-chat__dock .ca-q__opt[data-off]:hover { background: transparent; }
-.ca-chat__dock .ca-q__skip { width: 60px; height: 32px; padding: 0; border-radius: 10px; font-size: 13px; }
-.ca-chat__dock .ca-q__submit { width: 90px; height: 32px; padding: 0; border-radius: 10px; font-size: 13px; }
+.ca-chat__dock .ca-q__foot { gap: 8px; }
+.ca-chat__dock .ca-q__skip {
+  width: 60px; height: 32px; padding: 0; border-radius: 10px;
+  border: 1px solid #E5E5E5; background: #fff; color: #191919; font: 400 14px/20px var(--ca-font);
+}
+.ca-chat__dock .ca-q__submit {
+  width: auto; min-width: 76px; height: 32px; padding: 0 14px; border-radius: 10px;
+  background: #2C2C2C; color: #fff; font: 400 14px/20px var(--ca-font); gap: 8px;
+}
+.ca-chat__dock .ca-q__submit .ca-q__key { margin-left: 0; width: 14px; font: 400 14px/14px var(--ca-font); opacity: 1; }
+.ca-chat__dock .ca-q__submit:disabled { background: var(--ca-field); color: var(--ca-muted); }
 .ca-at-menu__group > .ca-menu__item { width: 100%; box-sizing: border-box; }
 .ca-at-menu__thumb.ca-at-menu__thumb--icon { background: transparent; color: var(--ca-text); }
 .ca-at-menu__row > .ca-menu__grow { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

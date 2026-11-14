@@ -241,6 +241,17 @@
   color: var(--ca-letter-on-fg); background: var(--ca-letter-on);
 }
 .ca-q__text { flex: 1; min-width: 0; font-size: 13px; line-height: 18px; }
+.ca-q__copy { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.ca-q__desc { display: block; font: 400 13px/18px var(--ca-font); color: var(--ca-text); white-space: pre-wrap; overflow-wrap: anywhere; }
+.ca-q__thumb {
+  flex: none; width: 132px; height: 74px; object-fit: contain; object-position: center;
+  border-radius: 8px; border: 1px solid #E5E5E5; background: #F5F5F5;
+}
+.ca-q__opt[data-thumb],
+.ca-q__opt:has(.ca-q__desc) {
+  height: auto; min-height: var(--ca-opt-h, 28px);
+  align-items: flex-start; padding-top: 8px; padding-bottom: 8px;
+}
 .ca-q__rec { flex: none; font: 400 11px/14px var(--ca-font); color: var(--ca-muted); }
 /* #337 Other = always letter+input; empty flat; filled soft via [data-on]; NOT chip/expand */
 .ca-q__opt[data-other] {

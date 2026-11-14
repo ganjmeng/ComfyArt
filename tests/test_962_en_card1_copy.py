@@ -140,7 +140,7 @@ def test_zh_card1_keeps_the_reference_text(monkeypatch) -> None:
         if labels is not None:
             assert [o["label"] for o in q["options"]] == labels
     assert spec["page_count"] == 3 and spec["allow_skip"] is True
-    assert all(q["page"] == 1 for q in spec["questions"])
+    assert [q["page"] for q in spec["questions"]] == [1, 1, 1]
 
 
 # --- the language comes from the ask-card language, not from the agent's text ------------------

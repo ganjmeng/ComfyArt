@@ -601,9 +601,13 @@ function QuestionBlock({ q, st, onChange }: { q: AskQuestion; st: QState; onChan
         ) : (
           <>
             {options.map((o, i) => (
-              <button key={o.id} type="button" className="ca-q__opt" title={o.description} data-on={st.selected.includes(o.id) || undefined} onClick={() => toggle(o.id)}>
+              <button key={o.id} type="button" className="ca-q__opt" data-thumb={o.image_url ? '' : undefined} data-on={st.selected.includes(o.id) || undefined} onClick={() => toggle(o.id)}>
+                {o.image_url ? <img className="ca-q__thumb" data-testid="ask-option-thumb" src={o.image_url} alt="" /> : null}
                 <span className="ca-q__letter">{LETTERS[i] ?? String(i + 1)}</span>
-                <span className="ca-q__text">{o.label}</span>
+                <span className="ca-q__copy">
+                  <span className="ca-q__text">{o.label}</span>
+                  {o.description ? <span className="ca-q__desc" data-testid="ask-option-desc">{o.description}</span> : null}
+                </span>
                 {recommended.has(o.id) && <span className="ca-q__rec">{t('chatMessage.recommended')}</span>}
               </button>
             ))}
@@ -721,12 +725,12 @@ function QuestionCard({ b }: { b: BotBlock }) {
           atEnd ? (
             <button type="button" className="ca-q__submit" disabled={!allOk} onClick={onSubmit}>{t('chatMessage.submit')} <span className="ca-q__key">↵</span></button>
           ) : (
-            <button type="button" className="ca-q__submit" onClick={onScrollNext}>{t('chatMessage.next')} <span className="ca-q__key">→</span></button>
+            <button type="button" className="ca-q__submit" onClick={onScrollNext}>{t('chatMessage.next')} <span className="ca-q__key">↵</span></button>
           )
         ) : isLast ? (
           <button type="button" className="ca-q__submit" disabled={!allOk} onClick={onSubmit}>{t('chatMessage.submit')} <span className="ca-q__key">↵</span></button>
         ) : (
-          <button type="button" className="ca-q__submit" disabled={!pageOk} onClick={onNext}>{t('chatMessage.next')} <span className="ca-q__key">→</span></button>
+          <button type="button" className="ca-q__submit" disabled={!pageOk} onClick={onNext}>{t('chatMessage.next')} <span className="ca-q__key">↵</span></button>
         )}
       </div>
     </div>

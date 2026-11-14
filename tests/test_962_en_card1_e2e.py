@@ -20,6 +20,7 @@ import pytest
 from conftest import FakeProvider, write_settings
 from test_e2e_comment_edit import app_url, mock_ws  # noqa: F401
 from test_skill_param_guard_e2e_956_957 import LOC, _bind_open_project, _call
+from ask_card_pages import answer_scroll_card, inspect_scroll_card, wait_dock, read_page
 
 pw = pytest.importorskip("playwright.async_api")
 
@@ -197,19 +198,7 @@ async def _open_youtube(p, app_url, lang, sockets):  # noqa: F811
 
 
 async def _answer(pg, picks):
-    card = pg.locator('[data-testid="question-dock"] .ca-q')
-    blocks = card.locator(".ca-q__block")
-    for i, pick in enumerate(picks):
-        await blocks.nth(i).locator(".ca-q__opt").nth(pick).click()
-    await card.locator(".ca-q__body").evaluate("el => { el.scrollTop = el.scrollHeight }")
-    submit = card.locator(".ca-q__submit")
-    for _ in range(8):
-        if LOC["zh"]["chatMessage.submit"] in await submit.inner_text() or \
-                LOC["en"]["chatMessage.submit"] in await submit.inner_text():
-            break
-        await submit.click()
-        await pg.wait_for_timeout(400)
-    await submit.click()
+    await answer_scroll_card(pg, picks)
 
 
 @pytest.mark.parametrize("lang", ["zh", "en"])
@@ -228,26 +217,25 @@ async def test_fullapp_card1_is_in_the_ui_language(app_url, mock_ws, agent, ws_f
         await pg.wait_for_timeout(400)
 
         expected = EXPECTED[lang]
-        head = await card.locator(".ca-q__head").inner_text()
-        assert re.search(r"1\s*(of|/)\s*3", head), head
-        prompts = [t.strip() for t in await card.locator(".ca-q__prompt").all_inner_texts()]
+        snap = await inspect_scroll_card(pg, 3)
+        assert re.search(r"1\s*(of|/)\s*3", snap["head"]), snap["head"]
+        assert not re.search(r"2\s*(of|/)\s*3", snap["head"]), snap["head"]
+        prompts = snap["prompts"]
         assert prompts == expected["prompts"], prompts
-        blocks = card.locator(".ca-q__block")
-        assert await blocks.count() == 3
-        for i in range(3):
-            labels = [t.strip() for t in await blocks.nth(i).locator(".ca-q__text").all_inner_texts()]
-            assert labels == expected["labels"][i], (i, labels)
-            placeholder = await blocks.nth(i).locator("input.ca-q__input").get_attribute("placeholder")
-            assert placeholder == expected["placeholders"][i], (i, placeholder)
+        assert snap["block_count"] == 3
+        assert snap["scroll_card"] is not None
+        assert snap["chevrons_disabled"] is True
+        assert snap["labels"] == expected["labels"], snap["labels"]
+        assert snap["placeholders"] == expected["placeholders"], snap["placeholders"]
+        assert snap["selected"] == [0, 0, 0]  # no default selection
+        await answer_scroll_card(pg, picks=(1, 2, 0))
         if lang == "en":
             # #962 AC: prompt and every option are English — no CJK anywhere in card 1.
             for text in prompts + [t for row in expected["labels"] for t in row] + expected["placeholders"]:
                 assert not CJK.search(text), text
         await _shot(pg, f"card1-{lang}")
 
-        # Answer B / C / A: the ids (not the visible copy) carry the meaning, so the zh and
-        # en cards land on the same choices; the turn continues afterwards.
-        await _answer(pg, picks=(1, 2, 0))
+        # Answer B / C / A already submitted above: the ids (not the visible copy) carry the meaning.
         for _ in range(200):
             if agent.asked is not None:
                 break
