@@ -983,12 +983,18 @@ def _map_text_mode(selected: object, other_text: object, options: object) -> str
         for oid, label in labels.items():
             if text == label:
                 return _TEXT_MODE_STAGE.get(str(oid).upper())
-    compact = text.replace("（推荐）", "").replace("(推荐)", "").strip()
+    compact = text
+    for mark in ("（推荐）", "(推荐)", "(Recommended)", "(recommended)"):
+        compact = compact.replace(mark, "")
+    compact = compact.strip()
     exact = {
         "精确排版": "base",
         "精确排版（推荐）": "base",
+        "exact layout": "base",
+        "exact layout (recommended)": "base",
         "base": "base",
         "图像模型直出": "direct",
+        "image model renders the text": "direct",
         "direct": "direct",
     }
     return exact.get(text) or exact.get(compact) or exact.get(text.lower())
@@ -998,12 +1004,16 @@ def stage_from_card2(block: dict) -> str | None:
     """Infer banner_stage from an answered card-2 block, or None if it cannot be determined."""
     from . import bot_asks
     answer = _question_answer(block, bot_asks.YT_TEXT_MODE)
+
+    def _is_text_mode(raw: object) -> bool:
+        return any(bot_asks._yt_match(raw, locked) for locked in bot_asks.YT_TEXT_MODES)
+
     options = None
     for q in block.get("questions") or []:
-        if isinstance(q, dict) and bot_asks._yt_match(q, bot_asks.YT_TEXT_MODE):
+        if isinstance(q, dict) and _is_text_mode(q):
             options = q.get("options")
             break
-    if options is None and bot_asks._yt_match({"id": block.get("id"), "prompt": block.get("prompt")}, bot_asks.YT_TEXT_MODE):
+    if options is None and _is_text_mode({"id": block.get("id"), "prompt": block.get("prompt")}):
         options = block.get("options")
     return _map_text_mode(answer.get("selected"), answer.get("other_text"), options)
 
