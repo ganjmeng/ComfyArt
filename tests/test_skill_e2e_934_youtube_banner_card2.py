@@ -328,3 +328,78 @@ async def test_fullapp_card2_thumbs_descriptions_and_pagination(
         await pg.get_by_text(DONE[lang]).first.wait_for(timeout=20000)
         assert mock_ws["submits"] == [] and mock_ws["quotes"] == []
         await browser.close()
+
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+async def test_fullapp_card1_next_scrolls_before_answer_submit(
+    app_url, mock_ws, agent, ws_forward, lang,
+):  # noqa: F811
+    """#998: Next must scroll the SAME pending card, even when all answers are filled."""
+    from ComfyArt.bot.providers import BotEvent
+
+    async def steps(a, turn, emit):
+        a.asked = await _call(a, emit, "ask_user", CARD1[lang], 1)
+        await emit(BotEvent(t="delta", text=DONE[lang]))
+
+    agent.steps = steps
+    async with pw.async_playwright() as p:
+        browser, pg = await _open_youtube(p, app_url, lang, ws_forward)
+        answer_posts = []
+        pg.on("request", lambda req: answer_posts.append(req)
+              if req.method == "POST" and re.search(r"/asks/[^/]+/answer$", req.url) else None)
+        card = await wait_dock(pg)
+        await inspect_scroll_card(pg, 3)
+        body = card.get_by_test_id("question-body")
+        button = card.locator(".ca-q__submit")
+        # Real layout must overflow: this test must not pass on a non-scrolling fixture.
+        assert await body.evaluate("el => el.scrollHeight > el.clientHeight + 2")
+        await card.evaluate("el => { el.dataset.scroll998Identity = 'original' }")
+        header = await card.locator(".ca-q__head").inner_text()
+
+        # At the bottom, incomplete answers still cannot be submitted.
+        await body.evaluate("el => { el.scrollTop = el.scrollHeight; el.dispatchEvent(new Event('scroll')) }")
+        await pw.expect(button).to_be_disabled()
+        assert answer_posts == [] and agent.asked is None
+
+        # Fill every answer, then return to the top. allOk=true must NOT bypass scrolling.
+        for i in range(3):
+            await card.locator(".ca-q__block").nth(i).locator(".ca-q__opt").first.click()
+        await body.evaluate("el => { el.scrollTop = 0; el.dispatchEvent(new Event('scroll')) }")
+        await pw.expect(button).to_have_text(re.compile("下一步|Next"))
+        before = await body.evaluate("el => el.scrollTop")
+        await button.click()
+        await pg.wait_for_function(
+            "before => document.querySelector('[data-scroll998-identity=original] [data-testid=question-body]')?.scrollTop > before",
+            arg=before,
+        )
+        # Wait until smooth scrolling settles before checking no answer request escaped.
+        await pg.wait_for_function("""() => {
+            const el = document.querySelector('[data-scroll998-identity=original] [data-testid=question-body]');
+            if (!el) return false;
+            const now = performance.now();
+            if (el._last998Top !== el.scrollTop) {
+                el._last998Top = el.scrollTop; el._last998Time = now; return false;
+            }
+            return now - el._last998Time > 150;
+        }""")
+        assert await body.evaluate("el => el.scrollTop") > before
+        assert answer_posts == [], "Next submitted while the card was not at its end"
+        assert agent.asked is None, "ask_user resolved before bottom submission"
+        assert await card.get_attribute("data-scroll998-identity") == "original"
+        assert await card.locator(".ca-q__block").count() == 3
+        assert await card.locator(".ca-q__head").inner_text() == header
+        assert await card.locator(".ca-q__opt[data-on]").count() == 3
+
+        # Only the explicit bottom-of-card click submits the three completed answers.
+        await body.evaluate("el => { el.scrollTop = el.scrollHeight; el.dispatchEvent(new Event('scroll')) }")
+        await pw.expect(button).to_be_enabled()
+        await button.click()
+        await pg.get_by_text(DONE[lang], exact=True).first.wait_for(timeout=20000)
+        assert len(answer_posts) == 1
+        result = agent.asked or {}
+        assert result.get("status") == "answered", result
+        assert {k: v.get("selected") for k, v in result.get("answers", {}).items()} == {
+            "yt_delivery": ["A"], "yt_banner_text": ["A"], "yt_brand_assets": ["A"],
+        }, result
+        assert mock_ws["submits"] == [] and mock_ws["quotes"] == []
+        await browser.close()
