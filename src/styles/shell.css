@@ -851,6 +851,8 @@ span.arti-mascot { cursor: default; pointer-events: none; }
 .ca-chat__dock .ca-q__head { color: #737373; }
 .ca-chat__dock .ca-q__label { color: #737373; font-size: 14px; line-height: 20px; font-weight: 400; }
 .ca-chat__dock .ca-q__label .ca-icon { width: 14px; height: 14px; opacity: 1; color: #737373; stroke-width: 1.5; }
+/* #940: set the SVG itself; its stroke-width attribute beats inheritance from the span. */
+.ca-chat__dock .ca-q__label .ca-icon svg { stroke-width: 1.5; }
 .ca-chat__dock .ca-q__page { color: #737373; font-size: 14px; line-height: 20px; }
 .ca-chat__dock .ca-q__chev { color: #737373; }
 .ca-chat__dock .ca-q__chev:disabled { color: #C5C5C5; opacity: 1; } /* disabled tone only; do not stack extra opacity */
