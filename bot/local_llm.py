@@ -20,6 +20,7 @@ from .agent_host import AgentHost
 from .guide import AGENT_GUIDE, CORE_MCP_TOOLS, PAID_TOOLS, resolve_host  # noqa: F401
 from .plan_quote import CANCEL_TEXT, QUOTE_TOOL, canon_key
 from .skill_output import TEMPLATE_BLOCK_END, TEMPLATE_BLOCK_START
+from .ratio_display import ratio_refusal_display
 from .providers import (
     AgentProvider,
     BotEvent,
@@ -634,6 +635,11 @@ def explain_unsubmitted(name: str, text: str, lang: str) -> Optional[tuple[str, 
     """
     if _tool_base(name) != "generate_image":
         return None
+    # #994: exact owned ratio errors expose no packet, relay instruction or
+    # exception prefix. The tool's error state still records the refusal.
+    ratio_copy = ratio_refusal_display(text or "", lang)
+    if ratio_copy is not None:
+        return ratio_copy, ""
     raw = text or ""
     if _CANCEL_RE.search(raw):
         return None
@@ -2126,6 +2132,12 @@ class LocalLlmProvider(AgentProvider):
     async def _emit_result(self, item: dict, text: str, *, emit, done: list, lang: str,
                            is_error: bool = False, detail: str = "", count_done: bool = True) -> list[dict]:
         name, args, tc_id = item["name"], item["args"], item["id"]
+        # #994: args retain the machine refusal packet; chat and the next LLM
+        # reply receive only the current-language own explanation.
+        if _tool_base(name) == "generate_image":
+            ratio_copy = ratio_refusal_display(text, lang)
+            if ratio_copy is not None:
+                text = ratio_copy
         await emit(BotEvent(t="tool_use", name=name, input=args, id=tc_id))
         if count_done and not item["cached"]:
             done.append(_step_label(name, args, lang))

@@ -157,21 +157,49 @@ async def test_fullapp_994_user_ratio_reaches_real_provider_submit(
             await browser.close()
 
 
+def assert_clean_refusal_text(text, expected, lang):
+    # Actual assistant node, not the entire chat/user bubble or mere keywords.
+    assert text == expected
+    assert not re.search(r'ValueError|TypeError|KeyError|\[object Object\]|generation_succeeded|user_message|\[tool error\]|[{}]|["\'](?:status|submitted|kind|error)["\']\s*:', text)
+    if lang == 'en':
+        assert not re.search(r'[\u4e00-\u9fff]', text)
+    else:
+        assert not re.search(r'[A-Za-z]{2,}', text)
+
+
+@pytest.mark.parametrize('lang', ['zh', 'en'])
+@pytest.mark.parametrize('rollback_display', [False, True], ids=['fixed-display', 'rollback-display-boundary'])
 @pytest.mark.parametrize('unsupported_schema', [False, True], ids=['unrecognized-ratio', 'real-nano-schema'])
 async def test_fullapp_994_explicit_refusal_no_silent_submit(
-    app_url, mock_ws, local_agent, ws_forward, monkeypatch, unsupported_schema,
+    app_url, mock_ws, local_agent, ws_forward, monkeypatch, unsupported_schema, lang, rollback_display,
 ):
     import test_e2e_comment_edit as ce
+    from ComfyArt.bot import local_llm as llm
+    from ComfyArt.bot.ratio_display import ratio_refusal_display
+    from ComfyArt.bot.skill_output import ratio_refusal_994
     _add_flare_models(monkeypatch)
     model = 'google/nano-banana-2.1/text-to-image' if unsupported_schema else None
     if model and not any(m['model_id'] == model for m in ce.MODELS):
         monkeypatch.setattr(ce, 'MODELS', [*ce.MODELS, ce.FIXTURE[model]])
+    if rollback_display:
+        # Real old behavior: both production chat/relay display seams become
+        # identity/no-op again. SAME DOM assertion below must turn red.
+        monkeypatch.setattr(llm, 'ratio_refusal_display', lambda text, lang: None)
     _, state = local_agent
     state['respond'] = script(state, 'banner-design-director', model=model, refusal=True)
-    text = 'Use 1:2 with google/nano-banana-2.1/text-to-image; do not use the uploaded image as a reference.' if unsupported_schema else '请用7:5，不要静默改成默认比例'
+    if unsupported_schema:
+        text = ('请用1:2，模型google/nano-banana-2.1/text-to-image；不要将上传图作为参考图。' if lang=='zh' else
+                'Use 1:2 with google/nano-banana-2.1/text-to-image; do not use the uploaded image as a reference.')
+    else:
+        text = '请用7:5，不要静默改成默认比例' if lang=='zh' else 'Use 7:5; do not silently change to the default ratio.'
+    if unsupported_schema:
+        expected = json.loads((Path(__file__).resolve().parents[1]/f'src/locales/{lang}.json').read_text())['wsErr.userRatioUnsupported']
+    else:
+        expected = ratio_refusal_display(json.dumps(ratio_refusal_994('7:5'),ensure_ascii=False),lang)
+    assert expected
     out = Path(os.environ['CA994_SHOTS']) if os.environ.get('CA994_SHOTS') else None
     async with async_playwright() as p:
-        browser, pg = await open_ratio_skill(p, app_url, 'en' if unsupported_schema else 'zh', 'banner-design-director', ws_forward, text, SUBJECT)
+        browser, pg = await open_ratio_skill(p, app_url, lang, 'banner-design-director', ws_forward, text, SUBJECT)
         try:
             responses = []
             async def record_response(response):
@@ -180,22 +208,36 @@ async def test_fullapp_994_explicit_refusal_no_silent_submit(
             pg.on('response',record_response)
             await _send_default(pg)
             await _wait(lambda: state.get('result') is not None, timeout=60)
-            if out:
-                out.mkdir(parents=True,exist_ok=True)
-                (out/f'refusal-debug-{unsupported_schema}.json').write_text(json.dumps({'responses':responses,'messages':state.get('messages')},ensure_ascii=False,indent=2,default=str))
             assert mock_ws['submits'] == []
-            rendered = await pg.locator('.ca-chat').inner_text()
-            # Real runtime/tool refusal must be visible in the actual chat.
-            assert 'Requested ratio' in rendered or '请求的比例' in rendered, rendered
-            assert ('1:2' if unsupported_schema else '7:5') in rendered
-            assert 'Nothing submitted' in rendered or 'nothing submitted' in rendered or '未提交' in rendered
+            replies = pg.locator('.ca-chat .ca-md:visible')
+            await replies.last.wait_for()
+            actual = await replies.all_inner_texts()
+            def check_visible():
+                assert len(actual)==1, actual
+                assert_clean_refusal_text(actual[0],expected,lang)
+            if rollback_display:
+                # Prove the real historic display defect, not a random/missing
+                # node failure or an artificial forced assertion.
+                assert len(actual)==1
+                if unsupported_schema:
+                    # Legacy CN takes the older agent-instruction wrapper;
+                    # legacy EN retains ValueError. BOTH are display leaks.
+                    assert actual[0].startswith(('ValueError: ', '[tool error] ')), actual
+                else:
+                    assert 'user_message' in actual[0] and 'generation_succeeded' in actual[0], actual
+                    assert 'Requested ratio' in actual[0] and re.search(r'[\u4e00-\u9fff]',actual[0])
+                with pytest.raises(AssertionError):
+                    check_visible()
+            else:
+                check_visible()
+                assert await pg.locator('.ca-chat__notice[data-level="error"]:visible').count()==0
             if out:
                 out.mkdir(parents=True,exist_ok=True)
-                label = 'unsupported-model-schema' if unsupported_schema else 'unsupported-app-ratio'
+                label = ('unsupported-model-schema' if unsupported_schema else 'unsupported-app-ratio')+f'-{lang}-'+('rollback' if rollback_display else 'fixed')
                 await pg.screenshot(path=str(out/f'{label}.png'))
-                (out/f'{label}.json').write_text(json.dumps({'user_text':text,'model':model,
-                    'messages':state.get('messages'),'submits':mock_ws['submits'],
-                    'mock_only':True},ensure_ascii=False,indent=2,default=str))
+                (out/f'{label}.json').write_text(json.dumps({'user_text':text,'model':model,'lang':lang,
+                    'actual_visible_assistant':actual,'expected_user_copy':expected,'rollback_display':rollback_display,
+                    'submits':mock_ws['submits'],'http_responses':responses,'mock_only':True},ensure_ascii=False,indent=2))
         finally:
             await browser.close()
 
