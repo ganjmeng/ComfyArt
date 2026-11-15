@@ -49,6 +49,14 @@ COUNTS = {
           "game-art": 3, "portrait-studio": 2, "premium-website": 2, "animated-poster": 2, "pose-fission": 3,
           "live-promo-decor": 3, "linkedin-banner": 2, "logo-animation": 2, "restaurant-website": 2, "clothing-swap": 3}
 COUNTS.update({sid: len(RAW_748[sid].get("templates", [])) for sid in FINAL_IDS})  # #748 Final: template cards = raw template count; example cards = 0
+# #992: five example cards restore source P() options (kind stays example).
+COUNTS.update({
+    "meta-ads-creative-director": 4,
+    "rednote-cover-maker": 2,
+    "mobile-app-visual-design": 4,
+    "web-product-visual-design": 4,
+    "marketing-campaign-generator": 4,
+})
 
 
 
@@ -98,7 +106,22 @@ def test_builtin_preset_images_unique(got):
     assert not any("541/wash/" in u for u in imgs)
     assert sum("/comfyart/skills/packaging/master.webp" in u for u in imgs) == 0  # #777 retired the local master bitmap
     assert len(set(washed)) == 28
-    assert covers == []  # #748 Final: the new-6 are example cards now (no presets → no cover fallback)
+    # #992: five restored example-card skills have Style chips with no own stills, so
+    # presetImage falls back to the skill list cover. Logo and other no-P() example
+    # cards still contribute no cover-fallback preset images. These covers are not
+    # Lovart template tiles.
+    restore = {"meta-ads-creative-director", "rednote-cover-maker", "mobile-app-visual-design",
+               "web-product-visual-design", "marketing-campaign-generator"}
+    by_skill = got["builtinPresetImgsBySkill"]
+    expected_n = {"meta-ads-creative-director": 4, "rednote-cover-maker": 2,
+                  "mobile-app-visual-design": 4, "web-product-visual-design": 4,
+                  "marketing-campaign-generator": 4}
+    for sid, n in expected_n.items():
+        urls = [u for u in by_skill[sid] if u]
+        assert len(urls) == n, (sid, urls)
+    other = [u for sid, urls in by_skill.items() if sid not in restore
+             for u in urls if u and "494/covers-v" in (u or "")]
+    assert other == [], other
 
 
 @needs_node

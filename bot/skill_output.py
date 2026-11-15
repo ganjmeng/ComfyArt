@@ -562,7 +562,7 @@ def fill_unpinned_fallback(args: dict, skill: object) -> dict:
 # #979: the lock itself names the template so a relay pass (no user text) can be
 # filled the same way. Kept on the single Output-lock line, which #905/#978 already
 # strip before reading the user's own words.
-_TEMPLATE_ID_RE = re.compile(r"(?:^|\n)Output lock:[^\n]*?\btemplate=([A-Za-z0-9_.-]+)")
+_TEMPLATE_ID_RE = re.compile(r"(?:^|\n)Output lock:[^\n]*?\btemplate=([A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*)")
 
 
 def preset_from_text(text: object) -> str:
@@ -628,6 +628,26 @@ TYPED_USER_RATIOS_994 = {
 }
 for _sid_994 in TYPE_OUTPUTS_982:
     USER_RATIOS[_sid_994] = dict(TYPED_USER_RATIOS_994)
+
+# #992: selecting these example-card options is explicit user ratio intent (#994),
+# not a system default. Style-only options (meta ugc, mobile/web/campaign) are
+# absent. Never scrape the Style prompt; the selected preset id is the source.
+EXAMPLE_RATIO_PRESETS_992: dict[str, dict[str, str]] = {
+    "meta-ads-creative-director": {
+        "feed1x1": "1:1", "feed4x5": "4:5", "story9x16": "9:16",
+    },
+    "rednote-cover-maker": {
+        "ugc-feed": "1:1", "ugc-story": "9:16",
+    },
+}
+
+
+def ratio_from_example_preset_992(sid: object, preset_id: object = "") -> str | None:
+    key = resolve(sid)
+    if not key:
+        return None
+    pid = str(preset_id or "").strip().rstrip(".,;:")
+    return EXAMPLE_RATIO_PRESETS_992.get(key, {}).get(pid) or None
 
 RATIO_REFUSAL_994 = "_ratio_refusal_994"
 STRICT_RATIO_994 = "_strict_user_ratio_994"
@@ -856,6 +876,9 @@ def apply_generate(args: dict | None, current_skill: str = "", user_text: str | 
         # or clears the marker. Without it (the relay), only a marker matching the table is kept.
         if user_text is not None:
             picked = user_ratio(sid, user_text)
+            if not picked:
+                picked = ratio_from_example_preset_992(
+                    sid, current_preset or preset_from_text(user_text))
             if not picked and ref_image and args.get("refs") and sid in REF_CARD_RATIO:
                 # #905: no ratio in the user message, but a reference: follow the card inside it.
                 # Decided from pixels on the server (bot/ref_orientation.py); the model has no say.
@@ -865,6 +888,8 @@ def apply_generate(args: dict | None, current_skill: str = "", user_text: str | 
         else:
             picked = str(args.get(USER_RATIO_KEY) or "")
             picked = picked if picked in USER_RATIOS.get(sid, {}) else None
+            if not picked:
+                picked = ratio_from_example_preset_992(sid, current_preset)
     user_picked = bool(picked)
     if not picked and sid in FOLLOW_REF_SIZES:
         picked = ref_ratio(sid, ref_image) if ref_image is not None else None
@@ -1049,13 +1074,21 @@ def _run_hint_declared(name: object, user_text: str = "", ref_image: bytes | Non
     row = OUTPUTS[sid]
     if sid in TYPE_OUTPUTS_982:
         requested = requested_ratio_994(user_text)
+        from_preset = None
+        if not requested:
+            from_preset = ratio_from_example_preset_992(sid, preset_id)
+            requested = from_preset
         if requested:
             if requested not in USER_RATIOS[sid]:
                 return "Output lock: " + ratio_refusal_994(requested)["error"] + " Do not generate or silently use a default."
             w, h = USER_RATIOS[sid][requested]
             lo, hi = accepted_image_counts(sid, preset_id)
+            # template=id lets current_preset_from_messages / preset_from_text recover the
+            # selection on the #978/#979 lock line (the Style block itself is not user intent).
+            tagged = f" template={preset_id}" if from_preset and str(preset_id or "").strip() else ""
             return (f"Output lock: the user explicitly requested ratio {requested}; every IMAGE call uses "
-                    f"width={w} height={h} ratio={requested} count=1 skill={sid!r}. "
+                    f"width={w} height={h} ratio={requested} count=1 skill={sid!r}."
+                    f"{tagged} "
                     f"Keep this skill's delivery count {lo}..{hi} and every uploaded reference unchanged. "
                     "User ratio overrides typed default, call-plan and reference ratios; never substitute a default. "
                     "The selected provider schema must support it; otherwise refuse with alternatives, do not switch models. "

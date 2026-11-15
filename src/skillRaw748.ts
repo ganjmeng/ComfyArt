@@ -70,6 +70,20 @@ export const PRODUCT_OPTIONAL_748: Record<string, readonly string[]> = {
   'universal-multi-angle-grid': ['user_image', 'user_requirement'],
 }
 
+/** #992 — example-card skills whose source P() options must survive applyRaw748.
+ *  Kind stays `example`; the examples[] carousel is kept. These are selectable
+ *  Style / ratio / page-focus chips, not raw template tiles. Logo and the
+ *  other no-P() example cards are intentionally absent. */
+export const EXAMPLE_PRESET_SKILLS_992 = [
+  'meta-ads-creative-director',
+  'rednote-cover-maker',
+  'mobile-app-visual-design',
+  'web-product-visual-design',
+  'marketing-campaign-generator',
+] as const
+export const isExamplePresetSkill992 = (id: string) =>
+  (EXAMPLE_PRESET_SKILLS_992 as readonly string[]).includes(id)
+
 export function applyRaw748(skill: Skill): Skill {
   const r = SKILLS_748[skill.id]
   if (!r) return skill
@@ -77,7 +91,18 @@ export function applyRaw748(skill: Skill): Skill {
   const ours = COPY[skill.id] ?? {}
   const description = loc(ours.description) ?? skill.description
   const optional = new Set(PRODUCT_OPTIONAL_748[skill.id] ?? [])
-  if (r.kind === 'example') return { ...skill, name, description, presets: undefined, inputs: (r.inputs ?? []).map((q) => toInput(q, ours.placeholders, optional)), ...examplesFromHighlights(skill, r) }
+  if (r.kind === 'example') {
+    // #992: keep source P() on the five restored skills so a selection can enter
+    // the #978 send body. Do not invent template thumbnails; chips are text-only.
+    // Every other example card, including logo-material-explorer, stays no-template.
+    const keep = isExamplePresetSkill992(skill.id) ? skill.presets : undefined
+    return {
+      ...skill, name, description, presets: keep,
+      ...(keep?.length ? { presetChips: true } : {}),
+      inputs: (r.inputs ?? []).map((q) => toInput(q, ours.placeholders, optional)),
+      ...examplesFromHighlights(skill, r),
+    }
+  }
   const tpls = r.templates ?? []
   if (!tpls.length) return { ...skill, name, description }
   const presets = tpls.map((t, i): SkillPreset => {

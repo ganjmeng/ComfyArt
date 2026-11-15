@@ -394,9 +394,12 @@ async def _open_skill(p, app_url, lang, sid, sockets, dialog_ref=None, dialog_te
     dlg = pg.locator(f'[data-testid="skill-run-dialog"][data-skill="{sid}"]')
     await dlg.wait_for(timeout=15000)
     if preset_id is not None:
+        # #992 example-card options are text chips; template skills keep image tiles.
+        chip = dlg.locator(f'[data-testid="skill-run-preset-chip"][data-preset="{preset_id}"]')
         tile = dlg.locator(f'[data-testid="skill-run-preset"][data-preset="{preset_id}"]')
-        await tile.scroll_into_view_if_needed()
-        await tile.click()
+        target = chip if await chip.count() else tile
+        await target.scroll_into_view_if_needed()
+        await target.click()
     # Default input: the dialog's one upload field when the skill needs one base photo.
     if dialog_ref is not None:
         await dlg.locator('input[type="file"]').first.set_input_files(str(dialog_ref))

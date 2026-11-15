@@ -370,3 +370,29 @@ def test_title_only_restore_would_still_fail_delivery():
             if delivery.get("reason") == "missing-runtime-preset":
                 pytest.fail(f"{sid}/{pid} is still cleared by applyRaw748: {delivery}")
             assert delivery["payload"]["preset"]["prompt"].startswith("Style:")
+
+
+def test_rollback_ratio_mapping_turns_payload_assertions_red(monkeypatch):
+    """Real seam rollback: dropping the #992 preset→#994 mapping leaves the mixed pack."""
+    from ComfyArt.bot import skill_output as so
+    monkeypatch.setattr(so, "ratio_from_example_preset_992", lambda *a, **k: None)
+    sid = "meta-ads-creative-director"
+    got = pack_payloads(sid, preset_id="feed1x1", prompt=source_prompt(sid, "feed1x1"),
+                        attempted=DEFAULT_PACKS[sid])
+    with pytest.raises(AssertionError):
+        assert sizes(got) == uniform("1:1", 3)
+    assert sizes(got) == list(DEFAULT_PACKS[sid])
+
+
+
+def test_lock_template_id_does_not_swallow_trailing_period():
+    """A sentence period after template=id must not become part of the preset id."""
+    from ComfyArt.bot.skill_output import preset_from_text, run_hint, ratio_from_example_preset_992
+    hint = run_hint("meta-ads-creative-director", "", None, preset_id="feed1x1")
+    assert preset_from_text(hint) == "feed1x1"
+    # Historical wording put a period immediately after the id; the recognizer must still be exact.
+    stale = ("Output lock: the user explicitly requested ratio 1:1; every IMAGE call uses "
+             "width=1024 height=1024 ratio=1:1 count=1 skill='meta-ads-creative-director' "
+             "template=feed1x1. Keep this skill's delivery count 3..3.")
+    assert preset_from_text(stale) == "feed1x1"
+    assert ratio_from_example_preset_992("meta-ads-creative-director", "feed1x1.") == "1:1"

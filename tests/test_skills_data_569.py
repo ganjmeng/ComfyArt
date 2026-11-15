@@ -70,10 +70,13 @@ def test_effect_skills_only_upload_and_note(got):
 
 @needs_node
 def test_social_fashion_ugc_presets_keep_examples(got):
-    # #748 Final: rednote-cover-maker is an example card — no templates, left carousel = our washed examples
+    # #992: still an example card (left washed examples kept). The two Fashion UGC
+    # options are restored as selectable presets, not a third template and not
+    # an emptied runtime list.
     s = got["skills"]["rednote-cover-maker"]
     assert s["examples"], "rednote-cover-maker"
-    assert s["presets"] is None, "rednote-cover-maker"
+    assert [p["id"] for p in (s["presets"] or [])] == ["ugc-feed", "ugc-story"], s["presets"]
+    assert all(p["prompt"] and p["en"] for p in s["presets"]), s["presets"]
 
 
 @needs_node
