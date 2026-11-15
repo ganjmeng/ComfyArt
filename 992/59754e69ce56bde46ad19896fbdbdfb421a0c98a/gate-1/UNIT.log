@@ -1,0 +1,163 @@
+........................................................................ [  1%]
+........................................................................ [  2%]
+........................................................................ [  4%]
+........................................................................ [  5%]
+........................................................................ [  7%]
+........................................................................ [  8%]
+..........................................................s............. [ 10%]
+........................................................................ [ 11%]
+........................................................................ [ 13%]
+........................................................................ [ 14%]
+........................................................................ [ 16%]
+........................................................................ [ 17%]
+...............................................ss....................... [ 18%]
+................................................................F....... [ 20%]
+........................................................................ [ 21%]
+........................................................................ [ 23%]
+........................................................................ [ 24%]
+........................................................................ [ 26%]
+........................................................................ [ 27%]
+........................................................................ [ 29%]
+........................................................................ [ 30%]
+........................................sssssssssssssss................. [ 32%]
+........................................................................ [ 33%]
+.....................................ss................................. [ 35%]
+........................................................................ [ 36%]
+........................................................................ [ 37%]
+........................................................................ [ 39%]
+........................................................................ [ 40%]
+........................................................................ [ 42%]
+........................................................................ [ 43%]
+........................................................................ [ 45%]
+........................................................................ [ 46%]
+........................................................................ [ 48%]
+........................................................................ [ 49%]
+........................................................................ [ 51%]
+........................................................................ [ 52%]
+........................................................................ [ 53%]
+........................................................................ [ 55%]
+........................................................................ [ 56%]
+........................................................................ [ 58%]
+...........................F............................................ [ 59%]
+........................................................................ [ 61%]
+........................................................................ [ 62%]
+........................................................................ [ 64%]
+........................................................................ [ 65%]
+........................................................................ [ 67%]
+........................................................................ [ 68%]
+........................................................................ [ 70%]
+........................................................................ [ 71%]
+........................................................................ [ 72%]
+........................................ssss............................ [ 74%]
+........................................................................ [ 75%]
+........................................................................ [ 77%]
+........................................................................ [ 78%]
+.............................F.......................................... [ 80%]
+........................................................................ [ 81%]
+........................................................................ [ 83%]
+........................................................................ [ 84%]
+........................................................................ [ 86%]
+.s...................................................................... [ 87%]
+........................................................................ [ 88%]
+........................................................................ [ 90%]
+........................................................................ [ 91%]
+........................................................................ [ 93%]
+........................................................................ [ 94%]
+........................................................................ [ 96%]
+........................................................................ [ 97%]
+........................................................................ [ 99%]
+.........................................                                [100%]
+=================================== FAILURES ===================================
+_________ test_qa4_clothing_swap_drops_rule6_and_708_others_unchanged __________
+
+    def test_qa4_clothing_swap_drops_rule6_and_708_others_unchanged():
+        """QA 4: clothing-swap has no Rule 6 / #708 content; every other skill and shared block unchanged."""
+        entry = _skill_entry(SKILLS, "clothing-swap")
+        instr = _clothing_swap_instructions()
+        for needle in (
+            "PORTRAIT_SHOTS_708",
+            "Shot rules (#708)",
+            "6) Angles:",
+            "must not be all front-on and centered",
+            "at most ONE frontal 0° eye-level shot per batch",
+            "A single-image run is never frontal-centered",
+            "subject on the left third",
+            "Write each image prompt in English with these slots",
+            "35mm f/2.8",
+            "named directional light",
+            "editorial color grade",
+        ):
+            assert needle not in entry, needle
+            assert needle not in instr, needle
+    
+        # Shared blocks: initializer bytes identical to the pinned base hashes.
+        for name, expected in SHARED_CONST_SHA256.items():
+            assert hashlib.sha256(_shared_const(SKILLS, name).encode()).hexdigest() == expected, name
+        assert hashlib.sha256(_portrait_shots_708_const(SKILLS).encode()).hexdigest() == PORTRAIT_SHOTS_708_CONST_SHA256
+    
+        # Every other skill entry (studio-model, ai-model, and the rest) is locked by one digest.
+        ids = _all_skill_ids(SKILLS)
+        assert ids == ALL_SKILL_IDS
+        excluded = {"clothing-swap", "youtube-channel-banner", "portrait-studio", "before-after",
+                    "product-to-packaging",
+                    # #982: the two output contracts deliberately add a Delivery line.
+                    "logo-material-explorer", "character-sheet-design"}
+>       assert _entries_sha256(SKILLS, [sid for sid in ids if sid not in excluded]) == UNCHANGED_SKILL_ENTRIES_SHA256
+E       AssertionError: assert '9453a540ed58...50afde206f2fc' == '9631f4a03048...440117731e627'
+E         
+E         - 9631f4a03048808da994ddbff1533533e97651edfae91dd8624440117731e627
+E         + 9453a540ed58543e89af2b464ae69b2d4d9a2f66635dff40b2d50afde206f2fc
+
+tests/test_clothing_swap_911.py:637: AssertionError
+_ test_portrait_studio_and_self_check_match_pinned_sha256[bot/skill_output.py] _
+
+path = 'bot/skill_output.py'
+
+    @pytest.mark.parametrize("path", ["api/portrait_studio.py", "bot/self_check.py", "bot/skill_output.py"])
+    def test_portrait_studio_and_self_check_match_pinned_sha256(path):
+>       assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == PINNED_SHA256[path], path
+E       AssertionError: bot/skill_output.py
+E       assert '3b2b14785d55...47611180b528d' == 'd53c3d6c7222...9b27af163bbe8'
+E         
+E         - d53c3d6c722232ce0bf5665788de893ab44227dee435faef64e9b27af163bbe8
+E         + 3b2b14785d5542104b3532e60d6285ffa2d2c33cb14b0fb4d4547611180b528d
+
+tests/test_product_packaging_flow.py:525: AssertionError
+_______________________ test_meta_is_template_count_only _______________________
+
+got = {'meta': {'product-tvc-advertisement-generator': {'templates': 7, 'usage': 0}, 'universal-multi-angle-grid': None, 'br...7, 'universal-multi-angle-grid': 11, 'brand-identity-director': 6, 'character-sheet-design': 8, ...}, 'old': None, ...}
+
+    @needs_node
+    def test_meta_is_template_count_only(got):
+        # #581: skillMeta also carries usage (0 when store empty). No presets + no usage → null.
+        for sid, n in got["presets"].items():
+            # #644 design: the count is the dialog's real thumbnails (examples + preset tiles with media), not presets[]
+>           assert (got["meta"][sid] is None) == (n == 0 or got["thumbs"][sid] == 0), sid  # 0 thumbnails → no label
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError: meta-ads-creative-director
+E           assert (None is None) == ((4 == 0 or 4 == 0))
+
+tests/test_skill_modal_541.py:37: AssertionError
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_agent_loop_audit_410.py:270: set AUDIT410_SHOTS to write PNGs
+SKIPPED [1] tests/test_bot_providers.py:184: claude CLI not found (resolve_claude_command() is None); _build_argv needs the binary — install Claude Code or skip on this host
+SKIPPED [1] tests/test_bot_providers.py:201: claude CLI not found (resolve_claude_command() is None); _build_argv needs the binary — install Claude Code or skip on this host
+SKIPPED [1] tests/test_design_573_78_shots.py:28: set DESIGN_573_78_SHOOT=1 to re-shoot
+SKIPPED [1] tests/test_design_576_78_shots.py:28: set DESIGN_576_78_SHOOT=1 to re-shoot
+SKIPPED [1] tests/test_design_581_78_shots.py:28: set DESIGN_581_78_SHOOT=1 to re-shoot
+SKIPPED [1] tests/test_design_583_78_shots.py:28: set DESIGN_583_78_SHOOT=1 to re-shoot
+SKIPPED [1] tests/test_design_590_78_shots.py:31: set DESIGN_590_78_SHOOT=1 to re-shoot
+SKIPPED [1] tests/test_design_595_78_shots.py:31: set DESIGN_595_78_SHOOT=1 to re-shoot
+SKIPPED [1] tests/test_design_601_78_shots.py:28: set DESIGN_601_78_SHOOT=1 to re-shoot
+SKIPPED [1] tests/test_design_607_78_shots.py:31: set DESIGN_607_78_SHOOT=1 to re-shoot
+SKIPPED [1] tests/test_design_608_78_shots.py:31: set DESIGN_608_78_SHOOT=1 to re-shoot
+SKIPPED [1] tests/test_design_622_78_shots.py:28: set DESIGN_622_78_SHOOT=1 to re-shoot
+SKIPPED [1] tests/test_design_623_78_shots.py:28: set DESIGN_623_78_SHOOT=1 to re-shoot
+SKIPPED [1] tests/test_design_635_78_shots.py:28: set DESIGN_635_78_SHOOT=1 to re-shoot
+SKIPPED [1] tests/test_design_636_78_shots.py:28: set DESIGN_636_78_SHOOT=1 to re-shoot
+SKIPPED [1] tests/test_design_637_78_shots.py:21: set DESIGN_637_78_SHOOT=1
+SKIPPED [1] tests/test_design_638_78_shots.py:31: set DESIGN_638_78_SHOOT=1 to re-shoot
+SKIPPED [2] tests/test_hold_751.py:114: needs the masked raw inputs
+SKIPPED [4] tests/test_run_stop_render_393.py:274: SHOT_DIR not set
+SKIPPED [1] tests/test_skills_create_audit_411.py:191: set AUDIT411_SHOTS to write PNGs
+3 failed, 4909 passed, 25 skipped, 630 deselected in 455.22s (0:07:35)

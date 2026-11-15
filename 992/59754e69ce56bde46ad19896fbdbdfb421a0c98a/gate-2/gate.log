@@ -1,0 +1,14 @@
+992 TSC_OK
+992 UNIT: collected=4937 collect_exit=0
+992 UNIT node-unit: 483 tests (node v24.22.1)
+992 UNIT: duration=434s
+992 UNIT: 4912 passed, 25 skipped, 630 deselected in 431.34s (0:07:11)
+992 UNIT: exit=0
+992 BUILD_OK(local, not committed)
+992 E2E: collected=234 collect_exit=0
+992 E2E: duration=537s
+992 E2E: 234 passed, 5333 deselected in 534.82s (0:08:54)
+992 E2E: exit=0
+ M docs/qa/707-local-canvas/before-after-placed.png
+ M docs/qa/707-local-canvas/game-art-placed.png
+992 GATE_EXIT=0

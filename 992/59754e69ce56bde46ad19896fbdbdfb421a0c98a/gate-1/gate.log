@@ -1,0 +1,16 @@
+992 TSC_OK
+992 UNIT: collected=4937 collect_exit=0
+992 UNIT node-unit: 483 tests (node v24.22.1)
+992 UNIT: duration=458s
+992 UNIT: 3 failed, 4909 passed, 25 skipped, 630 deselected in 455.22s (0:07:35)
+992 UNIT: exit=1
+992 GATE_FAIL: UNIT pytest exit 1
+992 BUILD_OK(local, not committed)
+992 E2E: collected=234 collect_exit=0
+992 E2E: duration=546s
+992 E2E: 234 passed, 5333 deselected in 542.28s (0:09:02)
+992 E2E: exit=0
+ M docs/qa/707-local-canvas/before-after-placed.png
+ M docs/qa/707-local-canvas/game-art-placed.png
+992 FAILURE_LOGS: /tmp/gate_992_mZ3n.failure.tar.gz (tracebacks in /tmp/gate_992_mZ3n)
+992 GATE_EXIT=1
