@@ -56,9 +56,17 @@ def _posts(reqs):
 async def test_deep_link_to_yingzao_attaches_after_812_unhide(app_url, mock_ws, fake_agent, lang, theme):  # noqa: F811
     async with pw.async_playwright() as p:
         browser, pg = await _open(p, app_url + f"?project=p673link{lang}&new=1&skill=yingzao&mode=agent", lang, theme)
-        # #812: listed again — no hidden notice; chip may show name
-        assert await pg.locator(NOTICE).count() == 0
+        # #812: listed again — no hidden notice; composer-skill-chip shows the
+        # localized skill name. takeHandoff clears ?skill= before attachSkill
+        # (src/home/handoff.ts); URL cleanup is not a sync mount. Wait for the
+        # chip with Playwright expect, then re-check the original contracts.
+        # Existing test synchronization-gap fix, not a flake waiver.
         name = LOC[lang].get("skills.yingzao")
+        if name:
+            chip = pg.get_by_test_id("composer-skill-chip")
+            await pw.expect(chip).to_be_visible(timeout=15000)
+            await pw.expect(chip).to_contain_text(name, timeout=15000)
+        assert await pg.locator(NOTICE).count() == 0
         if name:
             assert name in await pg.locator(".ca-composer").inner_text()
         await _shot(pg, f"yingzao-link-listed-{lang}-{theme}")
