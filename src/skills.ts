@@ -1,5 +1,5 @@
 import { atom } from 'tldraw'
-import { applyRaw748, assetDir, isExamplePresetSkill992 } from './skillRaw748'
+import { applyRaw748, assetDir } from './skillRaw748'
 import { unzipSync } from 'fflate'
 
 import { deleteUserFile, listUserFiles, readUserText, uploadImage, viewUrl, writeUserText } from './comfy'
@@ -1405,10 +1405,7 @@ export function skillThumbCount(skill: Skill): number {
  *  usage from local `loadSkillUsage` (never seeded). No presets and no usage → null. */
 export function skillMeta(skill: Skill): { templates: number; usage: number } | null {
   // #569 ruling kept: effect skills (no presets) show no 「N 个模板」 line; template skills count real thumbnails (#644)
-  // #992: example-card Style chips must not count the examples[] carousel as templates.
-  const templates = isExamplePresetSkill992(skill.id)
-    ? 0
-    : (skill.presets?.length ? skillThumbCount(skill) : 0)
+  const templates = skill.presets?.length ? skillThumbCount(skill) : 0
   const usage = getSkillUsage(skill.id)
   if (!templates && !usage) return null
   return { templates, usage }

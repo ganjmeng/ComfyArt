@@ -1,4 +1,4 @@
-/** #992: runtime applyRaw748 inventories + real #978 sendToAgent for example-card presets. $0, no network. */
+/** #992: runtime applyRaw748 inventories for default UI (no example-card chips) plus source P() and optional send probes. $0, no network. */
 import fs from 'node:fs'
 import path from 'node:path'
 import { sendToAgent } from '../../../src/agent'
@@ -48,6 +48,7 @@ async function deliver(skill: Skill | undefined, presetId: string) {
 const runtime = Object.fromEntries(BUILTIN_SKILLS.map((s) => [s.id, {
   kind: SKILLS_748[s.id]?.kind ?? null,
   presets: (s.presets ?? []).map((p) => ({ id: p.id, zh: p.name.zh, en: p.name.en, prompt: p.prompt ?? '', image: p.image ?? null })),
+  presetChips: !!s.presetChips,
   examples: s.examples ?? null,
   inputs: (s.inputs ?? []).map((f) => ({ key: f.key, type: f.type, required: !!f.required, zh: f.label.zh, en: f.label.en ?? null })),
   instructions: s.instructions,

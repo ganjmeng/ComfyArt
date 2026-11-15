@@ -12,6 +12,8 @@ export default {
   platform: 'node',
   output: { format: 'esm', file: process.env.OUT },
   plugins: [{ name: 'stubs', resolveId(id) {
+    const base = path.basename(id).replace(/\.ts$/, '')
+    if (process.env.CA992_SKILL_RAW && base === 'skillRaw748') return process.env.CA992_SKILL_RAW
     if (!id.startsWith('.')) return stubs[id] ?? null
     return stubs[path.basename(id)] ?? null
   } }],

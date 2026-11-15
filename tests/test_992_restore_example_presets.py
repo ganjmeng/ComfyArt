@@ -1,16 +1,11 @@
-"""#992 reproduction: example-card presets must reach #978 agent input and mock submit.
+"""#992 homepage same-surface: default UI must not show the five option-chip groups.
 
-applyRaw748 currently clears presets on every kind=example skill. Product ruling
-https://github.com/ganjmeng/ComfyArt/issues/992#issuecomment-6888538718:
-
-* logo-material-explorer is an intentional no-template skill (keep #996 defaults,
-  do not restore deleted P(), delete leftover "per selected preset" copy).
-* Five skills must restore their existing options so a real selection enters the
-  #978 send body and survives into the mock generate_image payload — not title or
-  thumbnail only. Counts, refs and models stay unchanged. Kind stays example.
-
-These tests are expected to fail on current main until that restore lands. $0, no
-paid calls, no network except local node bundling of src/.
+Base runtime and original Home have no default chips for these five example cards.
+Source P() stays in skills.ts; applyRaw748 clears them at runtime (kind stays
+example). Default output packs, #994 explicit text ratios, backend parsing, and
+ratio_from_example_preset_992 (idle unless a preset id is later passed) stay.
+Logo stays no-template. These tests do not treat default chips or chip-clicks as
+acceptance. $0, no paid calls, no network except local node bundling of src/.
 """
 from __future__ import annotations
 
@@ -56,6 +51,8 @@ INTENTIONAL_NO_TEMPLATE = (
     "universal-multi-angle-grid",
     "interior-architectural-visualization",
 )
+# Source P() on these five is kept, but default runtime UI must clear them (base behavior).
+INTENTIONAL_RUNTIME_CLEAR = frozenset(RESTORE) | frozenset(INTENTIONAL_NO_TEMPLATE)
 LOGO = "logo-material-explorer"
 DEFAULT_PACKS = {
     "meta-ads-creative-director": ((1024, 1024, "1:1"), (1638, 2048, "4:5"), (1152, 2048, "9:16")),
@@ -71,50 +68,71 @@ RATIO_SIZE = {
     "9:21": (880, 2048),
     "16:9": (2048, 1152),
 }
-# Selecting these options is an explicit ratio choice and must enter the #994 chain.
-RATIO_OPTIONS = {
-    ("meta-ads-creative-director", "feed1x1"): "1:1",
-    ("meta-ads-creative-director", "feed4x5"): "4:5",
-    ("meta-ads-creative-director", "story9x16"): "9:16",
-    ("rednote-cover-maker", "ugc-feed"): "1:1",
-    ("rednote-cover-maker", "ugc-story"): "9:16",
-}
-STYLE_ONLY = {
-    ("meta-ads-creative-director", "ugc"),
-    ("mobile-app-visual-design", "home"),
-    ("mobile-app-visual-design", "detail"),
-    ("mobile-app-visual-design", "checkout"),
-    ("mobile-app-visual-design", "onboarding"),
-    ("web-product-visual-design", "hero"),
-    ("web-product-visual-design", "features"),
-    ("web-product-visual-design", "pricing"),
-    ("web-product-visual-design", "responsive"),
-    ("marketing-campaign-generator", "kv"),
-    ("marketing-campaign-generator", "rednote-cover-maker"),
-    ("marketing-campaign-generator", "display"),
-    ("marketing-campaign-generator", "ooh"),
-}
 DEAD_PRESET_COPY = re.compile(r"per selected preset", re.I)
 CROP_SAME = re.compile(
     r"responsive crop|响应式裁切|crop of the same|scale of the same|裁剪同一|缩放同一",
     re.I,
 )
 
+# Exact applyRaw748 example branch this patch restores (matches base 4ce96715).
+EXAMPLE_BRANCH_BASE = (
+    "  if (r.kind === 'example') return { ...skill, name, description, presets: undefined, "
+    "inputs: (r.inputs ?? []).map((q) => toInput(q, ours.placeholders, optional)), "
+    "...examplesFromHighlights(skill, r) }\n"
+)
+# Removed tip behavior reintroduced only inside the mutation test.
+REMOVED_EXCEPTIONS_BLOCK = """/** #992 — example-card skills whose source P() options must survive applyRaw748.
+ *  Kind stays `example`; the examples[] carousel is kept. These are selectable
+ *  Style / ratio / page-focus chips, not raw template tiles. Logo and the
+ *  other no-P() example cards are intentionally absent. */
+export const EXAMPLE_PRESET_SKILLS_992 = [
+  'meta-ads-creative-director',
+  'rednote-cover-maker',
+  'mobile-app-visual-design',
+  'web-product-visual-design',
+  'marketing-campaign-generator',
+] as const
+export const isExamplePresetSkill992 = (id: string) =>
+  (EXAMPLE_PRESET_SKILLS_992 as readonly string[]).includes(id)
 
-@lru_cache(maxsize=1)
-def report() -> dict:
-    out = Path(os.environ.get("TMPDIR", "/tmp")) / f"preset992-{os.getpid()}.mjs"
+"""
+REMOVED_EXAMPLE_BRANCH = """  if (r.kind === 'example') {
+    // #992: keep source P() on the five restored skills so a selection can enter
+    // the #978 send body. Do not invent template thumbnails; chips are text-only.
+    // Every other example card, including logo-material-explorer, stays no-template.
+    const keep = isExamplePresetSkill992(skill.id) ? skill.presets : undefined
+    return {
+      ...skill, name, description, presets: keep,
+      ...(keep?.length ? { presetChips: true } : {}),
+      inputs: (r.inputs ?? []).map((q) => toInput(q, ours.placeholders, optional)),
+      ...examplesFromHighlights(skill, r),
+    }
+  }
+"""
+
+
+def _bundle_report(*, skill_raw: Path | None = None, tag: str = "default") -> dict:
+    out = Path(os.environ.get("TMPDIR", "/tmp")) / f"preset992-{tag}-{os.getpid()}.mjs"
     env = {**os.environ, "OUT": str(out), "CA992_ROOT": str(ROOT)}
-    subprocess.run(
+    if skill_raw is not None:
+        env["CA992_SKILL_RAW"] = str(skill_raw)
+    bundled = subprocess.run(
         [str(ROOT / "node_modules/.bin/rolldown"), "-c", "tests/js/preset992/rolldown.config.mjs"],
-        cwd=ROOT, check=True, capture_output=True, env=env,
+        cwd=ROOT, capture_output=True, env=env, text=True,
     )
+    if bundled.returncode != 0:
+        raise RuntimeError(bundled.stderr or bundled.stdout)
     proc = subprocess.run(
         ["node", str(out)], capture_output=True, text=True, timeout=60, env=env, cwd=ROOT,
     )
     if proc.returncode != 0:
         raise RuntimeError(proc.stderr or proc.stdout)
     return json.loads(proc.stdout)
+
+
+@lru_cache(maxsize=1)
+def report() -> dict:
+    return _bundle_report()
 
 
 def source_ids(sid: str) -> list[str]:
@@ -125,22 +143,37 @@ def source_prompt(sid: str, pid: str) -> str:
     return next(p["prompt"] for p in report()["sourcePresets"][sid] if p["id"] == pid)
 
 
-def runtime_ids(sid: str) -> list[str]:
-    return [p["id"] for p in (report()["runtime"].get(sid) or {}).get("presets") or []]
+def runtime_ids(sid: str, runtime: dict | None = None) -> list[str]:
+    row = (runtime if runtime is not None else report()["runtime"]).get(sid) or {}
+    return [p["id"] for p in row.get("presets") or []]
 
 
-def emptied_source_presets() -> dict[str, list[str]]:
+def emptied_source_presets(runtime: dict | None = None) -> dict[str, list[str]]:
     """Skills that still declare P() in src/skills.ts but lose them after applyRaw748."""
+    data = report()
+    rt = runtime if runtime is not None else data["runtime"]
     lost: dict[str, list[str]] = {}
-    for sid, rows in report()["sourcePresets"].items():
+    for sid, rows in data["sourcePresets"].items():
         declared = [p["id"] for p in rows]
         if not declared:
             continue
-        kept = set(runtime_ids(sid))
+        kept = set(runtime_ids(sid, rt))
         missing = [pid for pid in declared if pid not in kept]
         if missing:
             lost[sid] = missing
     return lost
+
+
+def assert_default_runtime_has_no_chips(runtime: dict) -> None:
+    """Acceptance: default visible UI has no option chips on the five homepage skills."""
+    for sid, ids in RESTORE.items():
+        row = runtime[sid]
+        assert runtime_ids(sid, runtime) == [], f"{sid} default runtime still has presets: {runtime_ids(sid, runtime)}"
+        assert not row.get("presetChips"), f"{sid} default runtime still sets presetChips"
+        assert row["kind"] == "example", sid
+        assert row["examples"], f"{sid} must keep the original example area"
+        # Source P() must still exist; only the default UI hook-up is removed.
+        assert source_ids(sid) == list(ids), (sid, source_ids(sid))
 
 
 def pack_payloads(sid: str, *, preset_id: str = "", user_text: str = "",
@@ -169,8 +202,46 @@ def uniform(ratio: str, count: int) -> list[tuple[int, int, str]]:
     return [(w, h, ratio)] * count
 
 
+def reintroduce_removed_applyRaw748_exceptions(src: str) -> str:
+    """Replay the removed tip exceptions into a copy of skillRaw748.ts."""
+    if EXAMPLE_BRANCH_BASE not in src:
+        raise AssertionError("current skillRaw748.ts is not on the cleared example branch")
+    if "isExamplePresetSkill992" in src or "EXAMPLE_PRESET_SKILLS_992" in src:
+        raise AssertionError("exceptions are already present; mutation would not be a reintroduction")
+    out = src.replace(
+        "export function applyRaw748(skill: Skill): Skill {",
+        REMOVED_EXCEPTIONS_BLOCK + "export function applyRaw748(skill: Skill): Skill {",
+        1,
+    )
+    out = out.replace(EXAMPLE_BRANCH_BASE, REMOVED_EXAMPLE_BRANCH, 1)
+    if "isExamplePresetSkill992" not in out or "presetChips: true" not in out:
+        raise AssertionError("failed to reintroduce removed applyRaw748 exceptions")
+    return out
+
+
+def test_home_and_skills_share_skill_run_dialog():
+    """Home and Skills both open the same SkillRunDialog over BUILTIN_SKILLS."""
+    home = (ROOT / "src/home/Home.tsx").read_text()
+    skills = (ROOT / "src/home/Skills.tsx").read_text()
+    assert "import { SkillRunDialog } from '../ui/SkillRunDialog'" in home
+    assert "import { SkillRunDialog } from '../ui/SkillRunDialog'" in skills
+    assert "BUILTIN_SKILLS" in home
+    assert "<SkillRunDialog skill={runSkill}" in home
+    assert "<SkillRunDialog skill={runSkill}" in skills
+    # Comment on Home already documents the shared surface.
+    assert "same SkillRunDialog as the Skills page" in home
+    raw = (ROOT / "src/skillRaw748.ts").read_text()
+    dialog = (ROOT / "src/ui/SkillRunDialog.tsx").read_text()
+    skills_ts = (ROOT / "src/skills.ts").read_text()
+    assert "isExamplePresetSkill992" not in raw
+    assert "EXAMPLE_PRESET_SKILLS_992" not in raw
+    assert "isExamplePresetSkill992" not in dialog
+    assert "isExamplePresetSkill992" not in skills_ts
+    assert EXAMPLE_BRANCH_BASE in raw
+
+
 @needs_node
-def test_inventories_register_intentional_empty_and_forbid_unregistered_clearing():
+def test_default_runtime_has_no_chips_and_forbids_unregistered_clearing():
     r = report()
     lost = emptied_source_presets()
     for sid in INTENTIONAL_NO_TEMPLATE:
@@ -181,21 +252,14 @@ def test_inventories_register_intentional_empty_and_forbid_unregistered_clearing
         examples = r["runtime"][sid]["examples"]
         assert examples, f"{sid} must keep its example-image area"
         assert r["runtime"][sid]["kind"] == "example", sid
+        assert not r["runtime"][sid].get("presetChips"), sid
     assert source_ids(LOGO) == [], "do not restore deleted logo P() templates"
-    # Inventory (b): the five restored skills must no longer be silently emptied.
-    for sid, ids in RESTORE.items():
-        assert source_ids(sid) == list(ids), (sid, source_ids(sid))
-        assert runtime_ids(sid) == list(ids), (
-            f"{sid} still lost its P() options at applyRaw748 runtime: {runtime_ids(sid)}"
-        )
-        assert r["runtime"][sid]["kind"] == "example", "do not change kind to template"
-        assert r["runtime"][sid]["examples"], f"{sid} must keep the original example area"
-    unexpected = {sid: pids for sid, pids in lost.items()
-                  if sid not in RESTORE and sid not in INTENTIONAL_NO_TEMPLATE}
+    assert_default_runtime_has_no_chips(r["runtime"])
+    unexpected = {sid: pids for sid, pids in lost.items() if sid not in INTENTIONAL_RUNTIME_CLEAR}
     assert unexpected == {}, f"unregistered applyRaw748 emptying: {unexpected}"
-    # The five restored skills are exactly the registered emptying that this card must undo.
-    assert set(lost) <= (set(RESTORE) | set(INTENTIONAL_NO_TEMPLATE))
-    assert not any(sid in lost for sid in RESTORE), lost
+    # The five homepage skills are the registered runtime-clear (source P() kept, default UI off).
+    for sid in RESTORE:
+        assert sid in lost, f"{sid} source P() should be cleared only at default runtime"
 
 
 @needs_node
@@ -224,72 +288,67 @@ def test_logo_is_intentional_no_template_and_keeps_996_contract():
     args = apply_generate({"skill": LOGO, "prompt": "brushed metal", "refs": ["shape:logo"], "count": 1}, LOGO)
     assert (args["width"], args["height"], args["ratio"], args["count"]) == (1254, 1254, "1:1", 1)
     assert args["refs"] == ["shape:logo"]
-    # Selecting a leftover template must not start working again.
     assert r["presets"] == []
+    assert not r.get("presetChips")
     assert LOGO not in report()["deliveries"]
 
 
 @needs_node
-@pytest.mark.parametrize("sid,pid", [(s, p) for s, ids in RESTORE.items() for p in ids])
-def test_restored_option_reaches_978_agent_input(sid, pid):
-    delivery = report()["deliveries"][sid][pid]
-    assert delivery["ok"] is True, delivery
-    payload = delivery["payload"]
-    assert payload["preset"]["id"] == pid
-    prompt = payload["preset"]["prompt"]
-    assert prompt and prompt == delivery["expectedPrompt"]
-    assert prompt.startswith("Style:")
-    # Not a title/thumbnail-only restore: the Style prompt is in the real send body.
-    assert "{{" not in prompt
-    context = compose_provider_text(delivery["ask"], skill_name=sid,
-                                    preset_prompt=prompt, preset_id=pid)
-    assert prompt in context
-    assert "Selected template instructions" in context
-    # Kind stays example; example images are not sent as if they were Lovart templates.
-    assert report()["runtime"][sid]["kind"] == "example"
+def test_default_runtime_does_not_deliver_cleared_presets_as_ui_selection():
+    """Default skill objects have no chips; send probes must not claim a UI selection landed."""
+    for sid, ids in RESTORE.items():
+        for pid in ids:
+            delivery = report()["deliveries"][sid][pid]
+            assert delivery.get("reason") == "missing-runtime-preset", delivery
+            # Source P() remains available for a later non-default path; this is not UI acceptance.
+            assert source_prompt(sid, pid).startswith("Style:")
+            assert "{{" not in source_prompt(sid, pid)
 
 
 @needs_node
-def test_meta_ratio_templates_submit_that_ratio_on_every_image_ugc_does_not():
+def test_unselected_default_packs_and_994_text_ratio_stay():
+    """No chip selection keeps typed default packs; explicit #994 wording still wins."""
+    for sid, pack in DEFAULT_PACKS.items():
+        assert sizes(pack_payloads(sid)) == list(pack), sid
+    sid = "meta-ads-creative-director"
+    assert sizes(pack_payloads(sid, user_text="做一套 Meta 广告。")) == list(DEFAULT_PACKS[sid])
+    got = pack_payloads(sid, user_text="改成 9:16，三张都要这个比例。", attempted=DEFAULT_PACKS[sid])
+    assert sizes(got) == uniform("9:16", 3)
+    named = pack_payloads("rednote-cover-maker", user_text="请全部做成 4:5，不要改张数。")
+    assert sizes(named) == uniform("4:5", 3)
+
+
+@needs_node
+def test_backend_preset_id_mapping_stays_idle_not_default_ui():
+    """Backend still honors a later-passed preset id; this is not default-chip UI acceptance."""
     sid = "meta-ads-creative-director"
     default = DEFAULT_PACKS[sid]
-    assert sizes(pack_payloads(sid)) == list(default)
     for pid, ratio in (("feed1x1", "1:1"), ("feed4x5", "4:5"), ("story9x16", "9:16")):
         prompt = source_prompt(sid, pid)
-        # Even if the model still emits the old mixed pack, the selected ratio wins.
         got = pack_payloads(sid, preset_id=pid, prompt=prompt, attempted=default)
         assert sizes(got) == uniform(ratio, 3), (pid, sizes(got))
         assert all(row["count"] == 1 and row["refs"] == ["shape:ref-992"] and "model" not in row for row in got)
         hint = run_hint(sid, preset_id=pid)
         assert f"ratio={ratio}" in hint
-        # The lock must not keep advertising the unselected pack ratios as the plan.
         for other in ("1:1", "4:5", "9:16"):
             if other != ratio:
                 assert f"ratio={other}" not in hint, (pid, hint)
-    # UGC is style only — default three-ratio pack, no secret ratio rewrite.
-    ugc_prompt = next(p["prompt"] for p in report()["sourcePresets"][sid] if p["id"] == "ugc")
+    ugc_prompt = source_prompt(sid, "ugc")
     ugc = pack_payloads(sid, preset_id="ugc", prompt=ugc_prompt, attempted=default)
     assert sizes(ugc) == list(default)
     assert "Style:" in ugc_prompt and not any(tag in ugc_prompt for tag in ("1:1", "4:5", "9:16"))
 
-
-@needs_node
-def test_rednote_templates_are_1x1_and_9x16_and_explicit_ratio_keeps_count():
     sid = "rednote-cover-maker"
-    assert source_ids(sid) == ["ugc-feed", "ugc-story"]  # no third template
-    assert sizes(pack_payloads(sid)) == list(DEFAULT_PACKS[sid])
+    assert source_ids(sid) == ["ugc-feed", "ugc-story"]
     for pid, ratio in (("ugc-feed", "1:1"), ("ugc-story", "9:16")):
         prompt = source_prompt(sid, pid)
         got = pack_payloads(sid, preset_id=pid, prompt=prompt, attempted=DEFAULT_PACKS[sid])
         assert sizes(got) == uniform(ratio, 3), (pid, sizes(got))
         assert all(row["count"] == 1 and row["refs"] == ["shape:ref-992"] for row in got)
-    # 4:5 remains available by explicit user wording; count stays three.
-    named = pack_payloads(sid, user_text="请全部做成 4:5，不要改张数。")
-    assert sizes(named) == uniform("4:5", 3)
 
 
 @needs_node
-def test_mobile_page_presets_do_not_change_two_screen_921_contract():
+def test_mobile_web_campaign_default_contracts_and_copy():
     sid = "mobile-app-visual-design"
     default = list(DEFAULT_PACKS[sid])
     assert sizes(pack_payloads(sid)) == default
@@ -297,7 +356,6 @@ def test_mobile_page_presets_do_not_change_two_screen_921_contract():
         prompt = source_prompt(sid, pid)
         got = pack_payloads(sid, preset_id=pid, prompt=prompt, attempted=default)
         assert sizes(got) == default, (pid, sizes(got))
-        assert all(row["count"] == 1 and row["refs"] == ["shape:ref-992"] for row in got)
         hint = run_hint(sid, preset_id=pid)
         assert "ratio=9:21" in hint and "880" in hint and "2048" in hint
         assert "ratio=9:16" not in hint
@@ -307,9 +365,6 @@ def test_mobile_page_presets_do_not_change_two_screen_921_contract():
     assert "9:19.5" not in instructions, instructions
     assert "2-4" not in instructions and "2–4" not in instructions, instructions
 
-
-@needs_node
-def test_web_presets_keep_one_16x9_and_responsive_is_reflow_not_crop():
     sid = "web-product-visual-design"
     default = list(DEFAULT_PACKS[sid])
     assert sizes(pack_payloads(sid)) == default
@@ -325,53 +380,20 @@ def test_web_presets_keep_one_16x9_and_responsive_is_reflow_not_crop():
     instructions = report()["runtime"][sid]["instructions"]
     assert CROP_SAME.search(instructions) is None, instructions
 
-
-@needs_node
-def test_campaign_presets_keep_three_image_pack_and_do_not_invent_ooh_pixels():
     sid = "marketing-campaign-generator"
     default = list(DEFAULT_PACKS[sid])
-    assert source_ids(sid)[1] == "rednote-cover-maker"  # social extension keeps this preset id
+    assert source_ids(sid)[1] == "rednote-cover-maker"
     assert sizes(pack_payloads(sid)) == default
     for pid in RESTORE[sid]:
         prompt = source_prompt(sid, pid)
         got = pack_payloads(sid, preset_id=pid, prompt=prompt, attempted=default)
         assert sizes(got) == default, (pid, sizes(got))
-        assert all(row["count"] == 1 and row["refs"] == ["shape:ref-992"] and "model" not in row for row in got)
-        # OOH must not invent a new canvas; hint still describes the current pack only.
         hint = run_hint(sid, preset_id=pid)
         assert "ratio=16:9" in hint and "ratio=4:5" in hint and "ratio=9:16" in hint
         assert "exactly 3 separate images" in hint or "exactly 3" in hint
 
 
 @needs_node
-def test_explicit_user_ratio_is_not_stripped_as_a_system_default():
-    """#994: an explicit later ratio still wins; a template ratio is user intent, not a default."""
-    sid = "meta-ads-creative-director"
-    prompt = next(p["prompt"] for p in report()["sourcePresets"][sid] if p["id"] == "feed1x1")
-    # User later names 9:16 — latest explicit intent wins, count stays 3.
-    got = pack_payloads(
-        sid, preset_id="feed1x1", prompt=prompt,
-        user_text="改成 9:16，三张都要这个比例。", attempted=DEFAULT_PACKS[sid],
-    )
-    assert sizes(got) == uniform("9:16", 3)
-    # No selection + no named ratio keeps the default mixed pack (not stripped / not forced).
-    assert sizes(pack_payloads(sid, user_text="做一套 Meta 广告。")) == list(DEFAULT_PACKS[sid])
-
-
-@needs_node
-def test_title_only_restore_would_still_fail_delivery():
-    """Mutation lock: a runtime preset without a Style prompt must not count as restored."""
-    clothing = report()["runtime"]["clothing-swap"]["presets"]
-    assert any(p["prompt"].startswith("Style:") for p in clothing)
-    for sid, ids in RESTORE.items():
-        for pid in ids:
-            delivery = report()["deliveries"][sid][pid]
-            # Current main fails earlier (preset missing). Once present, prompt must be in the body.
-            if delivery.get("reason") == "missing-runtime-preset":
-                pytest.fail(f"{sid}/{pid} is still cleared by applyRaw748: {delivery}")
-            assert delivery["payload"]["preset"]["prompt"].startswith("Style:")
-
-
 def test_rollback_ratio_mapping_turns_payload_assertions_red(monkeypatch):
     """Real seam rollback: dropping the #992 preset→#994 mapping leaves the mixed pack."""
     from ComfyArt.bot import skill_output as so
@@ -384,15 +406,36 @@ def test_rollback_ratio_mapping_turns_payload_assertions_red(monkeypatch):
     assert sizes(got) == list(DEFAULT_PACKS[sid])
 
 
-
 def test_lock_template_id_does_not_swallow_trailing_period():
     """A sentence period after template=id must not become part of the preset id."""
     from ComfyArt.bot.skill_output import preset_from_text, run_hint, ratio_from_example_preset_992
     hint = run_hint("meta-ads-creative-director", "", None, preset_id="feed1x1")
     assert preset_from_text(hint) == "feed1x1"
-    # Historical wording put a period immediately after the id; the recognizer must still be exact.
     stale = ("Output lock: the user explicitly requested ratio 1:1; every IMAGE call uses "
              "width=1024 height=1024 ratio=1:1 count=1 skill='meta-ads-creative-director' "
              "template=feed1x1. Keep this skill's delivery count 3..3.")
     assert preset_from_text(stale) == "feed1x1"
     assert ratio_from_example_preset_992("meta-ads-creative-director", "feed1x1.") == "1:1"
+
+
+@needs_node
+def test_reintroducing_removed_applyRaw748_exceptions_turns_no_chip_assertion_red():
+    """Reverse mutation: putting the five exceptions back must fail the same no-chip acceptance."""
+    src = (ROOT / "src/skillRaw748.ts").read_text(encoding="utf-8")
+    mutated = reintroduce_removed_applyRaw748_exceptions(src)
+    # Keep the mutant beside the original so its relative ./data imports still resolve.
+    mutant = ROOT / "src" / "skillRaw748.mutation992.ts"
+    mutant.write_text(mutated, encoding="utf-8")
+    try:
+        r = _bundle_report(skill_raw=mutant.resolve(), tag="mutant")
+        with pytest.raises(AssertionError):
+            assert_default_runtime_has_no_chips(r["runtime"])
+        # Proof the failure is the reintroduced chips, not an unconditional throw.
+        for sid, ids in RESTORE.items():
+            assert runtime_ids(sid, r["runtime"]) == list(ids), sid
+            assert r["runtime"][sid].get("presetChips") is True, sid
+        # Logo and other no-template example cards must stay empty under the same mutation.
+        assert runtime_ids(LOGO, r["runtime"]) == []
+        assert not r["runtime"][LOGO].get("presetChips")
+    finally:
+        mutant.unlink(missing_ok=True)

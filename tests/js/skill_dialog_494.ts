@@ -33,7 +33,6 @@ r.presetPick = skillPreset(brand, second.id)?.id
 r.presetImg = presetImage(brand, second)
 r.brandPresetImgs = brand.presets!.map((p) => presetImage(brand, p))
 r.builtinPresetImgs = BUILTIN_SKILLS.flatMap((s) => (s.presets ?? []).map((p) => presetImage(s, p)))
-r.builtinPresetImgsBySkill = Object.fromEntries(BUILTIN_SKILLS.map((s) => [s.id, (s.presets ?? []).map((p) => presetImage(s, p))]))
 r.posterNoPreset = skillRunParams(poster, { ...skillDefaults(poster), user_requirement: 'Autumn launch', user_image: '/view?f=a.png' }, null)
 r.brandRun = skillRunParams(brand, { ...skillDefaults(brand), brand_info: 'Autumn launch', subject_image: '/view?f=a.png' }, second.id)
 r.cwRun = skillRunParams(cw, { brief: 'Upscale my photo' }, null)
