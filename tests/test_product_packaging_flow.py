@@ -508,7 +508,7 @@ PINNED_SHA256 = {
     "api/skill_size.py": "43c130b1aa05cd6736d28564e743feaa41e0ce26e61ea2ad0960ada01203c3df",
     "api/curated_models.json": "fb5c6a1acd2782cb3d7da42837bef92bd4485fe90abd84dd272de1170f9fe04b",
     "api/wavespeed_models.json": "8be944b91aeaf2f4fc24fb5099e36664d2136004dc828737c95ff7943a7363fb",
-    "bot/skill_output.py": "4e27e5c347138450aca8597a2bada6afbb9ccbc73c64068eaf0449202a72bdb5",  # #905 size-notice; #974 multi-angle; #978 template block; #979 template plans; #982 typed defaults; #996 logo/taobao/poster increment
+    "bot/skill_output.py": "d53c3d6c722232ce0bf5665788de893ab44227dee435faef64e9b27af163bbe8",  # #905 size-notice; #974 multi-angle; #978 template block; #979 template plans; #982 typed defaults; #996 logo/taobao/poster increment; #994 explicit user ratio precedence
     "api/portrait_studio.py": "61257848a9e23d13c066d01c103c565d6804e58c926d3905c6ed8b0890569224",
     "bot/self_check.py": "1a9b4f7eda7e915adf83df42ff31ccf3c27e83253d9636ba5c85aead447993b6",
 }
@@ -547,9 +547,14 @@ RUN_STOP_LOCALE = {
     "zh": "图片还在生成，生成好后会自动出现在画布上，不会重复扣费。",
     "en": "The image is still generating. It will appear on the canvas when it's ready, with no extra charge.",
 }
+RATIO_REFUSAL_LOCALE_994 = {
+    "zh": "该模型不支持你指定的比例；未提交、未扣费。请明确选择它支持的比例或另一个模型，不会自动改回默认值。",
+    "en": "Requested ratio is not supported by this model. Nothing submitted; no charge. Choose a supported ratio or a different model explicitly; the default was not substituted.",
+}
 LOCALE_EXTRAS = {
     lang: {"bot.composeBannerText": BANNER_LOCALE[lang], **PORTRAIT_LOCALE[lang],
-           "runStop.stillGenerating": RUN_STOP_LOCALE[lang]}
+           "runStop.stillGenerating": RUN_STOP_LOCALE[lang],
+           "wsErr.userRatioUnsupported": RATIO_REFUSAL_LOCALE_994[lang]}
     for lang in ("zh", "en")
 }
 # sha256 of the canonical JSON of main e8c4a855's locale files (minus the extras above).
