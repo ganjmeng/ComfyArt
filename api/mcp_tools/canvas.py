@@ -106,13 +106,15 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
     packaging_run = action == "generate_image" and product_packaging.applies(args)
     if action == "generate_image":
         # #707: a named skill's declared pixels reach the page even if the provider omitted them.
-        from ...bot.skill_output import REF_RATIO_KEY, apply_generate, follows_ref
+        from ...bot.skill_output import REF_RATIO_KEY, RATIO_REFUSAL_994, apply_generate, follows_ref
         ref_image = None
         if follows_ref(args.get("skill")) and not args.get(REF_RATIO_KEY):
             # #911: no ratio from the chat loop (e.g. an external agent): read image 1 from refs.
             from ...bot.ref_orientation import ref_image_bytes
             ref_image = ref_image_bytes(args.get("refs"))
         args = apply_generate(args, ref_image=ref_image)
+        if args.get(RATIO_REFUSAL_994):
+            return args[RATIO_REFUSAL_994]
         if requests_svg(args) and not svg_block(args):
             args = ensure_svg_args(args)  # #826: svg + n=1. Does not pin quality. Edit / n≠1 stay blocked.
         args = ensure_gif_args(args)  # #825: 动图/GIF fills output_format + frame defaults; does not pin quality

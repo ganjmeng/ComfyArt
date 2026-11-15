@@ -23,6 +23,8 @@ export interface WsInputs {
   mask?: string
   width?: number
   height?: number
+  /** #994: explicit user intent; provider schema must not silently snap it. */
+  user_ratio?: string
   /** #707: the downloaded file must match width×height. Not sent to the provider. */
   size_lock?: boolean
   /** P1 hotfix (#911): 'ratio' for Sunburst pins (ratio <= 1%, long side >= target). Not sent to the provider. */

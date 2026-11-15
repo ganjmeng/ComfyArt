@@ -612,6 +612,58 @@ USER_RATIOS: dict[str, dict[str, tuple[int, int]]] = {
     "packaging-design-director": {"3:4": (1536, 2048), "16:9": (2048, 1152), "1:1": (1536, 1536),
                                   "4:5": (1600, 2000), "9:16": (1152, 2048)},
 }
+# #994: typed values are defaults, not user-ratio locks. These are the image
+# ratios represented in the checked-in provider schemas; the FINAL selected provider
+# schema is checked again before quote/submit (a whitelist is not runtime proof).
+TYPED_USER_RATIOS_994 = {
+    "1:1": (1024, 1024), "1:2": (1024, 2048), "2:1": (2048, 1024),
+    "1:3": (682, 2048), "3:1": (2048, 682),
+    "2:3": (1366, 2048), "3:2": (2048, 1366),
+    "3:4": (1536, 2048), "4:3": (2048, 1536),
+    "4:5": (1638, 2048), "5:4": (2048, 1638),
+    "9:16": (1152, 2048), "16:9": (2048, 1152),
+    "9:21": (878, 2048), "21:9": (2048, 878),
+    "1:4": (512, 2048), "4:1": (2048, 512),
+    "1:8": (256, 2048), "8:1": (2048, 256),
+}
+for _sid_994 in TYPE_OUTPUTS_982:
+    USER_RATIOS[_sid_994] = dict(TYPED_USER_RATIOS_994)
+
+RATIO_REFUSAL_994 = "_ratio_refusal_994"
+STRICT_RATIO_994 = "_strict_user_ratio_994"
+_EXPLICIT_RATIO_994 = re.compile(r"(?<![\d.])(\d+(?:\.\d+)?)\s*[:：]\s*(\d+(?:\.\d+)?)(?![\d.])")
+
+
+def requested_ratio_994(user_text: object) -> str | None:
+    """Read the user's text, never our injected template/default lock. Do not
+    skip an unsupported/decimal ratio and silently choose a later default."""
+    from fractions import Fraction
+    text = _INJECTED_RE.sub(" ", TEMPLATE_BLOCK_RE.sub(" ", str(user_text or "")))
+    for match in _EXPLICIT_RATIO_994.finditer(text):
+        if re.search(r"(?:\bnot|不要|不是|别用)\s*$", text[:match.start()], re.I):
+            continue
+        a, b = map(Fraction, match.groups())
+        if a <= 0 or b <= 0:
+            return match.group(0)
+        ratio = a / b
+        # Preserve catalog spelling for e.g. 21:9 (rather than reduced 7:3).
+        return next((r for r in TYPED_USER_RATIOS_994 if Fraction(r.replace(":", "/")) == ratio),
+                    f"{match.group(1)}:{match.group(2)}")
+    for word, ratio in {**_RATIO_WORDS, "square format": "1:1", "square image": "1:1", "portrait orientation": "9:16", "landscape orientation": "16:9"}.items():
+        for match in re.finditer(rf"(?<![a-z]){re.escape(word)}(?![a-z])" if word.isascii() else re.escape(word), text, re.I):
+            if not re.search(r"(?:\bnot|不要|不是|别用)\s*$", text[:match.start()], re.I):
+                return ratio
+    return None
+
+
+def ratio_refusal_994(ratio: str) -> dict:
+    options = ", ".join(TYPED_USER_RATIOS_994)
+    message = (f"不支持请求的比例 {ratio}，未提交；请选择 {options}。"
+               f" / Requested ratio {ratio} is not supported; nothing submitted. Choose {options}.")
+    return {"status": "failed", "submitted": False, "generation_succeeded": False,
+            "kind": "userRatioUnsupported", "error": message, "user_message": message}
+
+
 _RATIO_WORDS = {"横版": "16:9", "竖版": "9:16", "方图": "1:1", "正方形": "1:1"}
 _RATIO_RE = re.compile(r"(?<![\d.])(\d{1,2})\s*[:：]\s*(\d{1,2})(?![\d.])")
 # Text the app adds to the user turn (skill start hint, output lock); never the user's own words.
@@ -658,6 +710,9 @@ REF_RATIO_KEY = "_ref_ratio"
 
 def user_ratio(sid: str, user_text: object) -> str | None:
     """The first whitelisted ratio in the user's own text, or None (default size)."""
+    if sid in TYPE_OUTPUTS_982:
+        requested = requested_ratio_994(user_text)
+        return requested if requested in TYPED_USER_RATIOS_994 else None
     table = USER_RATIOS.get(sid)
     if not table:
         return None
@@ -783,6 +838,18 @@ def apply_generate(args: dict | None, current_skill: str = "", user_text: str | 
             stage_raw = next((i + 1 for i, st in enumerate(_stages)
                               if (int(st["width"]), int(st["height"])) == asked), 1)
         plan = plan_for(sid, preset_id, stage_raw)
+    # #994: the authoritative user turn can clear a stale relay marker. A
+    # relay without that turn retains the validated marker/refusal, not args.ratio.
+    args.pop(STRICT_RATIO_994, None)
+    if sid in TYPE_OUTPUTS_982:
+        requested = (requested_ratio_994(user_text) if user_text is not None
+                     else str(args.get(USER_RATIO_KEY) or "") or None)
+        if user_text is not None:
+            args.pop(RATIO_REFUSAL_994, None)
+        if requested and requested not in USER_RATIOS[sid]:
+            args[RATIO_REFUSAL_994] = ratio_refusal_994(requested)
+        if args.get(RATIO_REFUSAL_994):
+            return args
     picked = None
     if sid in USER_RATIOS:
         # #905: user_text is given only where the user's own message is known (the chat loop); it sets
@@ -798,7 +865,8 @@ def apply_generate(args: dict | None, current_skill: str = "", user_text: str | 
         else:
             picked = str(args.get(USER_RATIO_KEY) or "")
             picked = picked if picked in USER_RATIOS.get(sid, {}) else None
-    elif sid in FOLLOW_REF_SIZES:
+    user_picked = bool(picked)
+    if not picked and sid in FOLLOW_REF_SIZES:
         picked = ref_ratio(sid, ref_image) if ref_image is not None else None
         if picked is None and ref_image is None:
             marker = str(args.get(REF_RATIO_KEY) or "")
@@ -807,10 +875,12 @@ def apply_generate(args: dict | None, current_skill: str = "", user_text: str | 
     # _user_ratio; a relay for a non-follow-ref skill must not leak _ref_ratio).
     args.pop(USER_RATIO_KEY, None)
     args.pop(REF_RATIO_KEY, None)
-    if picked and sid in USER_RATIOS:
+    if user_picked:
         w, h = USER_RATIOS[sid][picked]
         args["width"], args["height"], args["ratio"] = w, h, picked
         args[USER_RATIO_KEY] = picked
+        if sid in TYPE_OUTPUTS_982:
+            args[STRICT_RATIO_994] = picked
     elif picked and sid in FOLLOW_REF_SIZES:
         args["width"], args["height"] = FOLLOW_REF_SIZES[sid][picked]
         args["ratio"] = picked
@@ -834,7 +904,7 @@ def apply_generate(args: dict | None, current_skill: str = "", user_text: str | 
     args["count"] = 1
     # The page audits the downloaded file against these pixels. This does not change the model.
     args["size_lock"] = True
-    if row.get("lock") == RATIO_LOCK:
+    if row.get("lock") == RATIO_LOCK or args.get(STRICT_RATIO_994):
         # flare/edit and other tier-only models cannot hit exact pixels (e.g. 1254²).
         from ..api.skill_size import RATIO_MODE
         args["size_lock_mode"] = RATIO_MODE
@@ -977,6 +1047,19 @@ def _run_hint_declared(name: object, user_text: str = "", ref_image: bytes | Non
     if not sid:
         return ""
     row = OUTPUTS[sid]
+    if sid in TYPE_OUTPUTS_982:
+        requested = requested_ratio_994(user_text)
+        if requested:
+            if requested not in USER_RATIOS[sid]:
+                return "Output lock: " + ratio_refusal_994(requested)["error"] + " Do not generate or silently use a default."
+            w, h = USER_RATIOS[sid][requested]
+            lo, hi = accepted_image_counts(sid, preset_id)
+            return (f"Output lock: the user explicitly requested ratio {requested}; every IMAGE call uses "
+                    f"width={w} height={h} ratio={requested} count=1 skill={sid!r}. "
+                    f"Keep this skill's delivery count {lo}..{hi} and every uploaded reference unchanged. "
+                    "User ratio overrides typed default, call-plan and reference ratios; never substitute a default. "
+                    "The selected provider schema must support it; otherwise refuse with alternatives, do not switch models. "
+                    + ("This applies only to image/still calls, not the video contract. " if sid in VIDEO_SKILLS else ""))
     if sid in CALL_PLAN_SKILLS:
         return _calls_hint(sid, row)
     if sid in VIDEO_SKILLS:

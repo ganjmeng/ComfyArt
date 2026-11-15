@@ -20,6 +20,7 @@ from .agent_host import AgentHost
 from .guide import AGENT_GUIDE, CORE_MCP_TOOLS, PAID_TOOLS, resolve_host  # noqa: F401
 from .plan_quote import CANCEL_TEXT, QUOTE_TOOL, canon_key
 from .skill_output import TEMPLATE_BLOCK_END, TEMPLATE_BLOCK_START
+from .ratio_display import ratio_refusal_display
 from .providers import (
     AgentProvider,
     BotEvent,
@@ -634,6 +635,11 @@ def explain_unsubmitted(name: str, text: str, lang: str) -> Optional[tuple[str, 
     """
     if _tool_base(name) != "generate_image":
         return None
+    # #994: exact owned ratio errors expose no packet, relay instruction or
+    # exception prefix. The tool's error state still records the refusal.
+    ratio_copy = ratio_refusal_display(text or "", lang)
+    if ratio_copy is not None:
+        return ratio_copy, ""
     raw = text or ""
     if _CANCEL_RE.search(raw):
         return None
@@ -2126,6 +2132,12 @@ class LocalLlmProvider(AgentProvider):
     async def _emit_result(self, item: dict, text: str, *, emit, done: list, lang: str,
                            is_error: bool = False, detail: str = "", count_done: bool = True) -> list[dict]:
         name, args, tc_id = item["name"], item["args"], item["id"]
+        # #994: args retain the machine refusal packet; chat and the next LLM
+        # reply receive only the current-language own explanation.
+        if _tool_base(name) == "generate_image":
+            ratio_copy = ratio_refusal_display(text, lang)
+            if ratio_copy is not None:
+                text = ratio_copy
         await emit(BotEvent(t="tool_use", name=name, input=args, id=tc_id))
         if count_done and not item["cached"]:
             done.append(_step_label(name, args, lang))
@@ -2226,6 +2238,12 @@ class LocalLlmProvider(AgentProvider):
             _bound, refuse = bind_generate(run_for_plan, it["args"], consume=False)
             if refuse:
                 it["refuse"] = refuse
+        # #994: explicit unsupported user ratio is an ordinary visible tool
+        # refusal BEFORE any budget quote/approval, never a silently typed call.
+        from .skill_output import RATIO_REFUSAL_994
+        for it in parsed:
+            if it["name"] == "generate_image" and it["args"].get(RATIO_REFUSAL_994):
+                it["refuse"] = json.dumps(it["args"][RATIO_REFUSAL_994], ensure_ascii=False)
         quote_item = next((it for it in parsed if it["name"] == QUOTE_TOOL), None)
         paid = [it for it in parsed if it["name"] in PAID_TOOLS and not it.get("refuse") and not it.get("skip")]
         chunks: list[Optional[list]] = [None] * len(parsed)

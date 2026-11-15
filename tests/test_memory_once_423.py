@@ -196,6 +196,7 @@ def test_locales_only_add_memory_retrieved_430():
         "skills.customWorkflow", "skills.cat.custom-workflow", "skills.desc.custom-workflow",
         # #712: billed-with-no-image failure copy (not memory copy)
         "wsErr.noOutput", "wsErr.noOutputNoAmount", "wsErr.noTaskId", "wsErr.noTaskIdNoAmount", "wsErr.unregisteredModel",
+        "wsErr.userRatioUnsupported",  # #994 own validation copy, not memory copy
         "wsErr.timeout", "wsErr.timeoutNoAmount", "wsErr.taskRef",  # #712: 后台 -> 控制台, {0} carries the $
         # #825/#871: auto-pick pill reason prefix and skill-pin reason (not memory copy)
         "chatMessage.autoPickedPrefix", "chatMessage.skillPinnedModel",

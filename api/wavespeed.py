@@ -1144,8 +1144,53 @@ def lora_payload(props: dict, inputs: dict) -> list[dict]:
     return out
 
 
+def validate_user_ratio(schema: dict, inputs: dict, model: str = "", payload: dict | None = None) -> None:
+    """#994: validate against the model that will actually run, not the skill
+    whitelist or a guessed Auto model. Check schema before media/quote, and
+    validate the final mapped payload before provider POST. Unmarked legacy/
+    default requests keep their existing snapping behavior."""
+    asked = str(inputs.get("user_ratio") or "")
+    if not asked:
+        return
+    from fractions import Fraction
+    def fraction(value):
+        try:
+            a, b = str(value).replace("*", ":").replace("x", ":").split(":")
+            a, b = Fraction(a), Fraction(b)
+            return a / b if a > 0 and b > 0 else None
+        except (ValueError, ZeroDivisionError):
+            return None
+    target = fraction(asked)
+    props = schema.get("properties") or {}
+    ratios = (props.get("aspect_ratio") or {}).get("enum") or []
+    options = ", ".join(map(str, ratios)) or "explicit width*height / 明确像素尺寸"
+    def refuse(reason):
+        raise WaveSpeedError(
+            f"请求比例 {asked} 无法由当前模型 {model} 保证：{reason}。请选择 {options}；未提交。"
+            f" / Requested ratio {asked} cannot be preserved by {model}: {reason}. "
+            f"Choose {options}; nothing submitted.", 400, kind="userRatioUnsupported")
+    if target is None:
+        refuse("invalid ratio")
+    if ratios:
+        if not any(fraction(r) == target for r in ratios):
+            refuse("unsupported aspect_ratio")
+    elif not ("size" in props and submits_size_field(props["size"], model)):
+        refuse("schema has no supported ratio or pixel-size field")
+    pixels = canvas_pixels(inputs)
+    if not pixels or abs(Fraction(pixels[0], pixels[1]) / target - 1) > Fraction(1, 100):
+        refuse("requested pixels conflict with user ratio")
+    if payload is not None:
+        # params/custom fields and enum size snapping run AFTER ordinary mapping.
+        # Validate the final payload too, so none can silently override intent.
+        sent = payload.get("aspect_ratio") if ratios else payload.get("size")
+        actual = fraction(sent)
+        if actual is None or (actual != target if ratios else abs(actual / target - 1) > Fraction(1, 100)):
+            refuse("final payload would override user ratio")
+
+
 async def build_payload(session: aiohttp.ClientSession, schema: dict, inputs: dict, model: str = "") -> dict:
     """Map ComfyArt's logical inputs onto whatever fields this model's schema accepts."""
+    validate_user_ratio(schema, inputs, model)
     props = schema.get("properties") or {}
     payload: dict = {}
     images = [v for v in ([inputs.get("image")] if inputs.get("image") else []) + list(inputs.get("images") or []) if v]
@@ -1216,6 +1261,7 @@ async def build_payload(session: aiohttp.ClientSession, schema: dict, inputs: di
     missing = [k for k in schema.get("required") or [] if k not in payload]
     if missing:
         raise WaveSpeedError(f"this model needs {', '.join(missing)}", 400)
+    validate_user_ratio(schema, inputs, model, payload)
     return payload
 
 
@@ -1963,6 +2009,7 @@ async def submit(inputs: dict) -> str:
         model, model_choice = resolve_model_choice(feature, inputs)
     _check_limits()
     meta = (await catalog()).get(model)
+    validate_user_ratio(_schema(meta), inputs, model)
     if meta and needs_voice_sample(model, feature, _schema(meta), inputs):
         raise WaveSpeedError(VOICE_SAMPLE_MISSING, 400)
     lora_payload(_schema(meta).get("properties") or {}, inputs)  # #202: bad URL / unsupported model fails before any quote
