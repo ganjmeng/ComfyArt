@@ -8,7 +8,7 @@ export const TASK_REF_PREFIXES = ['任务编号：', 'Task ID: ']
 export const isTaskRefCode = (before: string) => TASK_REF_PREFIXES.some((p) => before.endsWith(p))
 
 export const TOP_UP_URL = 'https://wavespeed.ai/top-up'
-const KINDS = ['insufficientCredit', 'moderation', 'rateLimit', 'invalidKey', 'network', 'failed', 'timeout', 'loraUrl', 'loraUnsupported', 'loraTooMany', 'noOutput', 'noTaskId', 'unregisteredModel', 'svgRejected', 'svgEdit', 'svgCount'] as const
+const KINDS = ['insufficientCredit', 'moderation', 'rateLimit', 'invalidKey', 'network', 'failed', 'timeout', 'loraUrl', 'loraUnsupported', 'loraTooMany', 'noOutput', 'noTaskId', 'unregisteredModel', 'svgRejected', 'svgEdit', 'svgCount', 'userRatioUnsupported'] as const
 export type WsErrorKind = typeof KINDS[number]
 
 /** #721: our own short validation strings users can act on — keep as-is (explicit allowlist, no blanket pass-through). */
@@ -30,6 +30,10 @@ export function logRawGenError(raw: unknown) {
 export function mapUnknownError(raw: string): string {
   const msg = raw.trim()
   if (!msg) return t('wsErr.generic')
+  // #994: command-bus errors may carry our relay suffix. Preserve only this
+  // exact localized own validation copy, never arbitrary provider error text.
+  const ratioRefusal = t('wsErr.userRatioUnsupported')
+  if (msg === ratioRefusal || msg === agentErrorText(ratioRefusal)) return ratioRefusal
   if (OWN_ERROR_ALLOWLIST.has(msg) || isOwnSizeError(msg)) return msg
   logRawGenError(msg)
   return t('wsErr.generic')

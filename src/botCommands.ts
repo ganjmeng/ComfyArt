@@ -190,13 +190,14 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
   if (bad) throw new Error(`${model.label} has no ref mode ${JSON.stringify(bad)}; it supports ${allowed.join(', ') || 'none'}`)
   if (wantsRefs && !model.refs && !(model.control && args.refs.every((_: unknown, i: number) => modes[i]))) throw new Error(`${model.label} does not accept refs; use a model with accepts_refs from list_models, give every ref a structure ref_mode, or drop refs`)
   const ratios = video ? VIDEO_RATIOS : RATIOS
-  if (args.ratio && !ratios.includes(args.ratio)) throw new Error(`ratio must be one of ${ratios.join(', ')}`)
+  const userRatio = !video && typeof args._strict_user_ratio_994 === 'string' ? args._strict_user_ratio_994 : ''
+  if (args.ratio && !ratios.includes(args.ratio) && !(userRatio === args.ratio && /^\d+:\d+$/.test(userRatio))) throw new Error(`ratio must be one of ${ratios.join(', ')}`)
   // #707: skill pixels (1584x396 and other non-enum canvases) win over the 1:1 default.
   const px = (v: unknown) => { const n = Math.round(Number(v)); return Number.isFinite(n) && n > 0 ? n : 0 }
   const exactW = video ? 0 : px(args.width)
   const exactH = video ? 0 : px(args.height)
   const ratioArg = typeof args.ratio === 'string' && ratios.includes(args.ratio) ? args.ratio : ''
-  const imageRatio = ratioArg || (exactW && exactH ? nearestRatio(exactW / exactH, ratios) : '1:1')
+  const imageRatio = userRatio || ratioArg || (exactW && exactH ? nearestRatio(exactW / exactH, ratios) : '1:1')
   // #128: round the asked seconds up to the model's next allowed duration (capped at its longest) and say so
   const lengths = model.durations?.map(Number)
   const duration = fitDuration(args.duration, lengths)
@@ -212,6 +213,7 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
   const refs = !video ? refUrls(editor, args.refs) : mode === 'refs' ? capRefs(media) : refUrls(editor, args.first_frame ? [args.first_frame] : [])
   const meta = {
     quiet: true,
+    ...(userRatio ? { userRatio } : {}),
     ...(mode ? { videoMode: mode } : {}),
     ...(motion ? { motion } : {}),
     ...(speech ? { speech } : {}),

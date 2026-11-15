@@ -174,3 +174,12 @@ def test_721_wsbody_raw_maps_to_generic(js):
         assert "Internal Error" not in js[lang]["rawString"]
         assert not re.search(r"wavespeed|kie|控制台|后台|console|dashboard", js[lang]["generic"], re.I)
     assert js["allowlist"] == ["mask file not found", "src must be a /api/view URL"]
+
+
+def test_994_ratio_refusal_survives_command_bus_without_raw_provider_text(js):
+    for lang in ('zh', 'en'):
+        copy = js[lang]['ratioRefusal']
+        assert copy == js[lang]['ratioCommandRoundTrip'] != js[lang]['generic']
+        assert ('未提交' if lang == 'zh' else 'Nothing submitted') in copy
+        assert 'Internal Error xyz' not in copy
+        assert js[lang]['ratioNotBlanketAllow'] == js[lang]['generic']

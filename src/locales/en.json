@@ -1898,5 +1898,6 @@
   "botSettings.provider.openrouter": "OpenRouter",
   "botSettings.provider.openai": "OpenAI",
   "botSettings.provider.ollama": "Ollama",
-  "botSettings.provider.custom": "Other OpenAI-compatible service"
+  "botSettings.provider.custom": "Other OpenAI-compatible service",
+  "wsErr.userRatioUnsupported": "Requested ratio is not supported by this model. Nothing submitted; no charge. Choose a supported ratio or a different model explicitly; the default was not substituted."
 }

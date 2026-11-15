@@ -1898,5 +1898,6 @@
   "botSettings.provider.openrouter": "OpenRouter",
   "botSettings.provider.openai": "OpenAI",
   "botSettings.provider.ollama": "Ollama",
-  "botSettings.provider.custom": "其他 OpenAI 兼容服务"
+  "botSettings.provider.custom": "其他 OpenAI 兼容服务",
+  "wsErr.userRatioUnsupported": "该模型不支持你指定的比例；未提交、未扣费。请明确选择它支持的比例或另一个模型，不会自动改回默认值。"
 }

@@ -2226,6 +2226,12 @@ class LocalLlmProvider(AgentProvider):
             _bound, refuse = bind_generate(run_for_plan, it["args"], consume=False)
             if refuse:
                 it["refuse"] = refuse
+        # #994: explicit unsupported user ratio is an ordinary visible tool
+        # refusal BEFORE any budget quote/approval, never a silently typed call.
+        from .skill_output import RATIO_REFUSAL_994
+        for it in parsed:
+            if it["name"] == "generate_image" and it["args"].get(RATIO_REFUSAL_994):
+                it["refuse"] = json.dumps(it["args"][RATIO_REFUSAL_994], ensure_ascii=False)
         quote_item = next((it for it in parsed if it["name"] == QUOTE_TOOL), None)
         paid = [it for it in parsed if it["name"] in PAID_TOOLS and not it.get("refuse") and not it.get("skip")]
         chunks: list[Optional[list]] = [None] * len(parsed)
