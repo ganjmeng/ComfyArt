@@ -1,0 +1,11 @@
+............F
+=================================== FAILURES ===================================
+_____ test_real_normalizer_and_relay_display_seams_keep_machine_packet[zh] _____
+tests/test_994_refusal_display.py:47: in test_real_normalizer_and_relay_display_seams_keep_machine_packet
+    result=await LocalLlmProvider()._emit_result(
+                 ^^^^^^^^^^^^^^^^^^
+E   TypeError: LocalLlmProvider.__init__() missing 1 required keyword-only argument: 'base_url'
+=========================== short test summary info ============================
+FAILED tests/test_994_refusal_display.py::test_real_normalizer_and_relay_display_seams_keep_machine_packet[zh]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 12 passed, 12 deselected in 0.35s

@@ -1,0 +1,19 @@
+{
+  "backend_only_display_followup": true,
+  "npm_typecheck_build_passed": true,
+  "rebuilt_dist_tracked_diff_exit": 0,
+  "unchanged_trees": {
+    "src": {
+      "05eea0a5818ced781c7a1ca9868c999255c5344d": "22971a9db8cfca2687c2a08894915b47e1c308d5",
+      "6b31b42bb9c32f3fecf1bebfd94e44b5de60fdcc": "22971a9db8cfca2687c2a08894915b47e1c308d5"
+    },
+    "dist": {
+      "05eea0a5818ced781c7a1ca9868c999255c5344d": "343e2d383552057d5697bed0145445aca33a6311",
+      "6b31b42bb9c32f3fecf1bebfd94e44b5de60fdcc": "343e2d383552057d5697bed0145445aca33a6311"
+    },
+    "api": {
+      "05eea0a5818ced781c7a1ca9868c999255c5344d": "d2abc6dcf39b35fbab8357de6a62e0669a9b5d0c",
+      "6b31b42bb9c32f3fecf1bebfd94e44b5de60fdcc": "d2abc6dcf39b35fbab8357de6a62e0669a9b5d0c"
+    }
+  }
+}

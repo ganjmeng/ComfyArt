@@ -1,0 +1,24 @@
+{
+  "user_text": "Use 1:2 with google/nano-banana-2.1/text-to-image; do not use the uploaded image as a reference.",
+  "model": "google/nano-banana-2.1/text-to-image",
+  "lang": "en",
+  "actual_visible_assistant": [
+    "ValueError: Requested ratio is not supported by this model. Nothing submitted; no charge. Choose a supported ratio or a different model explicitly; the default was not substituted."
+  ],
+  "expected_user_copy": "Requested ratio is not supported by this model. Nothing submitted; no charge. Choose a supported ratio or a different model explicitly; the default was not substituted.",
+  "rollback_display": true,
+  "submits": [],
+  "http_responses": [
+    {
+      "path": "wavespeed/run",
+      "status": 400,
+      "body": {
+        "error": {
+          "message": "请求比例 1:2 无法由当前模型 google/nano-banana-2.1/text-to-image 保证：unsupported aspect_ratio。请选择 1:1, 3:2, 2:3, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9, 1:4, 4:1, 1:8, 8:1；未提交。 / Requested ratio 1:2 cannot be preserved by google/nano-banana-2.1/text-to-image: unsupported aspect_ratio. Choose 1:1, 3:2, 2:3, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9, 1:4, 4:1, 1:8, 8:1; nothing submitted.",
+          "kind": "userRatioUnsupported"
+        }
+      }
+    }
+  ],
+  "mock_only": true
+}

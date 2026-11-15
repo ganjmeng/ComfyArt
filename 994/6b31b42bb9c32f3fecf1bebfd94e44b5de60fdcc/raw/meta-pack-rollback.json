@@ -1,0 +1,77 @@
+{
+  "normalized": [
+    {
+      "prompt": "a distinct product creative (1 of 3)",
+      "skill": "meta-ads-creative-director",
+      "refs": [
+        "loose:0"
+      ],
+      "width": 1024,
+      "height": 1024,
+      "ratio": "1:1",
+      "count": 1,
+      "size_lock": true
+    },
+    {
+      "prompt": "a distinct product creative (2 of 3)",
+      "skill": "meta-ads-creative-director",
+      "refs": [
+        "loose:0"
+      ],
+      "width": 1024,
+      "height": 1024,
+      "ratio": "1:1",
+      "count": 1,
+      "size_lock": true
+    },
+    {
+      "prompt": "a distinct product creative (3 of 3)",
+      "skill": "meta-ads-creative-director",
+      "refs": [
+        "loose:0"
+      ],
+      "width": 1024,
+      "height": 1024,
+      "ratio": "1:1",
+      "count": 1,
+      "size_lock": true
+    }
+  ],
+  "actual_provider_posts": [
+    [
+      "openai/gpt-image-2.6-flare/edit",
+      {
+        "images": [
+          "http://127.0.0.1:37471/cdn/up.png"
+        ],
+        "aspect_ratio": "1:1",
+        "resolution": "1k",
+        "prompt": "a distinct product creative (1 of 3)"
+      }
+    ],
+    [
+      "openai/gpt-image-2.6-flare/edit",
+      {
+        "images": [
+          "http://127.0.0.1:37471/cdn/up.png"
+        ],
+        "aspect_ratio": "1:1",
+        "resolution": "1k",
+        "prompt": "a distinct product creative (2 of 3)"
+      }
+    ],
+    [
+      "openai/gpt-image-2.6-flare/edit",
+      {
+        "images": [
+          "http://127.0.0.1:37471/cdn/up.png"
+        ],
+        "aspect_ratio": "1:1",
+        "resolution": "1k",
+        "prompt": "a distinct product creative (3 of 3)"
+      }
+    ]
+  ],
+  "rollback": true,
+  "mock_only": true
+}

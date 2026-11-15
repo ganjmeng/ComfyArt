@@ -1,0 +1,13 @@
+{
+  "user_text": "Use 7:5; do not silently change to the default ratio.",
+  "model": null,
+  "lang": "en",
+  "actual_visible_assistant": [
+    "{\"status\": \"failed\", \"submitted\": false, \"generation_succeeded\": false, \"kind\": \"userRatioUnsupported\", \"error\": \"不支持请求的比例 7:5，未提交；请选择 1:1, 1:2, 2:1, 1:3, 3:1, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 9:21, 21:9, 1:4, 4:1, 1:8, 8:1。 / Requested ratio 7:5 is not supported; nothing submitted. Choose 1:1, 1:2, 2:1, 1:3, 3:1, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 9:21, 21:9, 1:4, 4:1, 1:8, 8:1.\", \"user_message\": \"不支持请求的比例 7:5，未提交；请选择 1:1, 1:2, 2:1, 1:3, 3:1, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 9:21, 21:9, 1:4, 4:1, 1:8, 8:1。 / Requested ratio 7:5 is not supported; nothing submitted. Choose 1:1, 1:2, 2:1, 1:3, 3:1, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 9:21, 21:9, 1:4, 4:1, 1:8, 8:1.\"}"
+  ],
+  "expected_user_copy": "Requested ratio 7:5 is not supported. Nothing submitted. Available app ratios: 1:1, 1:2, 2:1, 1:3, 3:1, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 9:21, 21:9, 1:4, 4:1, 1:8, 8:1. The selected model must support the ratio; you may explicitly choose another model.",
+  "rollback_display": true,
+  "submits": [],
+  "http_responses": [],
+  "mock_only": true
+}

@@ -1,0 +1,39 @@
+{
+  "skill": "banner-design-director",
+  "requested": "21:9",
+  "lang": "zh",
+  "rollback": false,
+  "already_default_control": false,
+  "normalized": [
+    {
+      "skill": "banner-design-director",
+      "prompt": "A local ratio test design",
+      "refs": [
+        "loose:0"
+      ],
+      "width": 2048,
+      "height": 878,
+      "ratio": "21:9",
+      "_user_ratio": "21:9",
+      "_strict_user_ratio_994": "21:9",
+      "count": 1,
+      "size_lock": true,
+      "size_lock_mode": "ratio"
+    }
+  ],
+  "actual_provider_posts": [
+    [
+      "openai/gpt-image-2.6-flare/edit",
+      {
+        "images": [
+          "http://127.0.0.1:46019/cdn/up.png"
+        ],
+        "aspect_ratio": "21:9",
+        "resolution": "2k",
+        "prompt": "A local ratio test design"
+      }
+    ]
+  ],
+  "mock_only": true,
+  "real_provider_runtime_tested": false
+}

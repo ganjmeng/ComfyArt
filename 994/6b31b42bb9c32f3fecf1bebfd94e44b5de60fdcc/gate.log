@@ -1,0 +1,16 @@
+Issue #994 PR1000 design-HOLD display fix; tip=6b31b42bb9c32f3fecf1bebfd94e44b5de60fdcc; mock $0; real paid provider/LLM untested
+994 TSC_OK
+994 UNIT: collected=4908 collect_exit=0
+994 UNIT node-unit: 456 tests (node v24.22.1)
+994 UNIT: duration=439s
+994 UNIT: 4883 passed, 25 skipped, 610 deselected in 436.55s (0:07:16)
+994 UNIT: exit=0
+994 BUILD_OK(local, not committed)
+994 E2E: collected=214 collect_exit=0
+994 E2E: duration=501s
+994 E2E: 214 passed, 5304 deselected in 498.61s (0:08:18)
+994 E2E: exit=0
+ M docs/qa/707-local-canvas/before-after-placed.png
+ M docs/qa/707-local-canvas/game-art-placed.png
+994 GATE_EXIT=0
+SHELL_GATE_EXIT=0; mock $0; no live paid provider calls

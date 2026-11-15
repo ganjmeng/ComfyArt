@@ -1,0 +1,36 @@
+{
+  "skill": "logo-abstract",
+  "requested": "4:5",
+  "lang": "zh",
+  "rollback": true,
+  "already_default_control": false,
+  "normalized": [
+    {
+      "skill": "logo-abstract",
+      "prompt": "A local ratio test design",
+      "refs": [
+        "loose:0"
+      ],
+      "width": 1024,
+      "height": 1024,
+      "ratio": "1:1",
+      "count": 1,
+      "size_lock": true
+    }
+  ],
+  "actual_provider_posts": [
+    [
+      "openai/gpt-image-2.6-flare/edit",
+      {
+        "images": [
+          "http://127.0.0.1:38683/cdn/up.png"
+        ],
+        "aspect_ratio": "1:1",
+        "resolution": "1k",
+        "prompt": "A local ratio test design"
+      }
+    ]
+  ],
+  "mock_only": true,
+  "real_provider_runtime_tested": false
+}

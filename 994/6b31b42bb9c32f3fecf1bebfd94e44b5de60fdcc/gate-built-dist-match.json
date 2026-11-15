@@ -1,0 +1,10 @@
+{
+  "time_shanghai": "2026-11-15T11:52:11.826405+08:00",
+  "head": "6b31b42bb9c32f3fecf1bebfd94e44b5de60fdcc",
+  "gate_phase": "E2E collected=214; gate build completed",
+  "dist_tracked_diff": [],
+  "dist_untracked": [],
+  "src_tree": "22971a9db8cfca2687c2a08894915b47e1c308d5",
+  "dist_tree": "343e2d383552057d5697bed0145445aca33a6311",
+  "gate_pid": 1197216
+}

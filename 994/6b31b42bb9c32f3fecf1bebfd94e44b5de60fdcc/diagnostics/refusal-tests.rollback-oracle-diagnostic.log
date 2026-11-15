@@ -1,0 +1,13 @@
+..................F
+=================================== FAILURES ===================================
+_ test_fullapp_994_explicit_refusal_no_silent_submit[real-nano-schema-rollback-display-boundary-zh] _
+tests/test_skill_e2e_994_user_ratio.py:223: in test_fullapp_994_explicit_refusal_no_silent_submit
+    assert actual[0].startswith('ValueError: '), actual
+E   AssertionError: ['[tool error] 生成图像没有提交，未扣费。原因：该模型不支持你指定的比例；未提交、未扣费。请明确选择它支持的比例或另一个模型，不会自动改回默认值。。请把这个原因原文告诉用户，不要用相同参数再次调用 generate_image。']
+E   assert False
+E    +  where False = <built-in method startswith of str object at 0x7ff9b142d6c0>('ValueError: ')
+E    +    where <built-in method startswith of str object at 0x7ff9b142d6c0> = '[tool error] 生成图像没有提交，未扣费。原因：该模型不支持你指定的比例；未提交、未扣费。请明确选择它支持的比例或另一个模型，不会自动改回默认值。。请把这个原因原文告诉用户，不要用相同参数再次调用 generate_image。'.startswith
+=========================== short test summary info ============================
+FAILED tests/test_skill_e2e_994_user_ratio.py::test_fullapp_994_explicit_refusal_no_silent_submit[real-nano-schema-rollback-display-boundary-zh]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 18 passed, 12 deselected in 25.16s

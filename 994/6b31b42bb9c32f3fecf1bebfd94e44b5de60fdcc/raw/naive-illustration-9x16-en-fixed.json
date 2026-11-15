@@ -1,0 +1,39 @@
+{
+  "skill": "naive-illustration",
+  "requested": "9:16",
+  "lang": "en",
+  "rollback": false,
+  "already_default_control": false,
+  "normalized": [
+    {
+      "skill": "naive-illustration",
+      "prompt": "A local ratio test design",
+      "refs": [
+        "loose:0"
+      ],
+      "width": 1152,
+      "height": 2048,
+      "ratio": "9:16",
+      "_user_ratio": "9:16",
+      "_strict_user_ratio_994": "9:16",
+      "count": 1,
+      "size_lock": true,
+      "size_lock_mode": "ratio"
+    }
+  ],
+  "actual_provider_posts": [
+    [
+      "openai/gpt-image-2.6-flare/edit",
+      {
+        "images": [
+          "http://127.0.0.1:34545/cdn/up.png"
+        ],
+        "aspect_ratio": "9:16",
+        "resolution": "2k",
+        "prompt": "A local ratio test design"
+      }
+    ]
+  ],
+  "mock_only": true,
+  "real_provider_runtime_tested": false
+}

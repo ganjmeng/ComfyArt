@@ -1,0 +1,24 @@
+{
+  "user_text": "请用1:2，模型google/nano-banana-2.1/text-to-image；不要将上传图作为参考图。",
+  "model": "google/nano-banana-2.1/text-to-image",
+  "lang": "zh",
+  "actual_visible_assistant": [
+    "[tool error] 生成图像没有提交，未扣费。原因：该模型不支持你指定的比例；未提交、未扣费。请明确选择它支持的比例或另一个模型，不会自动改回默认值。。请把这个原因原文告诉用户，不要用相同参数再次调用 generate_image。"
+  ],
+  "expected_user_copy": "该模型不支持你指定的比例；未提交、未扣费。请明确选择它支持的比例或另一个模型，不会自动改回默认值。",
+  "rollback_display": true,
+  "submits": [],
+  "http_responses": [
+    {
+      "path": "wavespeed/run",
+      "status": 400,
+      "body": {
+        "error": {
+          "message": "请求比例 1:2 无法由当前模型 google/nano-banana-2.1/text-to-image 保证：unsupported aspect_ratio。请选择 1:1, 3:2, 2:3, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9, 1:4, 4:1, 1:8, 8:1；未提交。 / Requested ratio 1:2 cannot be preserved by google/nano-banana-2.1/text-to-image: unsupported aspect_ratio. Choose 1:1, 3:2, 2:3, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9, 1:4, 4:1, 1:8, 8:1; nothing submitted.",
+          "kind": "userRatioUnsupported"
+        }
+      }
+    }
+  ],
+  "mock_only": true
+}
