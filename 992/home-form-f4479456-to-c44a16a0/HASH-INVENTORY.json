@@ -1,0 +1,247 @@
+{
+  "capture_sha": "f4479456f95c19215180bb82e2242755d775e286",
+  "mapped_final_sha": "c44a16a0fa142727c08c3e8ff0617382e97fae3e",
+  "no_final_recapture": true,
+  "tree_mapping": {
+    "src": {
+      "capture": "8e385db89952fd2503cb561a8f49a796fd97193d",
+      "final": "8e385db89952fd2503cb561a8f49a796fd97193d"
+    },
+    "dist": {
+      "capture": "66b606dfc135a8e20e436bd9881181fa24b0280b",
+      "final": "66b606dfc135a8e20e436bd9881181fa24b0280b"
+    }
+  },
+  "inventory": [
+    {
+      "skill": "meta-ads-creative",
+      "files": {
+        "original_unredacted_hash_only": {
+          "name": "home-meta-ads-creative-body-form.png",
+          "sha256": "7e8ba0f750cb5c8ec231dd5ce810aab9af97b5b819b403d027a1413d917a1502",
+          "bytes": 1087131,
+          "pixels": [
+            1920,
+            1072
+          ],
+          "published_binary": false
+        },
+        "original_redacted_hash_only": {
+          "name": "home-meta-ads-creative-body-form-redacted.png",
+          "sha256": "6439253611152674887bd2dd58174b853f23aab8ce9a09fceee778409e90267b",
+          "bytes": 1072746,
+          "pixels": [
+            1920,
+            1072
+          ],
+          "published_binary": false
+        },
+        "ours_hash_only": {
+          "name": "ours-home-meta-ads-creative-default.png",
+          "sha256": "75f59387b2d94b458ec04364a83d930e1a9c6a9f2b3f82ba63b4cd134b99e682",
+          "bytes": 855657,
+          "pixels": [
+            1920,
+            1072
+          ],
+          "published_binary": false
+        },
+        "publish_sbs": {
+          "name": "lr-home-form-default-meta-ads-creative.png",
+          "sha256": "693e3854eea5147ce55026ed3d1e18208206b31ff9cf938e9e5ae31bd6087c85",
+          "bytes": 1984383,
+          "pixels": [
+            3840,
+            1220
+          ],
+          "published_binary": true
+        }
+      },
+      "native_pair_pixel_correspondence": "exact redacted-left/ours-right pixels;148px header; no stretch"
+    },
+    {
+      "skill": "rednote-cover-maker",
+      "files": {
+        "original_unredacted_hash_only": {
+          "name": "home-rednote-cover-maker-body-form.png",
+          "sha256": "5e22bb0b55c49d18c7f7243ddb428d1dc13ed6069c3ca41a107609e2ef135ae9",
+          "bytes": 870388,
+          "pixels": [
+            1920,
+            1072
+          ],
+          "published_binary": false
+        },
+        "original_redacted_hash_only": {
+          "name": "home-rednote-cover-maker-body-form-redacted.png",
+          "sha256": "4247d7194548b31ece0052866ef5812faafaac006d75710c711240e3202e996d",
+          "bytes": 860890,
+          "pixels": [
+            1920,
+            1072
+          ],
+          "published_binary": false
+        },
+        "ours_hash_only": {
+          "name": "ours-home-rednote-cover-maker-default.png",
+          "sha256": "cb5029304daf81d57cc339dd0d11874f43bacad87132688f7d4c185f411bedfa",
+          "bytes": 711944,
+          "pixels": [
+            1920,
+            1072
+          ],
+          "published_binary": false
+        },
+        "publish_sbs": {
+          "name": "lr-home-form-default-rednote-cover-maker.png",
+          "sha256": "9ba1b04186e730e09ddbc189cb8bba66be94946c44c6f23accb2976386f7cd1c",
+          "bytes": 1624286,
+          "pixels": [
+            3840,
+            1220
+          ],
+          "published_binary": true
+        }
+      },
+      "native_pair_pixel_correspondence": "exact redacted-left/ours-right pixels;148px header; no stretch"
+    },
+    {
+      "skill": "mobile-app-visual-design",
+      "files": {
+        "original_unredacted_hash_only": {
+          "name": "home-mobile-app-visual-design-body-form.png",
+          "sha256": "d981b9ff97958d81b960ecadfe42c4211dc551b5e1c40510c6a42e550e0ed65b",
+          "bytes": 905401,
+          "pixels": [
+            1920,
+            1072
+          ],
+          "published_binary": false
+        },
+        "original_redacted_hash_only": {
+          "name": "home-mobile-app-visual-design-body-form-redacted.png",
+          "sha256": "a29e6a15aed422a84a9eec06f522b24a3203d4027fe3c72ee0fa3df305a9852f",
+          "bytes": 901332,
+          "pixels": [
+            1920,
+            1072
+          ],
+          "published_binary": false
+        },
+        "ours_hash_only": {
+          "name": "ours-home-mobile-app-visual-design-default.png",
+          "sha256": "059c510bb01b8c296b387b178c1c95954506f179274061ae0953562bea970e52",
+          "bytes": 883962,
+          "pixels": [
+            1920,
+            1072
+          ],
+          "published_binary": false
+        },
+        "publish_sbs": {
+          "name": "lr-home-form-default-mobile-app-visual-design.png",
+          "sha256": "7cadf9e64407afa2835a7e0f0b4c00b1465c3ae91459cdbb6add3455091e45c2",
+          "bytes": 1839613,
+          "pixels": [
+            3840,
+            1220
+          ],
+          "published_binary": true
+        }
+      },
+      "native_pair_pixel_correspondence": "exact redacted-left/ours-right pixels;148px header; no stretch"
+    },
+    {
+      "skill": "web-product-visual-design",
+      "files": {
+        "original_unredacted_hash_only": {
+          "name": "home-web-product-visual-design-body-form.png",
+          "sha256": "f3b0251aa211bb4655dcd01926b774254a644d2fcaee0c911c12426bc6f5d688",
+          "bytes": 962089,
+          "pixels": [
+            1920,
+            1072
+          ],
+          "published_binary": false
+        },
+        "original_redacted_hash_only": {
+          "name": "home-web-product-visual-design-body-form-redacted.png",
+          "sha256": "8005ba94de8ac6eb0d229befe40980ce884a9f2c5cbcf626eedcdf8317421a38",
+          "bytes": 960073,
+          "pixels": [
+            1920,
+            1072
+          ],
+          "published_binary": false
+        },
+        "ours_hash_only": {
+          "name": "ours-home-web-product-visual-design-default.png",
+          "sha256": "65420eb0a32d4dd26fbba7d72452f71a7fef0c801c17db917356e769e8689c5b",
+          "bytes": 780797,
+          "pixels": [
+            1920,
+            1072
+          ],
+          "published_binary": false
+        },
+        "publish_sbs": {
+          "name": "lr-home-form-default-web-product-visual-design.png",
+          "sha256": "e04f3a862238018065437b1b1f07664ee5eafdb8e4b21c6c1fc0f0ba5661ed71",
+          "bytes": 1803076,
+          "pixels": [
+            3840,
+            1220
+          ],
+          "published_binary": true
+        }
+      },
+      "native_pair_pixel_correspondence": "exact redacted-left/ours-right pixels;148px header; no stretch"
+    },
+    {
+      "skill": "marketing-campaign-generator",
+      "files": {
+        "original_unredacted_hash_only": {
+          "name": "home-marketing-campaign-generator-body-form.png",
+          "sha256": "557e02db51679aabc08131e7f54c29e52165fd63e5a6aa5ee47b71be5403e4d6",
+          "bytes": 982486,
+          "pixels": [
+            1920,
+            1072
+          ],
+          "published_binary": false
+        },
+        "original_redacted_hash_only": {
+          "name": "home-marketing-campaign-generator-body-form-redacted.png",
+          "sha256": "e24031541691d7de1f5a5d1c19e113118391d2b55122b3bc8d9c97ee7388b695",
+          "bytes": 983296,
+          "pixels": [
+            1920,
+            1072
+          ],
+          "published_binary": false
+        },
+        "ours_hash_only": {
+          "name": "ours-home-marketing-campaign-generator-default.png",
+          "sha256": "564669606d4f7b5530f32e08107bbd89db4ba871d0591fcc5b3c5d78e611330c",
+          "bytes": 820737,
+          "pixels": [
+            1920,
+            1072
+          ],
+          "published_binary": false
+        },
+        "publish_sbs": {
+          "name": "lr-home-form-default-marketing-campaign-generator.png",
+          "sha256": "7092126d0bf81cf154063b3d97cda49881cd9ab091d3841b1c417b8d831bf1c6",
+          "bytes": 1824416,
+          "pixels": [
+            3840,
+            1220
+          ],
+          "published_binary": true
+        }
+      },
+      "native_pair_pixel_correspondence": "exact redacted-left/ours-right pixels;148px header; no stretch"
+    }
+  ]
+}
