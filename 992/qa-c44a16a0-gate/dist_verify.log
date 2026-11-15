@@ -1,0 +1,10 @@
+DIST_VERIFY_START 2026-11-15 20:42:05 +0800 Asia/Shanghai
+HEAD=c44a16a0fa142727c08c3e8ff0617382e97fae3e
+5340e7d0e75e2de9d77aa142982435172fccb51e9f8a6321759b4b369da044e2  <COMFYART_ROOT>/wt_qa_673_ready/dist/index.html
+0b4f12166b16fb0e497f49e8ac865520dbc1b2a617778afc628276c4d9cf28c4  <COMFYART_ROOT>/wt_qa_673_ready/dist/assets/App-CEM0FbrT.js
+npm_run_build_exit=0
+git_diff_dist_exit=0
+POST_BUILD_HASHES
+5340e7d0e75e2de9d77aa142982435172fccb51e9f8a6321759b4b369da044e2  <COMFYART_ROOT>/wt_qa_673_ready/dist/index.html
+0b4f12166b16fb0e497f49e8ac865520dbc1b2a617778afc628276c4d9cf28c4  <COMFYART_ROOT>/wt_qa_673_ready/dist/assets/App-CEM0FbrT.js
+DIST_VERIFY_END 2026-11-15 20:42:08 +0800 Asia/Shanghai

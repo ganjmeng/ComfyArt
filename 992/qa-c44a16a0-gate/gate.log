@@ -1,0 +1,24 @@
+START 2026-11-15 20:21:18 +0800 Asia/Shanghai
+HEAD=c44a16a0fa142727c08c3e8ff0617382e97fae3e
+PARENT=1897e228e5a3469b0afbcb34434bd511063e99b4
+CMD: GATE_MAIN=<COMFYART_ROOT>/src GATE_PY=<QA_VENV>/bin/python GATE_WT=<COMFYART_ROOT>/wt_qa_673_ready GATE=1 DEBUG=pw:api scripts/gate.sh qa1001_c44a16a0
+NOTE: DEBUG=pw:api only (not pw:browser). Official params otherwise unchanged. EL review of c44a16a0 does not replace this gate or sign PASS.
+will not touch 127.0.0.1:51741 or 51740
+5340e7d0e75e2de9d77aa142982435172fccb51e9f8a6321759b4b369da044e2  dist/index.html
+0b4f12166b16fb0e497f49e8ac865520dbc1b2a617778afc628276c4d9cf28c4  dist/assets/App-CEM0FbrT.js
+qa1001_c44a16a0 TSC_OK
+qa1001_c44a16a0 UNIT: collected=4918 collect_exit=0
+qa1001_c44a16a0 UNIT node-unit: 464 tests (node v24.22.1)
+qa1001_c44a16a0 UNIT: duration=415s
+qa1001_c44a16a0 UNIT: 4893 passed, 25 skipped, 625 deselected in 412.97s (0:06:52)
+qa1001_c44a16a0 UNIT: exit=0
+qa1001_c44a16a0 BUILD_OK(local, not committed)
+qa1001_c44a16a0 E2E: collected=229 collect_exit=0
+qa1001_c44a16a0 E2E: duration=628s
+qa1001_c44a16a0 E2E: 229 passed, 5314 deselected in 535.46s (0:08:55)
+qa1001_c44a16a0 E2E: exit=0
+ M docs/qa/707-local-canvas/before-after-placed.png
+ M docs/qa/707-local-canvas/game-art-placed.png
+qa1001_c44a16a0 GATE_EXIT=0
+END 2026-11-15 20:38:57 +0800 Asia/Shanghai
+WRAPPER_EXIT=0
