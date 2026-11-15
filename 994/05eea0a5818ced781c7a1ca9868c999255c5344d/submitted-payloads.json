@@ -1,0 +1,387 @@
+[
+  {
+    "capture": "banner-design-director-21x9-zh-rollback.png",
+    "skill": "banner-design-director",
+    "requested": "21:9",
+    "lang": "zh",
+    "rollback": true,
+    "already_default_control": false,
+    "normalized": [
+      {
+        "skill": "banner-design-director",
+        "prompt": "A local ratio test design",
+        "refs": [
+          "loose:0"
+        ],
+        "width": 2048,
+        "height": 1152,
+        "ratio": "16:9",
+        "count": 1,
+        "size_lock": true
+      }
+    ],
+    "actual_provider_posts": [
+      [
+        "openai/gpt-image-2.6-flare/edit",
+        {
+          "images": [
+            "http://127.0.0.1:36697/cdn/up.png"
+          ],
+          "aspect_ratio": "16:9",
+          "resolution": "2k",
+          "prompt": "A local ratio test design"
+        }
+      ]
+    ],
+    "mock_only": true,
+    "real_provider_runtime_tested": false
+  },
+  {
+    "capture": "banner-design-director-21x9-zh-fixed.png",
+    "skill": "banner-design-director",
+    "requested": "21:9",
+    "lang": "zh",
+    "rollback": false,
+    "already_default_control": false,
+    "normalized": [
+      {
+        "skill": "banner-design-director",
+        "prompt": "A local ratio test design",
+        "refs": [
+          "loose:0"
+        ],
+        "width": 2048,
+        "height": 878,
+        "ratio": "21:9",
+        "_user_ratio": "21:9",
+        "_strict_user_ratio_994": "21:9",
+        "count": 1,
+        "size_lock": true,
+        "size_lock_mode": "ratio"
+      }
+    ],
+    "actual_provider_posts": [
+      [
+        "openai/gpt-image-2.6-flare/edit",
+        {
+          "images": [
+            "http://127.0.0.1:43981/cdn/up.png"
+          ],
+          "aspect_ratio": "21:9",
+          "resolution": "2k",
+          "prompt": "A local ratio test design"
+        }
+      ]
+    ],
+    "mock_only": true,
+    "real_provider_runtime_tested": false
+  },
+  {
+    "capture": "photo-split-poster-4x5-en-rollback.png",
+    "skill": "photo-split-poster",
+    "requested": "4:5",
+    "lang": "en",
+    "rollback": true,
+    "already_default_control": true,
+    "normalized": [
+      {
+        "skill": "photo-split-poster",
+        "prompt": "A local ratio test design",
+        "refs": [
+          "loose:0"
+        ],
+        "width": 1638,
+        "height": 2048,
+        "ratio": "4:5",
+        "count": 1,
+        "size_lock": true
+      }
+    ],
+    "actual_provider_posts": [
+      [
+        "openai/gpt-image-2.6-flare/edit",
+        {
+          "images": [
+            "http://127.0.0.1:36077/cdn/up.png"
+          ],
+          "aspect_ratio": "4:5",
+          "resolution": "2k",
+          "prompt": "A local ratio test design"
+        }
+      ]
+    ],
+    "mock_only": true,
+    "real_provider_runtime_tested": false
+  },
+  {
+    "capture": "photo-split-poster-4x5-en-fixed.png",
+    "skill": "photo-split-poster",
+    "requested": "4:5",
+    "lang": "en",
+    "rollback": false,
+    "already_default_control": true,
+    "normalized": [
+      {
+        "skill": "photo-split-poster",
+        "prompt": "A local ratio test design",
+        "refs": [
+          "loose:0"
+        ],
+        "width": 1638,
+        "height": 2048,
+        "ratio": "4:5",
+        "_user_ratio": "4:5",
+        "_strict_user_ratio_994": "4:5",
+        "count": 1,
+        "size_lock": true,
+        "size_lock_mode": "ratio"
+      }
+    ],
+    "actual_provider_posts": [
+      [
+        "openai/gpt-image-2.6-flare/edit",
+        {
+          "images": [
+            "http://127.0.0.1:43591/cdn/up.png"
+          ],
+          "aspect_ratio": "4:5",
+          "resolution": "2k",
+          "prompt": "A local ratio test design"
+        }
+      ]
+    ],
+    "mock_only": true,
+    "real_provider_runtime_tested": false
+  },
+  {
+    "capture": "logo-abstract-4x5-zh-rollback.png",
+    "skill": "logo-abstract",
+    "requested": "4:5",
+    "lang": "zh",
+    "rollback": true,
+    "already_default_control": false,
+    "normalized": [
+      {
+        "skill": "logo-abstract",
+        "prompt": "A local ratio test design",
+        "refs": [
+          "loose:0"
+        ],
+        "width": 1024,
+        "height": 1024,
+        "ratio": "1:1",
+        "count": 1,
+        "size_lock": true
+      }
+    ],
+    "actual_provider_posts": [
+      [
+        "openai/gpt-image-2.6-flare/edit",
+        {
+          "images": [
+            "http://127.0.0.1:37349/cdn/up.png"
+          ],
+          "aspect_ratio": "1:1",
+          "resolution": "1k",
+          "prompt": "A local ratio test design"
+        }
+      ]
+    ],
+    "mock_only": true,
+    "real_provider_runtime_tested": false
+  },
+  {
+    "capture": "logo-abstract-4x5-zh-fixed.png",
+    "skill": "logo-abstract",
+    "requested": "4:5",
+    "lang": "zh",
+    "rollback": false,
+    "already_default_control": false,
+    "normalized": [
+      {
+        "skill": "logo-abstract",
+        "prompt": "A local ratio test design",
+        "refs": [
+          "loose:0"
+        ],
+        "width": 1638,
+        "height": 2048,
+        "ratio": "4:5",
+        "_user_ratio": "4:5",
+        "_strict_user_ratio_994": "4:5",
+        "count": 1,
+        "size_lock": true,
+        "size_lock_mode": "ratio"
+      }
+    ],
+    "actual_provider_posts": [
+      [
+        "openai/gpt-image-2.6-flare/edit",
+        {
+          "images": [
+            "http://127.0.0.1:46045/cdn/up.png"
+          ],
+          "aspect_ratio": "4:5",
+          "resolution": "2k",
+          "prompt": "A local ratio test design"
+        }
+      ]
+    ],
+    "mock_only": true,
+    "real_provider_runtime_tested": false
+  },
+  {
+    "capture": "naive-illustration-9x16-en-rollback.png",
+    "skill": "naive-illustration",
+    "requested": "9:16",
+    "lang": "en",
+    "rollback": true,
+    "already_default_control": false,
+    "normalized": [
+      {
+        "skill": "naive-illustration",
+        "prompt": "A local ratio test design",
+        "refs": [
+          "loose:0"
+        ],
+        "width": 1024,
+        "height": 1024,
+        "ratio": "1:1",
+        "count": 1,
+        "size_lock": true
+      }
+    ],
+    "actual_provider_posts": [
+      [
+        "openai/gpt-image-2.6-flare/edit",
+        {
+          "images": [
+            "http://127.0.0.1:34055/cdn/up.png"
+          ],
+          "aspect_ratio": "1:1",
+          "resolution": "1k",
+          "prompt": "A local ratio test design"
+        }
+      ]
+    ],
+    "mock_only": true,
+    "real_provider_runtime_tested": false
+  },
+  {
+    "capture": "naive-illustration-9x16-en-fixed.png",
+    "skill": "naive-illustration",
+    "requested": "9:16",
+    "lang": "en",
+    "rollback": false,
+    "already_default_control": false,
+    "normalized": [
+      {
+        "skill": "naive-illustration",
+        "prompt": "A local ratio test design",
+        "refs": [
+          "loose:0"
+        ],
+        "width": 1152,
+        "height": 2048,
+        "ratio": "9:16",
+        "_user_ratio": "9:16",
+        "_strict_user_ratio_994": "9:16",
+        "count": 1,
+        "size_lock": true,
+        "size_lock_mode": "ratio"
+      }
+    ],
+    "actual_provider_posts": [
+      [
+        "openai/gpt-image-2.6-flare/edit",
+        {
+          "images": [
+            "http://127.0.0.1:45837/cdn/up.png"
+          ],
+          "aspect_ratio": "9:16",
+          "resolution": "2k",
+          "prompt": "A local ratio test design"
+        }
+      ]
+    ],
+    "mock_only": true,
+    "real_provider_runtime_tested": false
+  },
+  {
+    "capture": "photo-split-poster-9x16-zh-rollback.png",
+    "skill": "photo-split-poster",
+    "requested": "9:16",
+    "lang": "zh",
+    "rollback": true,
+    "already_default_control": false,
+    "normalized": [
+      {
+        "skill": "photo-split-poster",
+        "prompt": "A local ratio test design",
+        "refs": [
+          "loose:0"
+        ],
+        "width": 1638,
+        "height": 2048,
+        "ratio": "4:5",
+        "count": 1,
+        "size_lock": true
+      }
+    ],
+    "actual_provider_posts": [
+      [
+        "openai/gpt-image-2.6-flare/edit",
+        {
+          "images": [
+            "http://127.0.0.1:37345/cdn/up.png"
+          ],
+          "aspect_ratio": "4:5",
+          "resolution": "2k",
+          "prompt": "A local ratio test design"
+        }
+      ]
+    ],
+    "mock_only": true,
+    "real_provider_runtime_tested": false
+  },
+  {
+    "capture": "photo-split-poster-9x16-zh-fixed.png",
+    "skill": "photo-split-poster",
+    "requested": "9:16",
+    "lang": "zh",
+    "rollback": false,
+    "already_default_control": false,
+    "normalized": [
+      {
+        "skill": "photo-split-poster",
+        "prompt": "A local ratio test design",
+        "refs": [
+          "loose:0"
+        ],
+        "width": 1152,
+        "height": 2048,
+        "ratio": "9:16",
+        "_user_ratio": "9:16",
+        "_strict_user_ratio_994": "9:16",
+        "count": 1,
+        "size_lock": true,
+        "size_lock_mode": "ratio"
+      }
+    ],
+    "actual_provider_posts": [
+      [
+        "openai/gpt-image-2.6-flare/edit",
+        {
+          "images": [
+            "http://127.0.0.1:46635/cdn/up.png"
+          ],
+          "aspect_ratio": "9:16",
+          "resolution": "2k",
+          "prompt": "A local ratio test design"
+        }
+      ]
+    ],
+    "mock_only": true,
+    "real_provider_runtime_tested": false
+  }
+]

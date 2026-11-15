@@ -1,0 +1,7 @@
+{
+  "head": "05eea0a5818ced781c7a1ca9868c999255c5344d",
+  "measured_during_final_gate_e2e_before_cleanup": true,
+  "gate_rebuilt_dist_diff_exit": 0,
+  "untracked_dist": [],
+  "matching_committed_dist": true
+}

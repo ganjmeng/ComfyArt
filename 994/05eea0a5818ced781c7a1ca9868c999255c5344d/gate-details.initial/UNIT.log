@@ -1,0 +1,253 @@
+........................................................................ [  1%]
+........................................................................ [  2%]
+........................................................................ [  4%]
+........................................................................ [  5%]
+........................................................................ [  7%]
+........................................................................ [  8%]
+...............s........................................................ [ 10%]
+........................................................................ [ 11%]
+........................................................................ [ 13%]
+........................................................................ [ 14%]
+........................................................................ [ 16%]
+........................................................................ [ 17%]
+....ss.................................................................. [ 19%]
+........................................................................ [ 20%]
+........................................................................ [ 22%]
+........................................................................ [ 23%]
+........................................................................ [ 25%]
+........................................................................ [ 26%]
+........................................................................ [ 27%]
+........................................................................ [ 29%]
+.....................................................................sss [ 30%]
+ssssssssssss............................................................ [ 32%]
+..................................................................ss.... [ 33%]
+........................................................................ [ 35%]
+........................................................................ [ 36%]
+........................................................................ [ 38%]
+........................................................................ [ 39%]
+........................................................................ [ 41%]
+........................................................................ [ 42%]
+...............F........................................................ [ 44%]
+........................................................................ [ 45%]
+........................................................................ [ 47%]
+........................................................................ [ 48%]
+........................................................................ [ 50%]
+........................................................................ [ 51%]
+........................................................................ [ 52%]
+........................................................................ [ 54%]
+........................................................................ [ 55%]
+........................................................................ [ 57%]
+........................................................FFF............. [ 58%]
+........................................................................ [ 60%]
+........................................................................ [ 61%]
+........................................................................ [ 63%]
+........................................................................ [ 64%]
+........................................................................ [ 66%]
+........................................................................ [ 67%]
+........................................................................ [ 69%]
+........................................................................ [ 70%]
+........................................................................ [ 72%]
+.....................................................................sss [ 73%]
+s....................................................................... [ 75%]
+........................................................................ [ 76%]
+........................................................................ [ 77%]
+........................................................................ [ 79%]
+........................................................................ [ 80%]
+........................................................................ [ 82%]
+........................................................................ [ 83%]
+........................................................................ [ 85%]
+..............................s......................................... [ 86%]
+........................................................................ [ 88%]
+........................................................................ [ 89%]
+........................................................................ [ 91%]
+........................................................................ [ 92%]
+........................................................................ [ 94%]
+........................................................................ [ 95%]
+........................................................................ [ 97%]
+........................................................................ [ 98%]
+......................................................................   [100%]
+=================================== FAILURES ===================================
+__________________ test_locales_only_add_memory_retrieved_430 __________________
+
+    def test_locales_only_add_memory_retrieved_430():
+        """#430 A + #436 Arti memory entry copy; chat memory strings stay."""
+        # keys #436 intentionally changes / adds on Arti page
+        allow = {
+            "arti.levelStatus", "arti.levelHint",
+            "arti.tellYourself", "arti.tellYourselfDesc",
+            "arti.learnPast", "arti.learnPastDesc", "arti.learnPastSoon",
+            "arti.memory.tabEmpty", "arti.memory.goComplete",
+            # #436 onboard welcome / Q1 copy
+            "memoryDialog.welcomeHi", "memoryDialog.welcomeBody", "memoryDialog.ready",
+            "memoryDialog.skip", "memoryDialog.confirm", "memoryDialog.other",
+            "memoryDialog.nickArtist", "memoryDialog.nickBoss", "memoryDialog.nickCaptain",
+            "memoryDialog.partTitle.about", "memoryDialog.partTitle.work",
+            "memoryDialog.partTitle.taste", "memoryDialog.partTitle.assets",
+            "memoryDialog.stepOf", "memoryDialog.freeHint",
+            # #806: motion title/desc (动态海报); desc.motion is the pre-id key if present
+            "skills.motionPoster", "skills.desc.motion",
+            # #751: Final-16 zh display names (INDEX / product-confirmed)
+            "skills.logoMaterialExplorer", "skills.packagingDesign",
+            # #570: to3d / upscale tool panel copy
+            "toolPanel.reset", "toolPanel.useNow", "toolPanel.model", "toolPanel.mode", "toolPanel.faithful", "toolPanel.enhance", "toolPanel.resolution",
+            # #423: 「已保存 N 条」 under the memory row
+            "chatMessage.memorySavedCount",
+            # portrait-studio redo-one PR (stacked on #926): step labels for the three portrait-studio tools
+            "bot.portraitStudioPlan", "bot.portraitStudioDone", "bot.portraitStudioRedo",
+            # #494: 技能页标签中文化、作者行「个人」，移除旧作者与浏览量文案
+            "home.skillsFavourites", "home.skillsExplore", "home.skillsPersonal",
+            "home.skillsAuthorPersonal", "home.skillsCommunity", "home.skillsViews",
+            "home.skills", "home.skillsCreate",
+            # #673: 隐藏技能的直显提示（旧链接/重新生成/试用）
+            "skills.hiddenUnavailable",
+            # #509: 配乐时长提示、空风格拦截、自定义配乐工作流文案（非记忆文案）
+            "audio.needMusicPrompt", "audio.needLyrics", "audio.durationByLyrics",
+            "customWorkflows.action.music", "customWorkflows.musicGone", "customWorkflows.group.audio",
+            "customWorkflows.action.speech", "customWorkflows.action.clone", "customWorkflows.action.sfx",
+            "customWorkflows.speechGone",
+            # #509 PR3: video extend/upscale/cutout + model3d custom workflows
+            "customWorkflows.action.extend", "customWorkflows.action.videoUpscale",
+            "customWorkflows.action.videoCutout", "customWorkflows.action.model3d",
+            "customWorkflows.group.model", "customWorkflows.model3dGone", "customWorkflows.needsVideo",
+            # #763: composer placeholder aligned to the original ("@" for context, "/" for skills)
+            "composer.describeYourDesignNeedsFor", "chatMessage.other", "chatMessage.skipThisQuestion",
+            "composer.atSearchPlaceholder", "composer.atGroupModel",
+            # #542: Skill Creator landing heading (not memory copy)
+            "agentPanel.creatorStartTitle",
+            # #539 PR-B: Assets page empty state + embedded detail upload copy (not memory copy)
+            "assets.emptyTitle", "assets.emptyHint", "assets.dropHint", "assets.importUrl", "assets.dropFormats",
+            "assets.newItem",
+            # #539 PR-C: 20MB upload + URL import errors (not memory copy)
+            "assets.tooLarge", "assets.urlInvalid", "assets.badFormat", "assets.urlFormat",
+            # #568: top-bar Saved/Saving label removed (not memory copy)
+            "projectHeader.saved", "projectHeader.savedAt", "projectHeader.saving",
+            # #672: builtin custom-workflow card removed (not memory copy)
+            "skills.customWorkflow", "skills.cat.custom-workflow", "skills.desc.custom-workflow",
+            # #712: billed-with-no-image failure copy (not memory copy)
+            "wsErr.noOutput", "wsErr.noOutputNoAmount", "wsErr.noTaskId", "wsErr.noTaskIdNoAmount", "wsErr.unregisteredModel",
+            "wsErr.timeout", "wsErr.timeoutNoAmount", "wsErr.taskRef",  # #712: 后台 -> 控制台, {0} carries the $
+            # #825/#871: auto-pick pill reason prefix and skill-pin reason (not memory copy)
+            "chatMessage.autoPickedPrefix", "chatMessage.skillPinnedModel",
+            # #877 / #877 v2: conversation-model settings copy
+            "botSettings.llmSourceOfficial", "botSettings.llmSourceCustom",
+            "botSettings.llmSourceAdmin", "botSettings.useOfficialDefault", "botSettings.customLlmFailed",
+            "botSettings.customLlmFailHost", "botSettings.customLlmFailAuth",
+            "botSettings.customLlmFailTimeout", "botSettings.customLlmFailHttp",
+            "botSettings.llmManagedByAdmin", "botSettings.llmModeCustom",
+            "botSettings.llmModeOfficial", "botSettings.llmModeOfficialSub", "botSettings.llmModeCustomSub",
+            "botSettings.customLlmNotSetup", "botSettings.customLlmNotSetupModel", "botSettings.llmOfficialNotice",
+            "botSettings.llmCustomKept", "botSettings.llmKeyProvidedByAdmin",
+            "botSettings.builtinAgentHint", "botSettings.llmOfficialNotReady",
+            "botSettings.llmProvider", "botSettings.useCustomUrl",
+            "botSettings.fetchModels", "botSettings.refetchModels",
+            "botSettings.chooseModel", "botSettings.searchModels", "botSettings.modelCountHint",
+            "botSettings.chooseModelFirst", "botSettings.fetchModelsFailed",
+            "botSettings.enterUrlFirst", "botSettings.testOkWithModel", "botSettings.modelComboboxHint",
+            "botSettings.localLlmUrl", "botSettings.localLlmModel",
+            "botSettings.localLlmUrlHint", "botSettings.localLlmModelHint", "botSettings.localLlmKeyHint",
+            "botSettings.provider.wavespeed", "botSettings.provider.deepseek",
+            "botSettings.provider.siliconflow", "botSettings.provider.openrouter",
+            "botSettings.provider.openai", "botSettings.provider.ollama", "botSettings.provider.custom",
+            # #911 P1: Sunburst size-tolerance info toast (not memory copy)
+            "jobs.sizeNotice", "jobs.sizeNoticeUnread",
+            "bot.composeBannerText",  # #925
+            "runStop.stillGenerating",  # #943
+        }
+        for p, v in (("src/locales/zh.json", "记忆已读取"), ("src/locales/en.json", "Memory retrieved")):
+            cur = json.loads(_src(p))
+            assert cur.pop("chatMessage.memoryRetrieved") == v
+            cur.pop("chatMessage.memoryUpdated")  # #441: › moved to an svg
+            cur.pop("chatMessage.memoryUpdating", None)
+            for k in allow:
+                cur.pop(k, None)
+            # #463 skill import copy is its own namespace, not memory copy
+            for k in [k for k in cur if k.startswith("skillsImport.")]:
+                cur.pop(k)
+            # #751 Final-16 hard cut: only Final skillKeys (+ their old assetDir aliases) leave the cat/desc check
+            final_slugs = set(FINAL_IDS) | {asset_dir(sid) for sid in FINAL_IDS}
+            for k in [k for k in cur if k.startswith(("skills.cat.", "skills.desc."))]:
+                slug = k.split(".", 2)[-1]
+                if slug in final_slugs:
+                    cur.pop(k)
+            digest = hashlib.sha256(_canonical_json(cur)).hexdigest()
+>           assert digest == LOCALE_NORMALIZED_SHA256[p], (p, digest)
+E           AssertionError: ('src/locales/zh.json', '9517a0772fd627c40d4149e45f9f4e3643f51d85b84948729840803481f7ee32')
+E           assert '9517a0772fd6...0803481f7ee32' == 'c17a956096a2...f999c55bf4b20'
+E             
+E             - c17a956096a202147c7ef735da273a81d93211ed4d133423488f999c55bf4b20
+E             + 9517a0772fd627c40d4149e45f9f4e3643f51d85b84948729840803481f7ee32
+
+tests/test_memory_once_423.py:244: AssertionError
+_ test_portrait_studio_and_self_check_match_pinned_sha256[bot/skill_output.py] _
+
+path = 'bot/skill_output.py'
+
+    @pytest.mark.parametrize("path", ["api/portrait_studio.py", "bot/self_check.py", "bot/skill_output.py"])
+    def test_portrait_studio_and_self_check_match_pinned_sha256(path):
+>       assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == PINNED_SHA256[path], path
+E       AssertionError: bot/skill_output.py
+E       assert 'd53c3d6c7222...9b27af163bbe8' == '4e27e5c34713...449202a72bdb5'
+E         
+E         - 4e27e5c347138450aca8597a2bada6afbb9ccbc73c64068eaf0449202a72bdb5
+E         + d53c3d6c722232ce0bf5665788de893ab44227dee435faef64e9b27af163bbe8
+
+tests/test_product_packaging_flow.py:525: AssertionError
+_ test_locales_match_pinned_sha256_except_allowed_extras[src/locales/zh.json-zh] _
+
+path = 'src/locales/zh.json', lang = 'zh'
+
+    @pytest.mark.parametrize("path,lang", [("src/locales/zh.json", "zh"), ("src/locales/en.json", "en")])
+    def test_locales_match_pinned_sha256_except_allowed_extras(path, lang):
+        ours = json.loads((ROOT / path).read_text(encoding="utf-8"))
+        extras = LOCALE_EXTRAS[lang]
+        assert {k: ours.get(k) for k in extras} == extras, path
+        base = {k: v for k, v in ours.items() if k not in extras}
+>       assert hashlib.sha256(_canonical_json(base)).hexdigest() == LOCALE_BASE_SHA256[path], path
+E       AssertionError: src/locales/zh.json
+E       assert '60b717b424c9...2736cbc578dac' == '4a96ca4d146c...062209472755a'
+E         
+E         - 4a96ca4d146ccb8c8a336c643ebd9e1d830ebee5d843d5f5719062209472755a
+E         + 60b717b424c9ad726146d3b1723183dbe9a8f912d4241582b912736cbc578dac
+
+tests/test_product_packaging_flow.py:572: AssertionError
+_ test_locales_match_pinned_sha256_except_allowed_extras[src/locales/en.json-en] _
+
+path = 'src/locales/en.json', lang = 'en'
+
+    @pytest.mark.parametrize("path,lang", [("src/locales/zh.json", "zh"), ("src/locales/en.json", "en")])
+    def test_locales_match_pinned_sha256_except_allowed_extras(path, lang):
+        ours = json.loads((ROOT / path).read_text(encoding="utf-8"))
+        extras = LOCALE_EXTRAS[lang]
+        assert {k: ours.get(k) for k in extras} == extras, path
+        base = {k: v for k, v in ours.items() if k not in extras}
+>       assert hashlib.sha256(_canonical_json(base)).hexdigest() == LOCALE_BASE_SHA256[path], path
+E       AssertionError: src/locales/en.json
+E       assert '1acd96885903...7f50bbae3e682' == '887b52a29e5a...ac984eca4369e'
+E         
+E         - 887b52a29e5a337c54d2ca86e650971eea7e78a7acb71cafd78ac984eca4369e
+E         + 1acd968859030b6d9ffe2f3c3a9e0faa10806edc1bb6bdf9bce7f50bbae3e682
+
+tests/test_product_packaging_flow.py:572: AssertionError
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_agent_loop_audit_410.py:270: set AUDIT410_SHOTS to write PNGs
+SKIPPED [1] tests/test_bot_providers.py:184: claude CLI not found (resolve_claude_command() is None); _build_argv needs the binary — install Claude Code or skip on this host
+SKIPPED [1] tests/test_bot_providers.py:201: claude CLI not found (resolve_claude_command() is None); _build_argv needs the binary — install Claude Code or skip on this host
+SKIPPED [1] tests/test_design_573_78_shots.py:28: set DESIGN_573_78_SHOOT=1 to re-shoot
+SKIPPED [1] tests/test_design_576_78_shots.py:28: set DESIGN_576_78_SHOOT=1 to re-shoot
+SKIPPED [1] tests/test_design_581_78_shots.py:28: set DESIGN_581_78_SHOOT=1 to re-shoot
+SKIPPED [1] tests/test_design_583_78_shots.py:28: set DESIGN_583_78_SHOOT=1 to re-shoot
+SKIPPED [1] tests/test_design_590_78_shots.py:31: set DESIGN_590_78_SHOOT=1 to re-shoot
+SKIPPED [1] tests/test_design_595_78_shots.py:31: set DESIGN_595_78_SHOOT=1 to re-shoot
+SKIPPED [1] tests/test_design_601_78_shots.py:28: set DESIGN_601_78_SHOOT=1 to re-shoot
+SKIPPED [1] tests/test_design_607_78_shots.py:31: set DESIGN_607_78_SHOOT=1 to re-shoot
+SKIPPED [1] tests/test_design_608_78_shots.py:31: set DESIGN_608_78_SHOOT=1 to re-shoot
+SKIPPED [1] tests/test_design_622_78_shots.py:28: set DESIGN_622_78_SHOOT=1 to re-shoot
+SKIPPED [1] tests/test_design_623_78_shots.py:28: set DESIGN_623_78_SHOOT=1 to re-shoot
+SKIPPED [1] tests/test_design_635_78_shots.py:28: set DESIGN_635_78_SHOOT=1 to re-shoot
+SKIPPED [1] tests/test_design_636_78_shots.py:28: set DESIGN_636_78_SHOOT=1 to re-shoot
+SKIPPED [1] tests/test_design_637_78_shots.py:21: set DESIGN_637_78_SHOOT=1
+SKIPPED [1] tests/test_design_638_78_shots.py:31: set DESIGN_638_78_SHOOT=1 to re-shoot
+SKIPPED [2] tests/test_hold_751.py:114: needs the masked raw inputs
+SKIPPED [4] tests/test_run_stop_render_393.py:274: SHOT_DIR not set
+SKIPPED [1] tests/test_skills_create_audit_411.py:191: set AUDIT411_SHOTS to write PNGs
+4 failed, 4865 passed, 25 skipped, 604 deselected in 424.12s (0:07:04)

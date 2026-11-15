@@ -1,0 +1,18 @@
+Issue #994 mock $0 full gate; tip=fddcf8df09117bd0f1d67f3322882e72864d25ea; live paid provider untested
+994 TSC_OK
+994 UNIT: collected=4894 collect_exit=0
+994 UNIT node-unit: 456 tests (node v24.22.1)
+994 UNIT: duration=427s
+994 UNIT: 4 failed, 4865 passed, 25 skipped, 604 deselected in 424.12s (0:07:04)
+994 UNIT: exit=1
+994 GATE_FAIL: UNIT pytest exit 1
+994 BUILD_OK(local, not committed)
+994 E2E: collected=208 collect_exit=0
+994 E2E: duration=471s
+994 E2E: 208 passed, 5290 deselected in 469.35s (0:07:49)
+994 E2E: exit=0
+ M docs/qa/707-local-canvas/before-after-placed.png
+ M docs/qa/707-local-canvas/game-art-placed.png
+994 FAILURE_LOGS: /tmp/gate_994_Vfi1.failure.tar.gz (tracebacks in /tmp/gate_994_Vfi1)
+994 GATE_EXIT=1
+SHELL_GATE_EXIT=1; mock $0; no live paid provider calls

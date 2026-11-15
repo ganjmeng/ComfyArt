@@ -1,0 +1,1726 @@
+{
+  "catalog_source": "tests/fixtures/wavespeed_catalog_subset.json",
+  "catalog_sha256": "240e94840af539175d4acb310050ef8c1c014641dba6a99d76d36b2ba02f78a9",
+  "auto_models_sha256_unchanged": "9ef106b6133d427f04347d0c31c31931e641e1cd47d2a86c0d0769cde48c5d7b",
+  "app_ratios": [
+    "1:1",
+    "1:2",
+    "2:1",
+    "1:3",
+    "3:1",
+    "2:3",
+    "3:2",
+    "3:4",
+    "4:3",
+    "4:5",
+    "5:4",
+    "9:16",
+    "16:9",
+    "9:21",
+    "21:9",
+    "1:4",
+    "4:1",
+    "1:8",
+    "8:1"
+  ],
+  "model_caps": {
+    "bytedance/seedream-v5.0-pro": {
+      "snapshot_present": true,
+      "aspect_ratio_enum": [
+        "1:1",
+        "1:2",
+        "2:1",
+        "1:3",
+        "3:1",
+        "2:3",
+        "3:2",
+        "3:4",
+        "4:3",
+        "4:5",
+        "5:4",
+        "9:16",
+        "16:9",
+        "9:21",
+        "21:9"
+      ],
+      "size_schema": null,
+      "app_recognized_intersection": [
+        "1:1",
+        "1:2",
+        "2:1",
+        "1:3",
+        "3:1",
+        "2:3",
+        "3:2",
+        "3:4",
+        "4:3",
+        "4:5",
+        "5:4",
+        "9:16",
+        "16:9",
+        "9:21",
+        "21:9"
+      ]
+    },
+    "bytedance/seedream-v5.0-pro/edit": {
+      "snapshot_present": true,
+      "aspect_ratio_enum": [
+        "1:1",
+        "1:2",
+        "2:1",
+        "1:3",
+        "3:1",
+        "2:3",
+        "3:2",
+        "3:4",
+        "4:3",
+        "4:5",
+        "5:4",
+        "9:16",
+        "16:9",
+        "9:21",
+        "21:9"
+      ],
+      "size_schema": null,
+      "app_recognized_intersection": [
+        "1:1",
+        "1:2",
+        "2:1",
+        "1:3",
+        "3:1",
+        "2:3",
+        "3:2",
+        "3:4",
+        "4:3",
+        "4:5",
+        "5:4",
+        "9:16",
+        "16:9",
+        "9:21",
+        "21:9"
+      ]
+    },
+    "google/nano-banana-2.1/edit": {
+      "snapshot_present": true,
+      "aspect_ratio_enum": [
+        "1:1",
+        "3:2",
+        "2:3",
+        "3:4",
+        "4:3",
+        "4:5",
+        "5:4",
+        "9:16",
+        "16:9",
+        "21:9",
+        "1:4",
+        "4:1",
+        "1:8",
+        "8:1"
+      ],
+      "size_schema": null,
+      "app_recognized_intersection": [
+        "1:1",
+        "2:3",
+        "3:2",
+        "3:4",
+        "4:3",
+        "4:5",
+        "5:4",
+        "9:16",
+        "16:9",
+        "21:9",
+        "1:4",
+        "4:1",
+        "1:8",
+        "8:1"
+      ]
+    },
+    "google/nano-banana-2.1/text-to-image": {
+      "snapshot_present": true,
+      "aspect_ratio_enum": [
+        "1:1",
+        "3:2",
+        "2:3",
+        "3:4",
+        "4:3",
+        "4:5",
+        "5:4",
+        "9:16",
+        "16:9",
+        "21:9",
+        "1:4",
+        "4:1",
+        "1:8",
+        "8:1"
+      ],
+      "size_schema": null,
+      "app_recognized_intersection": [
+        "1:1",
+        "2:3",
+        "3:2",
+        "3:4",
+        "4:3",
+        "4:5",
+        "5:4",
+        "9:16",
+        "16:9",
+        "21:9",
+        "1:4",
+        "4:1",
+        "1:8",
+        "8:1"
+      ]
+    },
+    "midjourney/text-to-image": {
+      "snapshot_present": true,
+      "aspect_ratio_enum": [
+        "1:1",
+        "9:16",
+        "16:9",
+        "4:3",
+        "3:4",
+        "2:3",
+        "3:2",
+        "9:21",
+        "21:9"
+      ],
+      "size_schema": null,
+      "app_recognized_intersection": [
+        "1:1",
+        "2:3",
+        "3:2",
+        "3:4",
+        "4:3",
+        "9:16",
+        "16:9",
+        "9:21",
+        "21:9"
+      ]
+    },
+    "openai/gpt-image-2.6-flare/edit": {
+      "snapshot_present": true,
+      "aspect_ratio_enum": [
+        "1:1",
+        "1:2",
+        "2:1",
+        "1:3",
+        "3:1",
+        "2:3",
+        "3:2",
+        "3:4",
+        "4:3",
+        "4:5",
+        "5:4",
+        "9:16",
+        "16:9",
+        "9:21",
+        "21:9"
+      ],
+      "size_schema": null,
+      "app_recognized_intersection": [
+        "1:1",
+        "1:2",
+        "2:1",
+        "1:3",
+        "3:1",
+        "2:3",
+        "3:2",
+        "3:4",
+        "4:3",
+        "4:5",
+        "5:4",
+        "9:16",
+        "16:9",
+        "9:21",
+        "21:9"
+      ]
+    },
+    "openai/gpt-image-2.6-flare/text-to-image": {
+      "snapshot_present": true,
+      "aspect_ratio_enum": [
+        "1:1",
+        "1:2",
+        "2:1",
+        "1:3",
+        "3:1",
+        "2:3",
+        "3:2",
+        "3:4",
+        "4:3",
+        "4:5",
+        "5:4",
+        "9:16",
+        "16:9",
+        "9:21",
+        "21:9"
+      ],
+      "size_schema": null,
+      "app_recognized_intersection": [
+        "1:1",
+        "1:2",
+        "2:1",
+        "1:3",
+        "3:1",
+        "2:3",
+        "3:2",
+        "3:4",
+        "4:3",
+        "4:5",
+        "5:4",
+        "9:16",
+        "16:9",
+        "9:21",
+        "21:9"
+      ]
+    },
+    "recraft-ai/recraft-v3": {
+      "snapshot_present": true,
+      "aspect_ratio_enum": [
+        "1:1",
+        "16:9",
+        "9:16",
+        "4:3",
+        "3:4"
+      ],
+      "size_schema": null,
+      "app_recognized_intersection": [
+        "1:1",
+        "3:4",
+        "4:3",
+        "9:16",
+        "16:9"
+      ]
+    }
+  },
+  "typed_skills": [
+    {
+      "skill": "anim-2d",
+      "default": {
+        "width": 2048,
+        "height": 1152,
+        "ratio": "16:9",
+        "images": 1,
+        "images_min": null,
+        "images_max": null,
+        "media": "video"
+      },
+      "default_calls": null,
+      "refs_contract": "primary visual",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "typed flat row",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image/still generate_image only; video contract unchanged",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "animated-poster",
+      "default": {
+        "width": 1536,
+        "height": 2048,
+        "ratio": "3:4",
+        "images": 1,
+        "images_min": null,
+        "images_max": null,
+        "media": "video"
+      },
+      "default_calls": null,
+      "refs_contract": "source artwork",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "typed flat row",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image/still generate_image only; video contract unchanged",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "banner-design-director",
+      "default": {
+        "width": 2048,
+        "height": 1152,
+        "ratio": "16:9",
+        "images": 1,
+        "images_min": null,
+        "images_max": null,
+        "media": null
+      },
+      "default_calls": null,
+      "refs_contract": "uploaded refs; pass every one",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "typed flat row",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image calls",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "commerce-strategist",
+      "default": {
+        "width": 1024,
+        "height": 1024,
+        "ratio": "1:1",
+        "images": 1,
+        "images_min": null,
+        "images_max": null,
+        "media": null
+      },
+      "default_calls": null,
+      "refs_contract": "optional ref assets",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "typed flat row",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image calls",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "crayon-sketch",
+      "default": {
+        "width": 1024,
+        "height": 1024,
+        "ratio": "1:1",
+        "images": 1,
+        "images_min": null,
+        "images_max": null,
+        "media": null
+      },
+      "default_calls": null,
+      "refs_contract": "subject image (image 1)",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "typed flat row",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image calls",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "creator-identity",
+      "default": {
+        "width": 1024,
+        "height": 1024,
+        "ratio": "1:1",
+        "images": 3,
+        "images_min": null,
+        "images_max": null,
+        "media": null
+      },
+      "default_calls": [
+        {
+          "width": 1024,
+          "height": 1024,
+          "ratio": "1:1",
+          "images": 1,
+          "label": "avatar 1:1"
+        },
+        {
+          "width": 2048,
+          "height": 1152,
+          "ratio": "16:9",
+          "images": 1,
+          "label": "channel cover 16:9"
+        },
+        {
+          "width": 1024,
+          "height": 1024,
+          "ratio": "1:1",
+          "images": 1,
+          "label": "social template 1:1"
+        }
+      ],
+      "refs_contract": "creator refs",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "follow-reference or call-plan defaults",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image calls",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "crt-interface",
+      "default": {
+        "width": 2048,
+        "height": 1536,
+        "ratio": "4:3",
+        "images": 1,
+        "images_min": null,
+        "images_max": null,
+        "media": null
+      },
+      "default_calls": null,
+      "refs_contract": "uploaded refs",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "typed flat row",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image calls",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "fabric-collage",
+      "default": {
+        "width": 1024,
+        "height": 1024,
+        "ratio": "1:1",
+        "images": 1,
+        "images_min": null,
+        "images_max": null,
+        "media": null
+      },
+      "default_calls": null,
+      "refs_contract": "uploaded refs",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "typed flat row",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image calls",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "flash-cut-video",
+      "default": {
+        "width": 2048,
+        "height": 1152,
+        "ratio": "16:9",
+        "images": 1,
+        "images_min": null,
+        "images_max": null,
+        "media": "video"
+      },
+      "default_calls": null,
+      "refs_contract": "landscape 16:9 screenshot",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "typed flat row",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image/still generate_image only; video contract unchanged",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "interior-architectural-visualization",
+      "default": {
+        "width": 2048,
+        "height": 1152,
+        "ratio": "16:9",
+        "images": 1,
+        "images_min": null,
+        "images_max": null,
+        "media": null
+      },
+      "default_calls": null,
+      "refs_contract": "uploaded refs; eye-level wide shot, detail vignette is 4:3",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "typed flat row",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image calls",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "lifestyle-scene",
+      "default": {
+        "width": 1024,
+        "height": 1024,
+        "ratio": "1:1",
+        "images": 1,
+        "images_min": null,
+        "images_max": null,
+        "media": null
+      },
+      "default_calls": null,
+      "refs_contract": "product image (when provided)",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "typed flat row",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image calls",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "live-promo-decor",
+      "default": {
+        "width": 1152,
+        "height": 2048,
+        "ratio": "9:16",
+        "images": 3,
+        "images_min": null,
+        "images_max": null,
+        "media": null
+      },
+      "default_calls": [
+        {
+          "width": 1152,
+          "height": 2048,
+          "ratio": "9:16",
+          "images": 1,
+          "label": "background 9:16"
+        },
+        {
+          "width": 1152,
+          "height": 2048,
+          "ratio": "9:16",
+          "images": 1,
+          "label": "price tag 9:16"
+        },
+        {
+          "width": 1152,
+          "height": 2048,
+          "ratio": "9:16",
+          "images": 1,
+          "label": "corner badge 9:16"
+        }
+      ],
+      "refs_contract": "product/stream refs",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "follow-reference or call-plan defaults",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image calls",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "logo-abstract",
+      "default": {
+        "width": 1024,
+        "height": 1024,
+        "ratio": "1:1",
+        "images": 1,
+        "images_min": null,
+        "images_max": null,
+        "media": null
+      },
+      "default_calls": null,
+      "refs_contract": "reference photo (image 1)",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "typed flat row",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image calls",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "logo-animation",
+      "default": {
+        "width": 2048,
+        "height": 1152,
+        "ratio": "16:9",
+        "images": 1,
+        "images_min": null,
+        "images_max": null,
+        "media": "video"
+      },
+      "default_calls": null,
+      "refs_contract": "logo image (image 1)",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "typed flat row",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image/still generate_image only; video contract unchanged",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "marketing-campaign-generator",
+      "default": {
+        "width": 2048,
+        "height": 1152,
+        "ratio": "16:9",
+        "images": 3,
+        "images_min": null,
+        "images_max": null,
+        "media": null
+      },
+      "default_calls": [
+        {
+          "width": 2048,
+          "height": 1152,
+          "ratio": "16:9",
+          "images": 1,
+          "label": "hero KV 16:9"
+        },
+        {
+          "width": 1638,
+          "height": 2048,
+          "ratio": "4:5",
+          "images": 1,
+          "label": "display 4:5"
+        },
+        {
+          "width": 1152,
+          "height": 2048,
+          "ratio": "9:16",
+          "images": 1,
+          "label": "social 9:16"
+        }
+      ],
+      "refs_contract": "brand/product refs, same on every call",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "follow-reference or call-plan defaults",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image calls",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "meta-ads-creative-director",
+      "default": {
+        "width": 1024,
+        "height": 1024,
+        "ratio": "1:1",
+        "images": 3,
+        "images_min": null,
+        "images_max": null,
+        "media": null
+      },
+      "default_calls": [
+        {
+          "width": 1024,
+          "height": 1024,
+          "ratio": "1:1",
+          "images": 1,
+          "label": "feed 1:1"
+        },
+        {
+          "width": 1638,
+          "height": 2048,
+          "ratio": "4:5",
+          "images": 1,
+          "label": "feed 4:5"
+        },
+        {
+          "width": 1152,
+          "height": 2048,
+          "ratio": "9:16",
+          "images": 1,
+          "label": "story/reel 9:16"
+        }
+      ],
+      "refs_contract": "product/person refs, same on every call",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "follow-reference or call-plan defaults",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image calls",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "mobile-app-visual-design",
+      "default": {
+        "width": 880,
+        "height": 2048,
+        "ratio": "9:21",
+        "images": 2,
+        "images_min": null,
+        "images_max": null,
+        "media": null
+      },
+      "default_calls": [
+        {
+          "width": 880,
+          "height": 2048,
+          "ratio": "9:21",
+          "images": 1,
+          "label": "home screen"
+        },
+        {
+          "width": 880,
+          "height": 2048,
+          "ratio": "9:21",
+          "images": 1,
+          "label": "detail screen"
+        }
+      ],
+      "refs_contract": "uploaded refs; phone-framed screens",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "follow-reference or call-plan defaults",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image calls",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "motion-poster-generator",
+      "default": {
+        "width": 1536,
+        "height": 2048,
+        "ratio": "3:4",
+        "images": 1,
+        "images_min": null,
+        "images_max": null,
+        "media": "video"
+      },
+      "default_calls": null,
+      "refs_contract": "source_image (the static artwork)",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "typed flat row",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image/still generate_image only; video contract unchanged",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "naive-illustration",
+      "default": {
+        "width": 1024,
+        "height": 1024,
+        "ratio": "1:1",
+        "images": 1,
+        "images_min": null,
+        "images_max": null,
+        "media": null
+      },
+      "default_calls": null,
+      "refs_contract": "uploaded refs",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "typed flat row",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image calls",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "person-swap",
+      "default": {
+        "width": 1536,
+        "height": 2048,
+        "ratio": "3:4",
+        "images": 3,
+        "images_min": null,
+        "images_max": null,
+        "media": null
+      },
+      "default_calls": null,
+      "refs_contract": "scene/pose first, then face and outfit",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "follow-reference or call-plan defaults",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image calls",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "photo-split-poster",
+      "default": {
+        "width": 1638,
+        "height": 2048,
+        "ratio": "4:5",
+        "images": 1,
+        "images_min": null,
+        "images_max": null,
+        "media": null
+      },
+      "default_calls": null,
+      "refs_contract": "photo (image 1); keep the photo/geometry split",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "typed flat row",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image calls",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "poster-differentiated-compiler",
+      "default": {
+        "width": 1536,
+        "height": 2048,
+        "ratio": "3:4",
+        "images": 1,
+        "images_min": 1,
+        "images_max": 2,
+        "media": null
+      },
+      "default_calls": null,
+      "refs_contract": "uploaded refs; instruction says default 3:4",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "typed flat row",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image calls",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "ppt-visual",
+      "default": {
+        "width": 2048,
+        "height": 1152,
+        "ratio": "16:9",
+        "images": 3,
+        "images_min": null,
+        "images_max": null,
+        "media": null
+      },
+      "default_calls": [
+        {
+          "width": 2048,
+          "height": 1152,
+          "ratio": "16:9",
+          "images": 1,
+          "label": "cover"
+        },
+        {
+          "width": 2048,
+          "height": 1152,
+          "ratio": "16:9",
+          "images": 1,
+          "label": "section"
+        },
+        {
+          "width": 2048,
+          "height": 1152,
+          "ratio": "16:9",
+          "images": 1,
+          "label": "comparison"
+        }
+      ],
+      "refs_contract": "uploaded refs; pass every one",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "follow-reference or call-plan defaults",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image calls",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "premium-website",
+      "default": {
+        "width": 2048,
+        "height": 1152,
+        "ratio": "16:9",
+        "images": 2,
+        "images_min": null,
+        "images_max": null,
+        "media": null
+      },
+      "default_calls": [
+        {
+          "width": 2048,
+          "height": 1152,
+          "ratio": "16:9",
+          "images": 1,
+          "label": "hero"
+        },
+        {
+          "width": 2048,
+          "height": 1152,
+          "ratio": "16:9",
+          "images": 1,
+          "label": "first-screen system"
+        }
+      ],
+      "refs_contract": "uploaded refs; pass every one",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "follow-reference or call-plan defaults",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image calls",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "product-tvc-advertisement-generator",
+      "default": {
+        "width": 2048,
+        "height": 1152,
+        "ratio": "16:9",
+        "images": 1,
+        "images_min": null,
+        "images_max": null,
+        "media": "video"
+      },
+      "default_calls": null,
+      "refs_contract": "product image (always pass it)",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "typed flat row",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image/still generate_image only; video contract unchanged",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "product-website",
+      "default": {
+        "width": 2048,
+        "height": 1152,
+        "ratio": "16:9",
+        "images": 3,
+        "images_min": null,
+        "images_max": null,
+        "media": null
+      },
+      "default_calls": [
+        {
+          "width": 2048,
+          "height": 1152,
+          "ratio": "16:9",
+          "images": 1,
+          "label": "hero"
+        },
+        {
+          "width": 2048,
+          "height": 1152,
+          "ratio": "16:9",
+          "images": 1,
+          "label": "spec grid"
+        },
+        {
+          "width": 2048,
+          "height": 1152,
+          "ratio": "16:9",
+          "images": 1,
+          "label": "supporting section"
+        }
+      ],
+      "refs_contract": "uploaded refs; pass every one",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "follow-reference or call-plan defaults",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image calls",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "promo-ecommerce",
+      "default": {
+        "width": 1024,
+        "height": 1024,
+        "ratio": "1:1",
+        "images": 1,
+        "images_min": null,
+        "images_max": null,
+        "media": null
+      },
+      "default_calls": null,
+      "refs_contract": "product image",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "typed flat row",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image calls",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "rednote-cover-maker",
+      "default": {
+        "width": 1024,
+        "height": 1024,
+        "ratio": "1:1",
+        "images": 3,
+        "images_min": null,
+        "images_max": null,
+        "media": null
+      },
+      "default_calls": [
+        {
+          "width": 1024,
+          "height": 1024,
+          "ratio": "1:1",
+          "images": 1,
+          "label": "feed 1:1"
+        },
+        {
+          "width": 1638,
+          "height": 2048,
+          "ratio": "4:5",
+          "images": 1,
+          "label": "post 4:5"
+        },
+        {
+          "width": 1152,
+          "height": 2048,
+          "ratio": "9:16",
+          "images": 1,
+          "label": "story 9:16"
+        }
+      ],
+      "refs_contract": "product/person refs, same on every call",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "follow-reference or call-plan defaults",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image calls",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "restaurant-website",
+      "default": {
+        "width": 2048,
+        "height": 1152,
+        "ratio": "16:9",
+        "images": 3,
+        "images_min": null,
+        "images_max": null,
+        "media": null
+      },
+      "default_calls": [
+        {
+          "width": 2048,
+          "height": 1152,
+          "ratio": "16:9",
+          "images": 1,
+          "label": "mood hero"
+        },
+        {
+          "width": 2048,
+          "height": 1152,
+          "ratio": "16:9",
+          "images": 1,
+          "label": "menu board"
+        },
+        {
+          "width": 2048,
+          "height": 1152,
+          "ratio": "16:9",
+          "images": 1,
+          "label": "reserve/CTA"
+        }
+      ],
+      "refs_contract": "uploaded refs; pass every one",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "follow-reference or call-plan defaults",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image calls",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "style-transfer",
+      "default": {
+        "width": 1024,
+        "height": 1024,
+        "ratio": "1:1",
+        "images": 1,
+        "images_min": null,
+        "images_max": null,
+        "media": null
+      },
+      "default_calls": null,
+      "refs_contract": "content image first, style image second",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "follow-reference or call-plan defaults",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image calls",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "taobao-product",
+      "default": {
+        "width": 1024,
+        "height": 1024,
+        "ratio": "1:1",
+        "images": 4,
+        "images_min": null,
+        "images_max": null,
+        "media": null
+      },
+      "default_calls": null,
+      "refs_contract": "product image (main image is 1:1)",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "typed flat row",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image calls",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "web-product-visual-design",
+      "default": {
+        "width": 2048,
+        "height": 1152,
+        "ratio": "16:9",
+        "images": 1,
+        "images_min": null,
+        "images_max": null,
+        "media": null
+      },
+      "default_calls": null,
+      "refs_contract": "uploaded refs; pass every one",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "typed flat row",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image calls",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    },
+    {
+      "skill": "yingzao",
+      "default": {
+        "width": 1536,
+        "height": 2048,
+        "ratio": "3:4",
+        "images": 1,
+        "images_min": null,
+        "images_max": null,
+        "media": null
+      },
+      "default_calls": null,
+      "refs_contract": "photo (image 1); no invented architecture",
+      "registered_skill_pin": null,
+      "representative_routes": {
+        "generic_no_reference": {
+          "model": "openai/gpt-image-2.6-flare/text-to-image",
+          "edit_model": null,
+          "category": "default"
+        },
+        "one_reference": {
+          "model": "openai/gpt-image-2.6-flare/edit",
+          "edit_model": "openai/gpt-image-2.6-flare/edit",
+          "category": "references"
+        }
+      },
+      "override_points": [
+        "run_hint",
+        "chat apply_generate",
+        "relay apply_generate",
+        "typed flat row",
+        "frontend exact pixels",
+        "selected provider schema nearest-ratio/default/params"
+      ],
+      "scope": "image calls",
+      "support": "19 recognized app ratios (schema union), INTERSECT selected live model schema; explicit refusal otherwise"
+    }
+  ],
+  "limits": "Representative generic prompts only. Auto is prompt/ref dependent; explicit model pins remain unchanged. Final runtime schema validation is authoritative. Provider runtime was mocked; live paid runtime NOT tested."
+}
