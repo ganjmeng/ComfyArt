@@ -61,15 +61,28 @@ async def _open_dialog(p, app_url, lang, sid, *, via="skills"):  # noqa: F811
         f"localStorage.setItem('comfyart.lang','{lang}');localStorage.setItem('comfyart.theme','light')")
     await pg.goto(app_url)
     if via == "home":
-        # Same SkillRunDialog as Skills; open from the home skills surface when present.
+        # Same SkillRunDialog as Skills. Lock the registered Home visible entries
+        # (src/home/Home.tsx: home-skill-card on home-skill-grid, home-featured-card
+        # on home-featured). Do not use skills-wall-card (Skills wall) or a bare
+        # [data-skill] (home-skill-row, starter suggests, and other non-card nodes).
         await pg.get_by_test_id("rail-home").click()
-        card = pg.locator(f'[data-testid="skills-wall-card"][data-skill="{sid}"], [data-skill="{sid}"]').first
-        await card.scroll_into_view_if_needed()
-        try_btn = card.get_by_test_id("skills-card-try")
-        if await try_btn.count():
-            await try_btn.click()
+        await pg.get_by_test_id("home-skill-grid").wait_for(timeout=20000)
+        grid = pg.locator(
+            f'[data-testid="home-skill-grid"] [data-testid="home-skill-card"][data-skill="{sid}"]')
+        featured = pg.locator(
+            f'[data-testid="home-featured"] [data-testid="home-featured-card"][data-skill="{sid}"]')
+        if await grid.count() > 0:
+            card = grid.first
+        elif await featured.count() > 0:
+            card = featured.first
         else:
-            await card.click()
+            pytest.fail(
+                f"Home visible entry missing for {sid}: need home-skill-card "
+                "in home-skill-grid or home-featured-card in home-featured")
+        await card.scroll_into_view_if_needed()
+        testid = await card.get_attribute("data-testid")
+        assert testid in ("home-skill-card", "home-featured-card"), testid
+        await card.click()
     else:
         await pg.get_by_test_id("rail-skills").click()
         await pg.get_by_test_id("skills-wall").wait_for(timeout=20000)
@@ -115,18 +128,29 @@ async def test_fullapp_logo_dialog_has_no_template_chips(app_url, lang, built_di
 
 async def test_fullapp_home_and_skills_share_dialog_without_chips(
         app_url, built_dist, no_paid_keys):  # noqa: F811
-    """Home and Skills open the same dialog; neither default surface shows chips."""
+    """Home and Skills open the same dialog; neither default surface shows chips.
+
+    Both halves must execute: Skills wall (skills-wall-card) then a real Home
+    visible entry (home-skill-card or home-featured-card). A generic [data-skill]
+    match is not a pass.
+    """
     async with pw.async_playwright() as p:
         browser, pg, dlg = await _open_dialog(p, app_url, "en", META, via="skills")
         try:
             assert await dlg.locator('[data-testid="skill-run-preset-chip"]').count() == 0
-            await dlg.locator('[data-testid="skill-run-dialog-close"], button').first  # dialog is up
+            # skill-run-close is the real close control (not skill-run-dialog-close).
+            # Locator.first is not awaitable; wait_for confirms the Skills dialog is up.
+            await dlg.get_by_test_id("skill-run-close").wait_for()
+            assert await dlg.get_attribute("data-skill") == META
         finally:
             await browser.close()
+        # Home path must actually run (do not skip after the Skills half).
         browser, pg, dlg = await _open_dialog(p, app_url, "en", META, via="home")
         try:
             await dlg.wait_for(timeout=15000)
+            assert await dlg.get_attribute("data-skill") == META
             assert await dlg.locator('[data-testid="skill-run-preset-chip"]').count() == 0
+            await dlg.get_by_test_id("skill-run-close").wait_for()
         finally:
             await browser.close()
 
