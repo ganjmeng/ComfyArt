@@ -508,7 +508,7 @@ PINNED_SHA256 = {
     "api/skill_size.py": "43c130b1aa05cd6736d28564e743feaa41e0ce26e61ea2ad0960ada01203c3df",
     "api/curated_models.json": "fb5c6a1acd2782cb3d7da42837bef92bd4485fe90abd84dd272de1170f9fe04b",
     "api/wavespeed_models.json": "8be944b91aeaf2f4fc24fb5099e36664d2136004dc828737c95ff7943a7363fb",
-    "bot/skill_output.py": "d53c3d6c722232ce0bf5665788de893ab44227dee435faef64e9b27af163bbe8",  # #905 size-notice; #974 multi-angle; #978 template block; #979 template plans; #982 typed defaults; #996 logo/taobao/poster increment; #994 explicit user ratio precedence
+    "bot/skill_output.py": "3b2b14785d5542104b3532e60d6285ffa2d2c33cb14b0fb4d4547611180b528d",  # #905 size-notice; #974 multi-angle; #978 template block; #979 template plans; #982 typed defaults; #996 logo/taobao/poster increment; #994 explicit user ratio precedence; #992 example-preset ratio mapping and lock template=id
     "api/portrait_studio.py": "61257848a9e23d13c066d01c103c565d6804e58c926d3905c6ed8b0890569224",
     "bot/self_check.py": "1a9b4f7eda7e915adf83df42ff31ccf3c27e83253d9636ba5c85aead447993b6",
 }

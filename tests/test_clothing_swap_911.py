@@ -32,7 +32,7 @@ CLOTHING_SWAP_TAIL_SHA256 = "f3036b3d1ebcb3320bcee7d76c961014b38cbb443783ae53485
 AUTO_MODELS_SHA256 = "9ef106b6133d427f04347d0c31c31931e641e1cd47d2a86c0d0769cde48c5d7b"
 OTHER_SKILL_ENTRIES_SHA256 = "f088dd000ad53f7802bec2675b815cb40d0343da3127c413fadc12b40895488a"
 # #974: multi-angle instruction rewrite (four separate 3:4 1536x2048 images, its own wording).
-UNCHANGED_SKILL_ENTRIES_SHA256 = "9631f4a03048808da994ddbff1533533e97651edfae91dd8624440117731e627"  # #996: poster 1-or-2 and taobao 4×1:1 instruction tweaks; logo/character still excluded
+UNCHANGED_SKILL_ENTRIES_SHA256 = "30fafd166266373d75a1c4622dcedca59a77fa819d0277f1ca2e6f9d46774d57"  # #996 poster/taobao tweaks; #992 also excludes mobile/web instruction + responsive wording; logo/character still excluded
 SHARED_CONST_SHA256 = {
     "NEARMISS_INPUTS": "4fe64962178b3c0404f163a02b5a0cdfff1c072d1be399e9f6acbbf597730722",
     "EFFECT_INPUTS": "bbca63995ca34766f0f0ac21ae1baf8cf66df417c9ddaa3f584a128c619eacb6",
@@ -633,7 +633,9 @@ def test_qa4_clothing_swap_drops_rule6_and_708_others_unchanged():
     excluded = {"clothing-swap", "youtube-channel-banner", "portrait-studio", "before-after",
                 "product-to-packaging",
                 # #982: the two output contracts deliberately add a Delivery line.
-                "logo-material-explorer", "character-sheet-design"}
+                "logo-material-explorer", "character-sheet-design",
+                # #992: mobile/web instruction + responsive wording only; other entries stay pinned.
+                "mobile-app-visual-design", "web-product-visual-design"}
     assert _entries_sha256(SKILLS, [sid for sid in ids if sid not in excluded]) == UNCHANGED_SKILL_ENTRIES_SHA256
 
 

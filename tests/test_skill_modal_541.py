@@ -32,7 +32,17 @@ def got(tmp_path_factory) -> dict:
 @needs_node
 def test_meta_is_template_count_only(got):
     # #581: skillMeta also carries usage (0 when store empty). No presets + no usage → null.
+    # #992: these five example cards restore option chips, but the examples stay examples.
+    # skillMeta reports no template count so the card is not labeled "N templates".
+    example_preset_992 = {
+        "meta-ads-creative-director", "rednote-cover-maker", "mobile-app-visual-design",
+        "web-product-visual-design", "marketing-campaign-generator",
+    }
     for sid, n in got["presets"].items():
+        if sid in example_preset_992:
+            assert n > 0 and got["thumbs"][sid] >= 1
+            assert got["meta"][sid] is None, sid
+            continue
         # #644 design: the count is the dialog's real thumbnails (examples + preset tiles with media), not presets[]
         assert (got["meta"][sid] is None) == (n == 0 or got["thumbs"][sid] == 0), sid  # 0 thumbnails → no label
         if got["meta"][sid]:
