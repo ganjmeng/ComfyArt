@@ -311,11 +311,21 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
         if not card_spec:
             raise ValueError("请选择比例或在其他栏输入比例/像素 / Select an aspect or enter aspect/pixels in Other.")
         final_spec = _complete_spec(_merge_specs(user_final, card_spec))
-        # A preview may differ only when the USER requested its layout, never
-        # because the model guessed width/height/ratio on the tool call.
-        preview_spec = _complete_spec(user_preview) if user_preview else dict(final_spec)
+        # The setup aspect controls FINALS. An explicit user preview request wins;
+        # otherwise the model may choose the nine-grid layout ratio before dispatch.
+        # Freeze that resolved choice on reservation, not on a pure price quote.
+        frozen_preview = (ledger.get("setup_snapshot") or {}).get("preview")
+        if user_preview:
+            preview_spec = _complete_spec(user_preview)
+        elif frozen_preview:
+            preview_spec = copy.deepcopy(frozen_preview)
+        elif args.get("ratio"):
+            preview_spec = _complete_spec({"ratio": _ratio(*str(args["ratio"]).split(":"))})
+        else:
+            preview_spec = _complete_spec({"ratio": final_spec["ratio"]})  # fallback only; final pixels are not a preview request
         setup_snapshot = {"source": copy.deepcopy(source_answer), "aspect": copy.deepcopy(aspect_answer),
-                          "final": final_spec, "preview": preview_spec}
+                          "final": final_spec, "preview": preview_spec,
+                          "preview_request": copy.deepcopy(user_preview)}
         if ledger and ledger.get("setup_snapshot") != setup_snapshot:
             raise ValueError("Source/aspect changed after submission; 规格/来源已变更或旧记录缺少规格快照，请先核对原任务并显式开启新一轮，禁止付费重放 / Specification/source changed or legacy snapshot missing; reconcile existing work and start an explicit new skill run, do not replay paid work.")
     except (ValueError, ZeroDivisionError) as e:

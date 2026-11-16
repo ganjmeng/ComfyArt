@@ -147,7 +147,6 @@ def test_preview_without_explicit_ratio_follows_selected_aspect(run, aspect, exp
 
 def test_explicit_preview_aspect_still_independent_of_final(run):
     rows, _ = run
-    rows[0]["blocks"].append({"type": "text", "text": "预览 9:16"})  # user-owned fixture, not a model guess
     setup(rows, "1:1")
     args, blocked = ma.prepare({"skill": ma.SKILL, "multi_angle_stage": "preview", "ratio": "9:16"})
     assert blocked is None

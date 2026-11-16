@@ -77,7 +77,6 @@ def choose(rows, selected=("1", "2", "3"), *, status="answered", other=""):
 
 
 def preview(rows, *, aspect="1:1"):
-    rows[0]["blocks"].append({"type": "text", "text": "预览 9:16"})  # authoritative preview-layout fixture
     setup(rows, aspect)
     args, blocked = ma.prepare({"skill": ma.SKILL, "multi_angle_stage": "preview", "ratio": "9:16"})
     assert blocked is None
@@ -198,7 +197,6 @@ def test_invalid_custom_entry_fails_closed(run, other):
 @pytest.mark.asyncio
 async def test_actual_fixture_dispatch_and_durable_replay_no_duplicate_paid_submit(run):
     rows, sent = run
-    rows[0]["blocks"].append({"type": "text", "text": "预览 9:16"})
     setup(rows)
     relay = canvas._relay("generate_image")
     args = {"skill": ma.SKILL, "multi_angle_stage": "preview", "ratio": "9:16", "prompt": DESC}
@@ -258,7 +256,6 @@ def test_reference_required_but_text_only_allowed_and_attached_never_discarded(r
 
 def test_quote_is_pure_and_matches_submit_stage_size(run, monkeypatch):
     rows, _ = run
-    rows[0]["blocks"].append({"type": "text", "text": "预览 9:16"})
     setup(rows, "3:4")
     monkeypatch.setattr(canvas, "select_model", lambda *a, **k: {"model": "mock", "auto": True})
     before = copy.deepcopy(rows)
@@ -420,7 +417,7 @@ async def test_positive_app_stack_scripted_agent_real_asks_persistence_and_place
     chat = chat_store.create_chat(user="default", project="mock-1002", provider="local-llm")
     cid = chat["id"]
     chat_store.create_message(chat_id=cid, role="user", blocks=[
-        {"type": "skill", "name": ma.SKILL}, {"type": "text", "text": DESC + "\n预览 9:16"},
+        {"type": "skill", "name": ma.SKILL}, {"type": "text", "text": DESC},
         {"type": "image", "url": REF}])
     assistant = chat_store.create_message(chat_id=cid, role="assistant", blocks=[], status="running")
     handle = TurnHandle()

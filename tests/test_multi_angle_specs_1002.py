@@ -32,7 +32,7 @@ def metadata(properties):
 @pytest.mark.parametrize("text", ["商品图 1200×960 px", "PDP width=1200 height=960", "成品 宽1200 高960 像素"])
 def test_explicit_description_pixels_override_model_guesses_and_survive_resume(run, text):
     rows, _ = run
-    add_text(rows, text)
+    add_text(rows, text + "\n预览 1200x960")
     setup(rows, "5:4")
     args, blocked = ma.prepare({"skill": ma.SKILL, "width": 1024, "height": 1024, "ratio": "1:1"})
     assert blocked is None
@@ -55,8 +55,14 @@ def test_existing_aspect_other_field_accepts_custom_ratio_or_exact_pixels(run, o
     root["answers"][ma.ASPECT] = {"selected": [], "other_text": other}
     args, blocked = ma.prepare({"skill": ma.SKILL})
     assert blocked is None
-    assert (args["width"], args["height"], args["ratio"], args["_multi_angle"]["stage_spec"]["exact_pixels"]) == expected
-    assert args["_strict_user_ratio_994"] == expected[2]
+    final_spec = args["_multi_angle"]["setup_snapshot"]["final"]
+    assert (final_spec["width"], final_spec["height"], final_spec["ratio"], final_spec["exact_pixels"]) == expected
+    complete_preview(args)
+    choose(rows, ("1",))
+    final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": "1"})
+    assert blocked is None
+    assert (final["width"], final["height"], final["ratio"]) == expected[:3]
+    assert final["_strict_user_ratio_994"] == expected[2]
 
 
 @pytest.mark.parametrize("text", ["全景补充参考图，沿用原主体", "Other source: CAD reference supplied"])
@@ -91,7 +97,7 @@ async def test_conflicting_or_invalid_user_specs_block_before_submit(run, text, 
     assert sent == []
 
 
-def test_user_preview_layout_is_independent_but_model_layout_guess_is_not(run):
+def test_explicit_user_preview_layout_overrides_model_choice(run):
     rows, _ = run
     add_text(rows, "final 1200x900; preview 800x800")
     setup(rows, "4:3")
@@ -103,13 +109,17 @@ def test_user_preview_layout_is_independent_but_model_layout_guess_is_not(run):
     assert blocked is None and (final["width"], final["height"], final["ratio"]) == (1200, 900, "4:3")
 
 
-def test_normal_default_has_named_strategy_and_does_not_trust_model_pixels(run):
+def test_model_preview_layout_is_allowed_but_model_pixels_do_not_control_final(run):
     rows, _ = run
     setup(rows, "1:1")
     args, blocked = ma.prepare({"skill": ma.SKILL, "width": 333, "height": 999, "ratio": "9:16"})
-    assert blocked is None and (args["width"], args["height"], args["ratio"]) == (2048, 2048, "1:1")
+    assert blocked is None and (args["width"], args["height"], args["ratio"]) == (1152, 2048, "9:16")
     spec = args["_multi_angle"]["stage_spec"]
     assert not spec["exact_pixels"] and spec["default_policy"] == ma.DEFAULT_SIZE_POLICY
+    complete_preview(args)
+    choose(rows, ("1",))
+    final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": "1", "ratio": "9:16", "width": 333, "height": 999})
+    assert blocked is None and (final["width"], final["height"], final["ratio"]) == (2048, 2048, "1:1")
 
 
 @pytest.mark.parametrize("props", [
@@ -121,7 +131,7 @@ def test_normal_default_has_named_strategy_and_does_not_trust_model_pixels(run):
 @pytest.mark.asyncio
 async def test_detectably_unsupported_exact_pixels_refused_without_model_fallback(run, monkeypatch, props):
     rows, sent = run
-    add_text(rows, "1200x900")
+    add_text(rows, "1200x900; preview 1200x900")
     setup(rows, "4:3")
     monkeypatch.setattr(wavespeed, "cached_models", lambda: {"mock-pixels": metadata(props)})
     monkeypatch.setattr(canvas, "select_model", lambda *a, **k: {"model": "mock-pixels", "auto": False, "category": "user", "reason": {"zh": "指定模型", "en": "Named model"}})
@@ -133,7 +143,7 @@ async def test_detectably_unsupported_exact_pixels_refused_without_model_fallbac
 @pytest.mark.asyncio
 async def test_exact_handler_and_quote_keep_user_pixels_and_pin_verified_model(run, monkeypatch, auto):
     rows, sent = run
-    add_text(rows, "1200x900")
+    add_text(rows, "1200x900; preview 1200x900")
     setup(rows, "4:3")
     catalog = {"mock-pixels": metadata({"size": {"type": "string", "minimum": 64, "maximum": 4096}})}
     monkeypatch.setattr(wavespeed, "cached_models", lambda: catalog)
@@ -152,9 +162,11 @@ def test_provider_unknown_or_unsupported_custom_ratio_reports_actionable_limit(r
     rows, _ = run
     root = setup(rows)
     root["answers"][ma.ASPECT] = {"selected": [], "other_text": "1200x900"}
+    add_text(rows, "preview 1200x900")
     args, _ = ma.prepare({"skill": ma.SKILL})
     blocked = ma.validate_provider_size(args, args["_multi_angle"], "unknown", {})
     assert blocked["submitted"] is False and "catalogue" in blocked["error"]
+    rows[0]["blocks"].pop()
     root["answers"][ma.ASPECT] = {"selected": [], "other_text": "5:4"}
     args, _ = ma.prepare({"skill": ma.SKILL})
     blocked = ma.validate_provider_size(args, args["_multi_angle"], "limited", {"limited": metadata({"aspect_ratio": {"enum": ["1:1"]}})})
@@ -195,7 +207,7 @@ def test_fresh_explicit_skill_start_does_not_inherit_old_user_dimensions(run):
     complete_preview(args)
     rows.append({"id": "new-start", "role": "user", "blocks": [
         {"type": "skill", "name": ma.SKILL},
-        {"type": "text", "text": "新的商品图 1400x1000"},
+        {"type": "text", "text": "新的商品图 1400x1000; preview 1400x1000"},
         {"type": "image", "url": "new-reference"}]})
     root = setup(rows)
     root["answers"][ma.ASPECT] = {"selected": [], "other_text": "7:5"}
@@ -209,7 +221,7 @@ def test_fresh_explicit_skill_start_does_not_inherit_old_user_dimensions(run):
 @pytest.mark.asyncio
 async def test_model_routing_cannot_rewrite_explicit_dimensions(run, monkeypatch):
     rows, sent = run
-    add_text(rows, "1200x900")
+    add_text(rows, "1200x900; preview 1200x900")
     setup(rows, "4:3")
 
     def rewritten(action, args, **kwargs):
@@ -220,3 +232,87 @@ async def test_model_routing_cannot_rewrite_explicit_dimensions(run, monkeypatch
     result = await canvas._relay("generate_image")({"skill": ma.SKILL})
     assert result["submitted"] is False and "Routing changed" in result["error"]
     assert sent == [] and ma.LEDGER not in ma._root("chat-ma")[1]
+
+
+@pytest.mark.parametrize("ratio", ["9:16", "5:4"])
+def test_model_preview_choice_frozen_on_first_dispatch_not_pure_prepare(run, ratio):
+    rows, _ = run
+    setup(rows, "1:1")
+    args, blocked = ma.prepare({"skill": ma.SKILL, "ratio": ratio})
+    assert blocked is None and args["ratio"] == ratio
+    # A quote/preflight is pure and cannot freeze a model layout prematurely.
+    changed, blocked = ma.prepare({"skill": ma.SKILL, "ratio": "4:3"})
+    assert blocked is None and changed["ratio"] == "4:3"
+    ma.reserve(args["_multi_angle"])
+    ma.submitted(args["_multi_angle"], {"ids": ["same-preview"], "submitted": True})
+    _, replay = ma.prepare({"skill": ma.SKILL, "ratio": "3:4"})
+    assert replay["ids"] == ["same-preview"] and replay["multi_angle_replay"]
+    ledger = ma._root("chat-ma")[1][ma.LEDGER]
+    assert ledger["setup_snapshot"]["preview"]["ratio"] == ratio
+    ma.record_wait({"results": [{"id": "same-preview", "status": "done", "placed": True,
+                                 "delivered": 1, "shapes": ["preview-shape"]}]})
+    choose(rows, ("1",))
+    final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": "1", "ratio": "9:16", "width": 999, "height": 333})
+    assert blocked is None and (final["width"], final["height"], final["ratio"]) == (2048, 2048, "1:1")
+    assert final["_multi_angle"]["setup_snapshot"]["preview"]["ratio"] == ratio
+
+
+def test_prepare_and_quote_consistent_for_model_preview_and_final_exact_pixels(run, monkeypatch):
+    rows, _ = run
+    add_text(rows, "1200x900")
+    setup(rows, "4:3")
+    raw = {"skill": ma.SKILL, "ratio": "9:16", "width": 333, "height": 999}
+    args, blocked = ma.prepare(raw)
+    assert blocked is None and not args["_multi_angle"]["stage_spec"]["exact_pixels"]
+    repeated, blocked = ma.prepare(args)
+    assert blocked is None and repeated == args
+    monkeypatch.setattr(canvas, "select_model", lambda *a, **k: {"model": "mock", "auto": True})
+    model, quote = canvas.quote_route("generate_image", raw, catalog={})
+    assert model == "mock" and (quote["width"], quote["height"], quote["ratio"]) == (1152, 2048, "9:16")
+    assert ma.LEDGER not in ma._root("chat-ma")[1]
+    complete_preview(args)
+    choose(rows, ("1",))
+    final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": "1", "width": 2048, "height": 2048, "ratio": "1:1"})
+    assert blocked is None and (final["width"], final["height"], final["ratio"]) == (1200, 900, "4:3")
+    assert ma.validate_provider_size(final, final["_multi_angle"], "unknown", {})["submitted"] is False
+
+
+def test_explicit_preview_request_cannot_be_added_after_model_layout_dispatched(run):
+    rows, _ = run
+    setup(rows)
+    args, blocked = ma.prepare({"skill": ma.SKILL, "ratio": "9:16"})
+    assert blocked is None
+    complete_preview(args)
+    # Even the same ratio cannot silently change the frozen request's authority.
+    add_text(rows, "preview 9:16")
+    _, blocked = ma.prepare({"skill": ma.SKILL, "multi_angle_stage": "preview"})
+    assert blocked["submitted"] is False and "changed after submission" in blocked["error"]
+
+
+def test_prepare_is_idempotent_when_only_final_pixels_requested(run):
+    rows, _ = run
+    add_text(rows, "1200x900")
+    setup(rows, "4:3")
+    once, blocked = ma.prepare({"skill": ma.SKILL})
+    assert blocked is None
+    twice, blocked = ma.prepare(once)
+    assert blocked is None and twice == once
+    assert once["_multi_angle"]["setup_snapshot"]["final"]["exact_pixels"]
+    assert not once["_multi_angle"]["stage_spec"]["exact_pixels"]
+
+
+@pytest.mark.parametrize("preview_request,expected", [("9:16", (1152, 2048, "9:16")),
+                                              ("1200x960", (1200, 960, "5:4"))])
+def test_explicit_preview_request_wins_and_is_immutable_through_replay(run, preview_request, expected):
+    rows, _ = run
+    add_text(rows, "preview " + preview_request)
+    setup(rows, "1:1")
+    args, blocked = ma.prepare({"skill": ma.SKILL, "ratio": "4:3", "width": 999, "height": 333})
+    assert blocked is None and (args["width"], args["height"], args["ratio"]) == expected
+    ma.reserve(args["_multi_angle"])
+    ma.submitted(args["_multi_angle"], {"ids": ["explicit-preview"], "submitted": True})
+    _, replay = ma.prepare({"skill": ma.SKILL, "ratio": "3:4"})
+    assert replay["ids"] == ["explicit-preview"] and replay["multi_angle_replay"]
+    rows[0]["blocks"][-1]["text"] = "preview 4:3"
+    _, blocked = ma.prepare({"skill": ma.SKILL})
+    assert blocked["submitted"] is False and "changed after submission" in blocked["error"]
