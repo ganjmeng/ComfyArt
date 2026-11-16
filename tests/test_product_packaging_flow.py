@@ -508,7 +508,7 @@ PINNED_SHA256 = {
     "api/skill_size.py": "d7f052db320b1993b0f2a7c3e2248f627fe4b8c504774755967b3f06730ad746",
     "api/curated_models.json": "fb5c6a1acd2782cb3d7da42837bef92bd4485fe90abd84dd272de1170f9fe04b",
     "api/wavespeed_models.json": "8be944b91aeaf2f4fc24fb5099e36664d2136004dc828737c95ff7943a7363fb",
-    "bot/skill_output.py": "7c7b0beb7ad9295ef8893d8544b2337e9c2cdec6055d4da7faff85d36c4f2f50",  # #1002 multi-angle subject-plan hint updated only; unrelated locks preserved
+    "bot/skill_output.py": "2da3fffb814f38fbfd3b3d92a6c78484da03a629326d1fc2c26364347b77255e",  # #1002 multi-angle subject-plan hint updated only; unrelated locks preserved
     "api/portrait_studio.py": "61257848a9e23d13c066d01c103c565d6804e58c926d3905c6ed8b0890569224",
     "bot/self_check.py": "1a9b4f7eda7e915adf83df42ff31ccf3c27e83253d9636ba5c85aead447993b6",
 }

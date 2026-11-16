@@ -11,8 +11,8 @@ from test_multi_angle_stages_911 import run, setup, choose  # noqa: F401
 
 
 def subject_plan(subject, purpose, details):
-    return {"subject": subject, "purpose": purpose, "panels": [
-        {"id": str(i), "name": detail, "description": f"{subject}: {detail}; intended use: {purpose}"}
+    return {"subject": subject, "purpose": purpose, "subject_geometry": subject, "appearance": "", "panels": [
+        {"id": str(i), "name": detail, "description": f"{subject}: {detail}; intended use: {purpose}", "geometry": f"{subject}: {detail}", "appearance": ""}
         for i, detail in enumerate(details, 1)
     ]}
 
@@ -49,7 +49,7 @@ def test_subject_specific_plan_is_only_mapping_for_lineart_card_and_selected_fin
     meta = args["_multi_angle"]
     assert meta["composition_plan"] == plan
     for panel in plan["panels"]:
-        assert f"{panel['id']}: {panel['name']} — {panel['description']}" in args["prompt"]
+        assert f"{panel['id']}: {panel['geometry']}" in args["prompt"]
     deliver(meta)
     choose(rows, ("2", "7", "9"))
     card = rows[-1]["blocks"][0]
@@ -150,6 +150,8 @@ async def test_actual_relay_persists_plan_before_command_and_strips_tool_only_fi
         assert rows[1]["blocks"][0][ma.LEDGER]["composition_plan"] == HEADPHONES_PLAN
         assert rows[1]["blocks"][0][ma.LEDGER]["preview"]["status"] == "reserved"
         assert "composition_plan" not in args
+        assert HEADPHONES_PLAN["purpose"] not in args["prompt"]
+        assert HEADPHONES_PLAN["subject_geometry"] in args["prompt"]
         calls.append(args)
         return {"ids": ["paid-mock"]}
     monkeypatch.setattr(canvas, "submit_command", page)
@@ -218,8 +220,8 @@ async def test_relay_restores_ratio_audit_after_routing_without_relaxing_explici
 
 
 
-PREVIEW_MATERIAL_DEFER_EN = "limited, explicit-pattern projector, not a universal material/color/finish filter"
-PREVIEW_MATERIAL_DEFER_ZH = "仅为有限的显式模式投影，并非通用材质/色彩/表面处理过滤器"
+PREVIEW_MATERIAL_DEFER_EN = "Only structured subject geometry and numbered panel geometry are executable here."
+PREVIEW_MATERIAL_DEFER_ZH = "仅执行结构化主体几何与各格机位/构图"
 FINAL_ORIENTATION = (
     "Preserve that selected panel's screen-left/right orientation, camera direction and handedness")
 FINAL_NO_MIRROR = "do not mirror, horizontally flip, or reverse the composition"
@@ -241,76 +243,43 @@ def test_paid_failure_plan_matches_archived_ledger_when_present():
 
 
 def test_preview_text_drops_appearance_directives_and_keeps_geometry_subjects():
-    assert ma.preview_text("exact gray materials, pure white seamless background") == "pure white seamless background"
-    assert "matte surface finish" not in ma.preview_text(
-        "outer earcup shell and matte surface finish close-up matching the reference plastic, white seamless")
-    assert "matching the reference plastic" not in ma.preview_text(
-        "outer earcup shell and matte surface finish close-up matching the reference plastic, white seamless")
-    assert "outer earcup shell" in ma.preview_text(
-        "outer earcup shell and matte surface finish close-up matching the reference plastic, white seamless")
-    assert ma.preview_text("inside earcup cushion detail and lining texture") == "inside earcup cushion detail and lining texture"
-    assert ma.preview_text("outer earcup shell and surface finish close-up") == "outer earcup shell and surface finish close-up"
-    assert ma.preview_text("courtyard building: wall material; intended use: architectural presentation") == (
-        "courtyard building: wall material; intended use: architectural presentation")
-    assert ma.preview_text("正面机位，完整门楼几何，亚光灰材质仅作成品说明") == "正面机位，完整门楼几何"
-    assert ma.preview_text("墙面材质特写") == "墙面材质特写"
-    assert "matte gray" not in ma.preview_text(
-        "matte gray over-ear headphones in the supplied front-view reference").casefold()
-    assert "over-ear headphones" in ma.preview_text(
-        "matte gray over-ear headphones in the supplied front-view reference")
-    view = ma.preview_plan_view(PAID_FAILURE_PLAN)
-    assert view["purpose"] == PAID_FAILURE_PLAN["purpose"]
-    assert [p["id"] for p in view["panels"]] == [p["id"] for p in PAID_FAILURE_PLAN["panels"]]
-    assert [p["name"] for p in view["panels"]] == [p["name"] for p in PAID_FAILURE_PLAN["panels"]]
-    assert view != PAID_FAILURE_PLAN
-    assert "exact gray materials" not in view["panels"][0]["description"]
-    assert "front-on full product" in view["panels"][0]["description"]
+    """Updated product boundary: no text scrubber; explicit geometry is projected intact."""
+    assert not hasattr(ma, "preview_text")
+    view = ma.preview_plan_view(PLANS[2])
+    assert set(view) == {"subject_geometry", "panels"}
+    assert view["subject_geometry"] == PLANS[2]["subject_geometry"]
+    assert [(p["id"], p["geometry"]) for p in view["panels"]] == [
+        (p["id"], p["geometry"]) for p in PLANS[2]["panels"]]
+    assert "wall material" in view["panels"][7]["geometry"]
+    assert all(set(p) == {"id", "geometry"} for p in view["panels"])
 
 
 def test_paid_failure_plan_material_clauses_are_omitted_from_preview_not_rewritten(run):
-    rows, _ = run
+    """No compatibility migration: old mixed plan is blocked before submission, unchanged."""
+    rows, sent = run
     setup(rows)
-    preview = prepare(PAID_FAILURE_PLAN)
-    assert preview["_multi_angle"]["composition_plan"] == PAID_FAILURE_PLAN
-    prompt = preview["prompt"]
-    view = ma.preview_plan_view(PAID_FAILURE_PLAN)
-    assert "exact gray materials" not in prompt
-    assert "matte surface finish" not in prompt
-    assert "same gray headphones" not in prompt
-    assert "matching the reference plastic" not in prompt
-    assert "matte gray" not in prompt
-    for panel, projected in zip(PAID_FAILURE_PLAN["panels"], view["panels"]):
-        assert f"{panel['id']}: {panel['name']} — {projected['description']}" in prompt
-        assert panel["name"] in prompt
-    assert "front-on full product" in prompt
-    assert "top-down view of the headband arc" in prompt
-    assert PREVIEW_MATERIAL_DEFER_EN in prompt and PREVIEW_MATERIAL_DEFER_ZH in prompt
-    assert "LINEART ONLY" in prompt
-    assert "Preserve subject identity, material" not in prompt
-    deliver(preview["_multi_angle"])
-    choose(rows, ("1", "5"))
-    for number, phrase in (("1", "exact gray materials"), ("5", "matte surface finish")):
-        final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": number})
-        assert blocked is None
-        assert final["_multi_angle"]["composition_plan"] == PAID_FAILURE_PLAN
-        assert phrase in final["prompt"]
-        assert f"{PAID_FAILURE_PLAN['panels'][int(number) - 1]['name']} — {PAID_FAILURE_PLAN['panels'][int(number) - 1]['description']}" in final["prompt"]
-        assert "Restore the original subject's material, color and finish" in final["prompt"]
-        assert "LINEART ONLY" not in final["prompt"]
-        assert PREVIEW_MATERIAL_DEFER_EN not in final["prompt"]
-        assert PREVIEW_MATERIAL_DEFER_ZH not in final["prompt"]
+    before = copy.deepcopy(PAID_FAILURE_PLAN)
+    _, blocked = ma.prepare({"skill": ma.SKILL, "composition_plan": PAID_FAILURE_PLAN})
+    assert blocked["submitted"] is False
+    assert "subject_geometry" in blocked["error"]
+    assert PAID_FAILURE_PLAN == before
+    assert not rows[1]["blocks"][0].get(ma.LEDGER)
+    assert not sent
+    # Replanning is allowed only before submission; this is a fresh structured mock input.
+    fresh = prepare(HEADPHONES_PLAN)
+    assert fresh["_multi_angle"]["composition_plan"] == HEADPHONES_PLAN
 
 
 def test_paid_failure_final_prompt_preserves_selected_panel_handedness(run):
     rows, _ = run
     setup(rows)
-    preview = prepare(PAID_FAILURE_PLAN)
+    preview = prepare(HEADPHONES_PLAN)
     deliver(preview["_multi_angle"])
     choose(rows, ("2",))
     final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": "2"})
     assert blocked is None
     prompt = final["prompt"]
-    chosen = PAID_FAILURE_PLAN["panels"][1]
+    chosen = HEADPHONES_PLAN["panels"][1]
     assert f"composition 2: {chosen['name']} — {chosen['description']}" in prompt
     assert "Match that exact numbered panel in the delivered preview" in prompt
     assert FINAL_ORIENTATION in prompt and FINAL_NO_MIRROR in prompt
@@ -328,7 +297,7 @@ def test_geometry_label_wall_material_is_not_stripped_from_frozen_plan(run):
     setup(rows)
     preview = prepare(PLANS[2])
     assert preview["_multi_angle"]["composition_plan"] == PLANS[2]
-    assert "8: wall material — " in preview["prompt"]
+    assert "8: courtyard building: wall material" in preview["prompt"]
     assert PREVIEW_MATERIAL_DEFER_EN in preview["prompt"]
     deliver(preview["_multi_angle"])
     choose(rows, ("8",))
@@ -345,7 +314,9 @@ def test_chinese_camera_and_material_clauses_follow_stage_priority(run):
     plan = subject_plan("红砖庭院门楼", "建筑展示册", [
         "临街立面", "庭院入口", "屋顶平面", "朝园立面", "窗楣细节",
         "门槛进深", "庭院透视", "墙面材质特写", "檐口轮廓"])
-    plan["panels"][0]["description"] = "正面机位，完整门楼几何，亚光灰材质仅作成品说明"
+    plan["subject_geometry"] = "庭院门楼的开口与檐口几何"
+    plan["panels"][0].update(description="正面机位，完整门楼几何，亚光灰材质仅作成品说明",
+                             geometry="正面机位，完整门楼几何", appearance="亚光灰材质仅作成品说明")
     rows[0]["blocks"][1]["text"] = plan["purpose"]
     setup(rows)
     preview = prepare(plan)
@@ -366,58 +337,132 @@ def test_chinese_camera_and_material_clauses_follow_stage_priority(run):
     assert "headphones" not in wall["prompt"]
 
 
-PROJECTION_OVERCLAIM_EN = (
-    "Material, color, finish, lighting, shading, and photographic rendering clauses "
-    "are omitted from this LINEART ONLY stage")
-PROJECTION_OVERCLAIM_ZH = "已从可执行预览行中省略"
-# Honest coverage language expected after the prompt is corrected.
-PROJECTION_LIMIT_EN = "limited, explicit-pattern projector, not a universal material/color/finish filter"
-PROJECTION_LIMIT_ZH = "仅为有限的显式模式投影，并非通用材质/色彩/表面处理过滤器"
 UNFILTERED_APPEARANCE = ("glossy red leather", "哑光黑色材质", "金属光泽")
 
 
 def test_preview_text_limitation_leaves_unlisted_appearance_phrases():
-    """Counterexamples the fixture-tailored regex does not cover; do not treat this as a universal filter."""
+    """Arbitrary bilingual appearance is stored untouched, not guessed by a blacklist."""
+    assert not hasattr(ma, "preview_text")
     for phrase in UNFILTERED_APPEARANCE:
-        text = f"three-quarter view, {phrase}, white seamless"
-        assert phrase in ma.preview_text(text)
-        assert "three-quarter view" in ma.preview_text(text)
-    assert ma.preview_text("wall material close-up of the courtyard") == "wall material close-up of the courtyard"
-    assert ma.preview_text("墙面材质特写") == "墙面材质特写"
+        plan = copy.deepcopy(HEADPHONES_PLAN)
+        plan["appearance"] = phrase
+        plan["panels"][0]["appearance"] = phrase
+        validated = ma.validate_plan(plan)
+        assert validated["appearance"] == phrase
+        assert validated["panels"][0]["appearance"] == phrase
+        view = ma.preview_plan_view(validated)
+        assert phrase not in str(view)
 
 
 def test_preview_prompt_does_not_overclaim_projection_and_keeps_unprojected_fields(run):
+    """Old leakage counterexample now asserts all non-geometry fields are excluded."""
     rows, _ = run
-    plan = subject_plan("lacquered vase", "商品页金属光泽展示", [
-        "front elevation", "three-quarter volume", "side silhouette", "rim close-up", "base stamp",
-        "shoulder curve", "overhead opening", "wall material", "low angle"])
+    plan = copy.deepcopy(HEADPHONES_PLAN)
+    plan.update(subject="lacquered vase", purpose="商品页金属光泽展示",
+                subject_geometry="vase opening, body volume and base", appearance="glossy red leather")
     plan["panels"][1]["description"] = "three-quarter view, glossy red leather, white seamless"
     plan["panels"][2]["description"] = "侧面轮廓，哑光黑色材质，白底"
     plan["panels"][6]["description"] = "顶视开口，金属光泽，比例准确"
     plan["panels"][3]["name"] = "matte surface finish close-up"
+    for panel, phrase in zip(plan["panels"], UNFILTERED_APPEARANCE):
+        panel["appearance"] = phrase
     rows[0]["blocks"][1]["text"] = "商品详情页，红色皮革外观，纯白无缝背景"
     setup(rows)
     preview = prepare(plan)
-    frozen = preview["_multi_angle"]["composition_plan"]
-    assert frozen == ma.validate_plan(plan)
-    assert frozen["panels"][1]["description"] == "three-quarter view, glossy red leather, white seamless"
-    prompt = preview["prompt"]
-    for phrase in UNFILTERED_APPEARANCE:
-        assert phrase in prompt
-    # Names, purpose, and the user description are not passed through preview_text.
-    assert "4: matte surface finish close-up — " in prompt
-    assert plan["purpose"] in prompt
-    assert "红色皮革外观" in prompt
-    assert "wall material" in prompt
-    assert PROJECTION_OVERCLAIM_EN not in prompt
-    assert PROJECTION_OVERCLAIM_ZH not in prompt
-    assert PROJECTION_LIMIT_EN in prompt and PROJECTION_LIMIT_ZH in prompt
-    # Paid-fixture phrases already covered by preview_text must still be omitted in that path.
-    assert ma.preview_text("exact gray materials, pure white seamless background") == "pure white seamless background"
+    assert preview["_multi_angle"]["composition_plan"] == ma.validate_plan(plan)
+    assert plan["panels"][1]["description"] == "three-quarter view, glossy red leather, white seamless"
+    for phrase in (*UNFILTERED_APPEARANCE, plan["purpose"], plan["subject"],
+                   plan["panels"][3]["name"], "红色皮革外观"):
+        assert phrase not in preview["prompt"]
+    for panel in plan["panels"]:
+        assert f"{panel['id']}: {panel['geometry']}" in preview["prompt"]
+    assert PREVIEW_MATERIAL_DEFER_EN in preview["prompt"]
     deliver(preview["_multi_angle"])
     choose(rows, ("2", "3"))
-    final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": "2"})
-    assert blocked is None
-    assert "glossy red leather" in final["prompt"]
-    assert "Restore the original subject's material, color and finish" in final["prompt"]
-    assert PROJECTION_LIMIT_EN not in final["prompt"]
+    for number in ("2", "3"):
+        final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": number})
+        assert blocked is None
+        assert plan["panels"][int(number)-1]["description"] in final["prompt"]
+        assert "glossy red leather" in final["prompt"]
+        assert "红色皮革外观" in final["prompt"]
+        assert "Restore the original subject's material, color and finish" in final["prompt"]
+        assert PREVIEW_MATERIAL_DEFER_EN not in final["prompt"]
+
+
+@pytest.mark.parametrize("status", ["reserved", "submitted", "done"])
+@pytest.mark.parametrize("stage", ["preview", "final"])
+def test_submitted_legacy_plan_is_query_archive_only_never_migrated(run, status, stage):
+    rows, sent = run
+    setup(rows)
+    preview = prepare(HEADPHONES_PLAN)
+    deliver(preview["_multi_angle"])
+    choose(rows, ("2",))
+    ledger = rows[1]["blocks"][0][ma.LEDGER]
+    ledger["composition_plan"] = copy.deepcopy(PAID_FAILURE_PLAN)
+    ledger["preview"]["status"] = status
+    before = copy.deepcopy(rows)
+    _, blocked = ma.prepare({"skill": ma.SKILL, "multi_angle_stage": stage,
+                             "composition_id": "2", "composition_plan": HEADPHONES_PLAN})
+    assert blocked["submitted"] is False and blocked["legacy_plan_archive_only"]
+    assert blocked["existing_task_ids"] == ["preview"]
+    assert rows == before and not sent
+    assert ledger["composition_plan"] == PAID_FAILURE_PLAN
+    # Provider result collection remains available; never reserves a fresh task.
+    ma.record_wait({"results": [{"id": "preview", "status": "done", "placed": True, "shapes": ["archived"]}]})
+    assert rows[1]["blocks"][0][ma.LEDGER]["composition_plan"] == PAID_FAILURE_PLAN
+
+
+@pytest.mark.parametrize("field", ["subject_geometry", "appearance", "panel_geometry", "panel_appearance"])
+def test_missing_structured_fields_block_before_payment(run, field):
+    rows, sent = run
+    setup(rows)
+    plan = copy.deepcopy(HEADPHONES_PLAN)
+    if field.startswith("panel_"):
+        plan["panels"][0].pop(field.removeprefix("panel_"))
+    else:
+        plan.pop(field)
+    _, blocked = ma.prepare({"skill": ma.SKILL, "composition_plan": plan})
+    assert blocked["submitted"] is False and not sent
+    assert not rows[1]["blocks"][0].get(ma.LEDGER)
+
+
+def test_unsubmitted_mixed_plan_can_be_replanned_but_not_migrated(run):
+    rows, _ = run
+    setup(rows)
+    args = prepare(HEADPHONES_PLAN)
+    assert ma.reserve(args["_multi_angle"]) is None
+    ledger = rows[1]["blocks"][0][ma.LEDGER]
+    ledger.pop("preview")  # explicitly unsubmitted setup: no reservation/task
+    ledger["composition_plan"] = copy.deepcopy(PAID_FAILURE_PLAN)
+    new = prepare(PLANS[1])
+    assert ma.reserve(new["_multi_angle"]) is None
+    assert rows[1]["blocks"][0][ma.LEDGER]["composition_plan"] == PLANS[1]
+    assert PAID_FAILURE_PLAN["panels"][0]["description"].endswith("pure white seamless background")
+
+
+def test_registered_tool_requires_structured_geometry_without_new_parallel_plan_api():
+    schema = canvas.SPECS["generate_image"]["inputSchema"]["properties"]["composition_plan"]
+    assert {"subject_geometry", "appearance", "subject", "purpose", "panels"} <= set(schema["required"])
+    panel = schema["properties"]["panels"]["items"]
+    assert {"id", "name", "description", "geometry", "appearance"} <= set(panel["required"])
+    assert "no appearance" in panel["properties"]["geometry"]["description"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("delivered", [False, True])
+async def test_submitted_legacy_blocks_quote_relay_and_stale_reservation_without_mutation(run, delivered):
+    rows, sent = run
+    setup(rows)
+    args = prepare(HEADPHONES_PLAN)
+    deliver(args["_multi_angle"])
+    ledger = rows[1]["blocks"][0][ma.LEDGER]
+    ledger["preview"]["delivered"] = delivered
+    ledger["composition_plan"] = copy.deepcopy(PAID_FAILURE_PLAN)
+    before = copy.deepcopy(rows)
+    result = await canvas._relay("generate_image")({"skill": ma.SKILL, "composition_plan": HEADPHONES_PLAN})
+    assert result["submitted"] is False and result["legacy_plan_archive_only"]
+    model, inputs = canvas.quote_route("generate_image", {"skill": ma.SKILL, "composition_plan": HEADPHONES_PLAN}, catalog={})
+    assert not model and inputs["param_blocked"]["legacy_plan_archive_only"]
+    blocked = ma.reserve(args["_multi_angle"])
+    assert blocked["submitted"] is False
+    assert not sent and rows == before

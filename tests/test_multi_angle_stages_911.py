@@ -118,7 +118,9 @@ def test_preview_has_numbered_nine_panel_lineart_and_keeps_input(run):
     args = preview(rows)
     assert (args["width"], args["height"], args["ratio"], args["count"]) == (1152, 2048, "9:16", 1)
     assert args["refs"] == [REF] and args["ref_modes"] == ["content"]
-    assert DESC in args["prompt"] and "single_front" in args["prompt"]
+    assert DESC not in args["prompt"]  # product: raw brief is final-only
+    assert args["_multi_angle"]["description"] == DESC
+    assert args["_multi_angle"]["source"] == "single_front"
     assert "ONE lineart preview" in args["prompt"] and "3x3 nine-panel" in args["prompt"]
     assert all(f"{i}:" in args["prompt"] for i in range(1, 10))
     card = bot_asks.validate_spec({"prompt": "choose"})
@@ -253,7 +255,8 @@ def test_reference_required_but_text_only_allowed_and_attached_never_discarded(r
     assert blocked["submitted"] is False
     root["answers"][ma.SOURCE]["selected"] = ["description"]
     args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL})
-    assert blocked is None and args["refs"] == [] and DESC in args["prompt"]
+    assert blocked is None and args["refs"] == []
+    assert DESC not in args["prompt"] and args["_multi_angle"]["description"] == DESC
 
 
 def test_quote_is_pure_and_matches_submit_stage_size(run, monkeypatch):

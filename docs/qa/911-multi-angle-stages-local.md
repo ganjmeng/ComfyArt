@@ -290,3 +290,55 @@ unchanged. Only existing chunk-size/lottie-eval warnings remain. Python
 compilation and `git diff --check` passed. Temporary `node_modules` symlink
 removed. No paid/API/browser call, no change to 8916, no merge/deploy/push,
 and this tip is not published. Prompt-effect HOLD is NOT cleared.
+
+
+### 2026-11-17 01:28 Asia/Shanghai structured-plan ruling (supersedes local text projection)
+
+Product and engineering agreed: no keyword blacklist / automatic mixed-prose migration.
+The earlier unpublished 2906fdde/d2b0fdeb text-projector mechanism is removed in the
+current working revision; its historical test counts are not current-tip acceptance.
+Existing `composition_plan` now requires `subject_geometry` and `appearance`, plus
+`panels[].geometry` and `panels[].appearance`, alongside original subject, purpose,
+name and description. Appearance can be an empty string when unspecified. Geometry
+is explicitly shape/visible structures/camera/framing only. This is a semantic
+planning contract, not proof that an arbitrary model honors it.
+
+Preview prompt assembly reads ONLY subject_geometry, numbered panel geometry,
+stage dimensions and lineart rules. It never interpolates names, purpose, original
+user/source wording, or appearance fields. Originals stay in the durable plan and
+stage metadata for cards/finals; finals include original user/source wording,
+subject/panel appearance, selected geometry, and handedness/no-mirror constraints.
+No source/reference input is lost. Existing card and ledger mechanisms are reused;
+no parallel planning API, component or migration is introduced.
+
+Legacy boundary: any old mixed plan with a preview reservation/submission record
+is query/archive only, including reserved/uncertain, pending and delivered states.
+The generate/quote/reserve boundaries block conversion, finals or a fresh submission;
+existing task IDs remain available, and result collection/archiving may continue.
+A legacy plan without any preview submission/reservation may be explicitly replanned
+before dispatch; the software does not derive a new plan by scrubbing old prose.
+The paid `PAID_FAILURE_PLAN` fixture remains byte/value-identical to the archive.
+No old task is resubmitted. No new paid API, browser or8916 activity.
+
+Regression changes are explicit, not weakened assertions: old raw-brief-in-preview
+checks now require raw text to remain in metadata/final output and be absent from
+preview, as mandated by product. Earlier unpublished regex-filter tests retain
+all scenario names but now assert no filter, rejection of mixed legacy inputs,
+geometry-only projection and preservation of bilingual appearance in finals.
+All original stage/spec/selection/exact-pin-quote checks still run. Mock planning
+fixtures now supply the required separated fields; no production fixed-view table.
+Hash pins updated only for the intentionally changed multi-angle instructions;
+other src/skills.ts entries verified byte-identical to the previous local head.
+
+Validation: **835 passed, 0 failed/errors/skipped in9.71s**, same fourteen focused
+files. Command `/workspace/fs911-ma-ev/structured-plan-test-command.sh`; final logs
+`structured-plan-focused.log` and `structured-plan-focused.xml`. First transition
+run (6 failed/826 passed: four now-obsolete raw-text preview expectations and two
+intentional instruction hash pins) is preserved as
+`structured-plan-contract-transition-failures.log/.xml`, followed by832-pass interim
+run before three extra schema/legacy routing probes (`structured-plan-832-pre-extra`).
+Effect HOLD remains: no new WaveSpeed image, default agent, UI or L/R acceptance.
+
+Production build (tsc noEmit + Vite,3260 modules) passed in1.10s; consistent
+dist committed. Python compilation/whitespace checks passed and the temporary
+node_modules symlink was removed. No new component or migration.

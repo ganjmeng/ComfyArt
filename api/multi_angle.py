@@ -22,13 +22,17 @@ PANEL_IDS = tuple(str(i) for i in range(1, 10))
 def validate_plan(value: object) -> dict:
     """A subject-aware plan is supplied by the agent after inspecting input, never a fixed view list."""
     if not isinstance(value, dict):
-        raise ValueError("Provide composition_plan with subject, purpose and nine numbered panels before preview submission.")
+        raise ValueError("Provide composition_plan with subject, purpose, subject_geometry, appearance and nine panels with separate geometry/appearance before preview submission.")
     out = {}
-    for key in ("subject", "purpose"):
+    for key in ("subject", "purpose", "subject_geometry"):
         text = value.get(key)
         if not isinstance(text, str) or not text.strip() or len(text) > 2000:
-            raise ValueError(f"composition_plan.{key} must describe this run's subject/use, not an empty generic plan.")
+            raise ValueError(f"composition_plan.{key} is required: provide structured geometry separately from appearance; replan before submission.")
         out[key] = text.strip()
+    appearance = value.get("appearance")
+    if not isinstance(appearance, str) or len(appearance) > 2000:
+        raise ValueError("composition_plan.appearance must be a separate string (empty if unspecified); replan before submission.")
+    out["appearance"] = appearance.strip()
     panels = value.get("panels")
     if not isinstance(panels, list) or len(panels) != 9:
         raise ValueError("composition_plan requires exactly nine panels, IDs 1..9.")
@@ -37,76 +41,33 @@ def validate_plan(value: object) -> dict:
         if not isinstance(panel, dict) or str(panel.get("id")) not in PANEL_IDS:
             raise ValueError("Each composition plan panel needs one ID 1..9.")
         item = {"id": str(panel["id"])}
-        for key in ("name", "description"):
+        for key in ("name", "description", "geometry"):
             text = panel.get(key)
             if not isinstance(text, str) or not text.strip() or len(text) > 2000:
                 raise ValueError(f"Each panel requires a non-empty {key} (max 2000 characters).")
             item[key] = text.strip()
+        appearance = panel.get("appearance")
+        if not isinstance(appearance, str) or len(appearance) > 2000:
+            raise ValueError("Each panel requires separate appearance text (empty if unspecified); geometry is camera/framing/structures only.")
+        item["appearance"] = appearance.strip()
         clean.append(item)
     if {p["id"] for p in clean} != set(PANEL_IDS):
         raise ValueError("Composition plan IDs must be unique and cover 1..9.")
-    for key in ("name", "description"):
+    for key in ("name", "description", "geometry"):
         if len({p[key].casefold() for p in clean}) != 9:
             raise ValueError(f"Composition plan {key}s must distinguish all nine panels.")
     out["panels"] = sorted(clean, key=lambda p: int(p["id"]))
     return out
 
 
-# Appearance-rendering directives only (color / finish / lighting-style instructions).
-# This is not a generic word blacklist: names and close-up subjects such as
-# "wall material", "墙面材质特写", "lining texture", or "surface finish close-up"
-# are kept. The persisted plan is never rewritten.
-_APPEARANCE_RENDER_RE = re.compile(
-    r"(?:"
-    r"exact\s+(?:gray|grey)\s+materials?|"
-    r"(?:matte|glossy|metallic)\s+surface\s+finish|"
-    r"matching\s+the\s+reference\s+(?:plastic|metal|wood|paint|finish|leather)|"
-    r"same\s+(?:gray|grey|matte)\s+\w+|"
-    r"matte\s+(?:gray|grey)\s+|"
-    r"亚光灰材质(?:仅作成品说明)?"
-    r")",
-    re.I,
-)
-
-
-def preview_text(text: str) -> str:
-    """Limited explicit-pattern projector for lineart subject/description text.
-
-    Drops only phrases listed in _APPEARANCE_RENDER_RE (paid-failure and a few
-    close variants). This is not a universal material/color/finish filter:
-    unlisted wording such as "glossy red leather" or "哑光黑色材质" is kept.
-    Geometry/subject phrases such as "wall material" are also kept. Does not
-    mutate the frozen plan.
-    """
-    out = _APPEARANCE_RENDER_RE.sub(" ", text)
-    out = re.sub(r"\s+", " ", out)
-    out = re.sub(r"\s+,\s+", ", ", out)
-    out = re.sub(r"\s+;\s+", "; ", out)
-    out = re.sub(r"\s+，\s+", "，", out)
-    out = re.sub(r"\s+；\s+", "；", out)
-    out = re.sub(r"\s+(?:and|与)\s*(?:,|;|，|；|$)", "", out, flags=re.I)
-    out = re.sub(r"(?:,|;|，|；)\s*(?:,|;|，|；)+", ",", out)
-    out = re.sub(r"\s+", " ", out)
-    return out.strip(" ,;，；")
-
-
 def preview_plan_view(plan: dict) -> dict:
-    """Executable preview view of a frozen plan.
+    """Use explicit geometry fields only, never infer/scrub legacy mixed prose.
 
-    Projected fields only: subject, panels[].description, via preview_text.
-    Unchanged fields: purpose, panels[].id, panels[].name. The user description
-    is also not projected. Callers must persist and resume with the original plan,
-    not this view.
+    Original names, purpose, descriptions and appearance remain frozen for the
+    selection card/finals. Semantic correctness of geometry still needs visual QA.
     """
-    return {
-        "subject": preview_text(plan["subject"]),
-        "purpose": plan["purpose"],
-        "panels": [
-            {"id": p["id"], "name": p["name"],
-             "description": preview_text(p["description"]) or p["name"]}
-            for p in plan["panels"]
-        ],
-    }
+    return {"subject_geometry": plan["subject_geometry"], "panels": [
+        {"id": panel["id"], "geometry": panel["geometry"]} for panel in plan["panels"]]}
 
 
 SIZE_KEYS = ("width", "height", "ratio", "resolution", "edit_resolution", "size_lock", "size_lock_mode", "size_candidates")
@@ -410,6 +371,15 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
     if source not in {"single_front", "multiple", "description", "other"} or (source == "other" and not source_other):
         return args, _blocked("请回答来源或填写其他情况 / Answer source or describe the other scenario.")
     ledger = root.get(LEDGER) or {}
+    if ledger.get("preview"):
+        try:
+            validate_plan(ledger.get("composition_plan"))
+        except ValueError:
+            blocked = _blocked("Legacy submitted composition_plan is archive/query only. Do not convert its frozen mapping, submit finals, or automatically pay again; 尚有旧计划提交记录，只能查询结果或归档，不能迁移后重付费。")
+            blocked["legacy_plan_archive_only"] = True
+            blocked["existing_task_ids"] = [task for entry in ledger.values() if isinstance(entry, dict)
+                                            for task in (entry.get("result") or {}).get("ids", [])]
+            return args, blocked
     try:
         original_description, user_final, user_preview = _user_specs(chat_id)
         card_spec = _parse_spec(aspect_other)
@@ -501,9 +471,12 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
             if shape not in args["refs"]:
                 args["refs"].append(shape)
                 args["ref_modes"].append("composition")
-    view = preview_plan_view(plan) if stage == "preview" else plan
-    brief = f"User description (preserve; empty means image-only, use the attached subject without inventing a brief):\n{description}\nReference source: {source}; other scenario: {source_other}. Final specification: {final_spec['width']}x{final_spec['height']}, ratio {aspect}; exact user pixels={final_spec['exact_pixels']}. This stage: {spec['width']}x{spec['height']}, ratio {spec['ratio']}.\nPreserve subject identity, geometry, proportions, controls and the user's background requirements.\n"
-    brief += f"Frozen composition planning context: subject={view['subject']}; purpose={view['purpose']}.\n"
+    if stage == "preview":
+        view = preview_plan_view(plan)
+        brief = f"Subject geometry: {view['subject_geometry']}\nThis stage: {spec['width']}x{spec['height']}, ratio {spec['ratio']}.\nPreserve reference identity, geometry, proportions and visible structures.\n"
+    else:
+        brief = f"User description (preserve; empty means image-only, use the attached subject without inventing a brief):\n{description}\nReference source: {source}; other scenario: {source_other}. Final specification: {final_spec['width']}x{final_spec['height']}, ratio {aspect}; exact user pixels={final_spec['exact_pixels']}. This stage: {spec['width']}x{spec['height']}, ratio {spec['ratio']}.\nPreserve subject identity, geometry, proportions, controls and the user's background requirements.\n"
+        brief += f"Frozen composition planning context: subject={plan['subject']}; purpose={plan['purpose']}. Subject appearance: {plan['appearance']}.\n"
     if stage == "preview":
         brief += (
             "Produce ONE lineart preview image (LINEART ONLY planning sheet): a numbered 3x3 nine-panel composition grid, labels 1..9. "
@@ -514,20 +487,16 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
             "For each panel, execute its frozen camera direction, framing and visible structures. "
             "An overhead plan must show the actual top-facing geometry rather than reuse the front silhouette; "
             "similarly distinguish side/rear views. Do not invent nonexistent parts to distinguish panels.\n"
-            "The executable panel lines below apply preview_text only to subject and panel descriptions: "
-            "recognized appearance-rendering phrases from that limited, explicit-pattern projector, not a universal material/color/finish filter, are dropped. "
-            "Unrecognized appearance wording may remain. Panel names, purpose, and the user description are used as written; do not rewrite panel IDs or geometry. "
-            "The frozen plan, including material/color/finish requirements, is persisted unchanged for finished images. "
-            "主体与面板描述中已识别的显式外观渲染短语会从本线稿阶段的可执行预览行中去掉；未识别的外观措辞可能保留。"
-            "仅为有限的显式模式投影，并非通用材质/色彩/表面处理过滤器。"
-            "面板名称、用途与用户描述按原文使用；编号与机位/构图几何仍以冻结规划为准，不得改写。\n")
-        brief += "\n".join(f"{p['id']}: {p['name']} — {p['description']}" for p in view["panels"])
+            "Only structured subject geometry and numbered panel geometry are executable here. "
+            "Names, purpose, original user wording and appearance are reserved for finished images, not injected into this preview. "
+            "仅执行结构化主体几何与各格机位/构图，名称、用途、用户原话与外观描述保留给成品阶段。\n")
+        brief += "\n".join(f"{p['id']}: {p['geometry']}" for p in view["panels"])
         brief += "\nUse exactly this panel numbering and composition plan; do not substitute generic views."
     else:
         chosen = next(p for p in plan["panels"] if p["id"] == panel)
         brief += "Restore the original subject's material, color and finish from the original reference/brief; use the lineart only for composition.\n"
         brief += (
-            f"Produce ONE independent finished image, composition {panel}: {chosen['name']} — {chosen['description']}. "
+            f"Produce ONE independent finished image, composition {panel}: {chosen['name']} — {chosen['description']}. Frozen geometry: {chosen['geometry']}. Panel appearance: {chosen['appearance']}. "
             "Match that exact numbered panel in the delivered preview. "
             "Preserve that selected panel's screen-left/right orientation, camera direction and handedness; "
             "do not mirror, horizontally flip, or reverse the composition. "
@@ -553,7 +522,7 @@ def reserve(meta: dict, chat_id: str = "") -> dict | None:
     key = meta["key"]
     try:
         plan = validate_plan(meta.get("composition_plan"))
-        if ledger.get("composition_plan") and ledger["composition_plan"] != plan:
+        if ledger.get("preview") and ledger.get("composition_plan") != plan:
             raise ValueError("Composition plan changed concurrently; reconcile the frozen preview plan.")
         if key.startswith("final:") and not ledger.get("composition_plan"):
             raise ValueError("No persisted preview plan; no paid final submission allowed.")
@@ -561,6 +530,8 @@ def reserve(meta: dict, chat_id: str = "") -> dict | None:
         return _blocked(str(e))
     if key in ledger:
         return copy.deepcopy(ledger[key].get("result") or _blocked("Already reserved; inspect existing task, do not submit again."))
+    if not ledger.get("preview"):
+        ledger["composition_plan"] = plan  # unsubmitted plans may be replanned, never submitted ones
     for k in ("refs", "description", "source", "aspect", "setup_snapshot", "composition_plan"):
         ledger.setdefault(k, meta[k])
     ledger[key] = {"status": "reserved"}

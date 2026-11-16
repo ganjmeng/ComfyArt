@@ -74,11 +74,15 @@ def test_source_other_text_is_kept_in_prompt_state_and_not_replaced_by_model(run
     assert all(q["allow_other"] for q in root["questions"])
     root["answers"][ma.SOURCE] = {"selected": [], "other_text": text}
     args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "prompt": "model invented source"})
-    assert blocked is None and text in args["prompt"]
+    assert blocked is None and text not in args["prompt"]  # raw source is frozen, final-only
     assert "model invented source" not in args["prompt"]
     complete_preview(args)
     snap = ma._root("chat-ma")[1][ma.LEDGER]["setup_snapshot"]
     assert snap["source"]["other_text"] == text
+    choose(rows, ("1",))
+    final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": "1"})
+    assert blocked is None and text in final["prompt"]
+    assert "model invented source" not in final["prompt"]
     root = rows[1]["blocks"][0]
     root["answers"][ma.SOURCE]["other_text"] = "changed source"
     _, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL})

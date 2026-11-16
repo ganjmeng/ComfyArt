@@ -2,8 +2,10 @@
 HEADPHONES_PLAN = {
     "subject": "gray over-ear headphones from the supplied reference",
     "purpose": "商品详情页，纯白无缝背景 / PDP white seamless",
+    "subject_geometry": "over-ear headphones with oval earcups, headband and yokes",
+    "appearance": "gray reference material, pure white seamless background",
     "panels": [
-        {"id": str(i), "name": name, "description": description}
+        {"id": str(i), "name": name, "description": description, "geometry": description, "appearance": ""}
         for i, (name, description) in enumerate([
             ("正面全景", "front full headphones, earcups and headband symmetrically visible"),
             ("四分之三全景", "three-quarter full headphones showing earcup depth and curved headband"),
