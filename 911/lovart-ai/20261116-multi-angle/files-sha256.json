@@ -1,0 +1,201 @@
+[
+  {
+    "file": "01-正面全身-耳机正面全身白底图.png",
+    "bytes": 3404566,
+    "sha256": "5a7d69bf38a202f3999da64035ee4d6659946ee8dda28e93be3d2054630858ae",
+    "width": 2048,
+    "height": 2048
+  },
+  {
+    "file": "02-3-4全身-耳机3-4侧面全身白底图.png",
+    "bytes": 3512696,
+    "sha256": "653898496cf82c2da0f894c88d3a7a0cb988e2fcbc4971cee5f3271c66f80567",
+    "width": 2048,
+    "height": 2048
+  },
+  {
+    "file": "03-侧面全身-耳机侧面轮廓全身白底图.png",
+    "bytes": 2818563,
+    "sha256": "3240be2bcfb4bc167ec2727037ca1cc7e65ad9575c44436c6cd6f31cdc2ae48e",
+    "width": 2048,
+    "height": 2048
+  },
+  {
+    "file": "after-answers-progress.png",
+    "bytes": 72667,
+    "sha256": "b0a7e105723d93d7329acfb96bee9ceffcb36279d7a75d0547a567b4efc55cc8",
+    "width": 1920,
+    "height": 1072
+  },
+  {
+    "file": "after-reference-analysis.png",
+    "bytes": 114233,
+    "sha256": "bf8900de55c3dc1401e69fdd986b9962ec7001bbe94ad4231c8cac7cb42e8810",
+    "width": 3840,
+    "height": 1072
+  },
+  {
+    "file": "after-send-outputting.png",
+    "bytes": 113508,
+    "sha256": "8948fba0c4d51fc73da67aaf7835e0edd5d72ef92270b568f5e0ce5e1d2455c6",
+    "width": 3840,
+    "height": 1072
+  },
+  {
+    "file": "after-skill-file-read.png",
+    "bytes": 115838,
+    "sha256": "4efc2f449ac5ece05d19a852d38c0757dc410305b3c6914385ba42acba62633b",
+    "width": 3840,
+    "height": 1072
+  },
+  {
+    "file": "assistant-followup.png",
+    "bytes": 118732,
+    "sha256": "6af1ca2935e1f53af65e833217a017f017ecb9ed0267dcf20f17b26403acc8d7",
+    "width": 1920,
+    "height": 1072
+  },
+  {
+    "file": "attached-pre-send.png",
+    "bytes": 111255,
+    "sha256": "9b9b9d105ae581e53ad61a8e1d7228b6209b16d913ef830fb621d97399b459ca",
+    "width": 3840,
+    "height": 1072
+  },
+  {
+    "file": "before-answers.png",
+    "bytes": 88340,
+    "sha256": "39b4d1af09f6225b7b263d6e9ebc04353329066b99f2c9406f696257fd607775",
+    "width": 1920,
+    "height": 1072
+  },
+  {
+    "file": "before-current-reply.png",
+    "bytes": 105991,
+    "sha256": "c3855a8a503b00c408a0c959e2331925bcbfa465f73fb563f48a99f2f7130ad7",
+    "width": 3840,
+    "height": 1072
+  },
+  {
+    "file": "canvas-before-attach.png",
+    "bytes": 40254,
+    "sha256": "d88696eeed50fb74d6556e30619c3dc02699ba29d398a840beaf7b7bc594cffe",
+    "width": 1920,
+    "height": 1072
+  },
+  {
+    "file": "final-output-canvas.png",
+    "bytes": 297978,
+    "sha256": "38813d80886d539178251de19836e71e49085c8889cd39c9b7c4c4a3e3778d71",
+    "width": 1920,
+    "height": 1072
+  },
+  {
+    "file": "final-specs-chat.png",
+    "bytes": 322820,
+    "sha256": "870d998462b2153caba914133a2cccb56d5da8d8f8bbc4911b6c2138f9677d1a",
+    "width": 1920,
+    "height": 1072
+  },
+  {
+    "file": "first-grid-output.png",
+    "bytes": 473145,
+    "sha256": "c91aa898fac88212bcf1f4dcd5ce2d00cd1cf2245743ad998591e0583f9b1e0c",
+    "width": 1920,
+    "height": 1072
+  },
+  {
+    "file": "full-chat-after-answers.png",
+    "bytes": 89794,
+    "sha256": "6a198c31b193916c6d62208ec93d0ae155896085e8ad6e80c57430bcb2888a38",
+    "width": 1993,
+    "height": 1072
+  },
+  {
+    "file": "locked-pending.png",
+    "bytes": 322925,
+    "sha256": "7a365429092c95eab4c8dbd3384ac6400f827f58dac6115760b29c15103173bc",
+    "width": 1920,
+    "height": 1072
+  },
+  {
+    "file": "ma_subject_691.png",
+    "bytes": 110655,
+    "sha256": "f92f6c3eb265a1421003a4682d21c3e472450eb084ef027ab0290b6e2d550b5e",
+    "width": 700,
+    "height": 700
+  },
+  {
+    "file": "manifest.jsonl",
+    "bytes": 2317,
+    "sha256": "6fe8f9b786ed8d232eb0e30ac98eb000fc8ede3b315096d34713a2e3728d8b4f"
+  },
+  {
+    "file": "manifest.md",
+    "bytes": 9213,
+    "sha256": "e8faf268526eacb330836d5140d86209d6e30889279049db87796da27f1ad250"
+  },
+  {
+    "file": "new-choice-stop-state.png",
+    "bytes": 310492,
+    "sha256": "371b36f83363561e6a5b9a864834df65c8b4267373d2d6dff2fe85371482b3d7",
+    "width": 1920,
+    "height": 1072
+  },
+  {
+    "file": "outputting.png",
+    "bytes": 59877,
+    "sha256": "fa16923e06431f9f4e34c34f575cef67ed502e204d1c5671d8266133ce54c9a3",
+    "width": 1920,
+    "height": 1072
+  },
+  {
+    "file": "post-submit-progress.png",
+    "bytes": 322724,
+    "sha256": "34f281e533e94d8ec7da806bbc9bdd24ca397c87659ae78fb96cc03b98e46cdf",
+    "width": 1920,
+    "height": 1072
+  },
+  {
+    "file": "pre-submit.png",
+    "bytes": 70405,
+    "sha256": "005e9c979164449eb44586f282c9eaecd046602979351518618b25da68eedb56",
+    "width": 1920,
+    "height": 1072
+  },
+  {
+    "file": "questions-awaiting-input.png",
+    "bytes": 88340,
+    "sha256": "39b4d1af09f6225b7b263d6e9ebc04353329066b99f2c9406f696257fd607775",
+    "width": 1920,
+    "height": 1072
+  },
+  {
+    "file": "selection-pre-submit.png",
+    "bytes": 307539,
+    "sha256": "61925108e2fe1368a2cbf4b4acceb3582410fa46e95d8222f50f0cd075345f3e",
+    "width": 1920,
+    "height": 1072
+  },
+  {
+    "file": "skill-entry.png",
+    "bytes": 1212500,
+    "sha256": "958ea89ecb0ac75d3e033dfe7c9d63f0faf31c70d2fb53a50000b45c3aa9d2e4",
+    "width": 1920,
+    "height": 1072
+  },
+  {
+    "file": "skill-ready-canvas-read.png",
+    "bytes": 61071,
+    "sha256": "2b44eb6eb65ca312b2415d2650dd6d2ec60c3e4795f6d5fd9d4ef896a2c22909",
+    "width": 1920,
+    "height": 1072
+  },
+  {
+    "file": "耳机多角度构图线稿九宫格.png",
+    "bytes": 1560182,
+    "sha256": "9aeef7c4172a0e0b99a5a871965bbe06d78425a6030764084c66301a7e6f80e3",
+    "width": 1152,
+    "height": 2048
+  }
+]
