@@ -55,6 +55,10 @@ def _relay(action: str, *, timeout: float = 20.0, approval: str = ""):
             blocked_gif = still_block(ensure_gif_args(dict(args)))
             if blocked_gif is not None:
                 return blocked_gif
+            from .. import multi_angle
+            args, blocked_multi = multi_angle.prepare(args)
+            if blocked_multi is not None:
+                return blocked_multi
             # #956 / #957: required skill params (portrait skill/shot, packaging refs)
             # are inferred from the current skill and answered cards, then checked
             # against the agent args. Missing params are refused here: no submit, no charge.
@@ -103,6 +107,15 @@ def _unregistered_copy() -> str:
 
 async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float) -> dict:
     from .. import product_packaging
+    from .. import multi_angle
+    multi_meta = None
+    if action == "generate_image":
+        args, blocked_multi = multi_angle.prepare(args)
+        if blocked_multi is not None:
+            return blocked_multi
+        multi_meta = args.pop("_multi_angle", None)
+        args.pop("multi_angle_stage", None)
+        args.pop("composition_id", None)
     packaging_run = action == "generate_image" and product_packaging.applies(args)
     if action == "generate_image":
         # #707: a named skill's declared pixels reach the page even if the provider omitted them.
@@ -219,7 +232,13 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
         args = {**args, "model_choice": {**choice, "note": note(choice) if choice.get("model") else (choice.get("fallback_reason") or {}).get("en", "")}}
         if choice.get("auto"):
             args["auto_model"] = True
+    if multi_meta is not None:
+        replay = multi_angle.reserve(multi_meta)
+        if replay is not None:
+            return replay
     result = await submit_command(action, args, PROJECT.get(), timeout, chat=BOT_CHAT_ID.get())
+    if multi_meta is not None:
+        multi_angle.submitted(multi_meta, result)
     if packaging_run and isinstance(result, dict) and not result.get("cancelled"):
         # #963: image 1's returned shape is the anchor holder; wait_generation swaps in the placed shape.
         product_packaging.record_submitted(result)
@@ -258,6 +277,8 @@ async def _wait_generation(args: dict) -> dict:
     payload = await submit_command("wait_generation", {**args, "timeout_s": timeout}, PROJECT.get(), timeout + 15)
     # #963: the placed anchor image shape (image 1 of a packaging turn) is what the plan gate binds to.
     product_packaging.record_wait(payload)
+    from .. import multi_angle
+    multi_angle.record_wait(payload)
     return payload
 
 
@@ -634,6 +655,13 @@ def quote_route(action: str, args: dict, user_text: str | None = None, catalog: 
         if blocked is not None:
             return "", {"param_blocked": blocked}
         clean = validated
+        from .. import multi_angle
+        clean, blocked_multi = multi_angle.prepare(clean)
+        if blocked_multi is not None:
+            return "", {"param_blocked": blocked_multi}
+        clean.pop("_multi_angle", None)
+        clean.pop("multi_angle_stage", None)
+        clean.pop("composition_id", None)
     if unregistered_model(action, clean):
         clean = {k: v for k, v in clean.items() if k not in ("model", "auto_model")}
     # Use the live/cached WaveSpeed catalog so exact-size skills (before-after, …)
@@ -784,6 +812,9 @@ SPECS: dict[str, dict] = {
                    "description": "1-based delivery stage of the template's output contract (brand: stage 1 = "
                                   "3×1024×1024 direction proposals, stage 2 = 1×2048×1152 guideline board; "
                                   "multi-SKU packaging: stage 1 = 3×1536×2048, stage 2 = 1×2048×1152). Default 1."},
+         "multi_angle_stage": {"type": "string", "enum": ["preview", "final"],
+                               "description": "multi-angle only: preview lineart, then final after composition answer"},
+         "composition_id": {"type": "string", "description": "multi-angle final: one answered panel number 1..9"},
          "shot": {"type": "string", "enum": ["closeup", "half", "three_quarter", "full"],
                   "description": "portrait-studio only: the shot size of this one image"},
          "output_format": {"type": "string", "enum": ["png", "jpeg", "webp", "gif", "svg"]},

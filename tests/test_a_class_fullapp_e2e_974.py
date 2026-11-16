@@ -1,13 +1,9 @@
-"""#974 A-class Full App mock e2e ($0): multi-angle default input → four separate generate_image
-calls → four canvas results.
+"""#974 Full App legacy bypass regression, superseded by actual #911 stages.
 
-The real built app (dist/), the real ComfyArt routes, the real chat panel, the real LocalLlmProvider
-agent loop with a scripted LLM (no LLM call), the real canvas MCP dispatch and the real
-generate_image handler. WaveSpeed is the local mock and nothing is submitted to it.
-
-The scripted model names only the skill/prompt/refs, like a model following the skill text; the
-server-side #974 lock must fill 1536x2048 / 3:4 and count=1 on every call. The same uploaded
-subject shape id must be on all four calls, and the canvas must show four generated images.
+The old scripted model tries four direct final calls with no answered cards.
+Those attempts must now produce ZERO supplier submissions. Positive staged
+mock relay coverage is in test_multi_angle_stages_911.py. This is NOT visual
+or paid acceptance. Keep the old Full App harness to prevent regressions.
 """
 from __future__ import annotations
 
@@ -46,16 +42,14 @@ def _script(state: dict, lang: str):
                 "skill": SID,
                 "refs": refs,
             }))
-        if n == 5:
-            return _calls(("wait_generation", {"ids": _all_ids(messages)}))
-        return _reply("4 张独立角度图已放到画布。" if lang == "zh"
-                      else "Done: four separate multi-angle stills are on the canvas.")
+        state["finished"] = True
+        return _reply("等待问询回答。" if lang == "zh" else "Waiting for stage answers.")
 
     return respond
 
 
 @pytest.mark.parametrize("lang", ["zh", "en"])
-async def test_fullapp_multi_angle_default_is_four_separate_1536x2048_images(
+async def test_fullapp_multi_angle_legacy_four_direct_calls_are_blocked(
         app_url, mock_ws, local_agent, ws_forward, monkeypatch, lang):  # noqa: F811
     # Auto picks openai/gpt-image-2.6-flare/edit; the local catalog fixture already carries it, so expose
     # it on the mock model list too (otherwise the page rejects the model before any submit).
@@ -69,44 +63,19 @@ async def test_fullapp_multi_angle_default_is_four_separate_1536x2048_images(
         browser, pg = await _open_skill(p, app_url, lang, SID, ws_forward, dialog_ref=UPLOAD)
         try:
             await _send_default(pg)
-            # Four separate paid submits (one per angle), never one count=4 grid.
-            await _wait(lambda: len(mock_ws["submits"]) >= 4, timeout=150.0)
-            assert len(mock_ws["submits"]) == 4, mock_ws["submits"]
-            await _wait(lambda: state.get("wait"), timeout=150.0)
-            rows = (state.get("wait") or {}).get("results") or []
-            assert len(rows) == 4 and all(r.get("status") == "done" and r.get("placed") for r in rows), rows
-
+            await _wait(lambda: state.get("finished"), timeout=150.0)
+            assert mock_ws["submits"] == []
             gens = [(name, args) for name, args in state["mcp"] if name == "generate_image"]
-            assert len(gens) == 4, gens
-            # Every call is one 3:4 1536x2048 image, even though the model passed no size.
-            assert [(a.get("width"), a.get("height"), a.get("ratio"), a.get("count")) for _n, a in gens] == \
-                [(1536, 2048, "3:4", 1)] * 4, [a for _n, a in gens]
-            assert all(a.get("size_lock") is True for _n, a in gens)
-            assert [a["prompt"] for _n, a in gens] == [
-                f"same uploaded subject, {angle}, 3:4 studio product photograph" for angle in ANGLES]
-            # Same uploaded subject shape id on every call; no call loses the reference.
-            base_refs = [row["id"] for row in state["attached"]]
-            assert len(base_refs) == 1, state["attached"]
-            assert [[r for r in a.get("refs") or []] for _n, a in gens] == [[base_refs[0]]] * 4, \
-                (base_refs, [a.get("refs") for _n, a in gens])
-            assert all(a.get("skill") == SID for _n, a in gens)
-
-            # The TS SKILL_OUTPUT row the page returned to the model is the same lock.
-            skill_read = _last_tool_json(state["messages"], "output")
-            assert skill_read and skill_read["output"] == {
-                "width": 1536, "height": 2048, "ratio": "3:4", "images": 4}, skill_read
-            # A four-image skill is not a single-image skill: calls 2-4 were not skipped.
-            assert not any("[non-retryable]" in json.dumps(m, ensure_ascii=False) for m in state["messages"] if m.get("role") == "tool")
-
-            # What reached the supplier: four submits, each with the one shared reference.
-            for _model, body in mock_ws["submits"]:
-                assert len(body.get("images") or []) == 1, body
-            assert len({body.get("prompt") for _m, body in mock_ws["submits"]}) == 4
-
-            shapes = await _canvas_images(state["chat"])
-            generated = {sid for row in rows for sid in (row.get("shapes") or [])}
-            assert len(generated) == 4, generated
-            assert generated <= {s["id"] for s in shapes}, (generated, shapes)
-            assert len([s for s in shapes if s["id"] in generated]) == 4, shapes
+            assert len(gens) == 4  # attempted legacy plan; none is authorized by stage state
+            results = []
+            for message in state["messages"]:
+                if message.get("role") == "tool":
+                    try:
+                        results.append(json.loads(message.get("content") or "{}"))
+                    except ValueError:
+                        pass
+            blocked = [r for r in results if isinstance(r, dict) and r.get("kind") == "multiAngleStage"]
+            assert len(blocked) == 4 and all(r.get("submitted") is False for r in blocked)
+            assert _all_ids(state["messages"]) == []
         finally:
             await browser.close()
