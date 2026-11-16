@@ -2,7 +2,7 @@
 
 Base: `4ce96715bc10ee5ff1841b7d55baf9c17d197ea4`
 Worktree: `/workspace/fs911-multiangle-1116`
-Branch: `fix/multiangle-stages-1116` (local commit prepared; no publication)
+Branch: `fix/multiangle-stages-1116` — existing PR #1003; original published baseline `a11f6f5c1314765341c94155a357e13eaa1345f2`.
 
 ## Executable contract
 
@@ -13,7 +13,7 @@ Branch: `fix/multiangle-stages-1116` (local commit prepared; no publication)
 - Each selected ID authorizes one independent final image, not a fixed three or four. Selection is deduplicated, including other-field IDs.
 - Original attachment URLs + user description + source + chosen final aspect are snapshotted in the setup ask block's `multi_angle_state`. Finals retain original refs as content and the delivered preview as composition reference.
 - Static TS/Python 4 x 1536x2048 locks and blanket grid prohibition are removed. Skill aliases still resolve; it is deliberately not a single-image or fixed-count skill.
-- Final sizes use selected aspect at long-edge 2048, not a universal 1:1. Preview layout can use a separately requested supported aspect; absent that, it follows selected aspect. The fixture's 9:16 preview is NOT an implicit default.
+- User-owned description or the existing aspect card other field can specify exact integer pixels or a custom ratio. Exact pixels win over fallback/model guesses; selected ratio must agree with them. A separately requested preview layout is independent; otherwise it follows the final specification. The named request fallback is the shared aspect-size table / approximately 2k long edge (square 2048), NOT measured Lovart output or a delivery guarantee.
 
 ## Replay / safety
 
@@ -27,7 +27,7 @@ Read-only reference: `/workspace/design-911-multiangle/lovart-paid-20261116/mani
 Input fixture: `tests/fixtures/ma_subject_691.png`, description `商品详情页，纯白无缝背景` / `PDP, white seamless`.
 Observed left run: one 1152x2048 numbered lineart; selected 1/2/3 -> three independent 2048x2048 finals; 74 Lovart credits total. These are measured fixture facts, not all-branch defaults. No left rerun was made.
 
-Minimum safe slice limitations: source choices are single front / multiple refs / description; nine supported final aspects, no arbitrary custom pixel dimensions. Panel labels 1..5 match the observed broad compositions; 6..9 use generic alternative/detail views rather than inferring subject-specific details from the fixture. Image visual consistency and provider-delivered dimensions remain unverified. A positive no-browser application-stack test now runs the real LocalLlmProvider loop, MCP dispatcher, ask futures, SQL chat persistence and canvas relay against mocked LLM/page-supplier boundaries. It selects FOUR finals after one preview to prove variable output count, placement and cap handling; this synthetic mock choice is not the three-selection left fixture. The existing browser Full App test remains a negative bypass regression and was not run. Browser/visual Full App acceptance is still pending.
+Scope: existing source choices plus retained other-scenario free text; nine suggested aspects plus custom ratio/pixels in the existing other field. Image-only references are valid. Exact pixels require cached, verifiable native pixel-size support; unsupported/unknown capability blocks before submission instead of silently switching models. Panel labels 1..5 match the observed broad compositions; 6..9 use generic alternative/detail views rather than inferring subject-specific details from the fixture. Image visual consistency and provider-delivered dimensions remain unverified. A positive no-browser application-stack test now runs the real LocalLlmProvider loop, MCP dispatcher, ask futures, SQL chat persistence and canvas relay against mocked LLM/page-supplier boundaries. It selects FOUR finals after one preview to prove variable output count, placement and cap handling; this synthetic mock choice is not the three-selection left fixture. The existing browser Full App test remains a negative bypass regression and was not run. Browser/visual Full App acceptance is still pending.
 
 ## Validated mocked coverage
 
@@ -52,7 +52,7 @@ PYTHONPATH=/workspace/fs911-ma-ev/package python3 -m pytest --maxfail=3 --tb=sho
   /workspace/fs911-ma-ev/package/ComfyArt/tests/test_auto_pick.py
 ```
 
-Do not include Playwright/Full App tests until a separate slot and supported browser environment are available. `tests/conftest.py` binds `ComfyArt` to this worktree and uses temporary test settings; do not import the stale sibling checkout or QA runtime. Only the authorized focused Python tests were run. No Playwright, server, paid API, browser action, credential operation, push, PR or outgoing message occurred. A local implementation commit includes the rebuilt production dist.
+Do not include Playwright/Full App tests until a separate slot and supported browser environment are available. `tests/conftest.py` binds `ComfyArt` to this worktree and uses temporary test settings; do not import the stale sibling checkout or QA runtime. Only the authorized focused Python tests were run. No Playwright, server, paid API, browser action, credential operation or outgoing message occurred. The original implementation includes rebuilt production dist; the initial branch was subsequently published as PR #1003. Publication statements in the earlier build section below describe that earlier preparation phase only.
 
 ## Static checks actually run
 
@@ -69,7 +69,7 @@ Static success is not mocked-test success, browser/visual acceptance, or paid PA
 
 Receipt gating now requires the specific holder to report done, `placed=true`, no failure flag, exactly one delivered image when reported, and exactly one placed shape; status alone, unrelated holders, zero/multiple deliveries and unplaced completions do not unlock finals.
 
-## Final focused result
+## Original a11f6f5c focused result (historical, not current acceptance)
 
 437 passed, 0 failed, 0 errors, 0 skipped in 8.60s. Full output: `/workspace/fs911-ma-ev/focused-final.log`; machine-readable report: `/workspace/fs911-ma-ev/focused-final.xml`. TypeScript noEmit, changed-Python compilation and whitespace checks also passed. Python slot released after this result; no frontend/browser runner was started or touched.
 
@@ -79,3 +79,41 @@ Receipt gating now requires the specific holder to report done, `placed=true`, n
 `npm run build` (`tsc --noEmit && vite build`) succeeded; Vite transformed 3260 modules and finished in 3.96s. Full build log: `/workspace/fs911-ma-ev/production-build.log`. The normal large-chunk warning and the existing lottie-web direct-eval warning remain; they are not multi-angle runtime failures. The changed production assets and `dist/index.html` are included with the source changes. QA dependencies were reused read-only through a temporary worktree-local symlink, then the symlink was removed. No pytest or Playwright was rerun during this build-only phase; the validated focused result remains 437 passed / 0 failed / 0 skipped.
 
 Prepared PR title/body are `/workspace/fs911-ma-ev/pr-title.txt` and `/workspace/fs911-ma-ev/pr-body.md`. Four commit-pinned LEFT Lovart baseline screenshot URLs were verified with HTTP HEAD: all returned 200 image/png. Evidence check: `/workspace/fs911-ma-ev/left-evidence-link-check.txt`. No right screenshots were invented. Visual/paid right acceptance and L/R PASS are still not established. Local commit only; push/PR/publication must be performed separately after authorization.
+
+
+## Product HOLD corrections and independent QA regressions
+
+- Source and aspect cards reuse `allow_other`; the source's original bilingual free text is retained in the prompt and immutable setup snapshot. No new editor/component.
+- Only actual user text (minus existing app-injected skill templates) or aspect-card answers can authorize requested sizes. Model `width`/`height`/`ratio` guesses are ignored. Positive exact pixels are retained through preview, final, quotes and persisted resume. Examples: 1200x900 at 4:3, or 1250x1000 via other; custom 5:4/7:5 ratios are supported by existing shared sizing.
+- A ratio/pixel conflict, conflicting specifications, fractional/zero/negative/out-of-policy pixels or malformed custom field fails pre-submit with clarification. Integer pixels are bounded 1..32768; ratios 1:16..16:1. Shared default-ratio sizing can impose further representation limits; explicit pixels avoid the fallback parser.
+- Existing `wavespeed.validate_user_ratio`, cached provider schemas and `skill_size.accepts_exact_pixels` are reused. Detectable range/step/enum incompatibility or exact-pixel capability uncertainty blocks without provider submission. Routing may not rewrite authoritative sizes. An exact request pins the verified model and disables page auto fallback, including an Auto choice's later metadata step. It reuses the existing `size_lock` path for off-dropdown preference gating and returned-file pixel auditing (no new frontend path). These checks do not fetch provider metadata or call paid APIs.
+- Legal image-only input no longer needs a fabricated description. In-flight preview continuation without an explicit stage returns the existing preview holder. Custom panel IDs are complete tokens: 11/12 are rejected, never split into 1/1 or 1/2. Frozen empty original refs remain empty even if later model args or uploads contain images.
+- Source/aspect/pixel/preview-spec edits after reservation fail closed, including the initial published ledger format without a specification snapshot. Reconciliation/new explicit start is required; never re-dispatch an uncertain prior request. A fresh explicit skill start resets scope; ordinary continuation does not.
+- The positive application-stack mock now handles real `plan_quote` cards with the existing `start` answer, asserts approvals, and mocks pricing/catalog boundaries too. It still exercises real MCP, asks, SQL, placement and four selected finals; no browser or visual/paid PASS is claimed.
+
+Independent QA cases were copied from the read-only `/workspace/qa1002-a11f6f5c-evidence/test_adversarial_1002.py` to `tests/test_multi_angle_qa_adversarial_1002.py`. All 13 assertions/cases are retained; the sole fixture adaptation adds actual user text `预览 9:16` where the old case supplied only a model guess. The expected 1152x2048 assertion is unchanged. QA files/environments were not modified.
+
+### Current focused result (supersedes old 437 evidence)
+
+**479 passed, 0 failed/errors/skipped in 6.01s**, nine focused files. This includes all 13 independent QA adversarial cases, 29 new specification/capability regressions, the repaired positive application-stack mock, and unchanged neighboring parameter guards. Initial new-only run was 93 passed / 1 failed because the newly added model-choice mock omitted `reason`; the stub was corrected, not the assertions. Intermediate focused run: 478 passed; final strengthened routing case brings the current run to 479.
+
+Logs: `/workspace/fs911-ma-ev/product-hold-first.log`, `product-hold-second.log`, **`product-hold-focused.log`**, **`product-hold-focused.xml`**. Process checks found no foreign pytest before each dispatch. Python slot is free after this run.
+
+```sh
+# Canonical package alias and temporary read-only node_modules link as above.
+PYTHONPATH=/workspace/fs911-ma-ev/package python3 -m pytest --maxfail=3 --tb=short -q \
+  --junitxml=/workspace/fs911-ma-ev/product-hold-focused.xml \
+  /workspace/fs911-ma-ev/package/ComfyArt/tests/test_multi_angle_stages_911.py \
+  /workspace/fs911-ma-ev/package/ComfyArt/tests/test_multi_angle_specs_1002.py \
+  /workspace/fs911-ma-ev/package/ComfyArt/tests/test_multi_angle_qa_adversarial_1002.py \
+  /workspace/fs911-ma-ev/package/ComfyArt/tests/test_multi_angle_974.py \
+  /workspace/fs911-ma-ev/package/ComfyArt/tests/test_skill_output_982.py \
+  /workspace/fs911-ma-ev/package/ComfyArt/tests/test_skill_param_guard_956_957.py \
+  /workspace/fs911-ma-ev/package/ComfyArt/tests/test_product_packaging_flow.py \
+  /workspace/fs911-ma-ev/package/ComfyArt/tests/test_clothing_swap_911.py \
+  /workspace/fs911-ma-ev/package/ComfyArt/tests/test_auto_pick.py
+```
+
+`npm run build` (`tsc --noEmit && vite build`) passed again, Vite 924ms; log `/workspace/fs911-ma-ev/product-hold-build.log`. Frontend source is unchanged in this correction, and rebuilding leaves committed dist unchanged. Only the existing chunk-size/lottie eval warnings remain. Changed Python compile and `git diff --check` passed. Temporary dependency symlink was removed; no symlink is committed. No other skills' missing-parameter guards were changed.
+
+Remaining acceptance limits: exact support is conservative (existing native W*H helper, no snapped aspect-only adapter); cached schema may be stale and returned provider file pixels/visual fidelity remain unverified. Cross-worker exactly-once and uncertain-submission recovery limitations above remain. No browser/paid/L/R PASS; no paid or credential operation, merge or deployment.

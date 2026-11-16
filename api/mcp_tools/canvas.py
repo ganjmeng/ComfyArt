@@ -226,11 +226,20 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
         args = {**args, "edit_model": choice["edit_model"], "auto_model": True}
     if choice and choice.get("category") in ("skill", "skill_fallback"):
         args = _pin_args(args, choice)
+    if multi_meta is not None:
+        running_model = str(args.get("edit_model") or args.get("model") or (choice or {}).get("edit_model") or (choice or {}).get("model") or "")
+        size_block = multi_angle.validate_provider_size(args, multi_meta, running_model)
+        if size_block is not None:
+            return size_block
+        if multi_meta["stage_spec"]["exact_pixels"]:
+            # Exact-pixel metadata was verified for THIS model. A disabled page
+            # preference must refuse, never fall through to another default.
+            args.update(model=running_model, auto_model=False, size_lock=True, size_candidates=[running_model])
     args.pop("skill", None)
     # #825: page stashes model_choice on the gen card / GenInfo (Auto · name + hover reason).
     if choice and isinstance(choice, dict):
         args = {**args, "model_choice": {**choice, "note": note(choice) if choice.get("model") else (choice.get("fallback_reason") or {}).get("en", "")}}
-        if choice.get("auto"):
+        if choice.get("auto") and not (multi_meta is not None and multi_meta["stage_spec"]["exact_pixels"]):
             args["auto_model"] = True
     if multi_meta is not None:
         replay = multi_angle.reserve(multi_meta)
@@ -643,6 +652,7 @@ def quote_route(action: str, args: dict, user_text: str | None = None, catalog: 
     if not isinstance(args, dict):
         return None
     clean = dict(args)
+    multi_meta = None
     if action == "generate_image":
         # #956 / #957: same validation as the tool; quotes use validated actual params.
         from ..bot_turns import resolve_loose_refs
@@ -659,7 +669,7 @@ def quote_route(action: str, args: dict, user_text: str | None = None, catalog: 
         clean, blocked_multi = multi_angle.prepare(clean)
         if blocked_multi is not None:
             return "", {"param_blocked": blocked_multi}
-        clean.pop("_multi_angle", None)
+        multi_meta = clean.pop("_multi_angle", None)
         clean.pop("multi_angle_stage", None)
         clean.pop("composition_id", None)
     if unregistered_model(action, clean):
@@ -683,6 +693,10 @@ def quote_route(action: str, args: dict, user_text: str | None = None, catalog: 
     model = str(choice.get("edit_model") or choice.get("model") or "")
     if not model:
         return None
+    if multi_meta is not None:
+        size_block = multi_angle.validate_provider_size(clean, multi_meta, model, catalog)
+        if size_block is not None:
+            return "", {"param_blocked": size_block}
     inputs = {k: v for k, v in clean.items() if k not in ("refs", "base", "ref_modes", "model", "auto_model", "edit_model")}
     if clean.get("edit_resolution") and not clean.get("resolution"):
         # #959: src/generate.ts sends a pinned edit tier as `resolution` (shape.meta.editResolution),

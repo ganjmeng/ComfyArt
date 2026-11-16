@@ -77,6 +77,7 @@ def choose(rows, selected=("1", "2", "3"), *, status="answered", other=""):
 
 
 def preview(rows, *, aspect="1:1"):
+    rows[0]["blocks"].append({"type": "text", "text": "预览 9:16"})  # authoritative preview-layout fixture
     setup(rows, aspect)
     args, blocked = ma.prepare({"skill": ma.SKILL, "multi_angle_stage": "preview", "ratio": "9:16"})
     assert blocked is None
@@ -197,6 +198,7 @@ def test_invalid_custom_entry_fails_closed(run, other):
 @pytest.mark.asyncio
 async def test_actual_fixture_dispatch_and_durable_replay_no_duplicate_paid_submit(run):
     rows, sent = run
+    rows[0]["blocks"].append({"type": "text", "text": "预览 9:16"})
     setup(rows)
     relay = canvas._relay("generate_image")
     args = {"skill": ma.SKILL, "multi_angle_stage": "preview", "ratio": "9:16", "prompt": DESC}
@@ -256,6 +258,7 @@ def test_reference_required_but_text_only_allowed_and_attached_never_discarded(r
 
 def test_quote_is_pure_and_matches_submit_stage_size(run, monkeypatch):
     rows, _ = run
+    rows[0]["blocks"].append({"type": "text", "text": "预览 9:16"})
     setup(rows, "3:4")
     monkeypatch.setattr(canvas, "select_model", lambda *a, **k: {"model": "mock", "auto": True})
     before = copy.deepcopy(rows)
@@ -417,13 +420,13 @@ async def test_positive_app_stack_scripted_agent_real_asks_persistence_and_place
     chat = chat_store.create_chat(user="default", project="mock-1002", provider="local-llm")
     cid = chat["id"]
     chat_store.create_message(chat_id=cid, role="user", blocks=[
-        {"type": "skill", "name": ma.SKILL}, {"type": "text", "text": DESC},
+        {"type": "skill", "name": ma.SKILL}, {"type": "text", "text": DESC + "\n预览 9:16"},
         {"type": "image", "url": REF}])
     assistant = chat_store.create_message(chat_id=cid, role="assistant", blocks=[], status="running")
     handle = TurnHandle()
     state = bot_turns._TurnState(handle, cid, assistant["id"])
     monkeypatch.setitem(bot_turns.ACTIVE_TURNS, cid, state)
-    trace, sent, seen = [], [], []
+    trace, sent, seen, quote_approvals = [], [], [], []
     holder_shapes = {}
     args_preview = {"skill": ma.SKILL, "refs": [REF], "multi_angle_stage": "preview", "ratio": "9:16"}
     script = [calls(("ask_user", {"prompt": "setup"})),
@@ -466,6 +469,11 @@ async def test_positive_app_stack_scripted_agent_real_asks_persistence_and_place
     def answer_broadcast(event, payload):
         if event != "turn_ask":
             return
+        if payload.get("kind") == "plan_quote":
+            bot_asks.validate_answer(payload, ["start"], "")
+            bot_asks.resolve_ask(payload["ask_id"], "answered", selected=["start"])
+            quote_approvals.append(payload["ask_id"])
+            return
         questions = payload["questions"]
         answers = ({ma.SOURCE: {"selected": ["single_front"]}, ma.ASPECT: {"selected": ["1:1"]}}
                    if questions[0]["id"] == ma.SOURCE else
@@ -479,6 +487,9 @@ async def test_positive_app_stack_scripted_agent_real_asks_persistence_and_place
     async def no_price(*a, **k):
         return None
 
+    async def no_models(*a):
+        return []
+
     async def emit(event):
         pass
 
@@ -486,6 +497,8 @@ async def test_positive_app_stack_scripted_agent_real_asks_persistence_and_place
     monkeypatch.setattr(provider, "_mcp_call_tool", real_mcp)
     monkeypatch.setattr(provider, "_context_window", window)
     monkeypatch.setattr(provider, "_price_call", no_price)
+    monkeypatch.setattr(provider, "_price_one", no_price)
+    monkeypatch.setattr(provider, "_models_for", no_models)
     monkeypatch.setattr(provider, "_run_store", lambda: None)
     monkeypatch.setattr(bot_tools, "broadcast", answer_broadcast)
     monkeypatch.setattr(canvas, "submit_command", page_supplier)
@@ -503,7 +516,10 @@ async def test_positive_app_stack_scripted_agent_real_asks_persistence_and_place
         assert all((a["width"], a["height"], a["count"]) == (2048, 2048, 1) for a in sent[1:])
         assert all(a["refs"] == [REF, "shape:delivered:1"] and DESC in a["prompt"] for a in sent[1:])
         stored = chat_store.list_messages(cid)
-        asks = [b for row in stored for b in row["blocks"] if b["type"] == "ask"]
+        asks = [b for row in stored for b in row["blocks"] if b["type"] == "ask" and b.get("kind") == "question"]
+        assert quote_approvals, "Unpriced plan_quote cards must be handled, not mistaken for questions"
+        quote_cards = [b for row in stored for b in row["blocks"] if b.get("kind") == "plan_quote"]
+        assert all(b["status"] == "answered" and b["selected"] == ["start"] for b in quote_cards)
         assert len(asks) == 2 and all(a["status"] == "answered" for a in asks)
         ledger = asks[0][ma.LEDGER]
         assert ledger["preview"]["delivered"] is True
