@@ -218,10 +218,8 @@ async def test_relay_restores_ratio_audit_after_routing_without_relaxing_explici
 
 
 
-PREVIEW_MATERIAL_DEFER_EN = (
-    "Material, color, finish, lighting, shading, and photographic rendering clauses "
-    "are omitted from this LINEART ONLY stage and remain in the persisted plan for finished images")
-PREVIEW_MATERIAL_DEFER_ZH = "规划文案中的材质、色彩、表面处理、光线、明暗与写实渲染条款在本线稿阶段不可执行"
+PREVIEW_MATERIAL_DEFER_EN = "limited, explicit-pattern projector, not a universal material/color/finish filter"
+PREVIEW_MATERIAL_DEFER_ZH = "仅为有限的显式模式投影，并非通用材质/色彩/表面处理过滤器"
 FINAL_ORIENTATION = (
     "Preserve that selected panel's screen-left/right orientation, camera direction and handedness")
 FINAL_NO_MIRROR = "do not mirror, horizontally flip, or reverse the composition"
@@ -366,3 +364,60 @@ def test_chinese_camera_and_material_clauses_follow_stage_priority(run):
     wall, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": "8"})
     assert blocked is None and "墙面材质特写" in wall["prompt"]
     assert "headphones" not in wall["prompt"]
+
+
+PROJECTION_OVERCLAIM_EN = (
+    "Material, color, finish, lighting, shading, and photographic rendering clauses "
+    "are omitted from this LINEART ONLY stage")
+PROJECTION_OVERCLAIM_ZH = "已从可执行预览行中省略"
+# Honest coverage language expected after the prompt is corrected.
+PROJECTION_LIMIT_EN = "limited, explicit-pattern projector, not a universal material/color/finish filter"
+PROJECTION_LIMIT_ZH = "仅为有限的显式模式投影，并非通用材质/色彩/表面处理过滤器"
+UNFILTERED_APPEARANCE = ("glossy red leather", "哑光黑色材质", "金属光泽")
+
+
+def test_preview_text_limitation_leaves_unlisted_appearance_phrases():
+    """Counterexamples the fixture-tailored regex does not cover; do not treat this as a universal filter."""
+    for phrase in UNFILTERED_APPEARANCE:
+        text = f"three-quarter view, {phrase}, white seamless"
+        assert phrase in ma.preview_text(text)
+        assert "three-quarter view" in ma.preview_text(text)
+    assert ma.preview_text("wall material close-up of the courtyard") == "wall material close-up of the courtyard"
+    assert ma.preview_text("墙面材质特写") == "墙面材质特写"
+
+
+def test_preview_prompt_does_not_overclaim_projection_and_keeps_unprojected_fields(run):
+    rows, _ = run
+    plan = subject_plan("lacquered vase", "商品页金属光泽展示", [
+        "front elevation", "three-quarter volume", "side silhouette", "rim close-up", "base stamp",
+        "shoulder curve", "overhead opening", "wall material", "low angle"])
+    plan["panels"][1]["description"] = "three-quarter view, glossy red leather, white seamless"
+    plan["panels"][2]["description"] = "侧面轮廓，哑光黑色材质，白底"
+    plan["panels"][6]["description"] = "顶视开口，金属光泽，比例准确"
+    plan["panels"][3]["name"] = "matte surface finish close-up"
+    rows[0]["blocks"][1]["text"] = "商品详情页，红色皮革外观，纯白无缝背景"
+    setup(rows)
+    preview = prepare(plan)
+    frozen = preview["_multi_angle"]["composition_plan"]
+    assert frozen == ma.validate_plan(plan)
+    assert frozen["panels"][1]["description"] == "three-quarter view, glossy red leather, white seamless"
+    prompt = preview["prompt"]
+    for phrase in UNFILTERED_APPEARANCE:
+        assert phrase in prompt
+    # Names, purpose, and the user description are not passed through preview_text.
+    assert "4: matte surface finish close-up — " in prompt
+    assert plan["purpose"] in prompt
+    assert "红色皮革外观" in prompt
+    assert "wall material" in prompt
+    assert PROJECTION_OVERCLAIM_EN not in prompt
+    assert PROJECTION_OVERCLAIM_ZH not in prompt
+    assert PROJECTION_LIMIT_EN in prompt and PROJECTION_LIMIT_ZH in prompt
+    # Paid-fixture phrases already covered by preview_text must still be omitted in that path.
+    assert ma.preview_text("exact gray materials, pure white seamless background") == "pure white seamless background"
+    deliver(preview["_multi_angle"])
+    choose(rows, ("2", "3"))
+    final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": "2"})
+    assert blocked is None
+    assert "glossy red leather" in final["prompt"]
+    assert "Restore the original subject's material, color and finish" in final["prompt"]
+    assert PROJECTION_LIMIT_EN not in final["prompt"]

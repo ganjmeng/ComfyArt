@@ -394,3 +394,62 @@ async def test_explicit_user_pixels_survive_skill_pin_and_quote_with_exact_audit
     assert actual["size_lock"] is True
     assert actual["auto_model"] is False and actual["size_candidates"] == ["mock-pixels"]
     assert (meta["stage_spec"]["width"], meta["stage_spec"]["height"]) == (1152, 2048)
+
+
+@pytest.mark.parametrize("partial,expected", [
+    ({"width": 1440}, (1440, 2048)),
+    ({"height": 2560}, (1152, 2560)),
+])
+def test_apply_audit_mode_restores_missing_dimension_individually_and_blocks_conflict(run, monkeypatch, partial, expected):
+    """A pin may rewrite one edge and drop the other; do not silently overwrite the rewrite."""
+    rows, _ = run
+    add_text(rows, "预览1152x2048")
+    setup(rows, "1:1")
+    preview, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL})
+    assert blocked is None
+    meta = preview["_multi_angle"]
+    catalog = {"mock-pixels": metadata({"size": {"type": "string", "minimum": 64, "maximum": 4096}})}
+    monkeypatch.setattr(wavespeed, "cached_models", lambda: catalog)
+    monkeypatch.setattr(canvas, "select_model", lambda *a, **k: {
+        "model": "mock-pixels", "auto": False, "category": "user",
+        "reason": {"zh": "指定模型", "en": "Named model"}})
+    args = {k: v for k, v in preview.items() if k != "_multi_angle"}
+    args.pop("width", None)
+    args.pop("height", None)
+    args.update(partial)
+    ma.apply_audit_mode(args, meta)
+    assert (args["width"], args["height"]) == expected
+    assert (meta["stage_spec"]["width"], meta["stage_spec"]["height"]) == (1152, 2048)
+    assert ma.validate_provider_size(args, meta, "mock-pixels", catalog)["submitted"] is False
+    # Quote path uses the same apply_audit_mode then validate_provider_size hook.
+    quoted = {k: v for k, v in preview.items() if k != "_multi_angle"}
+    quoted.pop("width", None)
+    quoted.pop("height", None)
+    quoted.update(partial)
+    ma.apply_audit_mode(quoted, meta)
+    assert (quoted["width"], quoted["height"]) == expected
+    assert ma.validate_provider_size(quoted, meta, "mock-pixels", catalog)["submitted"] is False
+    model, inputs = canvas.quote_route(
+        "generate_image",
+        {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "model": "mock-pixels"},
+        catalog=catalog)
+    assert model == "mock-pixels"
+    assert (inputs["width"], inputs["height"]) == (1152, 2048)
+    assert "size_lock_mode" not in inputs
+
+
+def test_apply_audit_mode_restores_only_the_missing_matching_edge(run):
+    rows, _ = run
+    add_text(rows, "预览1152x2048")
+    setup(rows, "1:1")
+    preview, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL})
+    assert blocked is None
+    meta = preview["_multi_angle"]
+    catalog = {"mock-pixels": metadata({"size": {"type": "string", "minimum": 64, "maximum": 4096}})}
+    args = {k: v for k, v in preview.items() if k != "_multi_angle"}
+    args.pop("width", None)
+    assert args["height"] == 2048
+    ma.apply_audit_mode(args, meta)
+    assert (args["width"], args["height"], args["ratio"]) == (1152, 2048, "9:16")
+    assert "size_lock_mode" not in args and args["size_lock"] is True
+    assert ma.validate_provider_size(args, meta, "mock-pixels", catalog) is None

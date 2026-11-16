@@ -70,8 +70,14 @@ _APPEARANCE_RENDER_RE = re.compile(
 
 
 def preview_text(text: str) -> str:
-    """Project mixed plan prose for lineart: drop appearance-rendering directives,
-    keep camera / framing / visible-structure language. Does not mutate the frozen plan."""
+    """Limited explicit-pattern projector for lineart subject/description text.
+
+    Drops only phrases listed in _APPEARANCE_RENDER_RE (paid-failure and a few
+    close variants). This is not a universal material/color/finish filter:
+    unlisted wording such as "glossy red leather" or "哑光黑色材质" is kept.
+    Geometry/subject phrases such as "wall material" are also kept. Does not
+    mutate the frozen plan.
+    """
     out = _APPEARANCE_RENDER_RE.sub(" ", text)
     out = re.sub(r"\s+", " ", out)
     out = re.sub(r"\s+,\s+", ", ", out)
@@ -87,9 +93,10 @@ def preview_text(text: str) -> str:
 def preview_plan_view(plan: dict) -> dict:
     """Executable preview view of a frozen plan.
 
-    Projected fields: subject, panels[].description.
-    Unchanged fields: purpose, panels[].id, panels[].name.
-    Callers must persist and resume with the original plan, not this view.
+    Projected fields only: subject, panels[].description, via preview_text.
+    Unchanged fields: purpose, panels[].id, panels[].name. The user description
+    is also not projected. Callers must persist and resume with the original plan,
+    not this view.
     """
     return {
         "subject": preview_text(plan["subject"]),
@@ -337,16 +344,17 @@ def _complete_spec(spec: dict) -> dict:
 def apply_audit_mode(args: dict, meta: dict) -> None:
     """User pixels require exact delivery; aspect fallback uses the existing ratio/min-side audit.
 
-    Skill pins may drop width/height/size_lock. Restore only missing fields from this
-    stage's user authority. A rewritten size is left in place so validate_provider_size
-    can still refuse it.
+    Skill pins may drop width, height, or size_lock. Restore only the fields that are
+    actually missing. A present but conflicting width or height is left intact so
+    validate_provider_size can refuse it. Never assign both edges just because one is missing.
     """
     spec = meta["stage_spec"]
-    if args.get("width") is None or args.get("height") is None:
+    if args.get("width") is None:
         args["width"] = spec["width"]
+    if args.get("height") is None:
         args["height"] = spec["height"]
-        if not args.get("ratio"):
-            args["ratio"] = spec["ratio"]
+    if not args.get("ratio"):
+        args["ratio"] = spec["ratio"]
     if (args.get("width"), args.get("height")) == (spec["width"], spec["height"]):
         args["size_lock"] = True
     if spec["exact_pixels"]:
@@ -506,9 +514,13 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
             "For each panel, execute its frozen camera direction, framing and visible structures. "
             "An overhead plan must show the actual top-facing geometry rather than reuse the front silhouette; "
             "similarly distinguish side/rear views. Do not invent nonexistent parts to distinguish panels.\n"
-            "The executable panel lines below are the projected camera/framing/visible-structure view of the frozen plan. "
-            "Material, color, finish, lighting, shading, and photographic rendering clauses are omitted from this LINEART ONLY stage and remain in the persisted plan for finished images. "
-            "规划文案中的材质、色彩、表面处理、光线、明暗与写实渲染条款在本线稿阶段不可执行，已从可执行预览行中省略，仅作为成品身份说明；编号与机位/构图几何仍以冻结规划为准，不得改写。\n")
+            "The executable panel lines below apply preview_text only to subject and panel descriptions: "
+            "recognized appearance-rendering phrases from that limited, explicit-pattern projector, not a universal material/color/finish filter, are dropped. "
+            "Unrecognized appearance wording may remain. Panel names, purpose, and the user description are used as written; do not rewrite panel IDs or geometry. "
+            "The frozen plan, including material/color/finish requirements, is persisted unchanged for finished images. "
+            "主体与面板描述中已识别的显式外观渲染短语会从本线稿阶段的可执行预览行中去掉；未识别的外观措辞可能保留。"
+            "仅为有限的显式模式投影，并非通用材质/色彩/表面处理过滤器。"
+            "面板名称、用途与用户描述按原文使用；编号与机位/构图几何仍以冻结规划为准，不得改写。\n")
         brief += "\n".join(f"{p['id']}: {p['name']} — {p['description']}" for p in view["panels"])
         brief += "\nUse exactly this panel numbering and composition plan; do not substitute generic views."
     else:

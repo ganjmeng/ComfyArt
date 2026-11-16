@@ -239,29 +239,54 @@ no change to8916, no merge/deploy. Prompt-effect HOLD is NOT cleared by these te
 The 809-passed result above is historical for tip `e838b1be` only.
 
 This follow-up keeps the frozen `composition_plan` (IDs, names, descriptions,
-subject, purpose) unchanged in the ledger. Preview executable text uses
-`preview_plan_view`: projected fields are `subject` and `panels[].description`
-(`preview_text` omits appearance-rendering directives such as "exact gray
-materials" / "matte surface finish" / "亚光灰材质…", without a generic
-material-word blacklist). Unchanged in the preview view: `purpose`,
-`panels[].id`, `panels[].name` (so "wall material" / "墙面材质特写" /
-"surface finish close-up" stay). Finals use the original frozen plan,
+subject, purpose) unchanged in the ledger. Finals use that original plan,
 restore material/color/finish, and require the selected panel's
 screen-left/right orientation, camera direction and handedness (no
-mirror/horizontal flip; no hardcoded facing). Compatibility: older plans
-with no appearance-rendering clauses project to the same panel lines, so
-existing mapping assertions still hold. Skill pins that drop width/height
-are restored by `apply_audit_mode` only when missing; rewritten sizes still
-fail `validate_provider_size`. Explicit 1152×2048 keeps exact audit; a
+mirror/horizontal flip; no hardcoded facing).
+
+Preview projection is a **limited, explicit-pattern** helper, not a universal
+filter. `preview_plan_view` runs `preview_text` only on `subject` and
+`panels[].description`. `_APPEARANCE_RENDER_RE` covers paid-failure phrases
+and a few close variants ("exact gray materials", "matte surface finish",
+"matching the reference plastic", "same gray …", "matte gray ", "亚光灰材质…").
+Unlisted appearance wording is kept, including the recorded counterexamples
+"glossy red leather", "哑光黑色材质", and "金属光泽". Fields not projected:
+`purpose`, `panels[].id`, `panels[].name`, and the user description (so a name
+like "matte surface finish close-up", a purpose that mentions sheen, or a user
+brief like "红色皮革外观" remains in the preview prompt). Geometry/subject
+labels such as "wall material" / "墙面材质特写" / "lining texture" /
+"surface finish close-up" are also kept. Older plans with no listed phrases
+project to the same panel lines, so existing mapping assertions still hold.
+The preview prompt states this limited coverage; it must not claim that all
+material/color/finish/lighting clauses are omitted.
+
+Robust bilingual separation of mixed prose is **not** solved here. Shipping a
+broader word blacklist would risk geometry phrases and would still be
+incomplete. Product ruling is needed before any of: (A) optional structured
+`geometry` / `appearance` fields on the existing plan (legacy `description`
+remains required; preview would prefer `geometry` when present), or (B)
+keeping this limited projector and treating unrecognized appearance wording
+as an accepted residual, or (C) a larger language-specific filter. (C) is not
+recommended. This commit does not add a parallel planning subsystem.
+
+`apply_audit_mode` restores missing `width` or `height` individually. If a pin
+rewrites one edge and drops the other, the rewritten edge is left intact and
+`validate_provider_size` refuses the conflict. Both edges are never assigned
+just because one is missing. Explicit 1152×2048 keeps exact audit; a
 same-ratio 1440×2560 file does not pass.
 
-Current offline validation: **816 passed, 0 failed/errors/skipped in 10.69s**
-across the same 14 focused files (7 new cases). Command
-`/workspace/fs911-ma-ev/orientation-plan-projection-test-command.sh`; logs/JUnit
-`/workspace/fs911-ma-ev/orientation-plan-projection-focused.log` and
-`orientation-plan-projection-focused.xml`. Production build (tsc noEmit + Vite)
-passed, 3260 modules, 1.31s; dist was unchanged. Only existing chunk-size/lottie-eval
-warnings remain. Python compilation and `git diff --check` passed. Temporary
-`node_modules` symlink removed. No paid/API/browser call, no change to 8916,
-no merge/deploy/push. Prompt-effect HOLD is NOT cleared: these are contract
-tests, not a proven WaveSpeed/UI/L/R fix.
+Pre-fix new-test record (3 failed / 2 passed in 0.25s):
+`/workspace/fs911-ma-ev/review-fix-failures.log` and `review-fix-failures.xml`.
+The failures were the silent both-edge restore of a rewritten width or height,
+and the preview prompt's universal-omission claim while unlisted appearance
+phrases remained.
+
+Current offline validation: **821 passed, 0 failed/errors/skipped in 9.62s**
+across the same 14 focused files (809 historical plus later contract cases).
+Command reused the focused 14-file set; logs/JUnit
+`/workspace/fs911-ma-ev/review-fix-focused.log` and `review-fix-focused.xml`.
+Production build (tsc noEmit + Vite) passed, 3260 modules, 1.06s; dist was
+unchanged. Only existing chunk-size/lottie-eval warnings remain. Python
+compilation and `git diff --check` passed. Temporary `node_modules` symlink
+removed. No paid/API/browser call, no change to 8916, no merge/deploy/push,
+and this tip is not published. Prompt-effect HOLD is NOT cleared.
