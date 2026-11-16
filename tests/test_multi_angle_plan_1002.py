@@ -6,7 +6,7 @@ import pytest
 from ComfyArt.api import multi_angle as ma
 from ComfyArt.api import bot_asks
 from ComfyArt.api.mcp_tools import canvas
-from multi_angle_plan_fixture import HEADPHONES_PLAN
+from multi_angle_plan_fixture import HEADPHONES_PLAN, PAID_FAILURE_PLAN
 from test_multi_angle_stages_911 import run, setup, choose  # noqa: F401
 
 
@@ -215,3 +215,154 @@ async def test_relay_restores_ratio_audit_after_routing_without_relaxing_explici
     setup(rows)
     result = await canvas._relay("generate_image")({"skill": ma.SKILL, "composition_plan": HEADPHONES_PLAN})
     assert result["ids"] and sent[-1][1]["size_lock_mode"] == "ratio"
+
+
+
+PREVIEW_MATERIAL_DEFER_EN = (
+    "Material, color, finish, lighting, shading, and photographic rendering clauses "
+    "are omitted from this LINEART ONLY stage and remain in the persisted plan for finished images")
+PREVIEW_MATERIAL_DEFER_ZH = "规划文案中的材质、色彩、表面处理、光线、明暗与写实渲染条款在本线稿阶段不可执行"
+FINAL_ORIENTATION = (
+    "Preserve that selected panel's screen-left/right orientation, camera direction and handedness")
+FINAL_NO_MIRROR = "do not mirror, horizontally flip, or reverse the composition"
+ARCHIVE_PLAN = (
+    "/workspace/qa1002-0f0e9328-appstack-paid/paid/chat-after-composition-card.json")
+
+
+def test_paid_failure_plan_matches_archived_ledger_when_present():
+    import json
+    from pathlib import Path
+    path = Path(ARCHIVE_PLAN)
+    if not path.exists():
+        return
+    chat = json.loads(path.read_text())
+    archived = chat[1]["blocks"][0][ma.LEDGER]["composition_plan"]
+    assert archived == PAID_FAILURE_PLAN
+    assert "exact gray materials" in archived["panels"][0]["description"]
+    assert "matte surface finish" in archived["panels"][4]["description"]
+
+
+def test_preview_text_drops_appearance_directives_and_keeps_geometry_subjects():
+    assert ma.preview_text("exact gray materials, pure white seamless background") == "pure white seamless background"
+    assert "matte surface finish" not in ma.preview_text(
+        "outer earcup shell and matte surface finish close-up matching the reference plastic, white seamless")
+    assert "matching the reference plastic" not in ma.preview_text(
+        "outer earcup shell and matte surface finish close-up matching the reference plastic, white seamless")
+    assert "outer earcup shell" in ma.preview_text(
+        "outer earcup shell and matte surface finish close-up matching the reference plastic, white seamless")
+    assert ma.preview_text("inside earcup cushion detail and lining texture") == "inside earcup cushion detail and lining texture"
+    assert ma.preview_text("outer earcup shell and surface finish close-up") == "outer earcup shell and surface finish close-up"
+    assert ma.preview_text("courtyard building: wall material; intended use: architectural presentation") == (
+        "courtyard building: wall material; intended use: architectural presentation")
+    assert ma.preview_text("正面机位，完整门楼几何，亚光灰材质仅作成品说明") == "正面机位，完整门楼几何"
+    assert ma.preview_text("墙面材质特写") == "墙面材质特写"
+    assert "matte gray" not in ma.preview_text(
+        "matte gray over-ear headphones in the supplied front-view reference").casefold()
+    assert "over-ear headphones" in ma.preview_text(
+        "matte gray over-ear headphones in the supplied front-view reference")
+    view = ma.preview_plan_view(PAID_FAILURE_PLAN)
+    assert view["purpose"] == PAID_FAILURE_PLAN["purpose"]
+    assert [p["id"] for p in view["panels"]] == [p["id"] for p in PAID_FAILURE_PLAN["panels"]]
+    assert [p["name"] for p in view["panels"]] == [p["name"] for p in PAID_FAILURE_PLAN["panels"]]
+    assert view != PAID_FAILURE_PLAN
+    assert "exact gray materials" not in view["panels"][0]["description"]
+    assert "front-on full product" in view["panels"][0]["description"]
+
+
+def test_paid_failure_plan_material_clauses_are_omitted_from_preview_not_rewritten(run):
+    rows, _ = run
+    setup(rows)
+    preview = prepare(PAID_FAILURE_PLAN)
+    assert preview["_multi_angle"]["composition_plan"] == PAID_FAILURE_PLAN
+    prompt = preview["prompt"]
+    view = ma.preview_plan_view(PAID_FAILURE_PLAN)
+    assert "exact gray materials" not in prompt
+    assert "matte surface finish" not in prompt
+    assert "same gray headphones" not in prompt
+    assert "matching the reference plastic" not in prompt
+    assert "matte gray" not in prompt
+    for panel, projected in zip(PAID_FAILURE_PLAN["panels"], view["panels"]):
+        assert f"{panel['id']}: {panel['name']} — {projected['description']}" in prompt
+        assert panel["name"] in prompt
+    assert "front-on full product" in prompt
+    assert "top-down view of the headband arc" in prompt
+    assert PREVIEW_MATERIAL_DEFER_EN in prompt and PREVIEW_MATERIAL_DEFER_ZH in prompt
+    assert "LINEART ONLY" in prompt
+    assert "Preserve subject identity, material" not in prompt
+    deliver(preview["_multi_angle"])
+    choose(rows, ("1", "5"))
+    for number, phrase in (("1", "exact gray materials"), ("5", "matte surface finish")):
+        final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": number})
+        assert blocked is None
+        assert final["_multi_angle"]["composition_plan"] == PAID_FAILURE_PLAN
+        assert phrase in final["prompt"]
+        assert f"{PAID_FAILURE_PLAN['panels'][int(number) - 1]['name']} — {PAID_FAILURE_PLAN['panels'][int(number) - 1]['description']}" in final["prompt"]
+        assert "Restore the original subject's material, color and finish" in final["prompt"]
+        assert "LINEART ONLY" not in final["prompt"]
+        assert PREVIEW_MATERIAL_DEFER_EN not in final["prompt"]
+        assert PREVIEW_MATERIAL_DEFER_ZH not in final["prompt"]
+
+
+def test_paid_failure_final_prompt_preserves_selected_panel_handedness(run):
+    rows, _ = run
+    setup(rows)
+    preview = prepare(PAID_FAILURE_PLAN)
+    deliver(preview["_multi_angle"])
+    choose(rows, ("2",))
+    final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": "2"})
+    assert blocked is None
+    prompt = final["prompt"]
+    chosen = PAID_FAILURE_PLAN["panels"][1]
+    assert f"composition 2: {chosen['name']} — {chosen['description']}" in prompt
+    assert "Match that exact numbered panel in the delivered preview" in prompt
+    assert FINAL_ORIENTATION in prompt and FINAL_NO_MIRROR in prompt
+    assert "Infer orientation only from the selected frozen panel" in prompt
+    assert "do not invent a preferred facing" in prompt
+    assert "LINEART ONLY" not in prompt
+    assert "facing left" not in prompt.lower()
+    assert "face left" not in prompt.lower()
+    assert "headphones face" not in prompt.lower()
+
+
+def test_geometry_label_wall_material_is_not_stripped_from_frozen_plan(run):
+    rows, _ = run
+    rows[0]["blocks"][1]["text"] = PLANS[2]["purpose"]
+    setup(rows)
+    preview = prepare(PLANS[2])
+    assert preview["_multi_angle"]["composition_plan"] == PLANS[2]
+    assert "8: wall material — " in preview["prompt"]
+    assert PREVIEW_MATERIAL_DEFER_EN in preview["prompt"]
+    deliver(preview["_multi_angle"])
+    choose(rows, ("8",))
+    final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": "8"})
+    assert blocked is None
+    assert "composition 8: wall material — " in final["prompt"]
+    assert "headphones" not in final["prompt"]
+    assert FINAL_ORIENTATION in final["prompt"]
+    assert PREVIEW_MATERIAL_DEFER_EN not in final["prompt"]
+
+
+def test_chinese_camera_and_material_clauses_follow_stage_priority(run):
+    rows, _ = run
+    plan = subject_plan("红砖庭院门楼", "建筑展示册", [
+        "临街立面", "庭院入口", "屋顶平面", "朝园立面", "窗楣细节",
+        "门槛进深", "庭院透视", "墙面材质特写", "檐口轮廓"])
+    plan["panels"][0]["description"] = "正面机位，完整门楼几何，亚光灰材质仅作成品说明"
+    rows[0]["blocks"][1]["text"] = plan["purpose"]
+    setup(rows)
+    preview = prepare(plan)
+    assert preview["_multi_angle"]["composition_plan"] == ma.validate_plan(plan)
+    assert "亚光灰材质仅作成品说明" not in preview["prompt"]
+    assert "正面机位，完整门楼几何" in preview["prompt"]
+    assert "墙面材质特写" in preview["prompt"]
+    assert PREVIEW_MATERIAL_DEFER_ZH in preview["prompt"]
+    deliver(preview["_multi_angle"])
+    choose(rows, ("1", "8"))
+    final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": "1"})
+    assert blocked is None
+    assert "亚光灰材质仅作成品说明" in final["prompt"] and "正面机位" in final["prompt"]
+    assert PREVIEW_MATERIAL_DEFER_ZH not in final["prompt"]
+    assert FINAL_ORIENTATION in final["prompt"]
+    wall, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": "8"})
+    assert blocked is None and "墙面材质特写" in wall["prompt"]
+    assert "headphones" not in wall["prompt"]

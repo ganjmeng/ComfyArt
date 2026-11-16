@@ -318,3 +318,79 @@ def test_explicit_preview_request_wins_and_is_immutable_through_replay(run, prev
     rows[0]["blocks"][-1]["text"] = "preview 4:3"
     _, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL})
     assert blocked["submitted"] is False and "changed after submission" in blocked["error"]
+
+
+@pytest.mark.asyncio
+async def test_explicit_user_pixels_survive_skill_pin_and_quote_with_exact_audit(run, monkeypatch):
+    """Explicit 1152x2048 must keep exact audit after _pin_args and on the quote path.
+
+    A same-ratio larger file (the paid 1440x2560 mismatch) must not pass exact audit.
+    No provider call is made.
+    """
+    import io
+    from PIL import Image
+    from ComfyArt.api.skill_size import RATIO_MODE, audit_file, size_notice
+
+    rows, sent = run
+    add_text(rows, "预览1152x2048")
+    setup(rows, "1:1")
+    catalog = {"mock-pixels": metadata({"size": {"type": "string", "minimum": 64, "maximum": 4096}})}
+    pin = {"model": "mock-pixels", "auto": False, "category": "skill", "skill": ma.SKILL,
+           "reason": {"zh": "技能钉", "en": "Skill pin"}}
+    monkeypatch.setattr(wavespeed, "cached_models", lambda: catalog)
+    monkeypatch.setattr(canvas, "select_model", lambda *a, **k: dict(pin))
+
+    preview, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "ratio": "9:16"})
+    assert blocked is None
+    meta = preview["_multi_angle"]
+    spec = meta["stage_spec"]
+    assert spec["exact_pixels"] is True
+    assert (spec["width"], spec["height"], spec["ratio"]) == (1152, 2048, "9:16")
+    assert (preview["width"], preview["height"]) == (1152, 2048)
+    assert "size_lock_mode" not in preview
+
+    pinned = canvas._pin_args({k: v for k, v in preview.items() if k != "_multi_angle"}, pin)
+    assert "width" not in pinned and "height" not in pinned
+    assert "size_lock_mode" not in pinned
+    # Metadata from prepare stays authoritative and is not rewritten by the pin.
+    assert (meta["stage_spec"]["width"], meta["stage_spec"]["height"]) == (1152, 2048)
+    ma.apply_audit_mode(pinned, meta)
+    assert (pinned["width"], pinned["height"], pinned["ratio"]) == (1152, 2048, "9:16")
+    assert "size_lock_mode" not in pinned and pinned["size_lock"] is True
+    assert ma.validate_provider_size(pinned, meta, "mock-pixels", catalog) is None
+
+    rewritten = {**preview, "width": 1440, "height": 2560}
+    ma.apply_audit_mode(rewritten, meta)
+    assert (rewritten["width"], rewritten["height"]) == (1440, 2560)
+    assert ma.validate_provider_size(rewritten, meta, "mock-pixels", catalog)["submitted"] is False
+
+    image = io.BytesIO()
+    Image.new("RGB", (1440, 2560), "white").save(image, format="PNG")
+    data = image.getvalue()
+    exact = audit_file(data, (pinned["width"], pinned["height"]), pinned.get("size_lock_mode", ""))
+    assert exact["match"] is False
+    assert exact["provider_output"] == {"width": 1440, "height": 2560}
+    note = size_notice((1152, 2048), (1440, 2560), pinned.get("size_lock_mode", ""))
+    assert "smaller" not in note["en"] and "低于" not in note["zh"]
+    assert "1440×2560" in note["en"] and "1440×2560" in note["zh"]
+    # Contrast only: the same file would pass ratio audit, which must not be used here.
+    assert audit_file(data, (1152, 2048), RATIO_MODE)["match"] is True
+
+    model, inputs = canvas.quote_route(
+        "generate_image",
+        {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "model": "mock-pixels"},
+        catalog=catalog)
+    assert model == "mock-pixels"
+    assert (inputs["width"], inputs["height"], inputs["ratio"]) == (1152, 2048, "9:16")
+    assert "size_lock_mode" not in inputs
+    assert ma.LEDGER not in ma._root("chat-ma")[1]
+
+    result = await canvas._relay("generate_image")(
+        {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "width": 2048, "height": 2048})
+    assert result["ids"] and len(sent) == 1
+    actual = sent[0][1]
+    assert (actual["width"], actual["height"], actual["ratio"]) == (1152, 2048, "9:16")
+    assert "size_lock_mode" not in actual
+    assert actual["size_lock"] is True
+    assert actual["auto_model"] is False and actual["size_candidates"] == ["mock-pixels"]
+    assert (meta["stage_spec"]["width"], meta["stage_spec"]["height"]) == (1152, 2048)

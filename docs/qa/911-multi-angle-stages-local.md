@@ -233,3 +233,35 @@ included. Only existing chunk-size/lottie-eval warnings remain. Python compilati
 whitespace and copy-only regression audit passed (`paid-preview-fix-static-audit.json`).
 Temporary dependency symlink removed; test slot is free. No new paid/API/browser call,
 no change to8916, no merge/deploy. Prompt-effect HOLD is NOT cleared by these tests.
+
+## Follow-up after e838b1be (handedness, plan projection, exact-pixel pin)
+
+The 809-passed result above is historical for tip `e838b1be` only.
+
+This follow-up keeps the frozen `composition_plan` (IDs, names, descriptions,
+subject, purpose) unchanged in the ledger. Preview executable text uses
+`preview_plan_view`: projected fields are `subject` and `panels[].description`
+(`preview_text` omits appearance-rendering directives such as "exact gray
+materials" / "matte surface finish" / "亚光灰材质…", without a generic
+material-word blacklist). Unchanged in the preview view: `purpose`,
+`panels[].id`, `panels[].name` (so "wall material" / "墙面材质特写" /
+"surface finish close-up" stay). Finals use the original frozen plan,
+restore material/color/finish, and require the selected panel's
+screen-left/right orientation, camera direction and handedness (no
+mirror/horizontal flip; no hardcoded facing). Compatibility: older plans
+with no appearance-rendering clauses project to the same panel lines, so
+existing mapping assertions still hold. Skill pins that drop width/height
+are restored by `apply_audit_mode` only when missing; rewritten sizes still
+fail `validate_provider_size`. Explicit 1152×2048 keeps exact audit; a
+same-ratio 1440×2560 file does not pass.
+
+Current offline validation: **816 passed, 0 failed/errors/skipped in 10.69s**
+across the same 14 focused files (7 new cases). Command
+`/workspace/fs911-ma-ev/orientation-plan-projection-test-command.sh`; logs/JUnit
+`/workspace/fs911-ma-ev/orientation-plan-projection-focused.log` and
+`orientation-plan-projection-focused.xml`. Production build (tsc noEmit + Vite)
+passed, 3260 modules, 1.31s; dist was unchanged. Only existing chunk-size/lottie-eval
+warnings remain. Python compilation and `git diff --check` passed. Temporary
+`node_modules` symlink removed. No paid/API/browser call, no change to 8916,
+no merge/deploy/push. Prompt-effect HOLD is NOT cleared: these are contract
+tests, not a proven WaveSpeed/UI/L/R fix.

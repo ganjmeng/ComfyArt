@@ -52,6 +52,56 @@ def validate_plan(value: object) -> dict:
     return out
 
 
+# Appearance-rendering directives only (color / finish / lighting-style instructions).
+# This is not a generic word blacklist: names and close-up subjects such as
+# "wall material", "墙面材质特写", "lining texture", or "surface finish close-up"
+# are kept. The persisted plan is never rewritten.
+_APPEARANCE_RENDER_RE = re.compile(
+    r"(?:"
+    r"exact\s+(?:gray|grey)\s+materials?|"
+    r"(?:matte|glossy|metallic)\s+surface\s+finish|"
+    r"matching\s+the\s+reference\s+(?:plastic|metal|wood|paint|finish|leather)|"
+    r"same\s+(?:gray|grey|matte)\s+\w+|"
+    r"matte\s+(?:gray|grey)\s+|"
+    r"亚光灰材质(?:仅作成品说明)?"
+    r")",
+    re.I,
+)
+
+
+def preview_text(text: str) -> str:
+    """Project mixed plan prose for lineart: drop appearance-rendering directives,
+    keep camera / framing / visible-structure language. Does not mutate the frozen plan."""
+    out = _APPEARANCE_RENDER_RE.sub(" ", text)
+    out = re.sub(r"\s+", " ", out)
+    out = re.sub(r"\s+,\s+", ", ", out)
+    out = re.sub(r"\s+;\s+", "; ", out)
+    out = re.sub(r"\s+，\s+", "，", out)
+    out = re.sub(r"\s+；\s+", "；", out)
+    out = re.sub(r"\s+(?:and|与)\s*(?:,|;|，|；|$)", "", out, flags=re.I)
+    out = re.sub(r"(?:,|;|，|；)\s*(?:,|;|，|；)+", ",", out)
+    out = re.sub(r"\s+", " ", out)
+    return out.strip(" ,;，；")
+
+
+def preview_plan_view(plan: dict) -> dict:
+    """Executable preview view of a frozen plan.
+
+    Projected fields: subject, panels[].description.
+    Unchanged fields: purpose, panels[].id, panels[].name.
+    Callers must persist and resume with the original plan, not this view.
+    """
+    return {
+        "subject": preview_text(plan["subject"]),
+        "purpose": plan["purpose"],
+        "panels": [
+            {"id": p["id"], "name": p["name"],
+             "description": preview_text(p["description"]) or p["name"]}
+            for p in plan["panels"]
+        ],
+    }
+
+
 SIZE_KEYS = ("width", "height", "ratio", "resolution", "edit_resolution", "size_lock", "size_lock_mode", "size_candidates")
 
 
@@ -285,8 +335,21 @@ def _complete_spec(spec: dict) -> dict:
 
 
 def apply_audit_mode(args: dict, meta: dict) -> None:
-    """User pixels require exact delivery; aspect fallback uses the existing ratio/min-side audit."""
-    if meta["stage_spec"]["exact_pixels"]:
+    """User pixels require exact delivery; aspect fallback uses the existing ratio/min-side audit.
+
+    Skill pins may drop width/height/size_lock. Restore only missing fields from this
+    stage's user authority. A rewritten size is left in place so validate_provider_size
+    can still refuse it.
+    """
+    spec = meta["stage_spec"]
+    if args.get("width") is None or args.get("height") is None:
+        args["width"] = spec["width"]
+        args["height"] = spec["height"]
+        if not args.get("ratio"):
+            args["ratio"] = spec["ratio"]
+    if (args.get("width"), args.get("height")) == (spec["width"], spec["height"]):
+        args["size_lock"] = True
+    if spec["exact_pixels"]:
         args.pop("size_lock_mode", None)
     else:
         from .skill_size import RATIO_MODE
@@ -430,8 +493,9 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
             if shape not in args["refs"]:
                 args["refs"].append(shape)
                 args["ref_modes"].append("composition")
+    view = preview_plan_view(plan) if stage == "preview" else plan
     brief = f"User description (preserve; empty means image-only, use the attached subject without inventing a brief):\n{description}\nReference source: {source}; other scenario: {source_other}. Final specification: {final_spec['width']}x{final_spec['height']}, ratio {aspect}; exact user pixels={final_spec['exact_pixels']}. This stage: {spec['width']}x{spec['height']}, ratio {spec['ratio']}.\nPreserve subject identity, geometry, proportions, controls and the user's background requirements.\n"
-    brief += f"Frozen composition planning context: subject={plan['subject']}; purpose={plan['purpose']}.\n"
+    brief += f"Frozen composition planning context: subject={view['subject']}; purpose={view['purpose']}.\n"
     if stage == "preview":
         brief += (
             "Produce ONE lineart preview image (LINEART ONLY planning sheet): a numbered 3x3 nine-panel composition grid, labels 1..9. "
@@ -441,13 +505,22 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
             "not its photographic finish. User material/finish requirements are deferred to finished images.\n"
             "For each panel, execute its frozen camera direction, framing and visible structures. "
             "An overhead plan must show the actual top-facing geometry rather than reuse the front silhouette; "
-            "similarly distinguish side/rear views. Do not invent nonexistent parts to distinguish panels.\n")
-        brief += "\n".join(f"{p['id']}: {p['name']} — {p['description']}" for p in plan["panels"])
+            "similarly distinguish side/rear views. Do not invent nonexistent parts to distinguish panels.\n"
+            "The executable panel lines below are the projected camera/framing/visible-structure view of the frozen plan. "
+            "Material, color, finish, lighting, shading, and photographic rendering clauses are omitted from this LINEART ONLY stage and remain in the persisted plan for finished images. "
+            "规划文案中的材质、色彩、表面处理、光线、明暗与写实渲染条款在本线稿阶段不可执行，已从可执行预览行中省略，仅作为成品身份说明；编号与机位/构图几何仍以冻结规划为准，不得改写。\n")
+        brief += "\n".join(f"{p['id']}: {p['name']} — {p['description']}" for p in view["panels"])
         brief += "\nUse exactly this panel numbering and composition plan; do not substitute generic views."
     else:
         chosen = next(p for p in plan["panels"] if p["id"] == panel)
         brief += "Restore the original subject's material, color and finish from the original reference/brief; use the lineart only for composition.\n"
-        brief += f"Produce ONE independent finished image, composition {panel}: {chosen['name']} — {chosen['description']}. Match that exact numbered panel in the delivered preview. No grid, panel numbers or collage."
+        brief += (
+            f"Produce ONE independent finished image, composition {panel}: {chosen['name']} — {chosen['description']}. "
+            "Match that exact numbered panel in the delivered preview. "
+            "Preserve that selected panel's screen-left/right orientation, camera direction and handedness; "
+            "do not mirror, horizontally flip, or reverse the composition. "
+            "Infer orientation only from the selected frozen panel and its delivered preview cell; do not invent a preferred facing. "
+            "No grid, panel numbers or collage.")
     args["prompt"] = brief
     args["_multi_angle"] = {"key": key, "refs": list(refs), "description": description,
                             "source": source, "aspect": aspect, "setup_snapshot": setup_snapshot, "stage_spec": spec,
