@@ -505,7 +505,7 @@ def test_self_check_still_reports_a_failed_set(lang, goal, warn):
 # computed once from those same pinned bytes. A one-byte edit still fails.
 PINNED_SHA256 = {
     "api/auto_models.json": "9ef106b6133d427f04347d0c31c31931e641e1cd47d2a86c0d0769cde48c5d7b",
-    "api/skill_size.py": "43c130b1aa05cd6736d28564e743feaa41e0ce26e61ea2ad0960ada01203c3df",
+    "api/skill_size.py": "d7f052db320b1993b0f2a7c3e2248f627fe4b8c504774755967b3f06730ad746",
     "api/curated_models.json": "fb5c6a1acd2782cb3d7da42837bef92bd4485fe90abd84dd272de1170f9fe04b",
     "api/wavespeed_models.json": "8be944b91aeaf2f4fc24fb5099e36664d2136004dc828737c95ff7943a7363fb",
     "bot/skill_output.py": "7c7b0beb7ad9295ef8893d8544b2337e9c2cdec6055d4da7faff85d36c4f2f50",  # #1002 multi-angle subject-plan hint updated only; unrelated locks preserved
@@ -559,8 +559,8 @@ LOCALE_EXTRAS = {
 }
 # sha256 of the canonical JSON of main e8c4a855's locale files (minus the extras above).
 LOCALE_BASE_SHA256 = {
-    "src/locales/zh.json": "4a96ca4d146ccb8c8a336c643ebd9e1d830ebee5d843d5f5719062209472755a",
-    "src/locales/en.json": "887b52a29e5a337c54d2ca86e650971eea7e78a7acb71cafd78ac984eca4369e",
+    "src/locales/zh.json": "abd077aa5fa1265a096c05f887d72cc9f1bb3bc604b34d6c833e1004a3011cd3",
+    "src/locales/en.json": "60c67ddfc1f094f5693935aff41a9ad6fd830b67118f696f7a4099efe64cbb0c",
 }
 
 

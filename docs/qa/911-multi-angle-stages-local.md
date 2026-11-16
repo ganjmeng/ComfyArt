@@ -182,3 +182,54 @@ AST comparison confirms every assertion in the three adapted stage/spec/QA files
 unchanged (`subject-plan-assertion-audit.json`). The original QA evidence directory is untouched.
 Python test slot is free; no browser, paid request, merge, deployment or change to 8916.
 Product/QA fixed-tip review and real provider/visual/L/R acceptance remain required.
+
+
+## 2026-11-17 real paid tool-only failure and offline correction
+
+QA ran frozen `0f0e9328` through a **scripted application tool chain**, not the default
+agent (zero LLM calls), and obtained one WaveSpeed preview plus three selected finals.
+Reported live image quotes totaled $0.2763 and the shared account balance decreased by
+that amount; the total was below the $1 ceiling, but this is not evidence of a paid
+default-agent run. Left Lovart was not repeated; existing 8916 was not modified.
+Evidence remains `/workspace/qa1002-0f0e9328-appstack-paid/PAID.md`, original requests,
+provider task IDs and images in that directory. The paid preview SHA256 is
+`f4ee76543809a66306f5ef554227068c83e8ff4711974263b536c1ff073f798c`.
+
+The preview is visibly a textured/shaded product-render grid, **not lineart**; the
+planned overhead seventh panel looks near-frontal. Product/effect HOLD remains.
+Preview file dimensions were 1440x2560 for the fallback request 1152x2048 (same9:16);
+final files were2048x2048. The previous blanket exact audit incorrectly flagged the
+larger fallback file and described every mismatch as smaller.
+
+Correction (no additional generation):
+- Preview prompt now demands thin black contour/structural lines on white paper,
+  no fill/shading/texture/photo/clay/3D render, using the reference only for geometry
+  and identity. It demands actual planned camera/framing/visible geometry, not a
+  reused front silhouette. These are prompt constraints, **not a proven effect fix**.
+- Final prompt explicitly restores original color/material/finish and uses the
+  preview only for composition, rather than copying its line-only appearance.
+- A specification without user-requested pixels sets the existing ratio/minimum-long-side
+  audit mode; explicitly requested pixels remain exact (and retain provider capability
+  preflight). Routing restores this stage-specific flag after any model pin. Existing
+  WaveSpeed behavior still keeps exact audit when the actual payload supplies exact size.
+- Backend and zh/en page copy now says the delivered size differs from the requested
+  specification, true for larger/smaller/wrong-ratio cases. No resizing, hiding an image,
+  reduced resolution, model substitution or automatic retry is introduced.
+
+Reusable offline tests cover the actual 1440x2560/1152x2048 relation, undersized and wrong
+ratio files, exact pixel nonrelaxation, line-only versus finished-material prompts and
+relay propagation. Old notice-copy expectations and intentional size-module/locale hash
+pins are updated, not removed. Browser e2e fixture copy is updated but **not executed**.
+All WaveSpeed calls in the focused test suite are mocked. Real effects, default agent,
+UI and Lovart L/R remain unverified; do not spend again merely to repeat this failure.
+
+
+Current offline validation: **809 passed, 0 failed/errors/skipped in10.90s** across
+14 focused files, including size-audit/WaveSpeed adapter mocks and portrait/packaging
+neighbor regressions. Executable `paid-preview-fix-test-command.sh`; logs/JUnit
+`/workspace/fs911-ma-ev/paid-preview-fix-focused.log` and `paid-preview-fix-focused.xml`.
+Production build (tsc noEmit + Vite) passed,3260 modules,1.34s; updated locale dist is
+included. Only existing chunk-size/lottie-eval warnings remain. Python compilation,
+whitespace and copy-only regression audit passed (`paid-preview-fix-static-audit.json`).
+Temporary dependency symlink removed; test slot is free. No new paid/API/browser call,
+no change to8916, no merge/deploy. Prompt-effect HOLD is NOT cleared by these tests.

@@ -284,6 +284,15 @@ def _complete_spec(spec: dict) -> dict:
     return spec
 
 
+def apply_audit_mode(args: dict, meta: dict) -> None:
+    """User pixels require exact delivery; aspect fallback uses the existing ratio/min-side audit."""
+    if meta["stage_spec"]["exact_pixels"]:
+        args.pop("size_lock_mode", None)
+    else:
+        from .skill_size import RATIO_MODE
+        args["size_lock_mode"] = RATIO_MODE
+
+
 def validate_provider_size(args: dict, meta: dict, model: str, catalog: dict | None = None) -> dict | None:
     """No network: reuse adapter schema/exact-size helpers and fail before dispatch."""
     from . import wavespeed
@@ -409,6 +418,7 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
     args.pop("base_strength", None)
     args.pop("stage", None)
     args.update(skill=SKILL, ratio=spec["ratio"], width=spec["width"], height=spec["height"], count=1, n=1, size_lock=True)
+    apply_audit_mode(args, {"stage_spec": spec})
     from ..bot.skill_output import STRICT_RATIO_994
     args[STRICT_RATIO_994] = spec["ratio"]  # existing page + adapter strict-ratio path
     args["refs"] = list(refs)
@@ -420,14 +430,23 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
             if shape not in args["refs"]:
                 args["refs"].append(shape)
                 args["ref_modes"].append("composition")
-    brief = f"User description (preserve; empty means image-only, use the attached subject without inventing a brief):\n{description}\nReference source: {source}; other scenario: {source_other}. Final specification: {final_spec['width']}x{final_spec['height']}, ratio {aspect}; exact user pixels={final_spec['exact_pixels']}. This stage: {spec['width']}x{spec['height']}, ratio {spec['ratio']}.\nPreserve subject identity, material, proportions, controls and background requirements.\n"
+    brief = f"User description (preserve; empty means image-only, use the attached subject without inventing a brief):\n{description}\nReference source: {source}; other scenario: {source_other}. Final specification: {final_spec['width']}x{final_spec['height']}, ratio {aspect}; exact user pixels={final_spec['exact_pixels']}. This stage: {spec['width']}x{spec['height']}, ratio {spec['ratio']}.\nPreserve subject identity, geometry, proportions, controls and the user's background requirements.\n"
     brief += f"Frozen composition planning context: subject={plan['subject']}; purpose={plan['purpose']}.\n"
     if stage == "preview":
-        brief += "Produce ONE lineart preview image: a numbered 3x3 nine-panel composition grid, labels 1..9. Not final photographs.\n"
+        brief += (
+            "Produce ONE lineart preview image (LINEART ONLY planning sheet): a numbered 3x3 nine-panel composition grid, labels 1..9. "
+            "Use thin black contour/structural lines on a plain white background; keep the interior paper-white. "
+            "No color, gray fills, shading, gradients, shadows, lighting, material texture, realistic photography, "
+            "clay render or 3D product rendering. The attached reference supplies identity/geometry ONLY at this stage, "
+            "not its photographic finish. User material/finish requirements are deferred to finished images.\n"
+            "For each panel, execute its frozen camera direction, framing and visible structures. "
+            "An overhead plan must show the actual top-facing geometry rather than reuse the front silhouette; "
+            "similarly distinguish side/rear views. Do not invent nonexistent parts to distinguish panels.\n")
         brief += "\n".join(f"{p['id']}: {p['name']} — {p['description']}" for p in plan["panels"])
         brief += "\nUse exactly this panel numbering and composition plan; do not substitute generic views."
     else:
         chosen = next(p for p in plan["panels"] if p["id"] == panel)
+        brief += "Restore the original subject's material, color and finish from the original reference/brief; use the lineart only for composition.\n"
         brief += f"Produce ONE independent finished image, composition {panel}: {chosen['name']} — {chosen['description']}. Match that exact numbered panel in the delivered preview. No grid, panel numbers or collage."
     args["prompt"] = brief
     args["_multi_angle"] = {"key": key, "refs": list(refs), "description": description,

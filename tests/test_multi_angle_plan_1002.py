@@ -155,3 +155,63 @@ async def test_actual_relay_persists_plan_before_command_and_strips_tool_only_fi
     monkeypatch.setattr(canvas, "submit_command", page)
     result = await canvas._relay("generate_image")({"skill": ma.SKILL, "composition_plan": HEADPHONES_PLAN})
     assert result["ids"] == ["paid-mock"] and len(calls) == 1
+
+
+# Reusable regression derived from the 2026-11-17 paid failure: Flare returned
+# 1440x2560 for requested fallback 1152x2048; no new provider call is necessary.
+def test_paid_preview_failure_prompt_is_line_only_and_final_restores_material(run):
+    rows, _ = run
+    setup(rows)
+    preview = prepare(HEADPHONES_PLAN)
+    assert "thin black contour/structural lines" in preview["prompt"]
+    assert "No color, gray fills, shading, gradients, shadows" in preview["prompt"]
+    assert "identity/geometry ONLY" in preview["prompt"]
+    assert "actual top-facing geometry rather than reuse the front silhouette" in preview["prompt"]
+    assert "Preserve subject identity, material" not in preview["prompt"]
+    deliver(preview["_multi_angle"])
+    choose(rows, ("1",))
+    final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": "1"})
+    assert blocked is None
+    assert "Restore the original subject's material, color and finish" in final["prompt"]
+    assert "LINEART ONLY" not in final["prompt"]
+
+
+@pytest.mark.parametrize("actual,passes", [((1440, 2560), True), ((1152, 2048), True),
+                                           ((576, 1024), False), ((2048, 2048), False)])
+def test_paid_preview_default_uses_ratio_and_minimum_size_not_exact_pixels(run, actual, passes):
+    import io
+    from PIL import Image
+    from ComfyArt.api.skill_size import audit_file
+    rows, _ = run
+    setup(rows)
+    preview = prepare(HEADPHONES_PLAN)
+    assert preview["size_lock_mode"] == "ratio"
+    image = io.BytesIO()
+    Image.new("RGB", actual, "white").save(image, format="PNG")
+    audit = audit_file(image.getvalue(), (preview["width"], preview["height"]), preview["size_lock_mode"])
+    assert audit["match"] is passes
+    assert audit["provider_output"] == {"width": actual[0], "height": actual[1]}
+    if passes:
+        assert audit["notice"] is None
+
+
+def test_explicit_preview_pixels_keep_exact_audit_even_when_larger_file_has_same_ratio(run):
+    from ComfyArt.api import skill_size
+    rows, _ = run
+    rows[0]["blocks"][1]["text"] += "; 预览1152x2048"
+    setup(rows)
+    preview = prepare(HEADPHONES_PLAN)
+    assert preview["_multi_angle"]["stage_spec"]["exact_pixels"]
+    assert "size_lock_mode" not in preview
+    assert not skill_size.reconcile((1152, 2048), (1440, 2560))["match"]
+    note = skill_size.size_notice((1152, 2048), (1440, 2560))
+    assert "smaller" not in note["en"] and "低于" not in note["zh"]
+    assert "1440×2560" in note["en"] and "1440×2560" in note["zh"]
+
+
+@pytest.mark.asyncio
+async def test_relay_restores_ratio_audit_after_routing_without_relaxing_explicit_pixels(run):
+    rows, sent = run
+    setup(rows)
+    result = await canvas._relay("generate_image")({"skill": ma.SKILL, "composition_plan": HEADPHONES_PLAN})
+    assert result["ids"] and sent[-1][1]["size_lock_mode"] == "ratio"

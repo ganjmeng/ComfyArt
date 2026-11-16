@@ -228,6 +228,8 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
     if choice and choice.get("category") in ("skill", "skill_fallback"):
         args = _pin_args(args, choice)
     if multi_meta is not None:
+        # Routing pins may clear this field: restore only this stage's user authority.
+        multi_angle.apply_audit_mode(args, multi_meta)
         running_model = str(args.get("edit_model") or args.get("model") or (choice or {}).get("edit_model") or (choice or {}).get("model") or "")
         size_block = multi_angle.validate_provider_size(args, multi_meta, running_model)
         if size_block is not None:
@@ -696,6 +698,7 @@ def quote_route(action: str, args: dict, user_text: str | None = None, catalog: 
     if not model:
         return None
     if multi_meta is not None:
+        multi_angle.apply_audit_mode(clean, multi_meta)
         size_block = multi_angle.validate_provider_size(clean, multi_meta, model, catalog)
         if size_block is not None:
             return "", {"param_blocked": size_block}

@@ -228,8 +228,8 @@ async def test_size_lock_poll_delivers_a_different_file_with_a_notice(ws):
     assert out["provider_output"] == out["delivered_size"] == {"width": 2048, "height": 682}
     assert out["size_check"] == {"match": False, "mode": "exact"}
     notice = out["size_notice"]
-    assert notice["zh"] == "出图尺寸低于预期（实际 2048×682），已按原图交付。"
-    assert notice["en"] == "Output is smaller than expected (2048×682). Delivered as generated."
+    assert notice["zh"] == "出图尺寸与请求规格不符（实际 2048×682），已按原图交付。"
+    assert notice["en"] == "Output size does not match the requested specification (2048×682). Delivered as generated."
     submits = len(ws["submits"])
     again = await wavespeed.poll(task)
     assert len(ws["submits"]) == submits == 1
