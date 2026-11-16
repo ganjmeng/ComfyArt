@@ -9,6 +9,8 @@ import copy
 
 import pytest
 
+from multi_angle_plan_fixture import HEADPHONES_PLAN
+
 from ComfyArt.api import bot_asks, bot_turns, chat_store, multi_angle as ma
 from ComfyArt.api.mcp_tools import canvas
 from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
@@ -78,7 +80,7 @@ def choose(rows, selected=("1", "2", "3"), *, status="answered", other=""):
 
 def preview(rows, *, aspect="1:1"):
     setup(rows, aspect)
-    args, blocked = ma.prepare({"skill": ma.SKILL, "multi_angle_stage": "preview", "ratio": "9:16"})
+    args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview", "ratio": "9:16"})
     assert blocked is None
     meta = args["_multi_angle"]
     assert ma.reserve(meta) is None
@@ -106,7 +108,7 @@ async def test_no_generate_before_setup_answer(run, status):
     rows, sent = run
     if status:
         setup(rows, status=status)
-    result = await canvas._relay("generate_image")({"skill": ma.SKILL, "prompt": "bypass"})
+    result = await canvas._relay("generate_image")({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "prompt": "bypass"})
     assert result["submitted"] is False and result["kind"] == "multiAngleStage"
     assert sent == []
 
@@ -130,7 +132,7 @@ def test_no_composition_card_until_real_preview_completion(run):
     setup(rows)
     with pytest.raises(ValueError, match="preview"):
         bot_asks.validate_spec({"prompt": "choose early"})
-    args, _ = ma.prepare({"skill": ma.SKILL})
+    args, _ = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL})
     ma.reserve(args["_multi_angle"])
     ma.submitted(args["_multi_angle"], {"ids": ["p"]})
     for result in ({"results": []}, {"results": [{"id": "wrong", "shapes": ["s"]}]},
@@ -148,7 +150,7 @@ async def test_unanswered_composition_blocks_paid_final(run, status):
     preview(rows)
     if status:
         choose(rows, status=status)
-    result = await canvas._relay("generate_image")({"skill": ma.SKILL, "multi_angle_stage": "final", "composition_id": "1"})
+    result = await canvas._relay("generate_image")({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "final", "composition_id": "1"})
     assert result["submitted"] is False
     assert sent == []
 
@@ -161,7 +163,7 @@ def test_variable_final_aspects_counts_and_ids_with_ref_description_retained(run
     preview(rows, aspect=aspect)
     choose(rows, ids)
     for panel in ids:
-        args, blocked = ma.prepare({"skill": ma.SKILL, "multi_angle_stage": "final", "composition_id": panel,
+        args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "final", "composition_id": panel,
                                     "ratio": "3:4", "width": 12, "height": 12, "count": 4, "refs": ["wrong"],
                                     "prompt": "wrong description"})
         assert blocked is None
@@ -172,7 +174,7 @@ def test_variable_final_aspects_counts_and_ids_with_ref_description_retained(run
         assert f"composition {panel}:" in args["prompt"]
         assert "ONE independent finished image" in args["prompt"]
     assert ma.selection("chat-ma") == list(ids)
-    _, blocked = ma.prepare({"skill": ma.SKILL, "multi_angle_stage": "final", "composition_id": "0"})
+    _, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "final", "composition_id": "0"})
     assert blocked["submitted"] is False
 
 
@@ -190,7 +192,7 @@ def test_invalid_custom_entry_fails_closed(run, other):
     rows, _ = run
     preview(rows)
     choose(rows, (), other=other)
-    _, blocked = ma.prepare({"skill": ma.SKILL, "multi_angle_stage": "final", "composition_id": "1"})
+    _, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "final", "composition_id": "1"})
     assert blocked["submitted"] is False
 
 
@@ -199,7 +201,7 @@ async def test_actual_fixture_dispatch_and_durable_replay_no_duplicate_paid_subm
     rows, sent = run
     setup(rows)
     relay = canvas._relay("generate_image")
-    args = {"skill": ma.SKILL, "multi_angle_stage": "preview", "ratio": "9:16", "prompt": DESC}
+    args = {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview", "ratio": "9:16", "prompt": DESC}
     first = await relay(args)
     assert len(sent) == 1
     assert (sent[0][1]["width"], sent[0][1]["height"]) == (1152, 2048)
@@ -231,7 +233,7 @@ async def test_uncertain_timeout_and_explicit_failure_never_resubmit(run, monkey
         raise TimeoutError("outcome unknown")
 
     monkeypatch.setattr(canvas, "submit_command", uncertain)
-    args = {"skill": ma.SKILL, "multi_angle_stage": "preview"}
+    args = {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview"}
     with pytest.raises(TimeoutError):
         await canvas._relay("generate_image")(args)
     result = await canvas._relay("generate_image")(args)
@@ -247,10 +249,10 @@ def test_reference_required_but_text_only_allowed_and_attached_never_discarded(r
     rows, _ = run
     rows[0]["blocks"] = [b for b in rows[0]["blocks"] if b["type"] != "image"]
     root = setup(rows)
-    _, blocked = ma.prepare({"skill": ma.SKILL})
+    _, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL})
     assert blocked["submitted"] is False
     root["answers"][ma.SOURCE]["selected"] = ["description"]
-    args, blocked = ma.prepare({"skill": ma.SKILL})
+    args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL})
     assert blocked is None and args["refs"] == [] and DESC in args["prompt"]
 
 
@@ -259,7 +261,7 @@ def test_quote_is_pure_and_matches_submit_stage_size(run, monkeypatch):
     setup(rows, "3:4")
     monkeypatch.setattr(canvas, "select_model", lambda *a, **k: {"model": "mock", "auto": True})
     before = copy.deepcopy(rows)
-    model, inputs = canvas.quote_route("generate_image", {"skill": ma.SKILL, "ratio": "9:16"}, catalog={})
+    model, inputs = canvas.quote_route("generate_image", {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "ratio": "9:16"}, catalog={})
     assert model == "mock" and (inputs["width"], inputs["height"], inputs["ratio"]) == (1152, 2048, "9:16")
     assert rows == before
     assert "_multi_angle" not in inputs
@@ -271,7 +273,7 @@ def test_current_skill_cannot_be_bypassed_and_new_run_does_not_inherit_ledger(ru
     _, blocked = ma.prepare({"skill": "pose-fission", "multi_angle_stage": "final", "composition_id": "1"})
     assert blocked["submitted"] is False
     rows.append({"id": "new-ma", "role": "user", "blocks": [{"type": "skill", "name": ma.SKILL}]})
-    _, blocked = ma.prepare({"skill": ma.SKILL})
+    _, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL})
     assert "source/aspect" in blocked["error"]
     assert ma._root("chat-ma") == (None, None)
 
@@ -305,7 +307,7 @@ async def test_two_concurrent_replays_reserve_only_one_submit(run, monkeypatch):
 
     monkeypatch.setattr(canvas, "submit_command", submit)
     relay = canvas._relay("generate_image")
-    args = {"skill": ma.SKILL, "multi_angle_stage": "preview"}
+    args = {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview"}
     first = asyncio.create_task(relay(args))
     try:
         await asyncio.wait_for(entered.wait(), timeout=2)
@@ -333,7 +335,7 @@ def test_localized_skill_names_and_original_description_propagate(run, name, des
 def test_reservation_persistence_failure_blocks_dispatch(run, monkeypatch):
     rows, sent = run
     setup(rows)
-    args, blocked = ma.prepare({"skill": ma.SKILL})
+    args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL})
     assert blocked is None
     monkeypatch.setattr(chat_store, "compare_message_blocks", lambda *a, **k: False)
     with pytest.raises(ValueError, match="persist"):
@@ -351,7 +353,7 @@ def test_expired_cards_can_be_reasked_without_repeating_paid_preview(run, expire
     rows.append({"id": "new-setup", "role": "assistant", "blocks": [{
         "type": "ask", "ask_id": "new-setup", "status": "answered", **spec,
         "answers": {ma.SOURCE: {"selected": ["single_front"]}, ma.ASPECT: {"selected": ["3:4"]}}}]})
-    args, blocked = ma.prepare({"skill": ma.SKILL})
+    args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL})
     assert blocked is None and args["ratio"] == "3:4"
     meta = args["_multi_angle"]
     ma.reserve(meta)
@@ -360,7 +362,7 @@ def test_expired_cards_can_be_reasked_without_repeating_paid_preview(run, expire
     choose(rows, status=expired)
     again = bot_asks.validate_spec({"prompt": "retry unanswered compositions"})
     assert again["questions"][0]["id"] == ma.COMPOSITIONS
-    _, replay = ma.prepare({"skill": ma.SKILL, "multi_angle_stage": "preview"})
+    _, replay = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview"})
     assert replay["ids"] == ["preview-once"]
 
 
@@ -369,7 +371,7 @@ def test_setup_answer_cannot_drift_after_preview_was_reserved(run):
     preview(rows)
     choose(rows)
     rows[1]["blocks"][0]["answers"][ma.ASPECT]["selected"] = ["3:4"]
-    _, blocked = ma.prepare({"skill": ma.SKILL, "multi_angle_stage": "final", "composition_id": "1"})
+    _, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "final", "composition_id": "1"})
     assert blocked["submitted"] is False and "changed after submission" in blocked["error"]
 
 
@@ -378,7 +380,7 @@ def test_setup_answer_cannot_drift_after_preview_was_reserved(run):
 def test_actual_placed_single_preview_required_not_just_done_status(run, overrides):
     rows, _ = run
     setup(rows)
-    args, _ = ma.prepare({"skill": ma.SKILL})
+    args, _ = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL})
     ma.reserve(args["_multi_angle"])
     ma.submitted(args["_multi_angle"], {"ids": ["p"]})
     row = {"id": "p", "status": "done", "placed": True, "shapes": ["s"], **overrides}
@@ -390,7 +392,7 @@ def test_actual_placed_single_preview_required_not_just_done_status(run, overrid
 def test_stale_ledger_write_cannot_erase_newer_state(run):
     rows, _ = run
     setup(rows)
-    args, _ = ma.prepare({"skill": ma.SKILL})
+    args, _ = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL})
     ma.reserve(args["_multi_angle"])
     before = copy.deepcopy(rows)
     with pytest.raises(ValueError, match="concurrently"):
@@ -425,13 +427,13 @@ async def test_positive_app_stack_scripted_agent_real_asks_persistence_and_place
     monkeypatch.setitem(bot_turns.ACTIVE_TURNS, cid, state)
     trace, sent, seen, quote_approvals = [], [], [], []
     holder_shapes = {}
-    args_preview = {"skill": ma.SKILL, "refs": [REF], "multi_angle_stage": "preview", "ratio": "9:16"}
+    args_preview = {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "refs": [REF], "multi_angle_stage": "preview", "ratio": "9:16"}
     script = [calls(("ask_user", {"prompt": "setup"})),
               calls(("generate_image", args_preview)),
               calls(("wait_generation", {"ids": ["holder:1"]})),
               calls(("ask_user", {"prompt": "compositions"}))]
     for i in range(1, 5):
-        script += [calls(("generate_image", {"skill": ma.SKILL, "refs": [REF],
+        script += [calls(("generate_image", {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "refs": [REF],
                           "multi_angle_stage": "final", "composition_id": str(i)})),
                    calls(("wait_generation", {"ids": [f"holder:{i + 1}"]}))]
     script += [reply("已完成所选的四张独立成品。")]
@@ -526,7 +528,7 @@ async def test_positive_app_stack_scripted_agent_real_asks_persistence_and_place
         bot_turns.ACTIVE_TURNS.pop(cid)
         used_before = dict(paid_guard.TURNS[cid].used)
         replay = await mcp._tools_call({"name": "generate_image", "arguments": {
-            "skill": ma.SKILL, "multi_angle_stage": "final", "composition_id": "4"}})
+            "composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "final", "composition_id": "4"}})
         again = json.loads(replay["content"][0]["text"])
         assert again["ids"] == ["holder:5"] and len(sent) == 5
         assert paid_guard.TURNS[cid].used == used_before
@@ -556,7 +558,7 @@ def test_selected_final_cap_resumes_without_changing_other_skill_or_dollar_guard
     if user_text == "做3张":
         guard.used[guard.plan_item] = 1  # same-turn preview; 3 means three FINAL images
     try:
-        args, result = ma.prepare({"skill": ma.SKILL, "multi_angle_stage": "final", "composition_id": "1"})
+        args, result = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "final", "composition_id": "1"})
         assert (result is not None) == blocked
         if not blocked:
             ma.allow_selected_cap(args, "chat-ma")

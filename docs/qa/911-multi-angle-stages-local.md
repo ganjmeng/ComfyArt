@@ -136,3 +136,49 @@ The actual-fixture and positive app-stack mocks no longer insert fictitious user
 Exact executable command: `/workspace/fs911-ma-ev/preview-policy-test-command.sh` (includes process recheck, canonical package alias environment, temporary read-only dependency link and cleanup). Full output/JUnit: `/workspace/fs911-ma-ev/preview-policy-focused.log` and `preview-policy-focused.xml`. The initial three-file run also passed 103 cases (`preview-policy-first.log`). No foreign pytest was active at either dispatch; Python slot is free.
 
 `npm run build` (including TypeScript noEmit) passed: 3260 modules, Vite 1.10s; `/workspace/fs911-ma-ev/preview-policy-build.log`. Dist is unchanged and consistent; only existing chunk/lottie eval warnings. Changed Python compile, whitespace checks, byte-identical QA comparison and unchanged other-skill guards were verified. No symlink is committed. No browser, paid API, merge, deployment or PR comment/body update was performed; visual/paid/L/R acceptance remains pending.
+
+
+## 23:23 product HOLD: subject-aware composition planning
+
+The universal hard-coded `VIEWS` table is removed. Before the first preview submission,
+the existing agent must inspect the actual subject/reference and requested use and supply
+`composition_plan={subject, purpose, panels:[{id,name,description} x9]}` to `generate_image`.
+This is a tool argument, not another UI card, editor, paid LLM request, or a new planning engine.
+No generic/default plan is substituted if missing. Validation requires nine distinct numbered
+entries (1..9) with non-empty names and descriptions, plus the subject and purpose context.
+The backend validates structure, not semantic quality; actual relevance/visual correspondence
+still requires product and real-image acceptance.
+
+Quotes remain pure. The normalized plan is stored using the existing durable setup-ledger CAS
+in the same reservation that occurs **before** canvas/provider submission. The preview prompt,
+composition multi-select labels/descriptions and each selected final prompt read that same
+mapping. Model attempts to supply a new map after dispatch do not replace the frozen one.
+Concurrent stale reservation with a different map fails closed. Final requests and composition
+cards lacking a valid persisted plan block; legacy delivered previews must be reconciled, never
+automatically regenerated/charged. Existing specification/reference retention is unchanged.
+
+New mock coverage supplies distinct headphones, ceramic teapot and courtyard-building plans;
+it verifies shared preview/card/final numbering, selected IDs 2/7/9, restart/replay freeze,
+quote-versus-dispatch freezing, missing/malformed plans and persistence before page dispatch.
+Existing stage/specification/adversarial tests now explicitly provide the mock agent plan as
+preview input. Their assertions were retained; the 13-case QA file is therefore no longer
+byte-identical to the historical original (only plan fixture import/arguments added).
+No hidden fixture auto-injection or bypass of the new missing-plan guard is used.
+
+The first focused run yielded 502 passed / 2 failed: only the existing whole-file
+`bot/skill_output.py` hash and combined skill-entry hash changed due to the intentional
+multi-angle planning hints. Both pins were advanced to the inspected bytes; no tests were
+removed, skipped or weakened. Other skill source, parameter guards and shared blocks are
+unchanged. Current validation results are recorded below after rerun.
+
+
+Current focused result: **504 passed, 0 failed/errors/skipped in 6.28s** (ten files,
+including 18 new planning cases). Logs: `/workspace/fs911-ma-ev/subject-plan-focused.log`
+and `subject-plan-focused.xml`; executable `subject-plan-test-command.sh` includes the
+shared-runner check, temporary dependency symlink and cleanup. Production build passed
+(TypeScript noEmit + Vite, 3260 modules, 1.40s); updated dist is included. Only existing
+chunk-size/lottie-eval warnings remain. Python compilation and whitespace checks passed.
+AST comparison confirms every assertion in the three adapted stage/spec/QA files remains
+unchanged (`subject-plan-assertion-audit.json`). The original QA evidence directory is untouched.
+Python test slot is free; no browser, paid request, merge, deployment or change to 8916.
+Product/QA fixed-tip review and real provider/visual/L/R acceptance remain required.

@@ -508,7 +508,7 @@ PINNED_SHA256 = {
     "api/skill_size.py": "43c130b1aa05cd6736d28564e743feaa41e0ce26e61ea2ad0960ada01203c3df",
     "api/curated_models.json": "fb5c6a1acd2782cb3d7da42837bef92bd4485fe90abd84dd272de1170f9fe04b",
     "api/wavespeed_models.json": "8be944b91aeaf2f4fc24fb5099e36664d2136004dc828737c95ff7943a7363fb",
-    "bot/skill_output.py": "880d48a24d22fcd923746700204822ec013bea87c26e11e7e1978b60f8b10069",  # #911 staged multi-angle replaces superseded #974 flat lock; unrelated locks preserved
+    "bot/skill_output.py": "7c7b0beb7ad9295ef8893d8544b2337e9c2cdec6055d4da7faff85d36c4f2f50",  # #1002 multi-angle subject-plan hint updated only; unrelated locks preserved
     "api/portrait_studio.py": "61257848a9e23d13c066d01c103c565d6804e58c926d3905c6ed8b0890569224",
     "bot/self_check.py": "1a9b4f7eda7e915adf83df42ff31ccf3c27e83253d9636ba5c85aead447993b6",
 }

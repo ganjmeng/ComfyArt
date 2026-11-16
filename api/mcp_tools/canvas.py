@@ -116,6 +116,7 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
         multi_meta = args.pop("_multi_angle", None)
         args.pop("multi_angle_stage", None)
         args.pop("composition_id", None)
+        args.pop("composition_plan", None)
     packaging_run = action == "generate_image" and product_packaging.applies(args)
     if action == "generate_image":
         # #707: a named skill's declared pixels reach the page even if the provider omitted them.
@@ -672,6 +673,7 @@ def quote_route(action: str, args: dict, user_text: str | None = None, catalog: 
         multi_meta = clean.pop("_multi_angle", None)
         clean.pop("multi_angle_stage", None)
         clean.pop("composition_id", None)
+        clean.pop("composition_plan", None)
     if unregistered_model(action, clean):
         clean = {k: v for k, v in clean.items() if k not in ("model", "auto_model")}
     # Use the live/cached WaveSpeed catalog so exact-size skills (before-after, …)
@@ -829,6 +831,14 @@ SPECS: dict[str, dict] = {
          "multi_angle_stage": {"type": "string", "enum": ["preview", "final"],
                                "description": "multi-angle only: preview lineart, then final after composition answer"},
          "composition_id": {"type": "string", "description": "multi-angle final: one answered panel number 1..9"},
+         "composition_plan": {"type": "object", "description": "Multi-angle preview REQUIRED: inspect the actual reference/description and purpose; design nine appropriate compositions, not generic full-body views for every subject. Persisted before submission and frozen for cards/finals. Omit on final/resume.",
+                              "properties": {"subject": {"type": "string"}, "purpose": {"type": "string"},
+                                             "panels": {"type": "array", "minItems": 9, "maxItems": 9,
+                                                        "items": {"type": "object", "properties": {
+                                                            "id": {"type": "string", "enum": [str(i) for i in range(1, 10)]},
+                                                            "name": {"type": "string"}, "description": {"type": "string"}},
+                                                                  "required": ["id", "name", "description"]}}},
+                              "required": ["subject", "purpose", "panels"]},
          "shot": {"type": "string", "enum": ["closeup", "half", "three_quarter", "full"],
                   "description": "portrait-studio only: the shot size of this one image"},
          "output_format": {"type": "string", "enum": ["png", "jpeg", "webp", "gif", "svg"]},

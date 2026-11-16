@@ -16,17 +16,42 @@ SKILL = "universal-multi-angle-grid"
 SOURCE, ASPECT, COMPOSITIONS = "ma_source", "ma_aspect", "ma_compositions"
 LEDGER = "multi_angle_state"
 RATIOS = ("1:1", "3:4", "4:3", "16:9", "9:16", "4:5", "5:4", "3:2", "2:3")
-VIEWS = {
-    "1": ("正面全身", "front full subject"),
-    "2": ("四分之三全身", "three-quarter full subject"),
-    "3": ("90°侧面全身", "strict 90-degree side profile, full subject"),
-    "4": ("正面中景", "front medium view"),
-    "5": ("四分之三中景", "three-quarter medium view"),
-    "6": ("背面全身", "rear full subject"),
-    "7": ("俯视", "top view"),
-    "8": ("细节特写", "detail close-up"),
-    "9": ("低角度", "low-angle full subject"),
-}
+PANEL_IDS = tuple(str(i) for i in range(1, 10))
+
+
+def validate_plan(value: object) -> dict:
+    """A subject-aware plan is supplied by the agent after inspecting input, never a fixed view list."""
+    if not isinstance(value, dict):
+        raise ValueError("Provide composition_plan with subject, purpose and nine numbered panels before preview submission.")
+    out = {}
+    for key in ("subject", "purpose"):
+        text = value.get(key)
+        if not isinstance(text, str) or not text.strip() or len(text) > 2000:
+            raise ValueError(f"composition_plan.{key} must describe this run's subject/use, not an empty generic plan.")
+        out[key] = text.strip()
+    panels = value.get("panels")
+    if not isinstance(panels, list) or len(panels) != 9:
+        raise ValueError("composition_plan requires exactly nine panels, IDs 1..9.")
+    clean = []
+    for panel in panels:
+        if not isinstance(panel, dict) or str(panel.get("id")) not in PANEL_IDS:
+            raise ValueError("Each composition plan panel needs one ID 1..9.")
+        item = {"id": str(panel["id"])}
+        for key in ("name", "description"):
+            text = panel.get(key)
+            if not isinstance(text, str) or not text.strip() or len(text) > 2000:
+                raise ValueError(f"Each panel requires a non-empty {key} (max 2000 characters).")
+            item[key] = text.strip()
+        clean.append(item)
+    if {p["id"] for p in clean} != set(PANEL_IDS):
+        raise ValueError("Composition plan IDs must be unique and cover 1..9.")
+    for key in ("name", "description"):
+        if len({p[key].casefold() for p in clean}) != 9:
+            raise ValueError(f"Composition plan {key}s must distinguish all nine panels.")
+    out["panels"] = sorted(clean, key=lambda p: int(p["id"]))
+    return out
+
+
 SIZE_KEYS = ("width", "height", "ratio", "resolution", "edit_resolution", "size_lock", "size_lock_mode", "size_candidates")
 
 
@@ -113,9 +138,11 @@ def normalize_card(args: dict) -> dict:
             if (block.get("type") == "ask" and block.get("status") not in {"expired", "cancelled"}
                     and any(q.get("id") == COMPOSITIONS for q in block.get("questions") or [])):
                 raise ValueError("Use the existing composition card/answer; do not create another.")
+    plan = validate_plan(ledger.get("composition_plan"))
     q = _question(COMPOSITIONS, "选择想生成的构图（可多选，按图中编号）" if zh else
                   "Choose compositions (multiple panel numbers allowed)", [
-                      {"id": key, "label": f"{key} {view[0 if zh else 1]}"} for key, view in VIEWS.items()], multi=True)
+                      {"id": panel["id"], "label": f"{panel['id']} {panel['name']}",
+                       "description": panel["description"]} for panel in plan["panels"]], multi=True)
     return {"questions": [q], "allow_skip": False}
 
 
@@ -137,7 +164,7 @@ def selection(chat_id: str) -> list[str]:
                 if not re.fullmatch(r"[1-9\s,，、;/]+", other):
                     raise ValueError("Composition custom text must contain panel numbers 1..9 only.")
                 raw += [token for token in re.split(r"[\s,，、;/]+", other) if token]
-            if any(s not in VIEWS for s in raw):
+            if any(s not in PANEL_IDS for s in raw):
                 raise ValueError("Unknown composition number; choose numbered panels 1..9.")
             return list(dict.fromkeys(raw))
     return []
@@ -353,6 +380,14 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
         if panel not in selected:
             return args, _blocked("Pass one composition_id from the answered card: " + ", ".join(selected))
         key = "final:" + panel
+    try:
+        # Once dispatched, model-supplied replacements cannot renumber/reinterpret
+        # the visible preview or its composition card on continuation.
+        plan = validate_plan(ledger.get("composition_plan") if ledger.get("preview") else args.get("composition_plan"))
+        if stage == "final" and not ledger.get("composition_plan"):
+            raise ValueError("Missing persisted composition plan; reconcile the preview, do not submit paid finals.")
+    except ValueError as e:
+        return args, _blocked(str(e))
     old = ledger.get(key)
     if old:
         result = copy.deepcopy(old.get("result") or _blocked("Submission reserved/uncertain; reconcile existing task, never retry automatically."))
@@ -386,14 +421,18 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
                 args["refs"].append(shape)
                 args["ref_modes"].append("composition")
     brief = f"User description (preserve; empty means image-only, use the attached subject without inventing a brief):\n{description}\nReference source: {source}; other scenario: {source_other}. Final specification: {final_spec['width']}x{final_spec['height']}, ratio {aspect}; exact user pixels={final_spec['exact_pixels']}. This stage: {spec['width']}x{spec['height']}, ratio {spec['ratio']}.\nPreserve subject identity, material, proportions, controls and background requirements.\n"
+    brief += f"Frozen composition planning context: subject={plan['subject']}; purpose={plan['purpose']}.\n"
     if stage == "preview":
         brief += "Produce ONE lineart preview image: a numbered 3x3 nine-panel composition grid, labels 1..9. Not final photographs.\n"
-        brief += "\n".join(f"{k}: {v[1]}" for k, v in VIEWS.items())
+        brief += "\n".join(f"{p['id']}: {p['name']} — {p['description']}" for p in plan["panels"])
+        brief += "\nUse exactly this panel numbering and composition plan; do not substitute generic views."
     else:
-        brief += f"Produce ONE independent finished image, composition {panel}: {VIEWS[panel][1]}. No grid, panel numbers or collage."
+        chosen = next(p for p in plan["panels"] if p["id"] == panel)
+        brief += f"Produce ONE independent finished image, composition {panel}: {chosen['name']} — {chosen['description']}. Match that exact numbered panel in the delivered preview. No grid, panel numbers or collage."
     args["prompt"] = brief
     args["_multi_angle"] = {"key": key, "refs": list(refs), "description": description,
-                            "source": source, "aspect": aspect, "setup_snapshot": setup_snapshot, "stage_spec": spec}
+                            "source": source, "aspect": aspect, "setup_snapshot": setup_snapshot, "stage_spec": spec,
+                            "composition_plan": plan}
     return args, None
 
 
@@ -408,9 +447,17 @@ def reserve(meta: dict, chat_id: str = "") -> dict | None:
     ledger = copy.deepcopy((root or {}).get(LEDGER) or {})
     expected = copy.deepcopy(ledger)
     key = meta["key"]
+    try:
+        plan = validate_plan(meta.get("composition_plan"))
+        if ledger.get("composition_plan") and ledger["composition_plan"] != plan:
+            raise ValueError("Composition plan changed concurrently; reconcile the frozen preview plan.")
+        if key.startswith("final:") and not ledger.get("composition_plan"):
+            raise ValueError("No persisted preview plan; no paid final submission allowed.")
+    except ValueError as e:
+        return _blocked(str(e))
     if key in ledger:
         return copy.deepcopy(ledger[key].get("result") or _blocked("Already reserved; inspect existing task, do not submit again."))
-    for k in ("refs", "description", "source", "aspect", "setup_snapshot"):
+    for k in ("refs", "description", "source", "aspect", "setup_snapshot", "composition_plan"):
         ledger.setdefault(k, meta[k])
     ledger[key] = {"status": "reserved"}
     _save(chat_id, ledger, expected)

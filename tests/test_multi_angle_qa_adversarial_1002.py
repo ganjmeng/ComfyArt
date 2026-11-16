@@ -9,6 +9,8 @@ import copy
 
 import pytest
 
+from multi_angle_plan_fixture import HEADPHONES_PLAN
+
 from ComfyArt.api import bot_asks, bot_turns, chat_store, multi_angle as ma
 from ComfyArt.api.mcp_tools import canvas
 from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
@@ -72,13 +74,13 @@ def test_image_only_start_can_prepare_preview_without_user_text(run):
     rows, _ = run
     rows[0]["blocks"] = [b for b in rows[0]["blocks"] if b.get("type") != "text"]
     setup(rows)
-    args, blocked = ma.prepare({"skill": ma.SKILL, "multi_angle_stage": "preview"})
+    args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview"})
     assert blocked is None, (blocked or {}).get("error")
     assert args["refs"] == [REF]
     assert "Use the ComfyArt skill" not in args["prompt"]
     # A missing user brief must not be invented from the agent tool prompt.
     _, blocked_with_agent_prompt = ma.prepare({
-        "skill": ma.SKILL, "multi_angle_stage": "preview",
+        "composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview",
         "prompt": "agent tool prompt must not become the preserved user description",
     })
     # Either still allowed with a generic/empty user description, or blocked
@@ -86,7 +88,7 @@ def test_image_only_start_can_prepare_preview_without_user_text(run):
     # "User description".
     if blocked_with_agent_prompt is None:
         rebuilt, _ = ma.prepare({
-            "skill": ma.SKILL, "multi_angle_stage": "preview",
+            "composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview",
             "prompt": "agent tool prompt must not become the preserved user description",
         })
         assert "agent tool prompt must not become the preserved user description" not in rebuilt["prompt"]
@@ -97,7 +99,7 @@ def test_image_only_after_setup_can_still_ask_for_a_brief_if_needed(run):
     rows, _ = run
     rows[0]["blocks"] = [b for b in rows[0]["blocks"] if b.get("type") != "text"]
     setup(rows)
-    _, blocked = ma.prepare({"skill": ma.SKILL, "multi_angle_stage": "preview"})
+    _, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview"})
     if blocked is not None:
         spec = bot_asks.validate_spec({
             "prompt": "请补充商品描述",
@@ -118,7 +120,7 @@ def test_other_field_two_digit_numbers_fail_closed(run, other, selected):
     """Custom text must not silently explode '11'/'12'/'10' into panel digits."""
     rows, _ = run
     setup(rows)
-    args, _ = ma.prepare({"skill": ma.SKILL, "multi_angle_stage": "preview"})
+    args, _ = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview"})
     ma.reserve(args["_multi_angle"])
     ma.submitted(args["_multi_angle"], {"ids": ["p"]})
     ma.record_wait({"results": [{"id": "p", "status": "done", "placed": True, "shapes": ["s"]}]})
@@ -128,7 +130,7 @@ def test_other_field_two_digit_numbers_fail_closed(run, other, selected):
         "answers": {ma.COMPOSITIONS: {"selected": list(selected), "other_text": other}}}]})
     with pytest.raises(ValueError):
         ma.selection("chat-ma")
-    _, blocked = ma.prepare({"skill": ma.SKILL, "multi_angle_stage": "final", "composition_id": "1"})
+    _, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "final", "composition_id": "1"})
     assert blocked is not None and blocked["submitted"] is False
 
 
@@ -140,7 +142,7 @@ def test_other_field_two_digit_numbers_fail_closed(run, other, selected):
 def test_preview_without_explicit_ratio_follows_selected_aspect(run, aspect, expected):
     rows, _ = run
     setup(rows, aspect)
-    args, blocked = ma.prepare({"skill": ma.SKILL, "multi_angle_stage": "preview"})
+    args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview"})
     assert blocked is None
     assert (args["width"], args["height"], args["ratio"]) == expected
 
@@ -148,7 +150,7 @@ def test_preview_without_explicit_ratio_follows_selected_aspect(run, aspect, exp
 def test_explicit_preview_aspect_still_independent_of_final(run):
     rows, _ = run
     setup(rows, "1:1")
-    args, blocked = ma.prepare({"skill": ma.SKILL, "multi_angle_stage": "preview", "ratio": "9:16"})
+    args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview", "ratio": "9:16"})
     assert blocked is None
     assert (args["width"], args["height"], args["ratio"]) == (1152, 2048, "9:16")
 
@@ -157,11 +159,11 @@ def test_omitted_stage_during_undelivered_preview_replays_or_continues_preview(r
     """Resume must not reclassify an in-flight preview as a blocked final."""
     rows, sent = run
     setup(rows)
-    first, blocked = ma.prepare({"skill": ma.SKILL, "multi_angle_stage": "preview"})
+    first, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview"})
     assert blocked is None
     assert ma.reserve(first["_multi_angle"]) is None
     ma.submitted(first["_multi_angle"], {"ids": ["preview-holder"], "submitted": True})
-    again, result = ma.prepare({"skill": ma.SKILL})  # stage omitted
+    again, result = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL})  # stage omitted
     assert result is not None, "expected preview reservation replay, not a final-stage block"
     assert result.get("ids") == ["preview-holder"] or result.get("multi_angle_replay")
     assert "Wait for the lineart preview" not in str(result.get("error") or "")
@@ -172,7 +174,7 @@ def test_description_source_empty_refs_are_not_replaced_by_later_args(run):
     rows, _ = run
     rows[0]["blocks"] = [b for b in rows[0]["blocks"] if b.get("type") != "image"]
     setup(rows, source="description")
-    args, blocked = ma.prepare({"skill": ma.SKILL, "multi_angle_stage": "preview"})
+    args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview"})
     assert blocked is None and args["refs"] == []
     meta = args["_multi_angle"]
     assert ma.reserve(meta) is None
@@ -183,7 +185,7 @@ def test_description_source_empty_refs_are_not_replaced_by_later_args(run):
         "type": "ask", "ask_id": "compositions", "status": "answered", **spec,
         "answers": {ma.COMPOSITIONS: {"selected": ["1"]}}}]})
     final, blocked = ma.prepare({
-        "skill": ma.SKILL, "multi_angle_stage": "final", "composition_id": "1",
+        "composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "final", "composition_id": "1",
         "refs": ["sneaky-late-ref"],
     })
     assert blocked is None
