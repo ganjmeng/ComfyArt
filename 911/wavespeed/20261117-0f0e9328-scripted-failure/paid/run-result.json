@@ -1,0 +1,654 @@
+{
+  "phase": "SCRIPTED TOOL-ONLY PAID QA (NOT default agent / DeepSeek 1017 loop)",
+  "mode": "SCRIPTED_TOOL_ONLY_NOT_DEFAULT_AGENT",
+  "default_agent_started": false,
+  "at": "2026-11-17 00:29:37 +0800",
+  "sha": "0f0e9328934e3d35e95f5993c6cfc91b08815e0f",
+  "left_baseline_no_rerun": "44b6ab3756a96f82ec85e31525a31c07728d690d",
+  "frozen": "/workspace/qa1002-0f0e9328-evidence/frozen-0f0e9328",
+  "budget_usd": 1.0,
+  "max_image_submits": 4,
+  "stages": [
+    {
+      "label": "preview",
+      "stage": "preview",
+      "panel": null,
+      "at": "2026-11-17 00:29:43 +0800",
+      "prepare": {
+        "width": 1152,
+        "height": 2048,
+        "ratio": "9:16",
+        "n_refs": 1,
+        "refs": [
+          "/api/view?filename=ma_subject_691.png&type=input"
+        ],
+        "size_lock": true,
+        "strict_ratio": "9:16",
+        "plan_subject": "matte gray over-ear headphones in the supplied front-view reference: cushioned oval earcups, padded headband, slim yokes, no visible logo or extra controls invented",
+        "key": "[REDACTED]"
+      },
+      "quote": {
+        "model": "openai/gpt-image-2.6-flare/edit",
+        "price": 0.1035,
+        "source": "quote",
+        "reason": "live",
+        "priced": {
+          "ratio": "9:16",
+          "width": 1152,
+          "height": 2048,
+          "resolution": "2k"
+        }
+      },
+      "budget_check": {
+        "already_quoted_spend": 0,
+        "this": 0.1035,
+        "later_reserved": 0.1728,
+        "total_if": 0.2763
+      },
+      "reserved": true,
+      "submit": {
+        "prompt_id": "ws:47890f21db9045429e6a958a63bae52b",
+        "task": "47890f21db9045429e6a958a63bae52b",
+        "confirmed": false,
+        "quoted_usd": 0.1035
+      },
+      "poll": {
+        "status": "completed",
+        "generation_succeeded": true,
+        "requested_size": {
+          "width": 1152,
+          "height": 2048
+        },
+        "provider_output": {
+          "width": 1440,
+          "height": 2560
+        },
+        "delivered_size": {
+          "width": 1440,
+          "height": 2560
+        },
+        "size_check": {
+          "match": false,
+          "mode": "exact"
+        },
+        "size_notice": {
+          "kind": "size",
+          "zh": "出图尺寸低于预期（实际 1440×2560），已按原图交付。",
+          "en": "Output is smaller than expected (1440×2560). Delivered as generated."
+        },
+        "model": "openai/gpt-image-2.6-flare/edit",
+        "n_outputs": 1,
+        "messages": []
+      },
+      "files": [
+        {
+          "label": "preview",
+          "index": 0,
+          "original": "/workspace/qa1002-0f0e9328-appstack-paid/runtime/output/wavespeed/ws_47890f21db90_0.png",
+          "download": "/workspace/qa1002-0f0e9328-appstack-paid/downloads/preview-9x16-lineart.png",
+          "sha256": "f4ee76543809a66306f5ef554227068c83e8ff4711974263b536c1ff073f798c",
+          "bytes": 3697791,
+          "ref": {
+            "filename": "ws_47890f21db90_0.png",
+            "subfolder": "wavespeed",
+            "type": "output",
+            "metadata": {
+              "width": 1440,
+              "height": 2560
+            }
+          },
+          "pixels": {
+            "width": 1440,
+            "height": 2560,
+            "format": "PNG"
+          }
+        }
+      ],
+      "delivered": true,
+      "delivered_shape": "/api/view?filename=ws_47890f21db90_0.png&type=output&subfolder=wavespeed",
+      "balance_after": {
+        "ok": true,
+        "usd": 20.962808,
+        "at": "2026-11-17 00:31:18 +0800"
+      },
+      "balance_delta_from_start": 0.1035,
+      "balance_delta_note": "shared WaveSpeed balance delta is not exclusive to this QA unless proved"
+    },
+    {
+      "label": "final_1",
+      "stage": "final",
+      "panel": "1",
+      "at": "2026-11-17 00:31:18 +0800",
+      "prepare": {
+        "width": 2048,
+        "height": 2048,
+        "ratio": "1:1",
+        "n_refs": 2,
+        "refs": [
+          "/api/view?filename=ma_subject_691.png&type=input",
+          "/api/view?filename=ws_47890f21db90_0.png&type=output&subfolder=wavespeed"
+        ],
+        "size_lock": true,
+        "strict_ratio": "1:1",
+        "plan_subject": "matte gray over-ear headphones in the supplied front-view reference: cushioned oval earcups, padded headband, slim yokes, no visible logo or extra controls invented",
+        "key": "[REDACTED]",
+        "prompt_has_panel_name": true
+      },
+      "quote": {
+        "model": "google/nano-banana-2.1/edit",
+        "price": 0.0576,
+        "source": "quote",
+        "reason": "live",
+        "priced": {
+          "ratio": "1:1",
+          "width": 2048,
+          "height": 2048,
+          "resolution": null
+        }
+      },
+      "budget_check": {
+        "already_quoted_spend": 0.1035,
+        "this": 0.0576,
+        "later_reserved": 0.1152,
+        "total_if": 0.2763
+      },
+      "reserved": true,
+      "submit": {
+        "prompt_id": "ws:926f8a55ce184a71b2bc8f95d94670a7",
+        "task": "926f8a55ce184a71b2bc8f95d94670a7",
+        "confirmed": false,
+        "quoted_usd": 0.0576
+      },
+      "poll": {
+        "status": "completed",
+        "generation_succeeded": true,
+        "requested_size": {
+          "width": 2048,
+          "height": 2048
+        },
+        "provider_output": {
+          "width": 2048,
+          "height": 2048
+        },
+        "delivered_size": {
+          "width": 2048,
+          "height": 2048
+        },
+        "size_check": {
+          "match": true,
+          "mode": "exact"
+        },
+        "size_notice": null,
+        "model": "google/nano-banana-2.1/edit",
+        "n_outputs": 1,
+        "messages": []
+      },
+      "files": [
+        {
+          "label": "final_1",
+          "index": 0,
+          "original": "/workspace/qa1002-0f0e9328-appstack-paid/runtime/output/wavespeed/ws_926f8a55ce18_0.png",
+          "download": "/workspace/qa1002-0f0e9328-appstack-paid/downloads/final-1-front.png",
+          "sha256": "a72951f85847d69e3e30ba5d92f408cfa02cf960382147bfd2158414181cd2e3",
+          "bytes": 3667003,
+          "ref": {
+            "filename": "ws_926f8a55ce18_0.png",
+            "subfolder": "wavespeed",
+            "type": "output",
+            "metadata": {
+              "width": 2048,
+              "height": 2048
+            }
+          },
+          "pixels": {
+            "width": 2048,
+            "height": 2048,
+            "format": "PNG"
+          }
+        }
+      ],
+      "delivered": true,
+      "delivered_shape": "/api/view?filename=ws_926f8a55ce18_0.png&type=output&subfolder=wavespeed",
+      "balance_after": {
+        "ok": true,
+        "usd": 20.905208,
+        "at": "2026-11-17 00:32:34 +0800"
+      },
+      "balance_delta_from_start": 0.1611,
+      "balance_delta_note": "shared WaveSpeed balance delta is not exclusive to this QA unless proved"
+    },
+    {
+      "label": "final_2",
+      "stage": "final",
+      "panel": "2",
+      "at": "2026-11-17 00:32:34 +0800",
+      "prepare": {
+        "width": 2048,
+        "height": 2048,
+        "ratio": "1:1",
+        "n_refs": 2,
+        "refs": [
+          "/api/view?filename=ma_subject_691.png&type=input",
+          "/api/view?filename=ws_47890f21db90_0.png&type=output&subfolder=wavespeed"
+        ],
+        "size_lock": true,
+        "strict_ratio": "1:1",
+        "plan_subject": "matte gray over-ear headphones in the supplied front-view reference: cushioned oval earcups, padded headband, slim yokes, no visible logo or extra controls invented",
+        "key": "[REDACTED]",
+        "prompt_has_panel_name": true
+      },
+      "quote": {
+        "model": "google/nano-banana-2.1/edit",
+        "price": 0.0576,
+        "source": "quote",
+        "reason": "cache",
+        "priced": {
+          "ratio": "1:1",
+          "width": 2048,
+          "height": 2048,
+          "resolution": null
+        }
+      },
+      "budget_check": {
+        "already_quoted_spend": 0.1611,
+        "this": 0.0576,
+        "later_reserved": 0.0576,
+        "total_if": 0.2763
+      },
+      "reserved": true,
+      "submit": {
+        "prompt_id": "ws:9232393db2414c0596c7f5bf16dba699",
+        "task": "9232393db2414c0596c7f5bf16dba699",
+        "confirmed": false,
+        "quoted_usd": 0.0576
+      },
+      "poll": {
+        "status": "completed",
+        "generation_succeeded": true,
+        "requested_size": {
+          "width": 2048,
+          "height": 2048
+        },
+        "provider_output": {
+          "width": 2048,
+          "height": 2048
+        },
+        "delivered_size": {
+          "width": 2048,
+          "height": 2048
+        },
+        "size_check": {
+          "match": true,
+          "mode": "exact"
+        },
+        "size_notice": null,
+        "model": "google/nano-banana-2.1/edit",
+        "n_outputs": 1,
+        "messages": []
+      },
+      "files": [
+        {
+          "label": "final_2",
+          "index": 0,
+          "original": "/workspace/qa1002-0f0e9328-appstack-paid/runtime/output/wavespeed/ws_9232393db241_0.png",
+          "download": "/workspace/qa1002-0f0e9328-appstack-paid/downloads/final-2-three-quarter.png",
+          "sha256": "d9c57a85620c63ae88a36b22c69d80ea32b5cf2469eb903a939d5126e017def1",
+          "bytes": 2945026,
+          "ref": {
+            "filename": "ws_9232393db241_0.png",
+            "subfolder": "wavespeed",
+            "type": "output",
+            "metadata": {
+              "width": 2048,
+              "height": 2048
+            }
+          },
+          "pixels": {
+            "width": 2048,
+            "height": 2048,
+            "format": "PNG"
+          }
+        }
+      ],
+      "delivered": true,
+      "delivered_shape": "/api/view?filename=ws_9232393db241_0.png&type=output&subfolder=wavespeed",
+      "balance_after": {
+        "ok": true,
+        "usd": 20.847608,
+        "at": "2026-11-17 00:33:11 +0800"
+      },
+      "balance_delta_from_start": 0.2187,
+      "balance_delta_note": "shared WaveSpeed balance delta is not exclusive to this QA unless proved"
+    },
+    {
+      "label": "final_3",
+      "stage": "final",
+      "panel": "3",
+      "at": "2026-11-17 00:33:11 +0800",
+      "prepare": {
+        "width": 2048,
+        "height": 2048,
+        "ratio": "1:1",
+        "n_refs": 2,
+        "refs": [
+          "/api/view?filename=ma_subject_691.png&type=input",
+          "/api/view?filename=ws_47890f21db90_0.png&type=output&subfolder=wavespeed"
+        ],
+        "size_lock": true,
+        "strict_ratio": "1:1",
+        "plan_subject": "matte gray over-ear headphones in the supplied front-view reference: cushioned oval earcups, padded headband, slim yokes, no visible logo or extra controls invented",
+        "key": "[REDACTED]",
+        "prompt_has_panel_name": true
+      },
+      "quote": {
+        "model": "google/nano-banana-2.1/edit",
+        "price": 0.0576,
+        "source": "quote",
+        "reason": "cache",
+        "priced": {
+          "ratio": "1:1",
+          "width": 2048,
+          "height": 2048,
+          "resolution": null
+        }
+      },
+      "budget_check": {
+        "already_quoted_spend": 0.2187,
+        "this": 0.0576,
+        "later_reserved": 0,
+        "total_if": 0.2763
+      },
+      "reserved": true,
+      "submit": {
+        "prompt_id": "ws:69d2d600171f4169b0b240a4a1fb6713",
+        "task": "69d2d600171f4169b0b240a4a1fb6713",
+        "confirmed": false,
+        "quoted_usd": 0.0576
+      },
+      "poll": {
+        "status": "completed",
+        "generation_succeeded": true,
+        "requested_size": {
+          "width": 2048,
+          "height": 2048
+        },
+        "provider_output": {
+          "width": 2048,
+          "height": 2048
+        },
+        "delivered_size": {
+          "width": 2048,
+          "height": 2048
+        },
+        "size_check": {
+          "match": true,
+          "mode": "exact"
+        },
+        "size_notice": null,
+        "model": "google/nano-banana-2.1/edit",
+        "n_outputs": 1,
+        "messages": []
+      },
+      "files": [
+        {
+          "label": "final_3",
+          "index": 0,
+          "original": "/workspace/qa1002-0f0e9328-appstack-paid/runtime/output/wavespeed/ws_69d2d600171f_0.png",
+          "download": "/workspace/qa1002-0f0e9328-appstack-paid/downloads/final-3-side.png",
+          "sha256": "09ef97b5c7cb0a13b9eb127448ece43073c4fec3e04318a834fc26b263761a3c",
+          "bytes": 3077821,
+          "ref": {
+            "filename": "ws_69d2d600171f_0.png",
+            "subfolder": "wavespeed",
+            "type": "output",
+            "metadata": {
+              "width": 2048,
+              "height": 2048
+            }
+          },
+          "pixels": {
+            "width": 2048,
+            "height": 2048,
+            "format": "PNG"
+          }
+        }
+      ],
+      "delivered": true,
+      "delivered_shape": "/api/view?filename=ws_69d2d600171f_0.png&type=output&subfolder=wavespeed",
+      "balance_after": {
+        "ok": true,
+        "usd": 20.790008,
+        "at": "2026-11-17 00:34:08 +0800"
+      },
+      "balance_delta_from_start": 0.2763,
+      "balance_delta_note": "shared WaveSpeed balance delta is not exclusive to this QA unless proved"
+    }
+  ],
+  "images": [
+    {
+      "label": "preview",
+      "index": 0,
+      "original": "/workspace/qa1002-0f0e9328-appstack-paid/runtime/output/wavespeed/ws_47890f21db90_0.png",
+      "download": "/workspace/qa1002-0f0e9328-appstack-paid/downloads/preview-9x16-lineart.png",
+      "sha256": "f4ee76543809a66306f5ef554227068c83e8ff4711974263b536c1ff073f798c",
+      "bytes": 3697791,
+      "ref": {
+        "filename": "ws_47890f21db90_0.png",
+        "subfolder": "wavespeed",
+        "type": "output",
+        "metadata": {
+          "width": 1440,
+          "height": 2560
+        }
+      },
+      "pixels": {
+        "width": 1440,
+        "height": 2560,
+        "format": "PNG"
+      }
+    },
+    {
+      "label": "final_1",
+      "index": 0,
+      "original": "/workspace/qa1002-0f0e9328-appstack-paid/runtime/output/wavespeed/ws_926f8a55ce18_0.png",
+      "download": "/workspace/qa1002-0f0e9328-appstack-paid/downloads/final-1-front.png",
+      "sha256": "a72951f85847d69e3e30ba5d92f408cfa02cf960382147bfd2158414181cd2e3",
+      "bytes": 3667003,
+      "ref": {
+        "filename": "ws_926f8a55ce18_0.png",
+        "subfolder": "wavespeed",
+        "type": "output",
+        "metadata": {
+          "width": 2048,
+          "height": 2048
+        }
+      },
+      "pixels": {
+        "width": 2048,
+        "height": 2048,
+        "format": "PNG"
+      }
+    },
+    {
+      "label": "final_2",
+      "index": 0,
+      "original": "/workspace/qa1002-0f0e9328-appstack-paid/runtime/output/wavespeed/ws_9232393db241_0.png",
+      "download": "/workspace/qa1002-0f0e9328-appstack-paid/downloads/final-2-three-quarter.png",
+      "sha256": "d9c57a85620c63ae88a36b22c69d80ea32b5cf2469eb903a939d5126e017def1",
+      "bytes": 2945026,
+      "ref": {
+        "filename": "ws_9232393db241_0.png",
+        "subfolder": "wavespeed",
+        "type": "output",
+        "metadata": {
+          "width": 2048,
+          "height": 2048
+        }
+      },
+      "pixels": {
+        "width": 2048,
+        "height": 2048,
+        "format": "PNG"
+      }
+    },
+    {
+      "label": "final_3",
+      "index": 0,
+      "original": "/workspace/qa1002-0f0e9328-appstack-paid/runtime/output/wavespeed/ws_69d2d600171f_0.png",
+      "download": "/workspace/qa1002-0f0e9328-appstack-paid/downloads/final-3-side.png",
+      "sha256": "09ef97b5c7cb0a13b9eb127448ece43073c4fec3e04318a834fc26b263761a3c",
+      "bytes": 3077821,
+      "ref": {
+        "filename": "ws_69d2d600171f_0.png",
+        "subfolder": "wavespeed",
+        "type": "output",
+        "metadata": {
+          "width": 2048,
+          "height": 2048
+        }
+      },
+      "pixels": {
+        "width": 2048,
+        "height": 2048,
+        "format": "PNG"
+      }
+    }
+  ],
+  "errors": [],
+  "stopped": null,
+  "fixture": {
+    "path": "/workspace/qa1002-0f0e9328-appstack-paid/runtime/input/ma_subject_691.png",
+    "sha256": "f92f6c3eb265a1421003a4682d21c3e472450eb084ef027ab0290b6e2d550b5e",
+    "match": true
+  },
+  "key": "[REDACTED]",
+  "balance_before": {
+    "ok": true,
+    "usd": 21.066308,
+    "at": "2026-11-17 00:29:41 +0800"
+  },
+  "catalog": {
+    "ok": true,
+    "n_models": 1154
+  },
+  "scripted_plan": {
+    "subject": "matte gray over-ear headphones in the supplied front-view reference: cushioned oval earcups, padded headband, slim yokes, no visible logo or extra controls invented",
+    "purpose": "商品详情页，纯白无缝背景 / product detail page on a seamless pure-white background",
+    "panels": [
+      {
+        "id": "1",
+        "name": "正面全景",
+        "description": "front-on full product, both earcups and the padded headband symmetrically visible, exact gray materials, pure white seamless background"
+      },
+      {
+        "id": "2",
+        "name": "四分之三全景",
+        "description": "three-quarter view of the same headphones showing earcup depth, yoke, and headband curve, identity unchanged, white seamless"
+      },
+      {
+        "id": "3",
+        "name": "90°侧面轮廓",
+        "description": "strict 90-degree side profile of one earcup shell and headband arc, silhouette accurate to the reference, white seamless"
+      },
+      {
+        "id": "4",
+        "name": "耳罩内衬特写",
+        "description": "close-up of the visible cushion/lining texture inside an earcup, do not invent hidden electronics, white seamless"
+      },
+      {
+        "id": "5",
+        "name": "外壳表面特写",
+        "description": "outer earcup shell and matte surface finish close-up matching the reference plastic, white seamless"
+      },
+      {
+        "id": "6",
+        "name": "后侧连接",
+        "description": "rear three-quarter view showing how the headband meets the yokes, same product, white seamless"
+      },
+      {
+        "id": "7",
+        "name": "顶部头梁",
+        "description": "top-down view of the headband arc and spacing between cups, proportions from the reference, white seamless"
+      },
+      {
+        "id": "8",
+        "name": "调节连接处",
+        "description": "close-up of the headband-to-cup joint only as visible in the reference, do not invent sliders or buttons, white seamless"
+      },
+      {
+        "id": "9",
+        "name": "低角度体积",
+        "description": "low product angle emphasizing earcup volume and the curve of the headband, same gray headphones, white seamless"
+      }
+    ]
+  },
+  "testclient": {
+    "used": true,
+    "kind": "aiohttp.TestClient/TestServer in-process",
+    "host": "127.0.0.1",
+    "port": 40531,
+    "note": "ephemeral loopback test server, not a browser alternate route, not port 8944"
+  },
+  "composition_card_labels": [
+    [
+      "1",
+      "1 正面全景",
+      "front-on full product, both earcups and the padded headband symmetrically visible, exact gray materials, pure white seamless background"
+    ],
+    [
+      "2",
+      "2 四分之三全景",
+      "three-quarter view of the same headphones showing earcup depth, yoke, and headband curve, identity unchanged, white seamless"
+    ],
+    [
+      "3",
+      "3 90°侧面轮廓",
+      "strict 90-degree side profile of one earcup shell and headband arc, silhouette accurate to the reference, white seamless"
+    ],
+    [
+      "4",
+      "4 耳罩内衬特写",
+      "close-up of the visible cushion/lining texture inside an earcup, do not invent hidden electronics, white seamless"
+    ],
+    [
+      "5",
+      "5 外壳表面特写",
+      "outer earcup shell and matte surface finish close-up matching the reference plastic, white seamless"
+    ],
+    [
+      "6",
+      "6 后侧连接",
+      "rear three-quarter view showing how the headband meets the yokes, same product, white seamless"
+    ],
+    [
+      "7",
+      "7 顶部头梁",
+      "top-down view of the headband arc and spacing between cups, proportions from the reference, white seamless"
+    ],
+    [
+      "8",
+      "8 调节连接处",
+      "close-up of the headband-to-cup joint only as visible in the reference, do not invent sliders or buttons, white seamless"
+    ],
+    [
+      "9",
+      "9 低角度体积",
+      "low product angle emphasizing earcup volume and the curve of the headband, same gray headphones, white seamless"
+    ]
+  ],
+  "completed": true,
+  "image_submits": 4,
+  "quoted_spend_usd": 0.2763,
+  "balance_after": {
+    "ok": true,
+    "usd": 20.790008,
+    "at": "2026-11-17 00:34:10 +0800"
+  },
+  "shared_balance_delta_usd": 0.2763,
+  "shared_balance_delta_note": "shared WaveSpeed balance delta is not exclusive to this QA unless proved",
+  "http": {
+    "allowed": 135,
+    "blocked": 0
+  },
+  "finished_at": "2026-11-17 00:34:10 +0800"
+}

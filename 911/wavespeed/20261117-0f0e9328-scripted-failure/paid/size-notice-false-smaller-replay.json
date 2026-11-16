@@ -1,0 +1,70 @@
+{
+  "replay": "local $0 skill_size.audit_file on saved preview PNG; no network",
+  "file": "/workspace/qa1002-0f0e9328-appstack-paid/downloads/preview-9x16-lineart.png",
+  "requested": {
+    "width": 1152,
+    "height": 2048
+  },
+  "measured": {
+    "width": 1440,
+    "height": 2560
+  },
+  "area_cmp": {
+    "requested_px": 2359296,
+    "delivered_px": 3686400,
+    "delivered_is_larger": true,
+    "width_larger": true,
+    "height_larger": true,
+    "long_edge_requested": 2048,
+    "long_edge_delivered": 2560
+  },
+  "exact_audit": {
+    "match": false,
+    "mode": null,
+    "requested": {
+      "width": 1152,
+      "height": 2048
+    },
+    "provider_output": {
+      "width": 1440,
+      "height": 2560
+    },
+    "delivered": {
+      "width": 1440,
+      "height": 2560
+    },
+    "error": "出图尺寸低于预期（实际 1440×2560），已按原图交付。 / Output is smaller than expected (1440×2560). Delivered as generated.",
+    "notice": {
+      "kind": "size",
+      "zh": "出图尺寸低于预期（实际 1440×2560），已按原图交付。",
+      "en": "Output is smaller than expected (1440×2560). Delivered as generated."
+    }
+  },
+  "ratio_audit_if_mode_were_ratio": {
+    "match": true,
+    "mode": "ratio",
+    "requested": {
+      "width": 1152,
+      "height": 2048
+    },
+    "provider_output": {
+      "width": 1440,
+      "height": 2560
+    },
+    "delivered": {
+      "width": 1440,
+      "height": 2560
+    },
+    "error": null,
+    "notice": null,
+    "ratio_error_pct": 0.0
+  },
+  "ratio_ok": true,
+  "ratio_error_pct": 0.0,
+  "hardcoded_notice": {
+    "kind": "size",
+    "zh": "出图尺寸低于预期（实际 1440×2560），已按原图交付。",
+    "en": "Output is smaller than expected (1440×2560). Delivered as generated."
+  },
+  "verdict": "FALSE 'smaller' notice: exact mode mismatch is real (1440x2560 != 1152x2048), but both edges and pixel area are larger; size_notice() ignores requested vs provider comparison and always says 低于预期 / smaller than expected. If size_lock_mode=ratio had been set, ratio_ok would pass (0% ratio error, long edge 2560>=2048)."
+}

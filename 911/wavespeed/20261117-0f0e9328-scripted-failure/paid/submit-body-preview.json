@@ -1,0 +1,42 @@
+{
+  "label": "preview",
+  "app_params": {
+    "width": 1152,
+    "height": 2048,
+    "ratio": "9:16",
+    "n_refs": 1,
+    "refs": [
+      "/api/view?filename=ma_subject_691.png&type=input"
+    ],
+    "size_lock": true,
+    "strict_ratio": "9:16",
+    "plan_subject": "matte gray over-ear headphones in the supplied front-view reference: cushioned oval earcups, padded headband, slim yokes, no visible logo or extra controls invented",
+    "key": "[REDACTED]"
+  },
+  "quote": {
+    "model": "openai/gpt-image-2.6-flare/edit",
+    "price": 0.1035,
+    "source": "quote",
+    "reason": "live",
+    "priced": {
+      "ratio": "9:16",
+      "width": 1152,
+      "height": 2048,
+      "resolution": "2k"
+    }
+  },
+  "wavespeed_inputs_redacted": {
+    "feature": "image_edit",
+    "model": "openai/gpt-image-2.6-flare/edit",
+    "prompt": "User description (preserve; empty means image-only, use the attached subject without inventing a brief):\n商品详情页，纯白无缝背景\nReference source: single_front; other scenario: . Final specification: 2048x2048, ratio 1:1; exact user pixels=False. This stage: 1152x2048, ratio 9:16.\nPreserve subject identity, material, proportions, controls and background requirements.\nFrozen composition planning context: subject=matte gray over-ear headphones in the supplied front-view reference: cushioned oval earcups, padded headband, slim yokes, no visible logo or extra controls invented; purpose=商品详情页，纯白无缝背景 / product detail page on a seamless pure-white background.\nProduce ONE lineart preview image: a numbered 3x3 nine-panel composition grid, labels 1..9. Not final photographs.\n1: 正面全景 — front-on full product, both earcups and the padded headband symmetrically visible, exact gray materials, pure white seamless background\n2: 四分之三全景 — three-quarter view of the same headphones showing earcup depth, yoke, and headband curve, identity unchanged, white seamless\n3: 90°侧面轮廓 — strict 90-degree side profile of one earcup shell and headband arc, silhouette accurate to the reference, white seamless\n4: 耳罩内衬特写 — close-up of the visible cushion/lining texture inside an earcup, do not invent hidden electronics, white seamless\n5: 外壳表面特写 — outer earcup shell and matte surface finish close-up matching the reference plastic, white seamless\n6: 后侧连接 — rear three-quarter view showing how the headband meets the yokes, same product, white seamless\n7: 顶部头梁 — top-down view of the headband arc and spacing between cups, proportions from the reference, white seamless\n8: 调节连接处 — close-up of the headband-to-cup joint only as visible in the reference, do not invent sliders or buttons, white seamless\n9: 低角度体积 — low product angle emphasizing earcup volume and the curve of the headband, same gray headphones, white seamless\nUse exactly this panel numbering and composition plan; do not substitute generic views.",
+    "images": [
+      "/api/view?filename=ma_subject_691.png&type=input"
+    ],
+    "width": 1152,
+    "height": 2048,
+    "size_lock": true,
+    "user_ratio": "9:16",
+    "resolution": "2k"
+  },
+  "note": "images are local /api/view refs; no secrets"
+}

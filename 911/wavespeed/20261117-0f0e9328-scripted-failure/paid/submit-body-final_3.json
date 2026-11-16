@@ -1,0 +1,44 @@
+{
+  "label": "final_3",
+  "app_params": {
+    "width": 2048,
+    "height": 2048,
+    "ratio": "1:1",
+    "n_refs": 2,
+    "refs": [
+      "/api/view?filename=ma_subject_691.png&type=input",
+      "/api/view?filename=ws_47890f21db90_0.png&type=output&subfolder=wavespeed"
+    ],
+    "size_lock": true,
+    "strict_ratio": "1:1",
+    "plan_subject": "matte gray over-ear headphones in the supplied front-view reference: cushioned oval earcups, padded headband, slim yokes, no visible logo or extra controls invented",
+    "key": "[REDACTED]",
+    "prompt_has_panel_name": true
+  },
+  "quote": {
+    "model": "google/nano-banana-2.1/edit",
+    "price": 0.0576,
+    "source": "quote",
+    "reason": "cache",
+    "priced": {
+      "ratio": "1:1",
+      "width": 2048,
+      "height": 2048,
+      "resolution": null
+    }
+  },
+  "wavespeed_inputs_redacted": {
+    "feature": "image_edit",
+    "model": "google/nano-banana-2.1/edit",
+    "prompt": "User description (preserve; empty means image-only, use the attached subject without inventing a brief):\n商品详情页，纯白无缝背景\nReference source: single_front; other scenario: . Final specification: 2048x2048, ratio 1:1; exact user pixels=False. This stage: 2048x2048, ratio 1:1.\nPreserve subject identity, material, proportions, controls and background requirements.\nFrozen composition planning context: subject=matte gray over-ear headphones in the supplied front-view reference: cushioned oval earcups, padded headband, slim yokes, no visible logo or extra controls invented; purpose=商品详情页，纯白无缝背景 / product detail page on a seamless pure-white background.\nProduce ONE independent finished image, composition 3: 90°侧面轮廓 — strict 90-degree side profile of one earcup shell and headband arc, silhouette accurate to the reference, white seamless. Match that exact numbered panel in the delivered preview. No grid, panel numbers or collage.",
+    "images": [
+      "/api/view?filename=ma_subject_691.png&type=input",
+      "/api/view?filename=ws_47890f21db90_0.png&type=output&subfolder=wavespeed"
+    ],
+    "width": 2048,
+    "height": 2048,
+    "size_lock": true,
+    "user_ratio": "1:1"
+  },
+  "note": "images are local /api/view refs; no secrets"
+}

@@ -1,0 +1,60 @@
+{
+  "kind": "HOLD",
+  "at": "2026-11-17 00:39:57 +0800",
+  "zone": "Asia/Shanghai (UTC+8)",
+  "not_default_agent": true,
+  "execution_mode": "SCRIPTED_TOOL_ONLY_NOT_DEFAULT_AGENT",
+  "llm_calls": 0,
+  "no_retry": true,
+  "existing_tasks_unchanged": [
+    "47890f21db9045429e6a958a63bae52b",
+    "926f8a55ce184a71b2bc8f95d94670a7",
+    "9232393db2414c0596c7f5bf16dba699",
+    "69d2d600171f4169b0b240a4a1fb6713"
+  ],
+  "parent_contact": {
+    "path": "/workspace/qa1002-0f0e9328-appstack-paid/paid-effects-left-right-contact.png",
+    "sha256": "2592e42356108433d41154409dc94d2db14405528cbf790c27466d1f941920b3",
+    "pixels": {
+      "width": 1000,
+      "height": 1560
+    },
+    "mtime": "2026-11-17 00:37:32 +0800",
+    "layout": "2x3: left Lovart front/three-quarter/side, right ComfyArt WaveSpeed scripted-tool finals"
+  },
+  "findings": [
+    {
+      "id": "preview-not-lineart",
+      "hold": true,
+      "detail": "Delivered preview is shaded photographic product renders, not the requested lineart. Prompt in submit-body-preview.json (from frozen multi_angle.py:426) explicitly: 'Produce ONE lineart preview image: a numbered 3x3 nine-panel composition grid, labels 1..9. Not final photographs.'",
+      "prompt_source": "/workspace/qa1002-0f0e9328-appstack-paid/paid/submit-body-preview.json",
+      "image": "/workspace/qa1002-0f0e9328-appstack-paid/downloads/preview-9x16-lineart.png"
+    },
+    {
+      "id": "panel-7-not-top-down",
+      "hold": true,
+      "detail": "Panel 7 requested top-down ('7: 顶部头梁 — top-down view of the headband arc and spacing between cups...') in the same submit body; parent review: output visually repeats a front view rather than top-down."
+    },
+    {
+      "id": "finals-identity-and-lovart-effect-not-pass",
+      "hold": true,
+      "detail": "Three finals broadly follow front / three-quarter / side, but reference identity fidelity and Lovart effect comparison are not PASS (yokes/cups differ visibly). Contact sheet used for L/R comparison. This does not claim a Lovart L/R PASS or FAIL beyond the parent's HOLD."
+    }
+  ],
+  "size_notice_false_smaller": {
+    "verified": true,
+    "replay": "/workspace/qa1002-0f0e9328-appstack-paid/paid/size-notice-false-smaller-replay.json",
+    "requested": [
+      1152,
+      2048
+    ],
+    "delivered": [
+      1440,
+      2560
+    ],
+    "delivered_larger_on_both_edges_and_area": true,
+    "recorded_mode": "exact",
+    "ratio_would_match": true,
+    "ratio_error_pct": 0.0
+  }
+}
