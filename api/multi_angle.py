@@ -225,7 +225,8 @@ def normalize_card(args: dict) -> dict:
         refs = _attached_refs(chat_id)
         aspect = _question(ASPECT, "详情页主画幅用哪个？" if zh else "Which aspect should the detail-page hero use?", [
             {"id": key, "label": z if zh else e} for key, z, e in ASPECT_OPTIONS],
-            allow_other=False)
+            allow_other=True,
+            placeholder="自定义比例或像素，例如 5:4 或 1200x960" if zh else "Custom aspect or pixels, e.g. 5:4 or 1200x960")
         questions = [aspect]
         if not refs:
             questions.insert(0, _question(

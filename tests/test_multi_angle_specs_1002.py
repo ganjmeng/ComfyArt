@@ -74,7 +74,7 @@ def test_source_other_text_is_kept_in_prompt_state_and_not_replaced_by_model(run
     source_q = next((q for q in root["questions"] if q["id"] == ma.SOURCE), None)
     if source_q is not None:
         assert source_q["allow_other"] is True
-    assert all(not q["allow_other"] for q in root["questions"] if q["id"] == ma.ASPECT)
+    assert all(q["allow_other"] for q in root["questions"] if q["id"] == ma.ASPECT)
     root["answers"][ma.SOURCE] = {"selected": [], "other_text": text}
     args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "prompt": "model invented source"})
     assert blocked is None and text not in args["prompt"]  # raw source is frozen, final-only
