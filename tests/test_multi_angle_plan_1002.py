@@ -60,7 +60,8 @@ def test_subject_specific_plan_is_only_mapping_for_lineart_card_and_selected_fin
         final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": number})
         assert blocked is None
         chosen = plan["panels"][int(number) - 1]
-        assert f"composition {number}: {chosen['name']} — {chosen['description']}" in final["prompt"]
+        assert f"composition {number}: {chosen['name']} — reproduce numbered cell {number}" in final["prompt"]
+        assert chosen["geometry"] not in final["prompt"] and chosen["description"] not in final["prompt"]
         assert final["ratio"] == "1:1"
         assert final["refs"][-1] == "preview-shape"
     assert sent == []
@@ -283,10 +284,10 @@ def test_paid_failure_final_prompt_preserves_selected_panel_handedness(run):
     assert blocked is None
     prompt = final["prompt"]
     chosen = HEADPHONES_PLAN["panels"][1]
-    assert f"composition 2: {chosen['name']} — {chosen['description']}" in prompt
+    assert f"composition 2: {chosen['name']} — reproduce numbered cell 2 of the delivered preview" in prompt
     assert "Match that exact numbered panel in the delivered preview" in prompt
     assert FINAL_ORIENTATION in prompt and FINAL_NO_MIRROR in prompt
-    assert "Infer orientation only from the selected frozen panel" in prompt
+    assert "Infer orientation only from the delivered preview cell" in prompt
     assert "do not invent a preferred facing" in prompt
     assert "LINEART ONLY" not in prompt
     assert "facing left" not in prompt.lower()
@@ -332,7 +333,8 @@ def test_chinese_camera_and_material_clauses_follow_stage_priority(run):
     choose(rows, ("1", "8"))
     final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": "1"})
     assert blocked is None
-    assert "亚光灰材质仅作成品说明" in final["prompt"] and "正面机位" in final["prompt"]
+    assert "亚光灰材质仅作成品说明" in final["prompt"]
+    assert "正面机位" not in final["prompt"]  # camera comes only from the delivered cell (#1003)
     assert PREVIEW_MATERIAL_DEFER_ZH not in final["prompt"]
     assert FINAL_ORIENTATION in final["prompt"]
     wall, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": "8"})
@@ -385,7 +387,10 @@ def test_preview_prompt_does_not_overclaim_projection_and_keeps_unprojected_fiel
     for number in ("2", "3"):
         final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": number})
         assert blocked is None
-        assert plan["panels"][int(number)-1]["description"] in final["prompt"]
+        chosen = plan["panels"][int(number)-1]
+        # #1003: mixed camera prose is not injected into finals; appearance travels via its own field.
+        assert chosen["description"] not in final["prompt"]
+        assert chosen["appearance"] in final["prompt"]
         assert "glossy red leather" in final["prompt"]
         assert "红色皮革外观" in final["prompt"]
         assert "Restore the original subject's material, color and finish" in final["prompt"]
@@ -528,3 +533,25 @@ async def test_reviewed_camera_plan_reaches_canvas_without_network(run, tmp_path
         out.mkdir(parents=True, exist_ok=True)
         (out / "assembled-canvas-request-NO-NETWORK.json").write_text(json.dumps(capture, ensure_ascii=False, indent=2))
         (out / "assembled-canvas-prompt-NO-NETWORK.txt").write_text(dispatched["prompt"])
+
+
+def test_final_prompt_uses_delivered_cell_as_only_left_right_authority_1003(run):
+    """#1003 paid preview 76db53c0: cell 2 was drawn mirrored vs plan text. Product ruled the preview
+    PASS; the final must follow the delivered cell, so conflicting plan camera text is not injected."""
+    rows, _ = run
+    setup(rows)
+    preview = prepare(HEADPHONES_PLAN)
+    deliver(preview["_multi_angle"])
+    choose(rows, ("1", "2", "3"))
+    for number in ("1", "2", "3"):
+        final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": number})
+        assert blocked is None
+        prompt = final["prompt"]
+        chosen = HEADPHONES_PLAN["panels"][int(number) - 1]
+        assert chosen["geometry"] not in prompt
+        assert chosen["description"] not in prompt
+        assert "viewer's right" not in prompt and "viewer's left" not in prompt
+        assert "subject's left" not in prompt and "subject's right" not in prompt
+        assert "come ONLY from that delivered cell" in prompt
+        assert FINAL_ORIENTATION in prompt and FINAL_NO_MIRROR in prompt
+        assert final["ref_modes"][-1] == "composition"  # delivered preview attached as the camera authority

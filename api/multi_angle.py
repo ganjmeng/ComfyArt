@@ -598,12 +598,18 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
     else:
         chosen = next(p for p in plan["panels"] if p["id"] == panel)
         brief += "Restore the original subject's material, color and finish from the original reference/brief; use the lineart only for composition.\n"
+        # #1003 product 22:3x ruling: the delivered preview cell is the ONLY authority for
+        # left/right. The plan's camera prose (description/geometry) may disagree with what was
+        # actually drawn and was the source of reversed finals, so it is structurally not injected.
         brief += (
-            f"Produce ONE independent finished image, composition {panel}: {chosen['name']} — {chosen['description']}. Frozen geometry: {chosen['geometry']}. Panel appearance: {chosen['appearance']}. "
+            f"Produce ONE independent finished image, composition {panel}: {chosen['name']} — reproduce numbered cell {panel} of the delivered preview (attached composition reference). "
+            f"Panel appearance: {chosen['appearance']}. "
             "Match that exact numbered panel in the delivered preview. "
+            "Camera side, viewing direction, elevation, framing, screen-left/right placement, which parts are near or far, and handedness come ONLY from that delivered cell; "
+            "the frozen plan's camera wording is intentionally not repeated here. "
             "Preserve that selected panel's screen-left/right orientation, camera direction and handedness; "
             "do not mirror, horizontally flip, or reverse the composition. "
-            "Infer orientation only from the selected frozen panel and its delivered preview cell; do not invent a preferred facing. "
+            "Infer orientation only from the delivered preview cell; do not invent a preferred facing. "
             "No grid, panel numbers or collage.")
     args["prompt"] = brief
     args["_multi_angle"] = {"key": key, "refs": list(refs), "description": description,
