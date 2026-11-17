@@ -135,11 +135,11 @@ def test_other_field_two_digit_numbers_fail_closed(run, other, selected):
 
 
 @pytest.mark.parametrize("aspect,expected", [
-    ("1:1", (2048, 2048, "1:1")),
-    ("3:4", (1536, 2048, "3:4")),
-    ("16:9", (2048, 1152, "16:9")),
+    ("1:1", (1152, 2048, "9:16")),
+    ("3:4", (1152, 2048, "9:16")),
+    ("16:9", (1152, 2048, "9:16")),
 ])
-def test_preview_without_explicit_ratio_follows_selected_aspect(run, aspect, expected):
+def test_preview_without_explicit_ratio_never_inherits_final_aspect(run, aspect, expected):
     rows, _ = run
     setup(rows, aspect)
     args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview"})

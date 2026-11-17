@@ -342,3 +342,43 @@ Effect HOLD remains: no new WaveSpeed image, default agent, UI or L/R acceptance
 Production build (tsc noEmit + Vite,3260 modules) passed in1.10s; consistent
 dist committed. Python compilation/whitespace checks passed and the temporary
 node_modules symlink was removed. No new component or migration.
+
+
+## 2026-11-17 camera-only wording revision
+
+One numbered nine-panel generation remains unchanged. Global geometry no longer
+requires reproducing all front-reference-visible surfaces at every camera. Each
+panel specifies camera position/direction, subject pose, visible surfaces and
+occlusions; changing camera does not silently tilt the subject.
+
+The reviewed headphone planning case is separately versioned in
+`tests/fixtures/multi-angle-camera-plan-1002.json`; panel 7 is directly above the
+upright subject, looking vertically down. This is a regression fixture, NOT an
+engine default, a migrated paid snapshot or proof of the real agent's next plan.
+Existing paid task snapshots remain immutable and may not be resubmitted.
+
+`test_reviewed_camera_plan_reaches_canvas_without_network` exercises the real
+canvas relay with `submit_command` mocked; it captures the full assembled canvas
+request, NOT an actual provider outbound record. Effect/default-agent/UI/LR
+acceptance still requires separately authorized fresh verification, pinned SHA,
+actual provider payload/quote comparison and real image review. No guide, mask,
+local edit, collage, 3D or model change is included.
+
+The packaging regression suite pins the entire `bot/skill_output.py` file. Its
+SHA pin is refreshed solely for the reviewed multi-angle planning text; AST
+comparison against the parent confirms `_run_hint_declared` is the only changed
+top-level function. All unrelated portrait/model/self-check pins and tests remain.
+
+
+## Preview/final separation correction (2026-11-17 product ruling)
+
+The setup card `ma_aspect` is the FINAL specification, not a preview answer.
+For a new run without an explicit preview specification, the independent preview
+default is 1152x2048 (9:16); finals retain their answered aspect. Explicit user
+preview ratios/pixels win over this default. Already-frozen preview snapshots
+remain unchanged. Quoting and dispatch use the same resolved stage specification,
+and the existing quote-confirm gate remains mandatory. No paid call is included.
+
+Updated prior fallback tests now lock this independent default rather than the
+withdrawn final-as-preview behavior. Explicit square preview coverage is added;
+final dimensions, exact pixels, replay and routing guards remain exercised.

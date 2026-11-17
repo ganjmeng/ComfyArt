@@ -84,7 +84,8 @@ def test_attached_reference_skips_source_question_and_infers_single_front(run, m
     assert blocked is None
     assert args["_multi_angle"]["source"] == "single_front"
     assert args["refs"] == [REF]
-    assert args["ratio"] == "3:4"
+    assert args["ratio"] == "9:16"
+    assert args["_multi_angle"]["setup_snapshot"]["final"]["ratio"] == "3:4"
 
 
 def test_multiple_attached_references_infer_multi_angle_source(run, monkeypatch):
@@ -118,13 +119,13 @@ def test_legacy_description_source_and_new_no_photo_source_do_not_require_refs(r
         assert args["_multi_angle"]["source"] == source
 
 
-def test_preview_honors_selected_aspect_not_agent_default_ratio(run):
+def test_preview_is_independent_of_final_aspect_and_agent_ratio(run):
     rows, _ = run
     setup(rows, "3:4")
     args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
                                 "multi_angle_stage": "preview", "ratio": "1:1"})
     assert blocked is None
-    assert (args["width"], args["height"], args["ratio"]) == (1536, 2048, "3:4")
+    assert (args["width"], args["height"], args["ratio"]) == (1152, 2048, "9:16")
     assert "ONE lineart preview" in args["prompt"] and "3x3 nine-panel" in args["prompt"]
 
 
@@ -145,7 +146,7 @@ async def test_generate_image_relay_is_blocked_without_confirmed_quote(run):
         "multi_angle_stage": "preview", "ratio": "1:1",
     })
     assert allowed.get("submitted") is True and sent
-    assert (sent[0][1]["width"], sent[0][1]["height"], sent[0][1]["ratio"]) == (1536, 2048, "3:4")
+    assert (sent[0][1]["width"], sent[0][1]["height"], sent[0][1]["ratio"]) == (1152, 2048, "9:16")
 
 
 @pytest.mark.asyncio
@@ -158,7 +159,7 @@ async def test_quote_route_does_not_require_confirmation(run, monkeypatch):
         {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview"},
         catalog={},
     )
-    assert model == "mock" and (inputs["width"], inputs["height"], inputs["ratio"]) == (1536, 2048, "3:4")
+    assert model == "mock" and (inputs["width"], inputs["height"], inputs["ratio"]) == (1152, 2048, "9:16")
     assert sent == []
     assert ma.LEDGER not in (ma._root("chat-ma")[1] or {})
 

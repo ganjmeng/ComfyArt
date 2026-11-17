@@ -469,3 +469,62 @@ async def test_submitted_legacy_blocks_quote_relay_and_stale_reservation_without
     blocked = ma.reserve(args["_multi_angle"])
     assert blocked["submitted"] is False
     assert not sent and rows == before
+
+
+@pytest.mark.parametrize("plan", PLANS)
+def test_camera_visibility_constraints_are_generic_and_keep_one_grid(run, plan):
+    rows, _ = run
+    rows[0]["blocks"][1]["text"] = plan["purpose"]
+    setup(rows)
+    args = prepare(plan)
+    prompt = args["prompt"]
+    assert "visible structures.\n" not in prompt
+    assert "occlude surfaces that camera cannot see" in prompt
+    assert "Change the camera, not the subject pose" in prompt
+    assert "Keep each panel's instructions local to that panel" in prompt
+    assert "ONE lineart preview image" in prompt
+    assert "numbered 3x3 nine-panel" in prompt
+    assert args["count"] == args["n"] == 1
+    assert args["_multi_angle"]["composition_plan"] == plan
+    for panel in plan["panels"]:
+        assert f"{panel['id']}: {panel['geometry']}" in prompt
+
+def test_multi_angle_planning_hint_requires_camera_and_occlusion_contract():
+    from ComfyArt.bot import skill_output
+    hint = skill_output.run_hint(ma.SKILL)
+    assert "camera position relative to the subject" in hint
+    assert "looking vertically down" in hint
+    assert "before freezing the plan" in hint
+
+
+@pytest.mark.asyncio
+async def test_reviewed_camera_plan_reaches_canvas_without_network(run, tmp_path):
+    import json
+    import os
+    from pathlib import Path
+    plan = json.loads((Path(__file__).parent / "fixtures" / "multi-angle-camera-plan-1002.json").read_text())
+    frozen = copy.deepcopy(plan)
+    rows, sent = run
+    setup(rows)
+    from test_multi_angle_stages_911 import confirm_quote
+    confirm_quote(rows)  # new upstream consent gate; mocked fixture only
+    args = {"skill": ma.SKILL, "multi_angle_stage": "preview", "ratio": "9:16", "composition_plan": plan}
+    result = await canvas._relay("generate_image")(args)
+    assert result and len(sent) == 1
+    dispatched = sent[0][1]
+    assert dispatched["count"] == 1
+    for panel in plan["panels"]:
+        assert f"{panel['id']}: {panel['geometry']}" in dispatched["prompt"]
+    assert "looking vertically downward at 90 degrees" in dispatched["prompt"]
+    assert "occlude surfaces that camera cannot see" in dispatched["prompt"]
+    assert plan == frozen
+    await canvas._relay("generate_image")(args)
+    assert len(sent) == 1  # same new plan is not resubmitted
+    capture = {"evidence_kind": "offline canvas dispatch; submit_command mocked; no provider request",
+               "action": sent[0][0], "params": dispatched}
+    (tmp_path / "assembled-canvas-request.json").write_text(json.dumps(capture, ensure_ascii=False, indent=2))
+    if os.environ.get("COMFYART_OFFLINE_CAPTURE_DIR"):
+        out = Path(os.environ["COMFYART_OFFLINE_CAPTURE_DIR"])
+        out.mkdir(parents=True, exist_ok=True)
+        (out / "assembled-canvas-request-NO-NETWORK.json").write_text(json.dumps(capture, ensure_ascii=False, indent=2))
+        (out / "assembled-canvas-prompt-NO-NETWORK.txt").write_text(dispatched["prompt"])
