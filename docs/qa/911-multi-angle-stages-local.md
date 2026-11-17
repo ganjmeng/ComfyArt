@@ -368,3 +368,17 @@ The packaging regression suite pins the entire `bot/skill_output.py` file. Its
 SHA pin is refreshed solely for the reviewed multi-angle planning text; AST
 comparison against the parent confirms `_run_hint_declared` is the only changed
 top-level function. All unrelated portrait/model/self-check pins and tests remain.
+
+
+## Preview/final separation correction (2026-11-17 product ruling)
+
+The setup card `ma_aspect` is the FINAL specification, not a preview answer.
+For a new run without an explicit preview specification, the independent preview
+default is 1152x2048 (9:16); finals retain their answered aspect. Explicit user
+preview ratios/pixels win over this default. Already-frozen preview snapshots
+remain unchanged. Quoting and dispatch use the same resolved stage specification,
+and the existing quote-confirm gate remains mandatory. No paid call is included.
+
+Updated prior fallback tests now lock this independent default rather than the
+withdrawn final-as-preview behavior. Explicit square preview coverage is added;
+final dimensions, exact pixels, replay and routing guards remain exercised.

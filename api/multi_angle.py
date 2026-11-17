@@ -464,19 +464,16 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
         if not card_spec:
             raise ValueError("请选择比例或在其他栏输入比例/像素 / Select an aspect or enter aspect/pixels in Other.")
         final_spec = _complete_spec(_merge_specs(user_final, card_spec))
-        # The setup aspect controls FINALS. An explicit user preview request wins;
-        # otherwise the model may choose the nine-grid layout ratio before dispatch.
-        # Freeze that resolved choice on reservation, not on a pure price quote.
+        # The setup card controls FINALS only. Explicit user preview specs win;
+        # already-submitted preview specs remain immutable. Otherwise resolve the
+        # independent nine-grid default, never the final ratio or guessed tool args.
         frozen_preview = (ledger.get("setup_snapshot") or {}).get("preview")
-        # Preview honors the answered final aspect. Agent-supplied ratio/size
-        # must not override it (the 12:01 default path used 1:1 after 3:4).
-        # Only an explicit user preview specification is independent.
         if user_preview:
             preview_spec = _complete_spec(user_preview)
         elif frozen_preview:
             preview_spec = copy.deepcopy(frozen_preview)
         else:
-            preview_spec = _complete_spec({"ratio": final_spec["ratio"]})
+            preview_spec = _complete_spec({"ratio": "9:16"})
         setup_snapshot = {"source": copy.deepcopy(source_answer), "aspect": copy.deepcopy(aspect_answer),
                           "final": final_spec, "preview": preview_spec,
                           "preview_request": copy.deepcopy(user_preview)}
