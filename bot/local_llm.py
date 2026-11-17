@@ -415,11 +415,11 @@ def _step_label(name: str, args: dict, lang: str) -> str:
     if base == "generate_image":
         try:
             from ..api.multi_angle import quote_step_label
+            preview = quote_step_label(args or {}, lang)
+            if preview:
+                return preview
         except ImportError:
-            from ComfyArt.api.multi_angle import quote_step_label
-        preview = quote_step_label(args or {}, lang)
-        if preview:
-            return preview
+            pass
     if base == "skill":
         ref = str(args.get("name") or args.get("id") or "").strip()
         if str(args.get("action") or "").lower() == "read" and ref:
