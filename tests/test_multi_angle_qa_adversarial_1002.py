@@ -148,9 +148,11 @@ def test_preview_without_explicit_ratio_follows_selected_aspect(run, aspect, exp
 
 
 def test_explicit_preview_aspect_still_independent_of_final(run):
+    """User-text preview specs stay independent; agent-supplied ratio does not."""
     rows, _ = run
+    rows[0]["blocks"].append({"type": "text", "text": "preview 9:16"})
     setup(rows, "1:1")
-    args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview", "ratio": "9:16"})
+    args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview", "ratio": "3:4"})
     assert blocked is None
     assert (args["width"], args["height"], args["ratio"]) == (1152, 2048, "9:16")
 

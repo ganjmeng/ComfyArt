@@ -47,3 +47,68 @@ async def test_mutation_span_only_stroke_fails_the_940_lock():
     # Reverting the SVG rule restores the wrong 1.75 stroke despite span=1.5.
     assert got["stroke"] == "1.75px"
     assert got["stroke"] != "1.5px"
+
+
+DARK_CARD = """
+<html data-theme="dark"><head></head>
+<body style="background:#161616">
+<div class="ca-root" data-theme="dark">
+  <div class="ca-chat__dock">
+    <div class="ca-q">
+      <div class="ca-q__prompt">产品参考图怎么提供？</div>
+      <button type="button" class="ca-q__opt">
+        <span class="ca-q__letter">A</span>
+        <span class="ca-q__text">上传多角度产品图</span>
+      </button>
+    </div>
+  </div>
+</div>
+</body></html>
+"""
+
+
+def _parse_rgb(value):
+    inner = value[value.find("(") + 1:value.rfind(")")]
+    parts = [float(p.strip()) for p in inner.split(",")[:3]]
+    return tuple(parts)
+
+
+def _contrast(fg, bg):
+    def lin(c):
+        c = c / 255.0
+        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+    def lum(rgb):
+        r, g, b = rgb
+        return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+    lighter, darker = sorted((lum(fg), lum(bg)), reverse=True)
+    return (lighter + 0.05) / (darker + 0.05)
+
+
+async def test_dock_question_dark_theme_text_is_visible():
+    """Unselected labels and titles must stay readable on the dark docked ask card."""
+    css = "\n".join((ROOT / "src/styles" / name).read_text()
+                     for name in ("base.css", "overlays.css", "shell.css"))
+    async with async_playwright() as p:
+        browser = await p.chromium.launch()
+        try:
+            page = await browser.new_page()
+            await page.set_content(DARK_CARD)
+            await page.add_style_tag(content=css)
+            got = await page.evaluate("""() => {
+                const card = document.querySelector('.ca-q');
+                const prompt = document.querySelector('.ca-q__prompt');
+                const text = document.querySelector('.ca-q__text');
+                const cs = (el) => getComputedStyle(el);
+                return {
+                    bg: cs(card).backgroundColor,
+                    prompt: cs(prompt).color,
+                    text: cs(text).color,
+                };
+            }""")
+        finally:
+            await browser.close()
+    bg, prompt, label = _parse_rgb(got["bg"]), _parse_rgb(got["prompt"]), _parse_rgb(got["text"])
+    assert _contrast(prompt, bg) >= 4.5, (got, _contrast(prompt, bg))
+    assert _contrast(label, bg) >= 4.5, (got, _contrast(label, bg))
+    # Guard the #1003 HOLD: almost-black text on a dark card must not return.
+    assert prompt[0] > 80 and label[0] > 80, got

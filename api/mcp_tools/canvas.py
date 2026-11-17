@@ -245,6 +245,9 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
         if choice.get("auto") and not (multi_meta is not None and multi_meta["stage_spec"]["exact_pixels"]):
             args["auto_model"] = True
     if multi_meta is not None:
+        blocked_quote = multi_angle.require_confirmed_quote(multi_meta)
+        if blocked_quote is not None:
+            return blocked_quote
         replay = multi_angle.reserve(multi_meta)
         if replay is not None:
             return replay

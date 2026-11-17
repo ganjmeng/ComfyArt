@@ -534,6 +534,20 @@ async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
                       approx or source == SOURCE_ESTIMATE, show, choice, None, units, source, reason)
 
 
+def _forces_quote_card(prepared: list[dict]) -> bool:
+    """This skill must always show the existing plan_quote card before a paid generate."""
+    from ..api.multi_angle import SKILL, applies
+    from .skill_output import resolve
+    for step in prepared:
+        if step.get("tool") != "generate_image":
+            continue
+        args = step.get("arguments") if isinstance(step.get("arguments"), dict) else {}
+        named = resolve(args.get("skill")) or str(args.get("skill") or "")
+        if named == SKILL or applies(args):
+            return True
+    return False
+
+
 def _needs_ask(total: float, threshold: float, unknown_price: bool) -> bool:
     """#904: a known 0-credit plan does not ask; an unknown price always does.
 
@@ -614,6 +628,8 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
     # A blocked/refused step has units 0 (it makes no paid call), so it must not force one.
     unknown_price = any(ln.unpriced and ln.units > 0 for ln in lines)
     ask = _needs_ask(total, threshold, unknown_price)
+    if _forces_quote_card(prepared) and any(ln.units > 0 for ln in lines):
+        ask = True
     if len(lines) == 1 and not ask and not lines[0].unpriced:
         # #904: a known 0-credit (or under-line) single call runs as before. A single refusal
         # line keeps the quote object it had before #904 (the line names the reason, #956).

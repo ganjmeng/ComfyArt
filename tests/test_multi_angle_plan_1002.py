@@ -7,7 +7,7 @@ from ComfyArt.api import multi_angle as ma
 from ComfyArt.api import bot_asks
 from ComfyArt.api.mcp_tools import canvas
 from multi_angle_plan_fixture import HEADPHONES_PLAN, PAID_FAILURE_PLAN
-from test_multi_angle_stages_911 import run, setup, choose  # noqa: F401
+from test_multi_angle_stages_911 import run, setup, choose, confirm_quote  # noqa: F401
 
 
 def subject_plan(subject, purpose, details):
@@ -28,7 +28,7 @@ PLANS = [HEADPHONES_PLAN,
 
 
 def prepare(plan):
-    args, blocked = ma.prepare({"skill": ma.SKILL, "ratio": "9:16", "composition_plan": plan})
+    args, blocked = ma.prepare({"skill": ma.SKILL, "composition_plan": plan})
     assert blocked is None, blocked
     return args
 
@@ -145,6 +145,7 @@ def test_reserve_rejects_conflicting_plan_after_other_dispatch_wins(run):
 async def test_actual_relay_persists_plan_before_command_and_strips_tool_only_field(run, monkeypatch):
     rows, _ = run
     setup(rows)
+    confirm_quote(rows)
     calls = []
     async def page(action, args, *a, **kw):
         assert rows[1]["blocks"][0][ma.LEDGER]["composition_plan"] == HEADPHONES_PLAN
@@ -185,6 +186,7 @@ def test_paid_preview_default_uses_ratio_and_minimum_size_not_exact_pixels(run, 
     from PIL import Image
     from ComfyArt.api.skill_size import audit_file
     rows, _ = run
+    rows[0]["blocks"][1]["text"] += "; preview 9:16"
     setup(rows)
     preview = prepare(HEADPHONES_PLAN)
     assert preview["size_lock_mode"] == "ratio"
@@ -215,6 +217,7 @@ def test_explicit_preview_pixels_keep_exact_audit_even_when_larger_file_has_same
 async def test_relay_restores_ratio_audit_after_routing_without_relaxing_explicit_pixels(run):
     rows, sent = run
     setup(rows)
+    confirm_quote(rows)
     result = await canvas._relay("generate_image")({"skill": ma.SKILL, "composition_plan": HEADPHONES_PLAN})
     assert result["ids"] and sent[-1][1]["size_lock_mode"] == "ratio"
 

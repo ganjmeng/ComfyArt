@@ -12,7 +12,7 @@ from multi_angle_plan_fixture import HEADPHONES_PLAN
 
 from ComfyArt.api import multi_angle as ma, wavespeed
 from ComfyArt.api.mcp_tools import canvas
-from test_multi_angle_stages_911 import run, setup, choose  # noqa: F401
+from test_multi_angle_stages_911 import run, setup, choose, confirm_quote  # noqa: F401
 
 
 def add_text(rows, text):
@@ -71,7 +71,10 @@ def test_existing_aspect_other_field_accepts_custom_ratio_or_exact_pixels(run, o
 def test_source_other_text_is_kept_in_prompt_state_and_not_replaced_by_model(run, text):
     rows, _ = run
     root = setup(rows)
-    assert all(q["allow_other"] for q in root["questions"])
+    source_q = next((q for q in root["questions"] if q["id"] == ma.SOURCE), None)
+    if source_q is not None:
+        assert source_q["allow_other"] is True
+    assert all(not q["allow_other"] for q in root["questions"] if q["id"] == ma.ASPECT)
     root["answers"][ma.SOURCE] = {"selected": [], "other_text": text}
     args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "prompt": "model invented source"})
     assert blocked is None and text not in args["prompt"]  # raw source is frozen, final-only
@@ -119,7 +122,7 @@ def test_model_preview_layout_is_allowed_but_model_pixels_do_not_control_final(r
     rows, _ = run
     setup(rows, "1:1")
     args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "width": 333, "height": 999, "ratio": "9:16"})
-    assert blocked is None and (args["width"], args["height"], args["ratio"]) == (1152, 2048, "9:16")
+    assert blocked is None and (args["width"], args["height"], args["ratio"]) == (2048, 2048, "1:1")
     spec = args["_multi_angle"]["stage_spec"]
     assert not spec["exact_pixels"] and spec["default_policy"] == ma.DEFAULT_SIZE_POLICY
     complete_preview(args)
@@ -151,6 +154,7 @@ async def test_exact_handler_and_quote_keep_user_pixels_and_pin_verified_model(r
     rows, sent = run
     add_text(rows, "1200x900; preview 1200x900")
     setup(rows, "4:3")
+    confirm_quote(rows)
     catalog = {"mock-pixels": metadata({"size": {"type": "string", "minimum": 64, "maximum": 4096}})}
     monkeypatch.setattr(wavespeed, "cached_models", lambda: catalog)
     monkeypatch.setattr(canvas, "select_model", lambda *a, **k: {"model": "mock-pixels", "auto": auto, "category": "user", "reason": {"zh": "指定模型", "en": "Named model"}})
@@ -240,27 +244,26 @@ async def test_model_routing_cannot_rewrite_explicit_dimensions(run, monkeypatch
     assert sent == [] and ma.LEDGER not in ma._root("chat-ma")[1]
 
 
-@pytest.mark.parametrize("ratio", ["9:16", "5:4"])
-def test_model_preview_choice_frozen_on_first_dispatch_not_pure_prepare(run, ratio):
+def test_model_preview_choice_frozen_on_first_dispatch_not_pure_prepare(run):
     rows, _ = run
     setup(rows, "1:1")
-    args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "ratio": ratio})
-    assert blocked is None and args["ratio"] == ratio
-    # A quote/preflight is pure and cannot freeze a model layout prematurely.
+    args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "ratio": "9:16"})
+    assert blocked is None and args["ratio"] == "1:1"
+    # Agent-supplied ratio cannot change the answered aspect before or after reserve.
     changed, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "ratio": "4:3"})
-    assert blocked is None and changed["ratio"] == "4:3"
+    assert blocked is None and changed["ratio"] == "1:1"
     ma.reserve(args["_multi_angle"])
     ma.submitted(args["_multi_angle"], {"ids": ["same-preview"], "submitted": True})
     _, replay = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "ratio": "3:4"})
     assert replay["ids"] == ["same-preview"] and replay["multi_angle_replay"]
     ledger = ma._root("chat-ma")[1][ma.LEDGER]
-    assert ledger["setup_snapshot"]["preview"]["ratio"] == ratio
+    assert ledger["setup_snapshot"]["preview"]["ratio"] == "1:1"
     ma.record_wait({"results": [{"id": "same-preview", "status": "done", "placed": True,
                                  "delivered": 1, "shapes": ["preview-shape"]}]})
     choose(rows, ("1",))
     final, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "composition_id": "1", "ratio": "9:16", "width": 999, "height": 333})
     assert blocked is None and (final["width"], final["height"], final["ratio"]) == (2048, 2048, "1:1")
-    assert final["_multi_angle"]["setup_snapshot"]["preview"]["ratio"] == ratio
+    assert final["_multi_angle"]["setup_snapshot"]["preview"]["ratio"] == "1:1"
 
 
 def test_prepare_and_quote_consistent_for_model_preview_and_final_exact_pixels(run, monkeypatch):
@@ -274,7 +277,7 @@ def test_prepare_and_quote_consistent_for_model_preview_and_final_exact_pixels(r
     assert blocked is None and repeated == args
     monkeypatch.setattr(canvas, "select_model", lambda *a, **k: {"model": "mock", "auto": True})
     model, quote = canvas.quote_route("generate_image", raw, catalog={})
-    assert model == "mock" and (quote["width"], quote["height"], quote["ratio"]) == (1152, 2048, "9:16")
+    assert model == "mock" and (quote["width"], quote["height"], quote["ratio"]) == (2048, 1536, "4:3")
     assert ma.LEDGER not in ma._root("chat-ma")[1]
     complete_preview(args)
     choose(rows, ("1",))
@@ -338,6 +341,7 @@ async def test_explicit_user_pixels_survive_skill_pin_and_quote_with_exact_audit
     rows, sent = run
     add_text(rows, "预览1152x2048")
     setup(rows, "1:1")
+    confirm_quote(rows)
     catalog = {"mock-pixels": metadata({"size": {"type": "string", "minimum": 64, "maximum": 4096}})}
     pin = {"model": "mock-pixels", "auto": False, "category": "skill", "skill": ma.SKILL,
            "reason": {"zh": "技能钉", "en": "Skill pin"}}

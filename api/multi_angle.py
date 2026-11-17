@@ -100,7 +100,8 @@ def _messages(chat_id: str) -> list[dict]:
 def _root(chat_id: str) -> tuple[dict | None, dict | None]:
     for row in reversed(_messages(chat_id)):
         for block in reversed(row.get("blocks") or []):
-            if block.get("type") == "ask" and any(q.get("id") == SOURCE for q in block.get("questions") or []):
+            ids = {q.get("id") for q in block.get("questions") or []}
+            if block.get("type") == "ask" and ids.intersection({SOURCE, ASPECT}):
                 return row, block
     return None, None
 
@@ -114,13 +115,82 @@ def applies(args: dict, chat_id: str = "") -> bool:
     return named == SKILL or current == SKILL
 
 
-def _question(qid: str, prompt: str, options: list[dict], *, multi: bool = False, page: int = 1) -> dict:
+# Setup-card copy: zh is Lovart verbatim (product-locked). English is a faithful
+# translation of that meaning, not a claimed official Lovart English original.
+SOURCE_OPTIONS = (
+    ("multiple", "上传多角度产品图", "Upload multi-angle product photos"),
+    ("single_front", "只上传 1 张正面主图", "Upload only 1 front hero image"),
+    ("no_photo", "暂无实拍图，先做产品示意", "No real product photos yet, start with a product concept"),
+)
+# D is the allow_other field, not a fourth selectable id.
+ASPECT_OPTIONS = (
+    ("1:1", "1:1 方图（推荐）", "1:1 square (recommended)"),
+    ("3:4", "3:4 竖图", "3:4 portrait"),
+    ("4:3", "4:3 横图", "4:3 landscape"),
+)
+CARD_ASPECTS = tuple(key for key, _z, _e in ASPECT_OPTIONS)
+SOURCE_IDS = {"single_front", "multiple", "no_photo", "description", "other"}
+TEXT_ONLY_SOURCES = {"no_photo", "description", "other"}
+QUOTE_KINDS = {"plan_quote", "run_approval", "plan_approval"}
+QUOTE_CONFIRM_IDS = {"start", "run", "always"}
+
+
+def _question(qid: str, prompt: str, options: list[dict], *, multi: bool = False, page: int = 1,
+              allow_other: bool = True, placeholder: str = "") -> dict:
     return {"id": qid, "prompt": prompt, "options": options, "min_selections": 1,
-            "max_selections": len(options) if multi else 1, "allow_other": True,
-            "placeholder": ("输入编号 / Enter panel numbers" if multi else
-                            "其他情况 / Other scenario" if qid == SOURCE else
-                            "自定义比例或像素，例如 5:4 / 1200x960 px"),
-            "page": page, "defaults": []}
+            "max_selections": len(options) if multi else 1, "allow_other": allow_other,
+            "placeholder": placeholder, "page": page, "defaults": []}
+
+
+def _attached_refs(chat_id: str = "") -> list[str]:
+    from .skill_param_guard import context_from_chat
+    return list(context_from_chat(chat_id or _chat_id()).uploads)
+
+
+def _infer_source(refs: list[str]) -> str:
+    return "multiple" if len(refs) > 1 else "single_front"
+
+
+def _selected_ids(block: dict) -> set[str]:
+    ids = {str(s) for s in (block.get("selected") or [])}
+    for answer in (block.get("answers") or {}).values():
+        if isinstance(answer, dict):
+            ids.update(str(s) for s in (answer.get("selected") or []))
+    return ids
+
+
+def quote_confirmed(chat_id: str = "") -> bool:
+    """True when a plan_quote / run_approval card was confirmed after the setup card."""
+    chat_id = chat_id or _chat_id()
+    setup_row, _root_block = _root(chat_id)
+    seen_setup = setup_row is None
+    for row in _messages(chat_id):
+        if setup_row is not None and row.get("id") == setup_row.get("id"):
+            seen_setup = True
+        if not seen_setup:
+            continue
+        for block in row.get("blocks") or []:
+            if (block.get("type") == "ask" and block.get("kind") in QUOTE_KINDS
+                    and block.get("status") == "answered"
+                    and _selected_ids(block) & QUOTE_CONFIRM_IDS):
+                return True
+    return False
+
+
+def require_confirmed_quote(meta: dict, chat_id: str = "") -> dict | None:
+    """Block a new paid dispatch until the quote/approval card is confirmed.
+
+    Quotes (prepare / quote_route) and ledger replays of an already reserved
+    submission do not need a new confirmation.
+    """
+    chat_id = chat_id or _chat_id()
+    _, root = _root(chat_id)
+    ledger = (root or {}).get(LEDGER) or {}
+    if meta.get("key") in ledger:
+        return None
+    if quote_confirmed(chat_id):
+        return None
+    return _blocked("Confirm the quote/approval card before any paid generate_image; nothing submitted. / 出图前请先确认报价，未提交。")
 
 
 def normalize_card(args: dict) -> dict:
@@ -132,19 +202,20 @@ def normalize_card(args: dict) -> dict:
         return args
     from .bot_asks import card_lang
     zh = card_lang() == "zh"
-    _, root = _root(_chat_id())
+    chat_id = _chat_id()
+    _, root = _root(chat_id)
     if root is None or (root.get("status") in {"expired", "cancelled"} and not root.get(LEDGER)):
-        source = [("single_front", "只上传1张正面主图", "One front reference image"),
-                  ("multiple", "多张参考图", "Multiple reference images"),
-                  ("description", "仅文字描述", "Description only")]
-        questions = [
-            _question(SOURCE, "参考图来源" if zh else "Reference source", [
-                {"id": key, "label": z if zh else e} for key, z, e in source]),
-            _question(ASPECT, "成品画幅" if zh else "Final image aspect", [
-                {"id": ratio, "label": ratio + ("（推荐）" if zh else " (recommended)") if ratio == "1:1" else ratio}
-                for ratio in RATIOS], page=2),
-        ]
-        return {"questions": questions, "page_count": 2, "allow_skip": False}
+        refs = _attached_refs(chat_id)
+        aspect = _question(ASPECT, "详情页主画幅用哪个？" if zh else "Which aspect should the detail-page hero use?", [
+            {"id": key, "label": z if zh else e} for key, z, e in ASPECT_OPTIONS],
+            allow_other=False)
+        questions = [aspect]
+        if not refs:
+            questions.insert(0, _question(
+                SOURCE, "产品参考图怎么提供？" if zh else "How should product reference images be provided?",
+                [{"id": key, "label": z if zh else e} for key, z, e in SOURCE_OPTIONS],
+                placeholder="直接说明" if zh else "Describe the other situation"))
+        return {"questions": questions, "page_count": 1, "allow_skip": True}
     if root.get("status") != "answered":
         raise ValueError("Answer the existing multi-angle source/aspect card; do not create another.")
     ledger = root.get(LEDGER) or {}
@@ -160,7 +231,8 @@ def normalize_card(args: dict) -> dict:
     q = _question(COMPOSITIONS, "选择想生成的构图（可多选，按图中编号）" if zh else
                   "Choose compositions (multiple panel numbers allowed)", [
                       {"id": panel["id"], "label": f"{panel['id']} {panel['name']}",
-                       "description": panel["description"]} for panel in plan["panels"]], multi=True)
+                       "description": panel["description"]} for panel in plan["panels"]],
+                  multi=True, placeholder="输入编号 / Enter panel numbers")
     return {"questions": [q], "allow_skip": False}
 
 
@@ -368,8 +440,12 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
     source = (source_answer.get("selected") or ["other" if source_other else ""])[0]
     aspect_selected = (aspect_answer.get("selected") or [""])[0]
     aspect_other = str(aspect_answer.get("other_text") or "").strip()
-    if source not in {"single_front", "multiple", "description", "other"} or (source == "other" and not source_other):
-        return args, _blocked("请回答来源或填写其他情况 / Answer source or describe the other scenario.")
+    if source not in SOURCE_IDS or (source == "other" and not source_other):
+        refs = _attached_refs(chat_id) or list(args.get("refs") or [])
+        if refs and source not in SOURCE_IDS:
+            source = _infer_source(refs)
+        else:
+            return args, _blocked("请回答来源或填写其他情况 / Answer source or describe the other scenario.")
     ledger = root.get(LEDGER) or {}
     if ledger.get("preview"):
         try:
@@ -392,14 +468,15 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
         # otherwise the model may choose the nine-grid layout ratio before dispatch.
         # Freeze that resolved choice on reservation, not on a pure price quote.
         frozen_preview = (ledger.get("setup_snapshot") or {}).get("preview")
+        # Preview honors the answered final aspect. Agent-supplied ratio/size
+        # must not override it (the 12:01 default path used 1:1 after 3:4).
+        # Only an explicit user preview specification is independent.
         if user_preview:
             preview_spec = _complete_spec(user_preview)
         elif frozen_preview:
             preview_spec = copy.deepcopy(frozen_preview)
-        elif args.get("ratio"):
-            preview_spec = _complete_spec({"ratio": _ratio(*str(args["ratio"]).split(":"))})
         else:
-            preview_spec = _complete_spec({"ratio": final_spec["ratio"]})  # fallback only; final pixels are not a preview request
+            preview_spec = _complete_spec({"ratio": final_spec["ratio"]})
         setup_snapshot = {"source": copy.deepcopy(source_answer), "aspect": copy.deepcopy(aspect_answer),
                           "final": final_spec, "preview": preview_spec,
                           "preview_request": copy.deepcopy(user_preview)}
@@ -446,8 +523,8 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
     from .skill_param_guard import context_from_chat, _text_of
     uploads = context_from_chat(chat_id).uploads
     refs = (list(ledger["refs"]) if "refs" in ledger else
-            uploads or ([] if source == "description" else list(args.get("refs") or [])))
-    if source not in {"description", "other"} and not refs:
+            uploads or ([] if source in TEXT_ONLY_SOURCES else list(args.get("refs") or [])))
+    if source not in TEXT_ONLY_SOURCES and not refs:
         return args, _blocked("Attach the reference once; no paid call without the chosen reference source.")
     description = ledger["description"] if "description" in ledger else original_description or source_other
     if not description and not refs:

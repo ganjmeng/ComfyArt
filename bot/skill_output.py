@@ -1053,9 +1053,11 @@ def _run_hint_declared(name: object, user_text: str = "", ref_image: bytes | Non
         return ""
     if sid == MULTI_ANGLE:
         return (
-            "Multi-angle staged delivery: use ask_user for source and final aspect (recommended 1:1, "
-            "not a forced default); preserve supplied attachments, never request the same image again. "
-            "Then generate_image skill='universal-multi-angle-grid', multi_angle_stage='preview', count=1: "
+            "Multi-angle staged delivery: use ask_user once for a single card with source and final aspect "
+            "(recommended 1:1, not a forced default; Skip and Submit). If a reference is already attached, "
+            "reuse it and do not ask the source question again (one image = single front hero; more than one = "
+            "multi-angle product photos). After the setup card, do not call generate_image until the existing "
+            "quote/approval card is confirmed. Then generate_image skill='universal-multi-angle-grid', multi_angle_stage='preview', count=1, honoring the selected final aspect: "
             "ONE numbered nine-panel lineart preview. REQUIRED composition_plan={subject, purpose, subject_geometry, appearance, panels:[{id,name,description,geometry,appearance} x9]}: "
             "inspect the real subject/reference and intended use, then plan nine distinct appropriate compositions (not a universal view list). "
             "Geometry fields contain only subject shape, visible structures and each camera/framing; appearance fields retain material/color/finish for finals only. Never copy names, purpose or raw user wording into preview geometry. Submitted legacy mixed plans are archive/query only, never migrate or pay again; unsubmitted legacy plans require a new structured plan. This plan is persisted before preview dispatch and frozen; preview labels, selection card and each final use the same mapping. "

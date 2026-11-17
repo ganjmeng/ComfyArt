@@ -70,6 +70,17 @@ def setup(rows, aspect="1:1", *, status="answered", source="single_front"):
     return block
 
 
+def confirm_quote(rows, *, status="answered", selected=("start",)):
+    """Mark the existing plan_quote / run_approval path as confirmed (no new UI)."""
+    block = {"type": "ask", "ask_id": "quote", "status": status, "kind": "plan_quote",
+             "prompt": "Start?", "options": [{"id": "start", "label": "Start"},
+                                            {"id": "cancel", "label": "Cancel"}],
+             "selected": list(selected),
+             "answers": {"q": {"selected": list(selected)}}}
+    rows.append({"id": "quote-msg", "role": "assistant", "blocks": [block]})
+    return block
+
+
 def choose(rows, selected=("1", "2", "3"), *, status="answered", other=""):
     spec = bot_asks.validate_spec({"prompt": "choose compositions"})
     block = {"type": "ask", "ask_id": "compositions", "status": status, **spec, "answers": {
@@ -80,7 +91,7 @@ def choose(rows, selected=("1", "2", "3"), *, status="answered", other=""):
 
 def preview(rows, *, aspect="1:1"):
     setup(rows, aspect)
-    args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview", "ratio": "9:16"})
+    args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview"})
     assert blocked is None
     meta = args["_multi_angle"]
     assert ma.reserve(meta) is None
@@ -91,11 +102,12 @@ def preview(rows, *, aspect="1:1"):
 
 def test_setup_card_uses_existing_pager_without_preselect_or_reupload(run):
     rows, _ = run
+    # The fixture already has a reference attached, so source is omitted.
     card = bot_asks.validate_spec({"prompt": "setup"})
-    assert [q["id"] for q in card["questions"]] == [ma.SOURCE, ma.ASPECT]
-    assert card["page_count"] == 2 and card["allow_skip"] is False
+    assert [q["id"] for q in card["questions"]] == [ma.ASPECT]
+    assert card["page_count"] == 1 and card["allow_skip"] is True
     assert all(not q.get("defaults") for q in card["questions"])
-    assert "1:1" in [o["id"] for o in card["questions"][1]["options"]]
+    assert [o["id"] for o in card["questions"][0]["options"]] == list(ma.CARD_ASPECTS)
     assert not any("upload" in q["id"] for q in card["questions"])
     setup(rows, status="pending")
     with pytest.raises(ValueError, match="existing"):
@@ -116,7 +128,7 @@ async def test_no_generate_before_setup_answer(run, status):
 def test_preview_has_numbered_nine_panel_lineart_and_keeps_input(run):
     rows, sent = run
     args = preview(rows)
-    assert (args["width"], args["height"], args["ratio"], args["count"]) == (1152, 2048, "9:16", 1)
+    assert (args["width"], args["height"], args["ratio"], args["count"]) == (2048, 2048, "1:1", 1)
     assert args["refs"] == [REF] and args["ref_modes"] == ["content"]
     assert DESC not in args["prompt"]  # product: raw brief is final-only
     assert args["_multi_angle"]["description"] == DESC
@@ -202,11 +214,12 @@ def test_invalid_custom_entry_fails_closed(run, other):
 async def test_actual_fixture_dispatch_and_durable_replay_no_duplicate_paid_submit(run):
     rows, sent = run
     setup(rows)
+    confirm_quote(rows)
     relay = canvas._relay("generate_image")
     args = {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview", "ratio": "9:16", "prompt": DESC}
     first = await relay(args)
     assert len(sent) == 1
-    assert (sent[0][1]["width"], sent[0][1]["height"]) == (1152, 2048)
+    assert (sent[0][1]["width"], sent[0][1]["height"]) == (2048, 2048)
     # Simulate a fresh turn/process: no module lock/cache, everything comes from stored blocks.
     result = await relay(args)
     assert result["ids"] == first["ids"] and result["multi_angle_replay"]
@@ -229,6 +242,7 @@ async def test_actual_fixture_dispatch_and_durable_replay_no_duplicate_paid_subm
 async def test_uncertain_timeout_and_explicit_failure_never_resubmit(run, monkeypatch):
     rows, sent = run
     setup(rows)
+    confirm_quote(rows)
 
     async def uncertain(*args, **kwargs):
         sent.append("reserved")
@@ -265,7 +279,7 @@ def test_quote_is_pure_and_matches_submit_stage_size(run, monkeypatch):
     monkeypatch.setattr(canvas, "select_model", lambda *a, **k: {"model": "mock", "auto": True})
     before = copy.deepcopy(rows)
     model, inputs = canvas.quote_route("generate_image", {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "ratio": "9:16"}, catalog={})
-    assert model == "mock" and (inputs["width"], inputs["height"], inputs["ratio"]) == (1152, 2048, "9:16")
+    assert model == "mock" and (inputs["width"], inputs["height"], inputs["ratio"]) == (1536, 2048, "3:4")
     assert rows == before
     assert "_multi_angle" not in inputs
 
@@ -300,6 +314,7 @@ async def test_two_concurrent_replays_reserve_only_one_submit(run, monkeypatch):
     import asyncio
     rows, sent = run
     setup(rows)
+    confirm_quote(rows)
     entered, release = asyncio.Event(), asyncio.Event()
 
     async def submit(*args, **kwargs):
@@ -351,7 +366,8 @@ def test_expired_cards_can_be_reasked_without_repeating_paid_preview(run, expire
     rows, _ = run
     setup(rows, status=expired)
     spec = bot_asks.validate_spec({"prompt": "retry unanswered setup"})
-    assert spec["questions"][0]["id"] == ma.SOURCE
+    assert spec["questions"][0]["id"] == ma.ASPECT
+    assert ma.SOURCE not in [q["id"] for q in spec["questions"]]
     # A fresh setup is the current root, not the earlier expired one.
     rows.append({"id": "new-setup", "role": "assistant", "blocks": [{
         "type": "ask", "ask_id": "new-setup", "status": "answered", **spec,
@@ -430,7 +446,7 @@ async def test_positive_app_stack_scripted_agent_real_asks_persistence_and_place
     monkeypatch.setitem(bot_turns.ACTIVE_TURNS, cid, state)
     trace, sent, seen, quote_approvals = [], [], [], []
     holder_shapes = {}
-    args_preview = {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "refs": [REF], "multi_angle_stage": "preview", "ratio": "9:16"}
+    args_preview = {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "refs": [REF], "multi_angle_stage": "preview"}
     script = [calls(("ask_user", {"prompt": "setup"})),
               calls(("generate_image", args_preview)),
               calls(("wait_generation", {"ids": ["holder:1"]})),
@@ -477,9 +493,13 @@ async def test_positive_app_stack_scripted_agent_real_asks_persistence_and_place
             quote_approvals.append(payload["ask_id"])
             return
         questions = payload["questions"]
-        answers = ({ma.SOURCE: {"selected": ["single_front"]}, ma.ASPECT: {"selected": ["1:1"]}}
-                   if questions[0]["id"] == ma.SOURCE else
-                   {ma.COMPOSITIONS: {"selected": ["1", "2", "3", "4"]}})
+        ids = {q["id"] for q in questions}
+        if ma.ASPECT in ids or ma.SOURCE in ids:
+            answers = {ma.ASPECT: {"selected": ["1:1"]}}
+            if ma.SOURCE in ids:
+                answers[ma.SOURCE] = {"selected": ["single_front"]}
+        else:
+            answers = {ma.COMPOSITIONS: {"selected": ["1", "2", "3", "4"]}}
         bot_asks.validate_answer(payload, [], "", answers)
         bot_asks.resolve_ask(payload["ask_id"], "answered", answers=answers)
 
@@ -514,7 +534,7 @@ async def test_positive_app_stack_scripted_agent_real_asks_persistence_and_place
                                                 goal_text=DESC, lang="zh", mcp_endpoint="http://mock-no-network/mcp", model="mock-1002"), emit, handle)
         assert len(sent) == 5, (trace, seen[-1], result)
         assert trace[:4] == ["ask_user", "generate_image", "wait_generation", "ask_user"]
-        assert (sent[0]["width"], sent[0]["height"]) == (1152, 2048)
+        assert (sent[0]["width"], sent[0]["height"]) == (2048, 2048)
         assert all((a["width"], a["height"], a["count"]) == (2048, 2048, 1) for a in sent[1:])
         assert all(a["refs"] == [REF, "shape:delivered:1"] and DESC in a["prompt"] for a in sent[1:])
         stored = chat_store.list_messages(cid)
