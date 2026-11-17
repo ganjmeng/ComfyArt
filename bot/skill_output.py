@@ -1058,13 +1058,16 @@ def _run_hint_declared(name: object, user_text: str = "", ref_image: bytes | Non
             "reuse it and do not ask the source question again (one image = single front hero; more than one = "
             "multi-angle product photos). After the setup card, do not call generate_image until the existing "
             "quote/approval card is confirmed. Then generate_image skill='universal-multi-angle-grid', multi_angle_stage='preview', count=1, using the independent preview default 1152x2048 (9:16) unless the user explicitly specifies a preview size; the selected final aspect applies to finals only: "
-            "ONE numbered nine-panel lineart preview. REQUIRED composition_plan={subject, purpose, subject_geometry, appearance, panels:[{id,name,description,geometry,appearance} x9]}: "
+            "ONE numbered nine-panel lineart preview. REQUIRED composition_plan={subject, purpose, subject_geometry, appearance, panels:[{id,name,description,geometry,appearance,content} x9]}: "
             "inspect the real subject/reference and intended use, then plan nine distinct appropriate compositions (not a universal view list). "
             "Geometry fields contain only subject shape and each camera/framing: specify camera position relative to the subject, viewing direction, subject pose, visible surfaces and occluded surfaces consistently for every panel. For an overhead panel, place the camera directly above the subject looking vertically down, not in front looking at a tilted subject; specify which front-facing/interior surfaces are hidden from this camera. Check all nine panels and shared geometry for conflicting camera or visibility instructions before freezing the plan. Do not make an interior close-up requirement global. Appearance fields retain material/color/finish for finals only. Never copy names, purpose or raw user wording into preview geometry. Submitted legacy mixed plans are archive/query only, never migrate or pay again; unsubmitted legacy plans require a new structured plan. This plan is persisted before preview dispatch and frozen; preview labels, selection card and each final use the same mapping. "
             "Respect explicit preview specifications separately from final specifications. Call wait_generation. Only after it is delivered, "
             "use ask_user for composition multi-select (panel IDs 1..9), then WAIT for the answer. "
             "For EACH selected ID call generate_image with multi_angle_stage='final', composition_id=that ID, "
             "count=1, then wait_generation. Keep reference, original description and chosen final aspect. "
+            "Give every panel a short content (max 200 characters) naming only the structures that composition shows, e.g. 'earcup depth, yokes, headband curve'; "
+            "never left/right, camera, facing or other direction words in content (rejected; a final takes orientation only from its cropped preview cell). "
+            "For a final whose frozen plan has no content for that panel, pass the same kind of short note as panel_content on that final call. "
             "No final before the composition answer. No fixed output count; no repeated paid calls on resume."
         )
     row = OUTPUTS[sid]

@@ -246,3 +246,57 @@ def test_preview_prompt_is_byte_identical_to_f99887e9_and_ignores_content(run):
         panel["content"] = CONTENT.get(panel["id"], "")
     with_content, blocked = ma.prepare({"composition_plan": plan, "skill": ma.SKILL, "multi_angle_stage": "preview"})
     assert blocked is None and with_content["prompt"] == args["prompt"]
+
+
+# ---- default agent flow: planner-produced content (no harness panel_content) -----------
+
+def test_agent_hint_and_schema_ask_planner_for_direction_free_content():
+    from ComfyArt.bot import skill_output
+    from ComfyArt.api.mcp_tools import canvas
+    hint = skill_output.run_hint(ma.SKILL)
+    assert "panels:[{id,name,description,geometry,appearance,content} x9]" in hint
+    assert "Give every panel a short content (max 200 characters)" in hint
+    assert "never left/right, camera, facing or other direction words in content" in hint
+    assert "pass the same kind of short note as panel_content on that final call" in hint
+    props = canvas.SPECS["generate_image"]["inputSchema"]["properties"]
+    panel = props["composition_plan"]["properties"]["panels"]["items"]["properties"]
+    assert "Give every panel one" in panel["content"]["description"]
+    assert "Never left/right, camera, facing or direction words" in props["panel_content"]["description"]
+
+
+@pytest.mark.asyncio
+async def test_default_flow_planner_content_reaches_finals_without_panel_content(run):
+    from ComfyArt.api.mcp_tools import canvas
+    from test_multi_angle_stages_911 import confirm_quote, DESC
+    rows, sent = run
+    plan = copy.deepcopy(HEADPHONES_PLAN)
+    for panel in plan["panels"]:
+        panel["content"] = CONTENT.get(panel["id"], f"panel {panel['id']} visible structures")
+    setup(rows)
+    confirm_quote(rows)
+    relay = canvas._relay("generate_image")
+    first = await relay({"composition_plan": plan, "skill": ma.SKILL, "multi_angle_stage": "preview", "prompt": DESC})
+    assert len(sent) == 1
+    preview_prompt = sent[0][1]["prompt"]
+    assert "Panel content" not in preview_prompt and not any(t in preview_prompt for t in CONTENT.values())
+    assert ma._root("chat-ma")[1][ma.LEDGER]["composition_plan"]["panels"][1]["content"] == CONTENT["2"]
+    ma.record_wait({"results": [{"id": first["ids"][0], "status": "done", "placed": True, "shapes": ["preview"],
+                                 "urls": [preview_url()]}]})
+    choose(rows, ("1", "2", "3"))
+    for panel in ("1", "2", "3"):
+        await relay({"multi_angle_stage": "final", "composition_id": panel})  # agent passes no panel_content
+    assert len(sent) == 4
+    for (_, args), panel in zip(sent[1:], ("1", "2", "3")):
+        assert args["prompt"].endswith(f"\nPanel content: {CONTENT[panel]}")
+        assert "panel_content" not in args and "ma-cell" in args["refs"][-1]
+
+
+def test_preview_prompt_with_planner_content_matches_pinned_sha(run):
+    rows, _ = run
+    setup(rows)
+    plan = copy.deepcopy(HEADPHONES_PLAN)
+    for panel in plan["panels"]:
+        panel["content"] = CONTENT.get(panel["id"], f"panel {panel['id']} visible structures")
+    args, blocked = ma.prepare({"composition_plan": plan, "skill": ma.SKILL, "multi_angle_stage": "preview"})
+    assert blocked is None
+    assert hashlib.sha256(args["prompt"].encode()).hexdigest() == PREVIEW_PROMPT_SHA_F99887E9

@@ -848,7 +848,7 @@ SPECS: dict[str, dict] = {
                                                             "name": {"type": "string"}, "description": {"type": "string"},
                                                             "geometry": {"type": "string", "description": "This panel camera direction, framing, geometry and visible structures ONLY; no appearance or copied raw brief."},
                                                             "appearance": {"type": "string", "description": "Final-only appearance requirements, empty if unspecified."},
-                                                            "content": {"type": "string", "description": "Optional, max 200 characters: what this composition shows for finals (e.g. 'earcup depth, yokes, headband curve'); no left/right, camera or direction words."}},
+                                                            "content": {"type": "string", "description": "Give every panel one (max 200 characters): only the structures this composition shows, for finals (e.g. 'earcup depth, yokes, headband curve'); no left/right, camera or direction words (rejected). Not used by the preview."}},
                                                                   "required": ["id", "name", "description", "geometry", "appearance"]}}},
                               "required": ["subject", "purpose", "subject_geometry", "appearance", "panels"]},
          "shot": {"type": "string", "enum": ["closeup", "half", "three_quarter", "full"],
