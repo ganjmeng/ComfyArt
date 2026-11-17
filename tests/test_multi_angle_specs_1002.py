@@ -74,7 +74,7 @@ def test_source_other_text_is_kept_in_prompt_state_and_not_replaced_by_model(run
     source_q = next((q for q in root["questions"] if q["id"] == ma.SOURCE), None)
     if source_q is not None:
         assert source_q["allow_other"] is True
-    assert all(q["allow_other"] for q in root["questions"] if q["id"] == ma.ASPECT)
+    assert all(not q["allow_other"] for q in root["questions"] if q["id"] == ma.ASPECT)
     root["answers"][ma.SOURCE] = {"selected": [], "other_text": text}
     args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "prompt": "model invented source"})
     assert blocked is None and text not in args["prompt"]  # raw source is frozen, final-only
@@ -92,8 +92,7 @@ def test_source_other_text_is_kept_in_prompt_state_and_not_replaced_by_model(run
     assert blocked is not None and "changed after submission" in blocked["error"]
 
 
-@pytest.mark.parametrize("text,aspect", [("1200x900", "1:1"), ("5:4", "3:4"),
-                                        ("1200x900 and 800x800", "4:3"),
+@pytest.mark.parametrize("text,aspect", [("1200x900 and 800x800", "4:3"),
                                         ("0x900", "1:1"), ("-1200x900", "4:3"),
                                         ("1200.5x900", "4:3"), ("40000x30000", "4:3"), ("0:1", "1:1")])
 @pytest.mark.asyncio
@@ -461,3 +460,50 @@ def test_apply_audit_mode_restores_only_the_missing_matching_edge(run):
     assert (args["width"], args["height"], args["ratio"]) == (1152, 2048, "9:16")
     assert "size_lock_mode" not in args and args["size_lock"] is True
     assert ma.validate_provider_size(args, meta, "mock-pixels", catalog) is None
+
+
+@pytest.mark.parametrize("text,preview,final", [
+    ("预览 1200x960，成品 1500x1000", (1200, 960), (1500, 1000)),
+    ("成品 1250x1000 pixels", (1152, 2048), (1250, 1000)),
+])
+def test_chat_stage_pixels_survive_preset_only_aspect_card(run, text, preview, final):
+    rows, _ = run
+    add_text(rows, text)
+    root = setup(rows, "1:1")
+    aspect = next(q for q in root["questions"] if q["id"] == ma.ASPECT)
+    assert aspect["allow_other"] is False
+    args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL})
+    assert blocked is None
+    assert (args["width"], args["height"]) == preview
+    snap = args["_multi_angle"]["setup_snapshot"]
+    assert (snap["final"]["width"], snap["final"]["height"]) == final
+    assert snap["final"]["exact_pixels"] is True
+    complete_preview(args)
+    choose(rows, ("1",))
+    result, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": "1"})
+    assert blocked is None
+    assert (result["width"], result["height"]) == final
+
+
+def test_missing_aspect_error_points_to_card_or_stage_specific_chat_not_hidden_other(run):
+    rows, _ = run
+    root = setup(rows)
+    root["answers"][ma.ASPECT] = {"selected": [], "other_text": ""}
+    _, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL})
+    assert blocked is not None
+    assert "画幅卡" in blocked["error"] and "预览还是成品" in blocked["error"]
+    assert "其他栏" not in blocked["error"] and "in Other" not in blocked["error"]
+
+
+@pytest.mark.parametrize("text,aspect,expected", [
+    ("1200x900", "1:1", (1200, 900, "4:3")),
+    ("5:4", "3:4", (2048, 1638, "5:4")),
+])
+def test_explicit_chat_final_spec_overrides_preset_not_discarded(run, text, aspect, expected):
+    rows, _ = run
+    add_text(rows, text)
+    setup(rows, aspect)
+    args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL})
+    assert blocked is None, blocked
+    spec = args["_multi_angle"]["setup_snapshot"]["final"]
+    assert (spec["width"], spec["height"], spec["ratio"]) == expected

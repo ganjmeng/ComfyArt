@@ -395,12 +395,15 @@ and must not price a final first. Camera wording is unchanged. Official gate
 and $0 quote checks belong on a new instance of the corrected tip, not 8927.
 
 
-## 2026-11-17 aspect custom entry
+## 2026-11-17 frozen Lovart aspect-card ruling
 
-Product did not approve removing the aspect card's custom ratio/pixel field
-with the 9ff63633 preview/camera static check. The setup card still decides
-the final hero aspect; the Other row is restored for custom ratio or exact
-pixels, and user-text exact pixels remain authoritative. The error that
-pointed at a hidden Other field is valid again because that row is visible.
-Whether Lovart's question card can later drop custom entry remains an open
-product/design comparison, not a reason to hide the field on this tip.
+The later product review of the frozen Lovart question card supersedes the
+interim Other-row restoration in 0628a90a. The final-aspect card shows only
+1:1 (recommended), 3:4 and 4:3, without Other. The source question retains
+Other. Errors now direct users to the aspect card or to stage-specific chat
+instructions, never to a hidden field. Explicit preview/final ratio or exact
+pixels in chat remain authoritative for their respective stages; the default
+preview remains independent 1152x2048 / 9:16. Legacy recorded aspect Other
+answers remain readable, but the current card does not offer that entry.
+No paid preview or merge is permitted before this tip's actual-request review
+and official gate. This change is not an effect sign-off.

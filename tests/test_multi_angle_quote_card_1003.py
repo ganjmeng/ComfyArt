@@ -46,8 +46,7 @@ def test_setup_card_is_one_page_two_questions_with_skip_and_lovart_zh_copy(run, 
     assert aspect["prompt"] == ZH_ASPECT
     assert [o["id"] for o in aspect["options"]] == list(ma.CARD_ASPECTS)
     assert [o["label"] for o in aspect["options"]] == ZH_ASPECT_OPTS
-    assert aspect["allow_other"] is True
-    assert aspect["placeholder"] == "自定义比例或像素，例如 5:4 或 1200x960"
+    assert aspect["allow_other"] is False
     assert "1:1（推荐）" not in aspect["prompt"]
     assert all(o["id"] not in {"16:9", "9:16", "4:5", "5:4", "3:2", "2:3"} for o in aspect["options"])
 
@@ -71,8 +70,7 @@ def test_setup_card_english_is_faithful_not_claimed_official_lovart(run, monkeyp
         "3:4 portrait",
         "4:3 landscape",
     ]
-    assert aspect["allow_other"] is True
-    assert aspect["placeholder"] == "Custom aspect or pixels, e.g. 5:4 or 1200x960"
+    assert aspect["allow_other"] is False
 
 
 def test_attached_reference_skips_source_question_and_infers_single_front(run, monkeypatch):
@@ -199,8 +197,8 @@ async def test_build_quote_always_asks_for_this_skill_even_under_threshold():
     assert passthrough is None
 
 
-def test_aspect_card_shows_other_row_when_allow_other():
-    """Aspect custom ratio/pixels use the existing Other row; it stays hidden only when allow_other is false."""
+def test_aspect_card_hides_other_row_when_disallowed():
+    """Only the source question keeps Other, matching the frozen Lovart card."""
     src = (ROOT / "src/ui/ChatMessage.tsx").read_text(encoding="utf-8")
     block = src.split("function QuestionBlock")[1].split("/** #328/#330")[0]
     assert "showOtherRow = allowOther" in block

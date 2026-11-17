@@ -225,8 +225,7 @@ def normalize_card(args: dict) -> dict:
         refs = _attached_refs(chat_id)
         aspect = _question(ASPECT, "详情页主画幅用哪个？" if zh else "Which aspect should the detail-page hero use?", [
             {"id": key, "label": z if zh else e} for key, z, e in ASPECT_OPTIONS],
-            allow_other=True,
-            placeholder="自定义比例或像素，例如 5:4 或 1200x960" if zh else "Custom aspect or pixels, e.g. 5:4 or 1200x960")
+            allow_other=False)
         questions = [aspect]
         if not refs:
             questions.insert(0, _question(
@@ -482,8 +481,10 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
         if aspect_selected:
             card_spec = _merge_specs(card_spec, {"ratio": _ratio(*str(aspect_selected).split(":"))})
         if not card_spec:
-            raise ValueError("请选择比例或在其他栏输入比例/像素 / Select an aspect or enter aspect/pixels in Other.")
-        final_spec = _complete_spec(_merge_specs(user_final, card_spec))
+            raise ValueError("请在画幅卡选择主画幅；如需自定义比例或精确像素，请在对话中注明用于预览还是成品 / Select a hero aspect in the setup card; for a custom aspect or exact pixels, specify preview or final in the conversation.")
+        # Explicit user conversation specs override the preset-only final card.
+        # Conflicts within user text are still rejected by _user_specs.
+        final_spec = _complete_spec(_merge_specs(user_final or card_spec))
         # The setup card controls FINALS only. Explicit user preview specs win;
         # already-submitted preview specs remain immutable. Otherwise resolve the
         # independent nine-grid default, never the final ratio or guessed tool args.
