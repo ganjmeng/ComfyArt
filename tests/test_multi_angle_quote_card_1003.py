@@ -4,7 +4,11 @@ No paid WaveSpeed/DeepSeek calls and no live preview instance.
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
+
+ROOT = Path(__file__).resolve().parent.parent
 
 from multi_angle_plan_fixture import HEADPHONES_PLAN
 
@@ -187,3 +191,13 @@ async def test_build_quote_always_asks_for_this_skill_even_under_threshold():
               "arguments": {"skill": "logo-design", "prompt": "logo"}}]
     passthrough = await build_quote(other, "zh", threshold=1.0, pricer=pricer, models_for=models_for)
     assert passthrough is None
+
+
+def test_aspect_card_omits_generic_other_row():
+    """#1003: aspect has no D 其他（输入你的答案）; #763 still shows Other on other choice cards."""
+    src = (ROOT / "src/ui/ChatMessage.tsx").read_text(encoding="utf-8")
+    block = src.split("function QuestionBlock")[1].split("/** #328/#330")[0]
+    assert "showOtherRow = q.id !== 'ma_aspect'" in block
+    assert "{allowOther && (" not in block
+    assert 'data-other=""' in block and "disabled={!allowOther}" in block
+
