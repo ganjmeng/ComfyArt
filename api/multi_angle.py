@@ -550,7 +550,7 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
                 args["ref_modes"].append("composition")
     if stage == "preview":
         view = preview_plan_view(plan)
-        brief = f"Subject geometry: {view['subject_geometry']}\nThis stage: {spec['width']}x{spec['height']}, ratio {spec['ratio']}.\nPreserve reference identity, geometry, proportions and visible structures.\n"
+        brief = f"Subject geometry: {view['subject_geometry']}\nThis stage: {spec['width']}x{spec['height']}, ratio {spec['ratio']}.\nPreserve reference identity, geometry and proportions. For each panel, draw only the structures visible from that panel's frozen camera; occlude surfaces that camera cannot see. The source image supplies subject identity, not a front-facing camera for every panel.\n"
     else:
         brief = f"User description (preserve; empty means image-only, use the attached subject without inventing a brief):\n{description}\nReference source: {source}; other scenario: {source_other}. Final specification: {final_spec['width']}x{final_spec['height']}, ratio {aspect}; exact user pixels={final_spec['exact_pixels']}. This stage: {spec['width']}x{spec['height']}, ratio {spec['ratio']}.\nPreserve subject identity, geometry, proportions, controls and the user's background requirements.\n"
         brief += f"Frozen composition planning context: subject={plan['subject']}; purpose={plan['purpose']}. Subject appearance: {plan['appearance']}.\n"
@@ -561,7 +561,7 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
             "No color, gray fills, shading, gradients, shadows, lighting, material texture, realistic photography, "
             "clay render or 3D product rendering. The attached reference supplies identity/geometry ONLY at this stage, "
             "not its photographic finish. User material/finish requirements are deferred to finished images.\n"
-            "For each panel, execute its frozen camera direction, framing and visible structures. "
+            "For each panel, execute its frozen camera position, viewing direction, framing and visible surfaces/occlusions. Change the camera, not the subject pose, unless that panel explicitly requests a pose change. Keep each panel's instructions local to that panel; a close-up of an interior in one panel does not make that interior visible from another camera. "
             "An overhead plan must show the actual top-facing geometry rather than reuse the front silhouette; "
             "similarly distinguish side/rear views. Do not invent nonexistent parts to distinguish panels.\n"
             "Only structured subject geometry and numbered panel geometry are executable here. "
