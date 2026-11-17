@@ -195,10 +195,10 @@ async def test_build_quote_always_asks_for_this_skill_even_under_threshold():
 
 
 def test_aspect_card_omits_generic_other_row():
-    """#1003: aspect has no D 其他（输入你的答案）; #763 still shows Other on other choice cards."""
+    """#1003: allow_other=false (aspect) does not render D 其他（输入你的答案）."""
     src = (ROOT / "src/ui/ChatMessage.tsx").read_text(encoding="utf-8")
     block = src.split("function QuestionBlock")[1].split("/** #328/#330")[0]
-    assert "showOtherRow = q.id !== 'ma_aspect'" in block
-    assert "{allowOther && (" not in block
-    assert 'data-other=""' in block and "disabled={!allowOther}" in block
+    assert "showOtherRow = allowOther" in block
+    assert "{showOtherRow && (" in block
+    assert 'data-other=""' in block
 

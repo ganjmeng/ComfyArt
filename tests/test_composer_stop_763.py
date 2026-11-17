@@ -54,11 +54,13 @@ def test_single_question_has_no_pager_and_submit_waits():
     assert 'className="ca-q__submit" disabled={!allOk}' in msg
 
 
-def test_d_is_always_other_type_in_row():
+def test_other_row_renders_only_when_allow_other():
     msg = read("src/ui/ChatMessage.tsx")
     block = msg.split("function QuestionBlock")[1].split("/** #328/#330")[0]
-    assert "{allowOther && (" not in block
-    assert 'data-other=""' in block and "disabled={!allowOther}" in block
+    # #1003: allow_other=false must not paint a disabled Other/D row.
+    assert "showOtherRow = allowOther" in block
+    assert "{showOtherRow && (" in block
+    assert 'data-other=""' in block
     assert json.loads(read("src/locales/en.json"))["chatMessage.other"] == "Other (type your answer)..."
 
 
