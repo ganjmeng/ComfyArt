@@ -129,7 +129,7 @@ async def test_no_generate_before_setup_answer(run, status):
 def test_preview_has_numbered_nine_panel_lineart_and_keeps_input(run):
     rows, sent = run
     args = preview(rows)
-    assert (args["width"], args["height"], args["ratio"], args["count"]) == (2048, 2048, "1:1", 1)
+    assert (args["width"], args["height"], args["ratio"], args["count"]) == (1152, 2048, "9:16", 1)
     assert args["refs"] == [REF] and args["ref_modes"] == ["content"]
     assert DESC not in args["prompt"]  # product: raw brief is final-only
     assert args["_multi_angle"]["description"] == DESC
@@ -220,7 +220,7 @@ async def test_actual_fixture_dispatch_and_durable_replay_no_duplicate_paid_subm
     args = {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview", "ratio": "9:16", "prompt": DESC}
     first = await relay(args)
     assert len(sent) == 1
-    assert (sent[0][1]["width"], sent[0][1]["height"], sent[0][1]["ratio"]) == (2048, 2048, "1:1")
+    assert (sent[0][1]["width"], sent[0][1]["height"], sent[0][1]["ratio"]) == (1152, 2048, "9:16")
     # Simulate a fresh turn/process: no module lock/cache, everything comes from stored blocks.
     result = await relay(args)
     assert result["ids"] == first["ids"] and result["multi_angle_replay"]
@@ -280,7 +280,7 @@ def test_quote_is_pure_and_matches_submit_stage_size(run, monkeypatch):
     monkeypatch.setattr(canvas, "select_model", lambda *a, **k: {"model": "mock", "auto": True})
     before = copy.deepcopy(rows)
     model, inputs = canvas.quote_route("generate_image", {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "ratio": "9:16"}, catalog={})
-    assert model == "mock" and (inputs["width"], inputs["height"], inputs["ratio"]) == (1536, 2048, "3:4")
+    assert model == "mock" and (inputs["width"], inputs["height"], inputs["ratio"]) == (1152, 2048, "9:16")
     assert rows == before
     assert "_multi_angle" not in inputs
 
@@ -374,8 +374,8 @@ def test_expired_cards_can_be_reasked_without_repeating_paid_preview(run, expire
         "type": "ask", "ask_id": "new-setup", "status": "answered", **spec,
         "answers": {ma.SOURCE: {"selected": ["single_front"]}, ma.ASPECT: {"selected": ["3:4"]}}}]})
     args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL})
-    assert blocked is None and args["ratio"] == "3:4"
-    assert (args["width"], args["height"]) == (1536, 2048)
+    assert blocked is None and args["ratio"] == "9:16"
+    assert (args["width"], args["height"]) == (1152, 2048)
     assert args["_multi_angle"]["setup_snapshot"]["final"]["ratio"] == "3:4"
     meta = args["_multi_angle"]
     ma.reserve(meta)
@@ -537,7 +537,7 @@ async def test_positive_app_stack_scripted_agent_real_asks_persistence_and_place
                                                 goal_text=DESC, lang="zh", mcp_endpoint="http://mock-no-network/mcp", model="mock-1002"), emit, handle)
         assert len(sent) == 5, (trace, seen[-1], result)
         assert trace[:4] == ["ask_user", "generate_image", "wait_generation", "ask_user"]
-        assert (sent[0]["width"], sent[0]["height"], sent[0]["ratio"]) == (2048, 2048, "1:1")
+        assert (sent[0]["width"], sent[0]["height"], sent[0]["ratio"]) == (1152, 2048, "9:16")
         assert all((a["width"], a["height"], a["count"]) == (2048, 2048, 1) for a in sent[1:])
         assert all(a["refs"] == [REF, "shape:delivered:1"] and DESC in a["prompt"] for a in sent[1:])
         stored = chat_store.list_messages(cid)

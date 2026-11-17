@@ -84,8 +84,8 @@ def test_attached_reference_skips_source_question_and_infers_single_front(run, m
     assert blocked is None
     assert args["_multi_angle"]["source"] == "single_front"
     assert args["refs"] == [REF]
-    assert args["ratio"] == "3:4"
-    assert (args["width"], args["height"]) == (1536, 2048)
+    assert args["ratio"] == "9:16"
+    assert (args["width"], args["height"]) == (1152, 2048)
     assert args["_multi_angle"]["setup_snapshot"]["final"]["ratio"] == "3:4"
 
 
@@ -126,7 +126,7 @@ def test_preview_is_independent_of_final_aspect_and_agent_ratio(run):
     args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
                                 "multi_angle_stage": "preview", "ratio": "1:1"})
     assert blocked is None
-    assert (args["width"], args["height"], args["ratio"]) == (1536, 2048, "3:4")
+    assert (args["width"], args["height"], args["ratio"]) == (1152, 2048, "9:16")
     assert "ONE lineart preview" in args["prompt"] and "3x3 nine-panel" in args["prompt"]
 
 
@@ -147,7 +147,7 @@ async def test_generate_image_relay_is_blocked_without_confirmed_quote(run):
         "multi_angle_stage": "preview", "ratio": "1:1",
     })
     assert allowed.get("submitted") is True and sent
-    assert (sent[0][1]["width"], sent[0][1]["height"], sent[0][1]["ratio"]) == (1536, 2048, "3:4")
+    assert (sent[0][1]["width"], sent[0][1]["height"], sent[0][1]["ratio"]) == (1152, 2048, "9:16")
 
 
 @pytest.mark.asyncio
@@ -160,7 +160,7 @@ async def test_quote_route_does_not_require_confirmation(run, monkeypatch):
         {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview"},
         catalog={},
     )
-    assert model == "mock" and (inputs["width"], inputs["height"], inputs["ratio"]) == (1536, 2048, "3:4")
+    assert model == "mock" and (inputs["width"], inputs["height"], inputs["ratio"]) == (1152, 2048, "9:16")
     assert sent == []
     assert ma.LEDGER not in (ma._root("chat-ma")[1] or {})
 
@@ -174,7 +174,7 @@ def test_finals_and_composition_card_still_wait_for_preview(run):
     args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
                                 "multi_angle_stage": "final", "composition_id": "1"})
     assert blocked is None and args["_multi_angle"]["key"] == "preview"
-    assert (args["width"], args["height"], args["ratio"]) == (1536, 2048, "3:4")
+    assert (args["width"], args["height"], args["ratio"]) == (1152, 2048, "9:16")
 
 
 @pytest.mark.asyncio
@@ -206,16 +206,16 @@ def test_aspect_card_omits_generic_other_row():
 
 
 @pytest.mark.parametrize("aspect,expected", [
-    ("1:1", (2048, 2048, "1:1")),
-    ("3:4", (1536, 2048, "3:4")),
-    ("4:3", (2048, 1536, "4:3")),
-    ("16:9", (2048, 1152, "16:9")),
+    ("1:1", (1152, 2048, "9:16")),
+    ("3:4", (1152, 2048, "9:16")),
+    ("4:3", (1152, 2048, "9:16")),
+    ("16:9", (1152, 2048, "9:16")),
     ("9:16", (1152, 2048, "9:16")),
 ])
-def test_prepare_coerces_preview_to_selected_aspect(run, aspect, expected):
+def test_prepare_rewrites_first_generate_to_independent_preview(run, aspect, expected):
     rows, _ = run
     setup(rows, aspect)
-    # Agent ratio/size is a guess and must not win over the selected card aspect.
+    # Agent ratio/size is a guess and must not win over the independent preview default.
     args, blocked = ma.prepare({
         "composition_plan": HEADPHONES_PLAN, "prompt": "generic product images",
         "multi_angle_stage": "final", "composition_id": "1",
@@ -236,7 +236,7 @@ def test_unskilled_and_final_generates_blocked_or_rewritten_until_preview_and_co
     assert "composition_plan" in blocked["error"]
     rewritten, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "prompt": "生成图像"})
     assert blocked is None and rewritten["_multi_angle"]["key"] == "preview"
-    assert (rewritten["width"], rewritten["height"], rewritten["ratio"]) == (1536, 2048, "3:4")
+    assert (rewritten["width"], rewritten["height"], rewritten["ratio"]) == (1152, 2048, "9:16")
     meta = rewritten["_multi_angle"]
     assert ma.reserve(meta) is None
     ma.submitted(meta, {"ids": ["preview-holder"], "submitted": True})

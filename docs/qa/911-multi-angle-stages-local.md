@@ -382,3 +382,14 @@ and the existing quote-confirm gate remains mandatory. No paid call is included.
 Updated prior fallback tests now lock this independent default rather than the
 withdrawn final-as-preview behavior. Explicit square preview coverage is added;
 final dimensions, exact pixels, replay and routing guards remain exercised.
+
+
+## 2026-11-17 15:48 product ruling (c8860a69 follow-up)
+
+`cb9421a3` changed the unspecified-preview default from independent 1152x2048
+(9:16) to the setup-card aspect. Product ruled that the 12:48 two-stage policy
+is not superseded: preview stays 1152x2048 (9:16) unless the user explicitly
+specifies a preview size; finals still follow the setup card. The first
+quote/paid generate must remain the numbered lineart preview, labelled as such,
+and must not price a final first. Camera wording is unchanged. Official gate
+and $0 quote checks belong on a new instance of the corrected tip, not 8927.

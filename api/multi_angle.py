@@ -4,8 +4,9 @@ The setup ask block owns a durable, fail-closed submit ledger. It survives a new
 agent turn/restart; a reserved/uncertain request is NEVER automatically resubmitted.
 This is deliberately not a turn counter (cards commonly resume in another turn).
 Only wait_generation's placed shapes unlock the composition card. Fixture pixels
-are evidence, not defaults: the answered setup-card aspect is the default for the
-first numbered lineart preview and for finals.
+are evidence, not defaults: final aspect comes from the answered setup card.
+The first paid quote remains the numbered lineart preview; its default size is
+independent of that final aspect unless the user explicitly specifies preview specs.
 """
 from __future__ import annotations
 
@@ -482,17 +483,16 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
         if not card_spec:
             raise ValueError("请选择比例或在其他栏输入比例/像素 / Select an aspect or enter aspect/pixels in Other.")
         final_spec = _complete_spec(_merge_specs(user_final, card_spec))
-        # Selected card aspect is the default for the first numbered lineart
-        # preview as well as finals. Explicit user preview/lineart specs still
-        # win; an already-submitted preview stays frozen. Agent-supplied tool
-        # width/height/ratio never override this default.
+        # The setup card controls FINALS only. Explicit user preview specs win;
+        # already-submitted preview specs remain immutable. Otherwise resolve the
+        # independent nine-grid default, never the final ratio or guessed tool args.
         frozen_preview = (ledger.get("setup_snapshot") or {}).get("preview")
         if user_preview:
             preview_spec = _complete_spec(user_preview)
         elif frozen_preview:
             preview_spec = copy.deepcopy(frozen_preview)
         else:
-            preview_spec = _complete_spec(_merge_specs(card_spec))
+            preview_spec = _complete_spec({"ratio": "9:16"})
         setup_snapshot = {"source": copy.deepcopy(source_answer), "aspect": copy.deepcopy(aspect_answer),
                           "final": final_spec, "preview": preview_spec,
                           "preview_request": copy.deepcopy(user_preview)}
