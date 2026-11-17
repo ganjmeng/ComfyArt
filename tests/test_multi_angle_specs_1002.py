@@ -122,7 +122,7 @@ def test_default_preview_is_independent_and_model_pixels_do_not_control_final(ru
     rows, _ = run
     setup(rows, "1:1")
     args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "width": 333, "height": 999, "ratio": "9:16"})
-    assert blocked is None and (args["width"], args["height"], args["ratio"]) == (1152, 2048, "9:16")
+    assert blocked is None and (args["width"], args["height"], args["ratio"]) == (2048, 2048, "1:1")
     spec = args["_multi_angle"]["stage_spec"]
     assert not spec["exact_pixels"] and spec["default_policy"] == ma.DEFAULT_SIZE_POLICY
     complete_preview(args)
@@ -248,22 +248,22 @@ def test_independent_preview_default_frozen_on_first_dispatch_not_pure_prepare(r
     rows, _ = run
     setup(rows, "1:1")
     args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "ratio": "9:16"})
-    assert blocked is None and args["ratio"] == "9:16"
-    # Agent-supplied ratio cannot change the independent preview default.
+    assert blocked is None and args["ratio"] == "1:1"
+    # Agent-supplied ratio cannot change the selected-aspect preview default.
     changed, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "ratio": "4:3"})
-    assert blocked is None and changed["ratio"] == "9:16"
+    assert blocked is None and changed["ratio"] == "1:1"
     ma.reserve(args["_multi_angle"])
     ma.submitted(args["_multi_angle"], {"ids": ["same-preview"], "submitted": True})
     _, replay = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "ratio": "3:4"})
     assert replay["ids"] == ["same-preview"] and replay["multi_angle_replay"]
     ledger = ma._root("chat-ma")[1][ma.LEDGER]
-    assert ledger["setup_snapshot"]["preview"]["ratio"] == "9:16"
+    assert ledger["setup_snapshot"]["preview"]["ratio"] == "1:1"
     ma.record_wait({"results": [{"id": "same-preview", "status": "done", "placed": True,
                                  "delivered": 1, "shapes": ["preview-shape"]}]})
     choose(rows, ("1",))
     final, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "composition_id": "1", "ratio": "9:16", "width": 999, "height": 333})
     assert blocked is None and (final["width"], final["height"], final["ratio"]) == (2048, 2048, "1:1")
-    assert final["_multi_angle"]["setup_snapshot"]["preview"]["ratio"] == "9:16"
+    assert final["_multi_angle"]["setup_snapshot"]["preview"]["ratio"] == "1:1"
 
 
 def test_prepare_and_quote_consistent_for_model_preview_and_final_exact_pixels(run, monkeypatch):
@@ -277,7 +277,7 @@ def test_prepare_and_quote_consistent_for_model_preview_and_final_exact_pixels(r
     assert blocked is None and repeated == args
     monkeypatch.setattr(canvas, "select_model", lambda *a, **k: {"model": "mock", "auto": True})
     model, quote = canvas.quote_route("generate_image", raw, catalog={})
-    assert model == "mock" and (quote["width"], quote["height"], quote["ratio"]) == (1152, 2048, "9:16")
+    assert model == "mock" and (quote["width"], quote["height"], quote["ratio"]) == (2048, 1536, "4:3")
     assert ma.LEDGER not in ma._root("chat-ma")[1]
     complete_preview(args)
     choose(rows, ("1",))

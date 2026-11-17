@@ -412,6 +412,14 @@ def cap_tool_result(text: str, name: str, args: dict, lang: str) -> str:
 def _step_label(name: str, args: dict, lang: str) -> str:
     zh = lang == "zh"
     base = re.sub(r"^mcp__\w+__", "", name or "")
+    if base == "generate_image":
+        try:
+            from ..api.multi_angle import quote_step_label
+        except ImportError:
+            from ComfyArt.api.multi_angle import quote_step_label
+        preview = quote_step_label(args or {}, lang)
+        if preview:
+            return preview
     if base == "skill":
         ref = str(args.get("name") or args.get("id") or "").strip()
         if str(args.get("action") or "").lower() == "read" and ref:

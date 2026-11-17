@@ -4,7 +4,8 @@ The setup ask block owns a durable, fail-closed submit ledger. It survives a new
 agent turn/restart; a reserved/uncertain request is NEVER automatically resubmitted.
 This is deliberately not a turn counter (cards commonly resume in another turn).
 Only wait_generation's placed shapes unlock the composition card. Fixture pixels
-are evidence, not defaults: final aspect comes from the answered setup card.
+are evidence, not defaults: the answered setup-card aspect is the default for the
+first numbered lineart preview and for finals.
 """
 from __future__ import annotations
 
@@ -113,6 +114,21 @@ def applies(args: dict, chat_id: str = "") -> bool:
     current = resolve(current) or current
     named = resolve(args.get("skill")) or canonical_skill(str(args.get("skill") or ""))
     return named == SKILL or current == SKILL
+
+
+def quote_step_label(args: dict, lang: str = "zh", chat_id: str = "") -> str:
+    """Preview quote/progress line; empty when this generate is not a multi-angle preview."""
+    if not applies(args, chat_id):
+        return ""
+    chat_id = chat_id or _chat_id()
+    _, root = _root(chat_id)
+    preview = ((root or {}).get(LEDGER) or {}).get("preview") or {}
+    stage = str(args.get("multi_angle_stage") or ("final" if preview.get("delivered") else "preview"))
+    if not preview.get("delivered"):
+        stage = "preview"
+    if stage != "preview":
+        return ""
+    return "线稿预览" if lang == "zh" else "Lineart preview"
 
 
 # Setup-card copy: zh is Lovart verbatim (product-locked). English is a faithful
@@ -433,7 +449,9 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
         return dict(args), None
     args = dict(args)
     _, root = _root(chat_id)
-    if root is None or root.get("status") != "answered":
+    status = (root or {}).get("status")
+    # Unanswered, expired, or cancelled setup must not be quoted or paid.
+    if root is None or status in {"expired", "cancelled"} or status != "answered":
         return args, _blocked("Use ask_user for source/aspect and wait for its answer first.")
     source_answer, aspect_answer = _answer(root, SOURCE), _answer(root, ASPECT)
     source_other = str(source_answer.get("other_text") or "").strip()
@@ -464,16 +482,17 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
         if not card_spec:
             raise ValueError("请选择比例或在其他栏输入比例/像素 / Select an aspect or enter aspect/pixels in Other.")
         final_spec = _complete_spec(_merge_specs(user_final, card_spec))
-        # The setup card controls FINALS only. Explicit user preview specs win;
-        # already-submitted preview specs remain immutable. Otherwise resolve the
-        # independent nine-grid default, never the final ratio or guessed tool args.
+        # Selected card aspect is the default for the first numbered lineart
+        # preview as well as finals. Explicit user preview/lineart specs still
+        # win; an already-submitted preview stays frozen. Agent-supplied tool
+        # width/height/ratio never override this default.
         frozen_preview = (ledger.get("setup_snapshot") or {}).get("preview")
         if user_preview:
             preview_spec = _complete_spec(user_preview)
         elif frozen_preview:
             preview_spec = copy.deepcopy(frozen_preview)
         else:
-            preview_spec = _complete_spec({"ratio": "9:16"})
+            preview_spec = _complete_spec(_merge_specs(card_spec))
         setup_snapshot = {"source": copy.deepcopy(source_answer), "aspect": copy.deepcopy(aspect_answer),
                           "final": final_spec, "preview": preview_spec,
                           "preview_request": copy.deepcopy(user_preview)}
@@ -481,9 +500,17 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
             raise ValueError("Source/aspect changed after submission; 规格/来源已变更或旧记录缺少规格快照，请先核对原任务并显式开启新一轮，禁止付费重放 / Specification/source changed or legacy snapshot missing; reconcile existing work and start an explicit new skill run, do not replay paid work.")
     except (ValueError, ZeroDivisionError) as e:
         return args, _blocked(str(e))
+    args["skill"] = SKILL
     aspect = final_spec["ratio"]
     preview = ledger.get("preview") or {}
-    stage = str(args.get("multi_angle_stage") or ("final" if preview.get("delivered") else "preview"))
+    # After setup is answered and preview is not delivered, force this skill's
+    # first generate/quote to the numbered lineart preview (rewrite a final or
+    # unskilled/generic generate rather than Auto-pricing it).
+    if not preview.get("delivered"):
+        args["multi_angle_stage"] = "preview"
+        stage = "preview"
+    else:
+        stage = str(args.get("multi_angle_stage") or "final")
     if stage not in {"preview", "final"}:
         return args, _blocked("multi_angle_stage must be preview or final")
     key = "preview"

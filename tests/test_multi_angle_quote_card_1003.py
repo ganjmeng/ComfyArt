@@ -84,7 +84,8 @@ def test_attached_reference_skips_source_question_and_infers_single_front(run, m
     assert blocked is None
     assert args["_multi_angle"]["source"] == "single_front"
     assert args["refs"] == [REF]
-    assert args["ratio"] == "9:16"
+    assert args["ratio"] == "3:4"
+    assert (args["width"], args["height"]) == (1536, 2048)
     assert args["_multi_angle"]["setup_snapshot"]["final"]["ratio"] == "3:4"
 
 
@@ -125,7 +126,7 @@ def test_preview_is_independent_of_final_aspect_and_agent_ratio(run):
     args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
                                 "multi_angle_stage": "preview", "ratio": "1:1"})
     assert blocked is None
-    assert (args["width"], args["height"], args["ratio"]) == (1152, 2048, "9:16")
+    assert (args["width"], args["height"], args["ratio"]) == (1536, 2048, "3:4")
     assert "ONE lineart preview" in args["prompt"] and "3x3 nine-panel" in args["prompt"]
 
 
@@ -146,7 +147,7 @@ async def test_generate_image_relay_is_blocked_without_confirmed_quote(run):
         "multi_angle_stage": "preview", "ratio": "1:1",
     })
     assert allowed.get("submitted") is True and sent
-    assert (sent[0][1]["width"], sent[0][1]["height"], sent[0][1]["ratio"]) == (1152, 2048, "9:16")
+    assert (sent[0][1]["width"], sent[0][1]["height"], sent[0][1]["ratio"]) == (1536, 2048, "3:4")
 
 
 @pytest.mark.asyncio
@@ -159,7 +160,7 @@ async def test_quote_route_does_not_require_confirmation(run, monkeypatch):
         {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview"},
         catalog={},
     )
-    assert model == "mock" and (inputs["width"], inputs["height"], inputs["ratio"]) == (1152, 2048, "9:16")
+    assert model == "mock" and (inputs["width"], inputs["height"], inputs["ratio"]) == (1536, 2048, "3:4")
     assert sent == []
     assert ma.LEDGER not in (ma._root("chat-ma")[1] or {})
 
@@ -170,9 +171,10 @@ def test_finals_and_composition_card_still_wait_for_preview(run):
     confirm_quote(rows)
     with pytest.raises(ValueError, match="preview"):
         bot_asks.validate_spec({"prompt": "choose early"})
-    _, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
-                             "multi_angle_stage": "final", "composition_id": "1"})
-    assert blocked is not None and blocked["submitted"] is False
+    args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
+                                "multi_angle_stage": "final", "composition_id": "1"})
+    assert blocked is None and args["_multi_angle"]["key"] == "preview"
+    assert (args["width"], args["height"], args["ratio"]) == (1536, 2048, "3:4")
 
 
 @pytest.mark.asyncio
@@ -202,3 +204,112 @@ def test_aspect_card_omits_generic_other_row():
     assert "{showOtherRow && (" in block
     assert 'data-other=""' in block
 
+
+@pytest.mark.parametrize("aspect,expected", [
+    ("1:1", (2048, 2048, "1:1")),
+    ("3:4", (1536, 2048, "3:4")),
+    ("4:3", (2048, 1536, "4:3")),
+    ("16:9", (2048, 1152, "16:9")),
+    ("9:16", (1152, 2048, "9:16")),
+])
+def test_prepare_coerces_preview_to_selected_aspect(run, aspect, expected):
+    rows, _ = run
+    setup(rows, aspect)
+    # Agent ratio/size is a guess and must not win over the selected card aspect.
+    args, blocked = ma.prepare({
+        "composition_plan": HEADPHONES_PLAN, "prompt": "generic product images",
+        "multi_angle_stage": "final", "composition_id": "1",
+        "ratio": "1:1", "width": 1024, "height": 1024,
+    })
+    assert blocked is None
+    assert args["skill"] == ma.SKILL
+    assert args["multi_angle_stage"] == "preview"
+    assert args["_multi_angle"]["key"] == "preview"
+    assert (args["width"], args["height"], args["ratio"]) == expected
+
+
+def test_unskilled_and_final_generates_blocked_or_rewritten_until_preview_and_composition(run):
+    rows, _ = run
+    setup(rows, "3:4")
+    rewritten, blocked = ma.prepare({"prompt": "生成图像", "refs": [REF]})
+    assert blocked is not None and blocked["submitted"] is False
+    assert "composition_plan" in blocked["error"]
+    rewritten, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "prompt": "生成图像"})
+    assert blocked is None and rewritten["_multi_angle"]["key"] == "preview"
+    assert (rewritten["width"], rewritten["height"], rewritten["ratio"]) == (1536, 2048, "3:4")
+    meta = rewritten["_multi_angle"]
+    assert ma.reserve(meta) is None
+    ma.submitted(meta, {"ids": ["preview-holder"], "submitted": True})
+    ma.record_wait({"results": [{"id": "preview-holder", "status": "done", "placed": True,
+                                 "shapes": ["preview-shape"]}]})
+    _, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
+                             "multi_angle_stage": "final", "composition_id": "1"})
+    assert blocked is not None and blocked["submitted"] is False
+    choose(rows, ("1",))
+    final, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
+                                 "multi_angle_stage": "final", "composition_id": "1"})
+    assert blocked is None and final["_multi_angle"]["key"] == "final:1"
+    assert (final["width"], final["height"], final["ratio"]) == (1536, 2048, "3:4")
+
+
+def test_missing_composition_plan_is_fail_closed_not_auto_priced(run, monkeypatch):
+    rows, _ = run
+    setup(rows, "3:4")
+    banana = {"model": "google/nano-banana-pro/edit", "auto": True, "category": "image_edit",
+              "reason": {"zh": "自动", "en": "Auto"}}
+    monkeypatch.setattr(canvas, "select_model", lambda *a, **k: banana)
+    model, payload = canvas.quote_route("generate_image", {
+        "skill": ma.SKILL, "multi_angle_stage": "preview", "ratio": "3:4", "prompt": "numbered lineart",
+    }, catalog={})
+    assert model == ""
+    blocked = payload["param_blocked"]
+    assert blocked["submitted"] is False and blocked["kind"] == "multiAngleStage"
+    assert "composition_plan" in blocked["error"]
+    assert "nano-banana" not in str(payload).lower()
+
+
+@pytest.mark.parametrize("status", [None, "pending", "expired", "cancelled"])
+def test_unanswered_or_expired_setup_cannot_be_priced(run, monkeypatch, status):
+    rows, _ = run
+    if status:
+        setup(rows, "3:4", status=status)
+    monkeypatch.setattr(canvas, "select_model", lambda *a, **k: {
+        "model": "google/nano-banana-pro/edit", "auto": True, "category": "image_edit"})
+    model, payload = canvas.quote_route("generate_image", {
+        "composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview",
+    }, catalog={})
+    assert model == ""
+    blocked = payload["param_blocked"]
+    assert blocked["submitted"] is False and blocked["kind"] == "multiAngleStage"
+    assert "nano-banana" not in str(payload).lower()
+
+
+@pytest.mark.asyncio
+async def test_quote_line_leads_with_lineart_preview_label(run, monkeypatch):
+    from ComfyArt.bot.local_llm import _step_label
+    rows, _ = run
+    setup(rows, "3:4")
+    args = {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview"}
+    assert _step_label("generate_image", args, "zh") == "线稿预览"
+    assert _step_label("generate_image", args, "en") == "Lineart preview"
+    # A generic generate in this skill chat is still labelled as the forced preview.
+    assert _step_label("generate_image", {"prompt": "生成图像"}, "zh") == "线稿预览"
+    monkeypatch.setattr(canvas, "select_model", lambda *a, **k: {"model": "mock", "auto": True})
+
+    async def pricer(name, inputs):
+        return 0.1035
+
+    async def models_for(feature):
+        return [("mock", 0.1035)]
+
+    def router(tool, arguments, position=0):
+        return canvas.quote_route(tool, arguments, catalog={}, position=position)
+
+    quote = await build_quote(
+        [{"text": "生成图像", "tool": "generate_image", "model": "mock",
+          "arguments": args}],
+        "zh", threshold=0, pricer=pricer, models_for=models_for, router=router,
+    )
+    assert quote is not None and quote.lines
+    assert quote.lines[0].text.startswith("线稿预览")
+    assert not quote.lines[0].text.startswith("生成图像")

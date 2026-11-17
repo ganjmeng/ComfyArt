@@ -597,6 +597,11 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         amount, approx, source, reason = priced.amount, priced.approx, priced.source, priced.reason
         unpriced = amount is None
         name = step["text"] or step["tool"]
+        if step["tool"] == "generate_image":
+            from ..api.multi_angle import quote_step_label
+            preview_name = quote_step_label(step.get("arguments") or {}, lang)
+            if preview_name:
+                name = preview_name
         label = model_label(show) if show else AUTO_LABEL[lang]
         choice = routed_choice or _quote_choice(step, router)
         routed_id = str((choice or {}).get("edit_model") or (choice or {}).get("model") or "")
