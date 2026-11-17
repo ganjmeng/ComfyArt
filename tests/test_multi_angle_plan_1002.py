@@ -1,5 +1,6 @@
 """Subject planning contract: no paid API, no browser, no global view fallback."""
 import copy
+import json
 
 import pytest
 
@@ -333,7 +334,8 @@ def test_chinese_camera_and_material_clauses_follow_stage_priority(run):
     choose(rows, ("1", "8"))
     final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": "1"})
     assert blocked is None
-    assert "亚光灰材质仅作成品说明" in final["prompt"]
+    assert "亚光灰材质仅作成品说明" not in final["prompt"]  # planner appearance not injected (#1003)
+    assert ma.FINAL_FINISH in final["prompt"]
     assert "正面机位" not in final["prompt"]  # camera comes only from the delivered cell (#1003)
     assert PREVIEW_MATERIAL_DEFER_ZH not in final["prompt"]
     assert FINAL_ORIENTATION in final["prompt"]
@@ -388,10 +390,12 @@ def test_preview_prompt_does_not_overclaim_projection_and_keeps_unprojected_fiel
         final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": number})
         assert blocked is None
         chosen = plan["panels"][int(number)-1]
-        # #1003: mixed camera prose is not injected into finals; appearance travels via its own field.
+        # #1003: planner camera prose and appearance are not injected; user's words + reference are.
         assert chosen["description"] not in final["prompt"]
-        assert chosen["appearance"] in final["prompt"]
-        assert "glossy red leather" in final["prompt"]
+        if chosen["appearance"] not in plan["purpose"]:  # purpose itself is user-facing and restated
+            assert chosen["appearance"] not in final["prompt"]
+        assert "商品详情页，红色皮革外观" in final["prompt"]  # user's own words still reach finals
+        assert "glossy red leather" not in final["prompt"]  # planner appearance, not user words
         assert "红色皮革外观" in final["prompt"]
         assert "Restore the original subject's material, color and finish" in final["prompt"]
         assert PREVIEW_MATERIAL_DEFER_EN not in final["prompt"]
@@ -555,3 +559,48 @@ def test_final_prompt_uses_delivered_cell_as_only_left_right_authority_1003(run)
         assert "come ONLY from that delivered cell" in prompt
         assert FINAL_ORIENTATION in prompt and FINAL_NO_MIRROR in prompt
         assert final["ref_modes"][-1] == "composition"  # delivered preview attached as the camera authority
+
+
+def test_final_prompt_has_no_generic_matte_gray_and_carries_finish_lighting_1003(run):
+    """#1003 product/design 22:4x: no generic 'matte gray' in finals; color from the original reference
+    (no darkening to black), per-material separation, key/edge light, white bg, faint contact shadow."""
+    from pathlib import Path
+    plan = json.loads((Path(__file__).parent / "fixtures/multi-angle-camera-plan-1002.json").read_text())
+    rows, _ = run
+    setup(rows)
+    preview = prepare(plan)
+    deliver(preview["_multi_angle"])
+    choose(rows, ("1", "2", "3"))
+    assert "matte gray" in json.dumps(plan)  # fixture really carries the generic phrase
+    for number in ("1", "2", "3"):
+        final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": number})
+        assert blocked is None
+        prompt = final["prompt"]
+        assert "matte gray" not in prompt.lower()
+        assert ma.FINAL_FINISH in prompt
+        for phrase in ("actual color value", "do not darken it toward black", "soft key light",
+                       "edge highlights", "pure white (#FFFFFF)", "faint soft contact shadow directly beneath",
+                       "must not tint the background"):
+            assert phrase in prompt
+        assert "LINEART ONLY" not in prompt
+    assert ma.FINAL_FINISH not in preview["prompt"]
+
+
+def test_real_5cf1a349_frozen_plan_final_prompt_has_no_matte_gray_or_plan_left_right_1003(run):
+    from pathlib import Path
+    path = Path("/workspace/qa1003-5cf1a349-paid-preview/structured-plan.json")
+    if not path.exists():
+        return
+    plan = json.loads(path.read_text())
+    rows, _ = run
+    setup(rows)
+    preview = prepare(plan)
+    deliver(preview["_multi_angle"])
+    choose(rows, ("1", "2", "3"))
+    for number in ("1", "2", "3"):
+        final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": number})
+        assert blocked is None
+        prompt = final["prompt"].lower()
+        assert "matte gray" not in prompt
+        for word in ("viewer's right", "viewer's left", "subject's left", "subject's right"):
+            assert word not in prompt

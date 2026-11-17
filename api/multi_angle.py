@@ -21,6 +21,17 @@ RATIOS = ("1:1", "3:4", "4:3", "16:9", "9:16", "4:5", "5:4", "3:2", "2:3")
 PANEL_IDS = tuple(str(i) for i in range(1, 10))
 
 
+FINAL_FINISH = (
+    "Finished-image material and lighting: take material, color and finish ONLY from the original reference photo "
+    "and the user's own description; keep the reference's actual color value; do not darken it toward black, recolor it, "
+    "or borrow another product's palette. Give each distinct material visible in the reference its own surface response "
+    "(for example soft cushions or fabric, hard shells, metal joints or fittings), without inventing new parts or materials. "
+    "Studio product lighting: a soft key light, crisp edge highlights along the contours, genuinely deep shadows in recesses "
+    "and a clear highlight-to-shadow range; avoid flat, low-contrast, hazy or washed-out gray rendering. "
+    "Unless the user's description asks for another background, keep a pure white (#FFFFFF) seamless background with no gray haze; "
+    "allow only one faint soft contact shadow directly beneath the subject, which must not tint the background.\n")
+
+
 def validate_plan(value: object) -> dict:
     """A subject-aware plan is supplied by the agent after inspecting input, never a fixed view list."""
     if not isinstance(value, dict):
@@ -579,7 +590,10 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
         brief = f"Subject geometry: {view['subject_geometry']}\nThis stage: {spec['width']}x{spec['height']}, ratio {spec['ratio']}.\nPreserve reference identity, geometry and proportions. For each panel, draw only the structures visible from that panel's frozen camera; occlude surfaces that camera cannot see. The source image supplies subject identity, not a front-facing camera for every panel.\n"
     else:
         brief = f"User description (preserve; empty means image-only, use the attached subject without inventing a brief):\n{description}\nReference source: {source}; other scenario: {source_other}. Final specification: {final_spec['width']}x{final_spec['height']}, ratio {aspect}; exact user pixels={final_spec['exact_pixels']}. This stage: {spec['width']}x{spec['height']}, ratio {spec['ratio']}.\nPreserve subject identity, geometry, proportions, controls and the user's background requirements.\n"
-        brief += f"Frozen composition planning context: subject={plan['subject']}; purpose={plan['purpose']}. Subject appearance: {plan['appearance']}.\n"
+        # #1003: planner appearance/subject prose (e.g. a generic "matte gray finish") is not injected
+        # into finals; material/color come from the original reference and the user's own words only.
+        # Planner subject summaries can also carry finish words, so only the purpose is restated.
+        brief += f"Frozen composition planning context: purpose={plan['purpose']}.\n"
     if stage == "preview":
         brief += (
             "Produce ONE lineart preview image (LINEART ONLY planning sheet): a numbered 3x3 nine-panel composition grid, labels 1..9. "
@@ -598,12 +612,12 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
     else:
         chosen = next(p for p in plan["panels"] if p["id"] == panel)
         brief += "Restore the original subject's material, color and finish from the original reference/brief; use the lineart only for composition.\n"
+        brief += FINAL_FINISH
         # #1003 product 22:3x ruling: the delivered preview cell is the ONLY authority for
         # left/right. The plan's camera prose (description/geometry) may disagree with what was
         # actually drawn and was the source of reversed finals, so it is structurally not injected.
         brief += (
             f"Produce ONE independent finished image, composition {panel}: {chosen['name']} — reproduce numbered cell {panel} of the delivered preview (attached composition reference). "
-            f"Panel appearance: {chosen['appearance']}. "
             "Match that exact numbered panel in the delivered preview. "
             "Camera side, viewing direction, elevation, framing, screen-left/right placement, which parts are near or far, and handedness come ONLY from that delivered cell; "
             "the frozen plan's camera wording is intentionally not repeated here. "
