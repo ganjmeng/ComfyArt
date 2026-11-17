@@ -1,0 +1,58 @@
+[
+  {
+    "path": "README.md",
+    "source_sha256": "80dbfcd33b435f7a0bac8dd8607031574891d0db3bb70a6b3accaee883e18131",
+    "archived_sha256": "80dbfcd33b435f7a0bac8dd8607031574891d0db3bb70a6b3accaee883e18131",
+    "bytes": 2311,
+    "sanitized_json": false
+  },
+  {
+    "path": "PAID.md",
+    "source_sha256": "a240bb5ccfff1a01203904f2fea1c585593bdabc8f195ebbcfaa0947c9189f64",
+    "archived_sha256": "a240bb5ccfff1a01203904f2fea1c585593bdabc8f195ebbcfaa0947c9189f64",
+    "bytes": 4078,
+    "sanitized_json": false
+  },
+  {
+    "path": "parent-visual-review.json",
+    "source_sha256": "3b6cf0abaecbc3489507328698c602cf7b2b64d5541d8bb4869f0fd3d87b49f1",
+    "archived_sha256": "3b6cf0abaecbc3489507328698c602cf7b2b64d5541d8bb4869f0fd3d87b49f1",
+    "bytes": 674,
+    "sanitized_json": false
+  },
+  {
+    "path": "structured-plan.json",
+    "source_sha256": "f27f4898a823154926d813ee1e397e7a881a8d920ff184a9a1971e166e64def6",
+    "archived_sha256": "f27f4898a823154926d813ee1e397e7a881a8d920ff184a9a1971e166e64def6",
+    "bytes": 4748,
+    "sanitized_json": false
+  },
+  {
+    "path": "downloads/preview-9x16.png",
+    "source_sha256": "87fb45980ce6fbec407d16e49b78bc4561d0d020505d8ef9c33c1c9ad92df540",
+    "archived_sha256": "87fb45980ce6fbec407d16e49b78bc4561d0d020505d8ef9c33c1c9ad92df540",
+    "bytes": 2435795,
+    "sanitized_json": false
+  },
+  {
+    "path": "go/preview.task.json",
+    "source_sha256": "37db59b23228ee7e464ff70cba0d4635ce3999e5f4df4e7950b364c933e1666b",
+    "archived_sha256": "37db59b23228ee7e464ff70cba0d4635ce3999e5f4df4e7950b364c933e1666b",
+    "bytes": 207,
+    "sanitized_json": false
+  },
+  {
+    "path": "paid/run-result.json",
+    "source_sha256": "8b7ee47b1d446c12a3757591a993cd25c64a5a6a494de7be1aa1e209e8425bef",
+    "archived_sha256": "3c0c971210bd1fcabd7e22518d6a2da0cbc69d1e58c52d326ed78b4b3b157792",
+    "bytes": 10698,
+    "sanitized_json": true
+  },
+  {
+    "path": "paid/submit-body-preview.json",
+    "source_sha256": "6ae91872480bb7ceaf753c6867b0623d23e47097e310dde029ba7b65d863f030",
+    "archived_sha256": "ff43cafdf471b7bb943156c75c0ab2b4101b0db25f3a4d9d8cbca59fbe763cea",
+    "bytes": 4065,
+    "sanitized_json": true
+  }
+]

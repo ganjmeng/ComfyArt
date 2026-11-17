@@ -1,0 +1,46 @@
+{
+  "label": "preview",
+  "app_params": {
+    "width": 1152,
+    "height": 2048,
+    "ratio": "9:16",
+    "size_lock_mode": "ratio",
+    "size_lock": true,
+    "n_refs": 1,
+    "refs": [
+      "/api/view?filename=ma_subject_691.png&type=input"
+    ],
+    "exact_pixels": false,
+    "key": "[REDACTED]"
+  },
+  "quote": {
+    "model": "openai/gpt-image-2.6-flare/edit",
+    "price": 0.1035,
+    "source": "quote",
+    "reason": "live",
+    "priced": {
+      "ratio": "9:16",
+      "width": 1152,
+      "height": 2048,
+      "resolution": "2k",
+      "aspect_ratio": null,
+      "size_lock_mode": "ratio"
+    },
+    "note": "prior preflight $0.1035 was not assumed; this is a fresh live quote"
+  },
+  "wavespeed_inputs_redacted": {
+    "feature": "image_edit",
+    "model": "openai/gpt-image-2.6-flare/edit",
+    "prompt": "Subject geometry: over-ear headphones: two oval earcups joined by a padded headband and slim yokes at each cup joint; keep the reference proportions and visible structures only\nThis stage: 1152x2048, ratio 9:16.\nPreserve reference identity, geometry, proportions and visible structures.\nProduce ONE lineart preview image (LINEART ONLY planning sheet): a numbered 3x3 nine-panel composition grid, labels 1..9. Use thin black contour/structural lines on a plain white background; keep the interior paper-white. No color, gray fills, shading, gradients, shadows, lighting, material texture, realistic photography, clay render or 3D product rendering. The attached reference supplies identity/geometry ONLY at this stage, not its photographic finish. User material/finish requirements are deferred to finished images.\nFor each panel, execute its frozen camera direction, framing and visible structures. An overhead plan must show the actual top-facing geometry rather than reuse the front silhouette; similarly distinguish side/rear views. Do not invent nonexistent parts to distinguish panels.\nOnly structured subject geometry and numbered panel geometry are executable here. Names, purpose, original user wording and appearance are reserved for finished images, not injected into this preview. 仅执行结构化主体几何与各格机位/构图，名称、用途、用户原话与外观描述保留给成品阶段。\n1: front-on camera on the subject mid-line; both earcups and the headband symmetrically visible; keep the reference screen-left/right handedness and camera direction; do not mirror or horizontally flip\n2: three-quarter camera about 45 degrees off the front mid-line toward the viewer's right so the subject's left earcup is closer; show earcup depth, yoke and headband curve; preserve that screen-left/right orientation, camera direction and handedness; do not mirror or horizontally flip\n3: strict 90-degree side-profile camera on the viewer's right, showing the outer shell of the subject's left earcup and the headband arc; preserve that camera direction and handedness; do not mirror, horizontally flip, or reverse the composition\n4: close framing of the visible cushion and lining inside one earcup only; no invented parts\n5: close framing of the outer earcup shell surface only\n6: rear three-quarter camera showing the headband-to-yoke joints; do not reuse the front silhouette\n7: overhead / top-down camera looking straight down the vertical axis onto the headband arc; both earcups seen from their top edges only, with the clear gap and spacing between cups; show actual top-facing geometry rather than reuse the front-on silhouette\n8: close framing of the visible headband-to-cup joint only; no invented sliders or buttons\n9: low camera looking slightly upward, emphasizing earcup volume and the headband curve; distinct from front-on and from overhead\nUse exactly this panel numbering and composition plan; do not substitute generic views.",
+    "images": [
+      "/api/view?filename=ma_subject_691.png&type=input"
+    ],
+    "width": 1152,
+    "height": 2048,
+    "size_lock": true,
+    "size_lock_mode": "ratio",
+    "user_ratio": "9:16",
+    "resolution": "2k"
+  },
+  "paid_submit_intended": true
+}

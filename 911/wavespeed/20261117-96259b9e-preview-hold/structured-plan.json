@@ -1,0 +1,71 @@
+{
+  "subject": "over-ear headphones in the supplied front-view reference: two cushioned oval earcups, a padded headband, and slim yokes; no invented logo, controls, sliders, or hidden parts",
+  "purpose": "商品详情页",
+  "subject_geometry": "over-ear headphones: two oval earcups joined by a padded headband and slim yokes at each cup joint; keep the reference proportions and visible structures only",
+  "appearance": "matte gray plastic and cushion finish on a pure white seamless background",
+  "panels": [
+    {
+      "id": "1",
+      "name": "正面全景",
+      "description": "front-on full product, both earcups and the padded headband symmetrically visible, matte gray materials, pure white seamless background; keep the reference screen-left/right handedness",
+      "geometry": "front-on camera on the subject mid-line; both earcups and the headband symmetrically visible; keep the reference screen-left/right handedness and camera direction; do not mirror or horizontally flip",
+      "appearance": "matte gray finish, pure white seamless background"
+    },
+    {
+      "id": "2",
+      "name": "四分之三全景",
+      "description": "three-quarter view of the same headphones showing earcup depth, yoke, and headband curve, identity unchanged, white seamless; preserve that camera's screen-left/right orientation",
+      "geometry": "three-quarter camera about 45 degrees off the front mid-line toward the viewer's right so the subject's left earcup is closer; show earcup depth, yoke and headband curve; preserve that screen-left/right orientation, camera direction and handedness; do not mirror or horizontally flip",
+      "appearance": "matte gray finish, pure white seamless background"
+    },
+    {
+      "id": "3",
+      "name": "90°侧面轮廓",
+      "description": "strict 90-degree side profile of one earcup shell and headband arc, silhouette accurate to the reference, white seamless; do not reverse the facing",
+      "geometry": "strict 90-degree side-profile camera on the viewer's right, showing the outer shell of the subject's left earcup and the headband arc; preserve that camera direction and handedness; do not mirror, horizontally flip, or reverse the composition",
+      "appearance": "matte gray finish, pure white seamless background"
+    },
+    {
+      "id": "4",
+      "name": "耳罩内衬特写",
+      "description": "close-up of the visible cushion/lining inside an earcup, do not invent hidden electronics, white seamless",
+      "geometry": "close framing of the visible cushion and lining inside one earcup only; no invented parts",
+      "appearance": "matte gray cushion/lining, pure white seamless background"
+    },
+    {
+      "id": "5",
+      "name": "外壳表面特写",
+      "description": "outer earcup shell close-up matching the reference, white seamless",
+      "geometry": "close framing of the outer earcup shell surface only",
+      "appearance": "matte gray shell, pure white seamless background"
+    },
+    {
+      "id": "6",
+      "name": "后侧连接",
+      "description": "rear three-quarter view showing how the headband meets the yokes, same product, white seamless",
+      "geometry": "rear three-quarter camera showing the headband-to-yoke joints; do not reuse the front silhouette",
+      "appearance": "matte gray finish, pure white seamless background"
+    },
+    {
+      "id": "7",
+      "name": "顶部头梁",
+      "description": "genuine top-down view of the headband arc and the spacing between cups, proportions from the reference, white seamless; must show actual top-facing geometry, not a front repeat",
+      "geometry": "overhead / top-down camera looking straight down the vertical axis onto the headband arc; both earcups seen from their top edges only, with the clear gap and spacing between cups; show actual top-facing geometry rather than reuse the front-on silhouette",
+      "appearance": "matte gray finish, pure white seamless background"
+    },
+    {
+      "id": "8",
+      "name": "调节连接处",
+      "description": "close-up of the visible headband-to-cup joint only, do not invent sliders or buttons, white seamless",
+      "geometry": "close framing of the visible headband-to-cup joint only; no invented sliders or buttons",
+      "appearance": "matte gray finish, pure white seamless background"
+    },
+    {
+      "id": "9",
+      "name": "低角度体积",
+      "description": "low product angle emphasizing earcup volume and the curve of the headband, same headphones, white seamless",
+      "geometry": "low camera looking slightly upward, emphasizing earcup volume and the headband curve; distinct from front-on and from overhead",
+      "appearance": "matte gray finish, pure white seamless background"
+    }
+  ]
+}

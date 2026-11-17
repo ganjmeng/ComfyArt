@@ -1,0 +1,13 @@
+{
+  "sha": "96259b9e17da5990e5655c01b663c3252cec6ee6",
+  "task": "656362db606041debf18e657e44b1ba7",
+  "review": "independent parent visual review",
+  "lineart": "satisfied in this image: black outlines on white, no photographic material render",
+  "panel7": "FAIL: front-like arch and both inner cushions remain visible, substantially repeats panel1; not overhead top edges-only camera required in structured-plan.json",
+  "verdict": "HOLD; STOP; no finals or retries",
+  "scope": "scripted zero LLM; not default agent, UI or L/R acceptance",
+  "quoted_usd": 0.1035,
+  "shared_balance_delta_usd": 0.1035,
+  "cumulative_recorded_usd": 0.3798,
+  "remaining_cap_usd": 0.6202
+}
