@@ -9,7 +9,7 @@ import copy
 
 import pytest
 
-from multi_angle_plan_fixture import HEADPHONES_PLAN
+from multi_angle_plan_fixture import HEADPHONES_PLAN, preview_url
 
 from ComfyArt.api import bot_asks, bot_turns, chat_store, multi_angle as ma
 from ComfyArt.api.mcp_tools import canvas
@@ -123,7 +123,7 @@ def test_other_field_two_digit_numbers_fail_closed(run, other, selected):
     args, _ = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview"})
     ma.reserve(args["_multi_angle"])
     ma.submitted(args["_multi_angle"], {"ids": ["p"]})
-    ma.record_wait({"results": [{"id": "p", "status": "done", "placed": True, "shapes": ["s"]}]})
+    ma.record_wait({"results": [{"id": "p", "status": "done", "placed": True, "shapes": ["s"], "urls": [preview_url()]}]})
     spec = bot_asks.validate_spec({"prompt": "choose compositions"})
     rows.append({"id": "composition-msg", "role": "assistant", "blocks": [{
         "type": "ask", "ask_id": "compositions", "status": "answered", **spec,
@@ -183,7 +183,8 @@ def test_description_source_empty_refs_are_not_replaced_by_later_args(run):
     meta = args["_multi_angle"]
     assert ma.reserve(meta) is None
     ma.submitted(meta, {"ids": ["p"], "submitted": True})
-    ma.record_wait({"results": [{"id": "p", "status": "done", "placed": True, "shapes": ["preview-shape"]}]})
+    ma.record_wait({"results": [{"id": "p", "status": "done", "placed": True, "shapes": ["preview-shape"],
+                                 "urls": [preview_url()]}]})
     spec = bot_asks.validate_spec({"prompt": "choose compositions"})
     rows.append({"id": "composition-msg", "role": "assistant", "blocks": [{
         "type": "ask", "ask_id": "compositions", "status": "answered", **spec,
@@ -195,7 +196,7 @@ def test_description_source_empty_refs_are_not_replaced_by_later_args(run):
     assert blocked is None
     # Snapshotted empty original refs must stay empty; preview may be bound as composition only.
     assert "sneaky-late-ref" not in final["refs"]
-    assert final["refs"] == ["preview-shape"] or final["refs"] == []
+    assert final["refs"] == [final["_multi_angle"]["composition_crop"]["ref"]]  # #1003: only the cell crop
 
 
 def test_unrelated_skill_prepare_is_untouched_when_current_skill_is_not_multi_angle(run):

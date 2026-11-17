@@ -10,7 +10,7 @@ import copy
 
 import pytest
 
-from multi_angle_plan_fixture import HEADPHONES_PLAN
+from multi_angle_plan_fixture import HEADPHONES_PLAN, preview_url
 
 from ComfyArt.api import bot_asks, bot_turns, chat_store, multi_angle as ma
 from ComfyArt.api.mcp_tools import canvas
@@ -97,7 +97,8 @@ def preview(rows, *, aspect="1:1"):
     meta = args["_multi_angle"]
     assert ma.reserve(meta) is None
     ma.submitted(meta, {"ids": ["preview-holder"], "submitted": True})
-    ma.record_wait({"results": [{"id": "preview-holder", "status": "done", "placed": True, "shapes": ["preview-shape"]}]})
+    ma.record_wait({"results": [{"id": "preview-holder", "status": "done", "placed": True, "shapes": ["preview-shape"],
+                                 "urls": [preview_url()]}]})
     return args
 
 
@@ -183,7 +184,9 @@ def test_variable_final_aspects_counts_and_ids_with_ref_description_retained(run
                                     "prompt": "wrong description"})
         assert blocked is None
         assert (args["width"], args["height"]) == expected and args["ratio"] == aspect
-        assert args["count"] == args["n"] == 1 and args["refs"] == [REF, "preview-shape"]
+        # #1003 23:0x: the selected cell crop replaces the whole delivered grid as the composition ref.
+        assert args["count"] == args["n"] == 1 and args["refs"] == [REF, args["_multi_angle"]["composition_crop"]["ref"]]
+        assert "preview-shape" not in args["refs"]
         assert args["ref_modes"] == ["content", "composition"]
         assert DESC in args["prompt"] and "wrong description" not in args["prompt"]
         assert f"composition {panel}:" in args["prompt"]
@@ -225,7 +228,8 @@ async def test_actual_fixture_dispatch_and_durable_replay_no_duplicate_paid_subm
     result = await relay(args)
     assert result["ids"] == first["ids"] and result["multi_angle_replay"]
     assert len(sent) == 1
-    ma.record_wait({"results": [{"id": first["ids"][0], "status": "done", "placed": True, "shapes": ["preview"]}]})
+    ma.record_wait({"results": [{"id": first["ids"][0], "status": "done", "placed": True, "shapes": ["preview"],
+                                 "urls": [preview_url()]}]})
     choose(rows)
     for panel in ("1", "2", "3"):
         final = {"multi_angle_stage": "final", "composition_id": panel}  # omitted skill inferred safely
@@ -235,7 +239,8 @@ async def test_actual_fixture_dispatch_and_durable_replay_no_duplicate_paid_subm
     assert len(sent) == 4
     assert [(a["width"], a["height"], a["count"]) for _, a in sent[1:]] == [(2048, 2048, 1)] * 3
     assert sent[0][1]["refs"] == [REF]
-    assert all(a["refs"] == [REF, "preview"] and DESC in a["prompt"] for _, a in sent[1:])
+    assert all(a["refs"][0] == REF and len(a["refs"]) == 2 and "ma-cell" in a["refs"][1] and DESC in a["prompt"] for _, a in sent[1:])
+    assert all("preview" not in a["refs"] for _, a in sent[1:])  # #1003: never the whole grid
     assert all("_multi_angle" not in a and "multi_angle_stage" not in a and "composition_id" not in a for _, a in sent)
 
 
@@ -484,7 +489,8 @@ async def test_positive_app_stack_scripted_agent_real_asks_persistence_and_place
             return {"ids": [holder], "submitted": True}
         assert action == "wait_generation"
         return {"results": [{"id": h, "status": "done", "placed": True, "generation_succeeded": True,
-                             "delivered": 1, "shapes": [holder_shapes[h]], "urls": [f"mock://{h}"]}
+                             "delivered": 1, "shapes": [holder_shapes[h]],
+                             "urls": [preview_url() if h == "holder:1" else f"mock://{h}"]}
                             for h in args["ids"]]}
 
     def answer_broadcast(event, payload):
@@ -539,7 +545,8 @@ async def test_positive_app_stack_scripted_agent_real_asks_persistence_and_place
         assert trace[:4] == ["ask_user", "generate_image", "wait_generation", "ask_user"]
         assert (sent[0]["width"], sent[0]["height"], sent[0]["ratio"]) == (1152, 2048, "9:16")
         assert all((a["width"], a["height"], a["count"]) == (2048, 2048, 1) for a in sent[1:])
-        assert all(a["refs"] == [REF, "shape:delivered:1"] and DESC in a["prompt"] for a in sent[1:])
+        assert all(a["refs"][0] == REF and len(a["refs"]) == 2 and "ma-cell" in a["refs"][1] and DESC in a["prompt"] for a in sent[1:])
+        assert all("shape:delivered:1" not in a["refs"] for a in sent[1:])  # #1003: never the whole grid
         stored = chat_store.list_messages(cid)
         asks = [b for row in stored for b in row["blocks"] if b["type"] == "ask" and b.get("kind") == "question"]
         assert quote_approvals, "Unpriced plan_quote cards must be handled, not mistaken for questions"

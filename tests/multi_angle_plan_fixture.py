@@ -38,3 +38,49 @@ PAID_FAILURE_PLAN = {
         {"id": "9", "name": "低角度体积", "description": "low product angle emphasizing earcup volume and the curve of the headband, same gray headphones, white seamless"},
     ],
 }
+
+
+# #1003: finals crop the selected cell from the delivered preview FILE, so test previews are a
+# real synthetic image with UNEQUAL cells (never equal thirds), an outer frame, number labels and
+# one drawing per cell. Written under the stubbed ComfyUI output dir like a WaveSpeed download.
+GRID_W, GRID_H = 900, 1600
+GRID_X, GRID_Y = (330, 610), (520, 1090)
+
+
+def grid_png(w=GRID_W, h=GRID_H, xs=GRID_X, ys=GRID_Y, *, slant=0, stroke=3, frame=True, labels=True, lines=True):
+    import io
+    from PIL import Image, ImageDraw
+    img = Image.new("RGB", (w, h), "white")
+    d = ImageDraw.Draw(img)
+    if frame:
+        d.rectangle([0, 0, w - 1, h - 1], outline="black", width=2)
+    if lines:
+        for x in xs:
+            d.line([(x - slant // 2, 0), (x + slant - slant // 2, h)], fill="black", width=stroke)
+        for y in ys:
+            d.line([(0, y), (w, y)], fill="black", width=stroke)
+    bx, by = [0, *xs, w], [0, *ys, h]
+    for r in range(3):
+        for c in range(3):
+            x0, x1, y0, y1 = bx[c], bx[c + 1], by[r], by[r + 1]
+            if labels:  # a "number": small isolated glyph cluster in the top-left corner
+                d.rectangle([x0 + 14, y0 + 14, x0 + 18, y0 + 40], fill="black")
+                d.rectangle([x0 + 10, y0 + 14, x0 + 16, y0 + 18], fill="black")
+            cx, cy = (x0 + x1) // 2, (y0 + y1) // 2
+            rw, rh = (x1 - x0) // 3, (y1 - y0) // 3
+            d.ellipse([cx - rw, cy - rh, cx + rw, cy + rh], outline="black", width=3)
+            d.line([(cx - rw, cy), (cx + rw, cy)], fill="black", width=2)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def preview_url(name="ma-preview-test.png", **kw):
+    """Write the synthetic preview into the (per-test) output dir; return its /api/view URL."""
+    import os
+    import folder_paths
+    root = os.path.join(folder_paths.get_output_directory(), "wavespeed")
+    os.makedirs(root, exist_ok=True)
+    with open(os.path.join(root, name), "wb") as f:
+        f.write(grid_png(**kw))
+    return f"/api/view?filename={name}&subfolder=wavespeed&type=output"

@@ -32,6 +32,28 @@ FINAL_FINISH = (
     "allow only one faint soft contact shadow directly beneath the subject, which must not tint the background.\n")
 
 
+# #1003 product 23:0x ruling: a short per-panel content note may reach finals, but left/right and
+# camera come ONLY from the delivered cell crop. Directional/camera wording is rejected, never edited.
+CONTENT_MAX = 200
+_CONTENT_DIRECTION = re.compile(
+    r"\b(?:left|right|leftward|rightward|viewer'?s?|subject'?s|camera|lens|toward|towards|facing|faces|"
+    r"mirror(?:ed)?|flip(?:ped)?|clockwise|counter-?clockwise|overhead|top-?down|bird'?s-?eye|eye-?level|"
+    r"closer|nearer|farther|further|near[- ]side|far[- ]side)\b"
+    r"|镜头|机位|左|右|观者|朝向|俯视|仰视|视角|近侧|远侧", re.I)
+
+
+def validate_content(value: object, label: str = "panel_content") -> str:
+    """Short, direction-free content note. Raises ValueError (callers block); never rewrites the text."""
+    if not isinstance(value, str) or len(value.strip()) > CONTENT_MAX:
+        raise ValueError(f"{label} must be a short string (max {CONTENT_MAX} characters).")
+    text = value.strip()
+    hit = _CONTENT_DIRECTION.search(text)
+    if hit:
+        raise ValueError(f"{label} must describe only what the composition shows, with no left/right, camera or direction wording "
+                         f"(found {hit.group(0)!r}); orientation comes only from the delivered preview cell. Nothing submitted.")
+    return text
+
+
 def validate_plan(value: object) -> dict:
     """A subject-aware plan is supplied by the agent after inspecting input, never a fixed view list."""
     if not isinstance(value, dict):
@@ -63,6 +85,12 @@ def validate_plan(value: object) -> dict:
         if not isinstance(appearance, str) or len(appearance) > 2000:
             raise ValueError("Each panel requires separate appearance text (empty if unspecified); geometry is camera/framing/structures only.")
         item["appearance"] = appearance.strip()
+        content = panel.get("content")
+        if content is not None:
+            # #1003: optional short content note for finals (what the cell shows), never camera/direction.
+            item_content = validate_content(content, f"composition_plan panel {item['id']} content")
+            if item_content:
+                item["content"] = item_content  # absent key keeps legacy/frozen plans byte-identical
         clean.append(item)
     if {p["id"] for p in clean} != set(PANEL_IDS):
         raise ValueError("Composition plan IDs must be unique and cover 1..9.")
@@ -460,6 +488,7 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
     if not applies(args, chat_id):
         return dict(args), None
     args = dict(args)
+    panel_content = args.pop("panel_content", None)  # final-only; never forwarded to the page/provider
     _, root = _root(chat_id)
     status = (root or {}).get("status")
     # Unanswered, expired, or cancelled setup must not be quoted or paid.
@@ -578,13 +607,29 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
     args[STRICT_RATIO_994] = spec["ratio"]  # existing page + adapter strict-ratio path
     args["refs"] = list(refs)
     args["ref_modes"] = ["content"] * len(refs)
+    crop_meta = None
+    if stage != "final" and panel_content is not None:
+        return args, _blocked("panel_content is for multi-angle finals only; nothing submitted.")
     if stage == "final":
-        # Bind the selected number to the preview actually delivered, not just a
-        # fresh interpretation of its verbal label. Original subject stays first.
-        for shape in preview.get("shapes") or []:
-            if shape not in args["refs"]:
-                args["refs"].append(shape)
-                args["ref_modes"].append("composition")
+        chosen = next(p for p in plan["panels"] if p["id"] == panel)
+        try:
+            content = chosen.get("content") or ""
+            if panel_content is not None:
+                given = validate_content(panel_content)
+                if content and given and given != content:
+                    raise ValueError("panel_content conflicts with the frozen plan's content for this panel; the frozen plan wins. Nothing submitted.")
+                content = content or given
+        except ValueError as e:
+            return args, _blocked(str(e))
+        # #1003 product 23:0x ruling: bind the selected number to ONLY that cell of the preview
+        # actually delivered (cropped at the detected dividers, lines/number removed), never the
+        # whole grid. Original subject stays first. Uncertain detection blocks the paid final.
+        try:
+            crop_meta = composition_crop(preview, panel)
+        except ValueError as e:
+            return args, _blocked(str(e))
+        args["refs"].append(crop_meta["ref"])
+        args["ref_modes"].append("composition")
     if stage == "preview":
         view = preview_plan_view(plan)
         brief = f"Subject geometry: {view['subject_geometry']}\nThis stage: {spec['width']}x{spec['height']}, ratio {spec['ratio']}.\nPreserve reference identity, geometry and proportions. For each panel, draw only the structures visible from that panel's frozen camera; occlude surfaces that camera cannot see. The source image supplies subject identity, not a front-facing camera for every panel.\n"
@@ -610,26 +655,57 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
         brief += "\n".join(f"{p['id']}: {p['geometry']}" for p in view["panels"])
         brief += "\nUse exactly this panel numbering and composition plan; do not substitute generic views."
     else:
-        chosen = next(p for p in plan["panels"] if p["id"] == panel)
         brief += "Restore the original subject's material, color and finish from the original reference/brief; use the lineart only for composition.\n"
         brief += FINAL_FINISH
         # #1003 product 22:3x ruling: the delivered preview cell is the ONLY authority for
         # left/right. The plan's camera prose (description/geometry) may disagree with what was
         # actually drawn and was the source of reversed finals, so it is structurally not injected.
         brief += (
-            f"Produce ONE independent finished image, composition {panel}: {chosen['name']} — reproduce numbered cell {panel} of the delivered preview (attached composition reference). "
-            "Match that exact numbered panel in the delivered preview. "
+            f"Produce ONE independent finished image, composition {panel}: {chosen['name']} — reproduce numbered cell {panel} of the delivered preview. "
+            f"The attached composition reference IS that selected cell {panel}, cropped from the delivered preview with its grid lines and panel number removed; it is not the whole grid. "
+            "Match that exact cell. "
             "Camera side, viewing direction, elevation, framing, screen-left/right placement, which parts are near or far, and handedness come ONLY from that delivered cell; "
             "the frozen plan's camera wording is intentionally not repeated here. "
             "Preserve that selected panel's screen-left/right orientation, camera direction and handedness; "
             "do not mirror, horizontally flip, or reverse the composition. "
             "Infer orientation only from the delivered preview cell; do not invent a preferred facing. "
             "No grid, panel numbers or collage.")
+        if content:
+            brief += f"\nPanel content: {content}"
     args["prompt"] = brief
     args["_multi_angle"] = {"key": key, "refs": list(refs), "description": description,
                             "source": source, "aspect": aspect, "setup_snapshot": setup_snapshot, "stage_spec": spec,
                             "composition_plan": plan}
+    if crop_meta is not None:
+        args["_multi_angle"]["composition_crop"] = crop_meta
     return args, None
+
+
+def composition_crop(preview: dict, panel: str) -> dict:
+    """Crop + archive the selected cell of the delivered preview; raises ValueError (callers block).
+
+    The source is the delivered preview file recorded by wait_generation (its urls). Shape ids alone
+    cannot be read server-side, so a preview without a recorded file blocks instead of falling back
+    to the whole grid. Returns the audit record also persisted in the ledger entry.
+    """
+    from . import multi_angle_crop as mc
+    urls = [u for u in preview.get("urls") or [] if isinstance(u, str) and u]
+    if len(urls) != 1:
+        raise ValueError("The delivered preview file is not recorded (wait_generation urls missing), so the selected cell "
+                         "cannot be cropped; the whole grid is no longer attached. Nothing submitted; reconcile the "
+                         "delivered preview first. / 未记录已交付预览文件，无法裁切所选格，未提交。")
+    try:
+        data = mc.read_source(urls[0])
+        png, info = mc.crop_cell(data, int(panel))
+        ref = mc.save_crop(png, info)
+    except mc.CropError as e:
+        raise ValueError(f"Cannot confidently crop cell {panel} from the delivered preview ({e}); no equal-thirds guess. "
+                         "Nothing submitted. / 无法可靠检测九宫格分割线，未按三等分猜测，未提交。") from None
+    import hashlib
+    return {"source": urls[0], "source_sha256": hashlib.sha256(data).hexdigest(), "shapes": list(preview.get("shapes") or []),
+            "cell": info["cell"], "box": info["box"], "size": info["size"], "dividers": info["dividers"],
+            "label_removed": info["label_removed"], "label_box": info["label_box"],
+            "sha256": info["sha256"], "ref": ref}
 
 
 def reserve(meta: dict, chat_id: str = "") -> dict | None:
@@ -658,6 +734,8 @@ def reserve(meta: dict, chat_id: str = "") -> dict | None:
     for k in ("refs", "description", "source", "aspect", "setup_snapshot", "composition_plan"):
         ledger.setdefault(k, meta[k])
     ledger[key] = {"status": "reserved"}
+    if meta.get("composition_crop"):
+        ledger[key]["composition_crop"] = copy.deepcopy(meta["composition_crop"])  # QA audit trail
     _save(chat_id, ledger, expected)
     return None
 
@@ -668,6 +746,8 @@ def submitted(meta: dict, result: dict, chat_id: str = "") -> None:
     ledger = copy.deepcopy((root or {}).get(LEDGER) or {})
     expected = copy.deepcopy(ledger)
     ledger[meta["key"]] = {"status": "submitted", "result": copy.deepcopy(result)}
+    if meta.get("composition_crop"):
+        ledger[meta["key"]]["composition_crop"] = copy.deepcopy(meta["composition_crop"])
     _save(chat_id, ledger, expected)
 
 
@@ -690,6 +770,11 @@ def record_wait(result: dict, chat_id: str = "") -> None:
                   for s in row.get("shapes") or []]
         if len(shapes) == 1:
             entry.update(delivered=True, shapes=shapes)
+            # #1003: keep the delivered file so finals can crop the selected cell server-side.
+            urls = [u for row in result.get("results") or [] if row.get("id") in ids and row.get("status") == "done"
+                    for u in row.get("urls") or [] if isinstance(u, str) and u]
+            if len(urls) == 1:
+                entry["urls"] = urls
             changed = True
     if changed:
         _save(chat_id, ledger, expected)

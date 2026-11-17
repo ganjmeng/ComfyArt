@@ -8,7 +8,7 @@ import copy
 
 import pytest
 
-from multi_angle_plan_fixture import HEADPHONES_PLAN
+from multi_angle_plan_fixture import HEADPHONES_PLAN, preview_url
 
 from ComfyArt.api import multi_angle as ma, wavespeed
 from ComfyArt.api.mcp_tools import canvas
@@ -24,7 +24,7 @@ def complete_preview(args):
     ma.reserve(meta)
     ma.submitted(meta, {"ids": ["preview-holder"], "submitted": True})
     ma.record_wait({"results": [{"id": "preview-holder", "status": "done", "placed": True,
-                                 "delivered": 1, "shapes": ["preview-shape"]}]})
+                                 "delivered": 1, "shapes": ["preview-shape"], "urls": [preview_url()]}]})
 
 
 def metadata(properties):
@@ -258,7 +258,7 @@ def test_independent_preview_default_frozen_on_first_dispatch_not_pure_prepare(r
     ledger = ma._root("chat-ma")[1][ma.LEDGER]
     assert ledger["setup_snapshot"]["preview"]["ratio"] == "9:16"
     ma.record_wait({"results": [{"id": "same-preview", "status": "done", "placed": True,
-                                 "delivered": 1, "shapes": ["preview-shape"]}]})
+                                 "delivered": 1, "shapes": ["preview-shape"], "urls": [preview_url()]}]})
     choose(rows, ("1",))
     final, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "composition_id": "1", "ratio": "9:16", "width": 999, "height": 333})
     assert blocked is None and (final["width"], final["height"], final["ratio"]) == (2048, 2048, "1:1")

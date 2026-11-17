@@ -10,7 +10,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 
-from multi_angle_plan_fixture import HEADPHONES_PLAN
+from multi_angle_plan_fixture import HEADPHONES_PLAN, preview_url
 
 from ComfyArt.api import bot_asks, multi_angle as ma
 from ComfyArt.api.mcp_tools import canvas
@@ -242,7 +242,7 @@ def test_unskilled_and_final_generates_blocked_or_rewritten_until_preview_and_co
     assert ma.reserve(meta) is None
     ma.submitted(meta, {"ids": ["preview-holder"], "submitted": True})
     ma.record_wait({"results": [{"id": "preview-holder", "status": "done", "placed": True,
-                                 "shapes": ["preview-shape"]}]})
+                                 "shapes": ["preview-shape"], "urls": [preview_url()]}]})
     _, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
                              "multi_angle_stage": "final", "composition_id": "1"})
     assert blocked is not None and blocked["submitted"] is False

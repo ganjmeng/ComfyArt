@@ -7,7 +7,7 @@ import pytest
 from ComfyArt.api import multi_angle as ma
 from ComfyArt.api import bot_asks
 from ComfyArt.api.mcp_tools import canvas
-from multi_angle_plan_fixture import HEADPHONES_PLAN, PAID_FAILURE_PLAN
+from multi_angle_plan_fixture import HEADPHONES_PLAN, PAID_FAILURE_PLAN, preview_url
 from test_multi_angle_stages_911 import run, setup, choose, confirm_quote  # noqa: F401
 
 
@@ -38,7 +38,7 @@ def deliver(meta):
     assert ma.reserve(meta) is None
     ma.submitted(meta, {"ids": ["preview"]})
     ma.record_wait({"results": [{"id": "preview", "status": "done", "placed": True,
-                               "shapes": ["preview-shape"]}]})
+                               "shapes": ["preview-shape"], "urls": [preview_url()]}]})
 
 
 @pytest.mark.parametrize("plan", PLANS)
@@ -64,7 +64,8 @@ def test_subject_specific_plan_is_only_mapping_for_lineart_card_and_selected_fin
         assert f"composition {number}: {chosen['name']} — reproduce numbered cell {number}" in final["prompt"]
         assert chosen["geometry"] not in final["prompt"] and chosen["description"] not in final["prompt"]
         assert final["ratio"] == "1:1"
-        assert final["refs"][-1] == "preview-shape"
+        assert final["refs"][-1] == final["_multi_angle"]["composition_crop"]["ref"]  # #1003: selected cell crop
+        assert "preview-shape" not in final["refs"]
     assert sent == []
 
 
@@ -124,7 +125,7 @@ def test_pure_quote_not_frozen_then_first_dispatch_persists_and_recovery_does_no
     _, replay = ma.prepare({"skill": ma.SKILL, "composition_plan": PLANS[2]})
     assert replay["ids"] == ["first-preview"]
     ma.record_wait({"results": [{"id": "first-preview", "status": "done", "placed": True,
-                               "shapes": ["placed-preview"]}]})
+                               "shapes": ["placed-preview"], "urls": [preview_url()]}]})
     choose(rows, ("3",))
     final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": "3", "composition_plan": PLANS[2]})
     assert blocked is None
@@ -286,7 +287,8 @@ def test_paid_failure_final_prompt_preserves_selected_panel_handedness(run):
     prompt = final["prompt"]
     chosen = HEADPHONES_PLAN["panels"][1]
     assert f"composition 2: {chosen['name']} — reproduce numbered cell 2 of the delivered preview" in prompt
-    assert "Match that exact numbered panel in the delivered preview" in prompt
+    assert "The attached composition reference IS that selected cell 2, cropped from the delivered preview" in prompt
+    assert "Match that exact cell." in prompt
     assert FINAL_ORIENTATION in prompt and FINAL_NO_MIRROR in prompt
     assert "Infer orientation only from the delivered preview cell" in prompt
     assert "do not invent a preferred facing" in prompt
