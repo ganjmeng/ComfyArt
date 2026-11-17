@@ -1,0 +1,152 @@
+{
+  "sha": "660c402678626972e5214119da0b0d0bfda6edeb",
+  "preview_task": "76db53c0764a4552a45fd7dbc3c1ee03",
+  "model": "google/nano-banana-2.1/edit",
+  "live_quote_total_usd": 0.1728,
+  "balance_before": {
+    "usd": 20.479508,
+    "at": "2026-11-18 00:03:08 +0800"
+  },
+  "balance_after": {
+    "usd": 20.306708,
+    "at": "2026-11-18 00:05:12 +0800"
+  },
+  "balance_delta_usd": 0.1728,
+  "image_posts": {
+    "1": 1,
+    "2": 1,
+    "3": 1
+  },
+  "ledger": {
+    "prior_usd": 0.4833,
+    "new_usd": 0.6561,
+    "remaining_usd": 0.3439,
+    "conservative_prior_usd": 0.5868,
+    "conservative_new_usd": 0.7596,
+    "conservative_remaining_usd": 0.2404
+  },
+  "cells": {
+    "1": {
+      "task": "d4f382727c8548c6aba47bebb52cbb19",
+      "submit_at": "2026-11-18 00:03:13 +0800",
+      "seen_finished_at": "2026-11-18 00:03:56 +0800",
+      "quote_usd": 0.0576,
+      "final": "/workspace/qa1003-660c4026-paid-finals/downloads/final-cell1.png",
+      "final_sha256": "e2ed4235b0800bc562d9ee717fd9365162fd3eb54de4a0248898e8e87790513f",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "crop": "/api/view?filename=ma-cell1-58d7983197124ba2.png&subfolder=comfyart%2Fmulti_angle&type=output",
+      "crop_sha256": "58d7983197124ba2a65c5973b31f0dd4c70269d02dc66419c3047fa772c0e1c6",
+      "prompt_sha256": "26fc405acfc231107e132ac7f13cf6a9e3377565578f346ad06a59c6649eb72a",
+      "side_by_side": "/workspace/qa1003-660c4026-paid-finals/review/side-by-side-cell1.png",
+      "items": {
+        "a_orientation_form": [
+          "PASS",
+          "Front-on symmetric view as in cell 1: both cups face the camera with cushions inward, headband arc on top; no mirroring possible to detect and none introduced."
+        ],
+        "b_identity": [
+          "PASS",
+          "Same over-ear headphones as reference f92f6c3e: padded headband arc, slim yokes with small dots, oval cups with leather cushions and the vertical recessed ridge on the cup shell."
+        ],
+        "c_framing": [
+          "HOLD",
+          "Centered (x 0.5), single image, correct cell, not cropped, proportions natural (w/h 0.78→0.852). But product is scaled up: height 0.692 of cell → 0.927 of final; bottom margin only 53 px/2048 (2.6%). Not 'same size with white added on the sides'."
+        ],
+        "d_background": [
+          "HOLD",
+          "Off-white, not #FFFFFF: background mean 253.55, only 0.11/0.078 (top/bottom half) of pixels exactly 255, min 241. Faint contact shadow directly under both cups (93% of <248 ring pixels in bottom 20%, darkest 235) – shadow itself OK."
+        ],
+        "e_material_lighting": [
+          "PASS",
+          "Neutral dark gray close to reference (product L p50 72.0 vs ref 75; chroma 1.3), not black, not recolored. Wrinkled leather cushions clearly distinct from smooth matte shell; soft top key light, edge highlights on headband and cup rims, deep recesses inside cups; tonal range p5–p95 29.0–149.0. No distinct metal surface visible (none distinct in reference either)."
+        ]
+      },
+      "overall": "HOLD"
+    },
+    "2": {
+      "task": "7214347eecf84628a8415ad21071bbb0",
+      "submit_at": "2026-11-18 00:03:17 +0800",
+      "seen_finished_at": "2026-11-18 00:05:05 +0800",
+      "quote_usd": 0.0576,
+      "final": "/workspace/qa1003-660c4026-paid-finals/downloads/final-cell2.png",
+      "final_sha256": "04de226c0936b665f649a70cc9677f15423d27706137382ef1c16088e972c18e",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "crop": "/api/view?filename=ma-cell2-e890528daba227cc.png&subfolder=comfyart%2Fmulti_angle&type=output",
+      "crop_sha256": "e890528daba227ccbdf400890baf175f47d2b83fbbd56028b2937d8adb1ad5b5",
+      "prompt_sha256": "00fe96383182cf2c99e6590fa4b45217ac8babf0046f20d9a84ec1e9c3daa569",
+      "side_by_side": "/workspace/qa1003-660c4026-paid-finals/review/side-by-side-cell2.png",
+      "items": {
+        "a_orientation_form": [
+          "PASS",
+          "Matches cell 2: screen-LEFT cup shows its outer shell (with vertical pill ridge) nearest the camera, screen-RIGHT cup shows its cushion/inner opening; headband arcs up and back to the right. Not mirrored."
+        ],
+        "b_identity": [
+          "PASS",
+          "Same product: padded headband, oval cups, leather cushions, recessed shell ridge. Minor added hinge detail (two pin holes and a small notch) on the screen-right yoke — plausible, not a different product."
+        ],
+        "c_framing": [
+          "HOLD",
+          "Centered (x 0.52), single image, correct cell, not cropped, no visible stretch (w/h 0.667→0.71). Scaled up: height 0.737→0.929; bottom margin 43 px (2.1%)."
+        ],
+        "d_background": [
+          "HOLD",
+          "Near-white but not uniformly #FFFFFF: mean 254.25, ~0.498 of background pixels exactly 255, min 242 (soft falloff). One faint contact shadow directly beneath the cups (darkest 235)."
+        ],
+        "e_material_lighting": [
+          "HOLD",
+          "Lighting/material good: leather cushion wrinkles vs smooth shell, deep inner-cup recess, key light and edge highlights on headband. But colour reads darker than the reference, near-black charcoal (product L p5/p25/p50 14.3/50.0/67.0 vs ref 22/43.8/75; 0.071 of product pixels L<20). No distinct metal visible."
+        ]
+      },
+      "overall": "HOLD"
+    },
+    "3": {
+      "task": "e488752a4a794e8d92f141836a6b284b",
+      "submit_at": "2026-11-18 00:03:19 +0800",
+      "seen_finished_at": "2026-11-18 00:05:10 +0800",
+      "quote_usd": 0.0576,
+      "final": "/workspace/qa1003-660c4026-paid-finals/downloads/final-cell3.png",
+      "final_sha256": "49bd246f0a6ac5d817cbea22581b5a2fb2ab5b866a692ad68b206e4fd7d26022",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "crop": "/api/view?filename=ma-cell3-f625742d21beffb9.png&subfolder=comfyart%2Fmulti_angle&type=output",
+      "crop_sha256": "f625742d21beffb93a4c6789da94b2e3eacd168cd54b5947316df817f6ab4781",
+      "prompt_sha256": "0295984074229a3c3765d950efc03cc73e5689f304d08d54af831ca5b47f799a",
+      "side_by_side": "/workspace/qa1003-660c4026-paid-finals/review/side-by-side-cell3.png",
+      "items": {
+        "a_orientation_form": [
+          "PASS",
+          "Matches cell 3: outer shell disc faces screen-right, cushion edge visible at screen-left, headband rising from the top of the cup. Not mirrored."
+        ],
+        "b_identity": [
+          "HOLD",
+          "Cup/cushion/shell match the reference, but the headband ends in a short flat stub above the yoke instead of continuing as the arc over the head. This copies the truncated headband drawn in preview cell 3, so the final does not read as the reference product's full headband. Inherited from the preview cell, not introduced by the final."
+        ],
+        "c_framing": [
+          "PASS",
+          "Centered (x 0.503), single image, correct cell, not cropped, no stretch (w/h 0.363→0.392); height 0.8→0.903 (moderately larger), margins ≥94 px."
+        ],
+        "d_background": [
+          "PASS",
+          "White: mean 254.79, 0.774/0.845 exactly 255, min 250. Practically no contact shadow (968 px <248), so the product floats slightly; within 'at most one faint shadow'."
+        ],
+        "e_material_lighting": [
+          "PASS",
+          "Neutral dark gray (L p50 80.0), smooth shell with a crisp rim highlight, cushion wrinkles distinct, soft key light. Tonal range narrower (p5–p95 45.0–128.3); deep recesses limited by the profile view. No distinct metal visible."
+        ]
+      },
+      "overall": "HOLD"
+    }
+  },
+  "contact_sheet": "/workspace/qa1003-660c4026-paid-finals/review/contact-sheet-finals.png",
+  "notes": [
+    "Visual judgment by QA (not product/design sign-off).",
+    "Measurements: review/measurements.json"
+  ]
+}

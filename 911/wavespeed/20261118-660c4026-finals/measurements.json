@@ -1,0 +1,242 @@
+{
+  "1": {
+    "crop_bbox_rel": [
+      0.023,
+      0.157,
+      0.97,
+      0.849
+    ],
+    "final_bbox_rel": [
+      0.105,
+      0.046,
+      0.895,
+      0.974
+    ],
+    "crop_obj_aspect_w_over_h": 0.78,
+    "final_obj_aspect_w_over_h": 0.852,
+    "crop_obj_height_frac": 0.692,
+    "final_obj_height_frac": 0.927,
+    "final_obj_center_x": 0.5,
+    "final_margins_px": {
+      "left": 215,
+      "top": 95,
+      "right": 214,
+      "bottom": 53
+    },
+    "bg_corners_mean_rgb": [
+      [
+        253.4,
+        253.9,
+        253.2
+      ],
+      [
+        253.4,
+        253.9,
+        253.2
+      ],
+      [
+        253.4,
+        253.8,
+        253.0
+      ],
+      [
+        253.3,
+        253.8,
+        253.1
+      ]
+    ],
+    "bg_corners_min": [
+      249,
+      249,
+      249,
+      249
+    ],
+    "top_band_frac_pure_white": 0.051,
+    "top_band_min": 10,
+    "top_band_mean": 240.24,
+    "side_bands_frac_pure_white": 0.108,
+    "side_bands_mean": 253.65,
+    "side_bands_min": 248,
+    "outside_bbox_frac_pure_white": 0.088,
+    "outside_bbox_frac_ge250": 0.999,
+    "below_product_band_mean": 252.6,
+    "product_L_pct_5_25_50_75_95": [
+      29.0,
+      55.0,
+      72.0,
+      95.0,
+      149.0
+    ],
+    "product_frac_L_lt_20": 0.034,
+    "product_chroma_mean": 1.3,
+    "bg_pure_white_top_half": 0.11,
+    "bg_pure_white_bottom_half": 0.078,
+    "bg_min": 241,
+    "bg_p1": 251.3,
+    "bg_mean": 253.55,
+    "ring_lt248_px": 30528,
+    "ring_lt248_frac_in_bottom_20pct": 0.932,
+    "ring_min_bottom15pct": 235,
+    "ring_mean_bottom15pct": 249.4
+  },
+  "2": {
+    "crop_bbox_rel": [
+      0.055,
+      0.139,
+      0.973,
+      0.876
+    ],
+    "final_bbox_rel": [
+      0.19,
+      0.05,
+      0.85,
+      0.979
+    ],
+    "crop_obj_aspect_w_over_h": 0.667,
+    "final_obj_aspect_w_over_h": 0.71,
+    "crop_obj_height_frac": 0.737,
+    "final_obj_height_frac": 0.929,
+    "final_obj_center_x": 0.52,
+    "final_margins_px": {
+      "left": 390,
+      "top": 102,
+      "right": 307,
+      "bottom": 43
+    },
+    "bg_corners_mean_rgb": [
+      [
+        254.9,
+        254.9,
+        254.9
+      ],
+      [
+        254.9,
+        254.9,
+        254.9
+      ],
+      [
+        254.9,
+        254.9,
+        254.8
+      ],
+      [
+        254.9,
+        254.9,
+        254.9
+      ]
+    ],
+    "bg_corners_min": [
+      250,
+      251,
+      250,
+      252
+    ],
+    "top_band_frac_pure_white": 0.874,
+    "top_band_min": 13,
+    "top_band_mean": 247.81,
+    "side_bands_frac_pure_white": 0.524,
+    "side_bands_mean": 254.33,
+    "side_bands_min": 249,
+    "outside_bbox_frac_pure_white": 0.594,
+    "outside_bbox_frac_ge250": 1.0,
+    "below_product_band_mean": 253.4,
+    "product_L_pct_5_25_50_75_95": [
+      14.3,
+      50.0,
+      67.0,
+      90.0,
+      126.0
+    ],
+    "product_frac_L_lt_20": 0.071,
+    "product_chroma_mean": 0.94,
+    "bg_pure_white_top_half": 0.498,
+    "bg_pure_white_bottom_half": 0.524,
+    "bg_min": 242,
+    "bg_p1": 252.0,
+    "bg_mean": 254.25,
+    "ring_lt248_px": 21370,
+    "ring_lt248_frac_in_bottom_20pct": 0.938,
+    "ring_min_bottom15pct": 235,
+    "ring_mean_bottom15pct": 250.9
+  },
+  "3": {
+    "crop_bbox_rel": [
+      0.241,
+      0.118,
+      0.764,
+      0.918
+    ],
+    "final_bbox_rel": [
+      0.326,
+      0.05,
+      0.68,
+      0.954
+    ],
+    "crop_obj_aspect_w_over_h": 0.363,
+    "final_obj_aspect_w_over_h": 0.392,
+    "crop_obj_height_frac": 0.8,
+    "final_obj_height_frac": 0.903,
+    "final_obj_center_x": 0.503,
+    "final_margins_px": {
+      "left": 667,
+      "top": 103,
+      "right": 655,
+      "bottom": 94
+    },
+    "bg_corners_mean_rgb": [
+      [
+        254.8,
+        254.8,
+        254.8
+      ],
+      [
+        254.7,
+        254.8,
+        254.8
+      ],
+      [
+        254.9,
+        254.9,
+        254.8
+      ],
+      [
+        254.9,
+        254.9,
+        254.9
+      ]
+    ],
+    "bg_corners_min": [
+      250,
+      252,
+      251,
+      252
+    ],
+    "top_band_frac_pure_white": 0.688,
+    "top_band_min": 71,
+    "top_band_mean": 248.01,
+    "side_bands_frac_pure_white": 0.877,
+    "side_bands_mean": 254.87,
+    "side_bands_min": 251,
+    "outside_bbox_frac_pure_white": 0.808,
+    "outside_bbox_frac_ge250": 1.0,
+    "below_product_band_mean": 254.8,
+    "product_L_pct_5_25_50_75_95": [
+      45.0,
+      64.0,
+      80.0,
+      98.0,
+      128.3
+    ],
+    "product_frac_L_lt_20": 0.008,
+    "product_chroma_mean": 1.15,
+    "bg_pure_white_top_half": 0.774,
+    "bg_pure_white_bottom_half": 0.845,
+    "bg_min": 250,
+    "bg_p1": 253.0,
+    "bg_mean": 254.79,
+    "ring_lt248_px": 968,
+    "ring_lt248_frac_in_bottom_20pct": 0.215,
+    "ring_min_bottom15pct": 235,
+    "ring_mean_bottom15pct": 254.7
+  }
+}
