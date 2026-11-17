@@ -1,0 +1,24 @@
+{
+  "task": "76db53c0764a4552a45fd7dbc3c1ee03",
+  "sha": "5cf1a349df79a1c2cbefcfdd9d170c4cabd1e234",
+  "image": "downloads/preview-9x16.png",
+  "reviewed_at": "2026-11-17 22:10 +0800",
+  "room_criteria": {
+    "1_9x16_numbered_nine_grid": {"verdict": "PASS", "detail": "1440x2560 (9:16, ratio error 0.0%), 3x3 grid, divider lines at x=500/958, y=861/1702, labels 1..9 top-left in order, one consistent over-ear headphone subject"},
+    "2_thin_black_lines_on_white": {"verdict": "PASS", "detail": "max RGB chroma 12; 86.7% px >=250; pixels farther than 4px from any line: 99.94% >=245 (no gray fill / shading / gradient). Cushion pleats are drawn as short stroke ticks, not tone"},
+    "3_panel7_true_top_down": {"verdict": "PASS", "detail": "headband drawn as a flat horizontal band (its top surface) spanning the frame; both earcups seen edge-on at each end showing only top rims, cushion thickness and outer shell curvature; ear openings and inner pad faces not exposed; no front-facing headband arch. Previous 656362db HOLD (front silhouette) is resolved"}
+  },
+  "plan_conformance": {
+    "1": "PASS front-on, symmetric",
+    "2": "HOLD handedness: the near earcup with its outer shell facing camera is on screen-LEFT and the far cup shows its cushion interior on screen-right. Plan asks camera toward the viewer's right so the subject's LEFT earcup (screen-right in panel 1) is closer. Image matches a camera on the viewer's left, i.e. mirrored vs plan",
+    "3": "PASS side profile (headband edge-on vertical, outer shell disc); which side the camera is on can't be told from the image (symmetric subject)",
+    "4": "PASS cushion/lining close-up",
+    "5": "PASS outer shell close-up",
+    "6": "WEAK: has yoke joints, but reads like a front three-quarter with the same handedness as panel 2/9; rear vs front can't be told apart (front/back symmetric subject). Not counted as a fail",
+    "7": "PASS true top-down",
+    "8": "PASS headband-to-cup joint close-up, no invented buttons",
+    "9": "WEAK: slight low angle (inner arc of headband visible), but close to panel 6 framing; noted, not counted as a fail"
+  },
+  "overall": "HOLD - the 3 fixed criteria PASS (incl. panel 7), but panel 2 handedness is mirrored vs the plan; per room rule (any item fails -> HOLD) stop: no finals, no retry. Archived as failure case.",
+  "material_lighting": "not judged in this step"
+}
