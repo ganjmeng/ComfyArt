@@ -30,8 +30,23 @@ Chat completions ``max_tokens`` must be from 1 to 384K, and the same page define
 384K as 393216, so K is 1024. When ``max_tokens`` is omitted the documented
 default is 8K (8192) in non-thinking mode, 64K (65536) in thinking mode, and
 128K (131072) when ``reasoning_effort`` is ``max``. The gate writes that default
-onto the body when the field is absent. It never lowers an explicit cap to make
-the call fit under $0.05.
+onto the body when the field is absent. Ordinary, summary, and thinking
+(including the memory-add boost) share those documented ceilings. It never
+lowers an explicit cap to make the call fit a budget.
+
+The default validation scope is $0.05. A separate cumulative $2 scope exists
+only as explicit code support: it must be opened on its own ledger path and
+then bound with ``use_authorized_scope`` before ``dispatch`` or the official
+HTTP wrapper, which omits ``ledger_path``, will use it. Binding is in-process,
+does not replace ``default_ledger_path``, does not absorb a prior balance, and
+is not performed by ``install``. Opening a scope is not a live activation.
+
+Reopening trusts the ledger file. ``ceiling_nano`` is clamped to that file's
+authorization binding, and a default or legacy scope that already has non-$2
+reservations cannot be raised by editing the ceiling. The authorization field
+lives in the same file, so an empty or rewritten ledger can be recast as $2
+by editing the file. ``open_authorized_scope`` itself will not upgrade or reset
+an existing scope.
 
 Billed input tokens are not a proven upper bound. The token-usage page gives
 approximate character ratios and says the actual number is the usage the model
@@ -58,7 +73,11 @@ from urllib.parse import urlparse
 
 _log = logging.getLogger("comfyart.llm_usd_gate")
 
-CEILING_NANO = 50_000_000  # $0.05 exactly. No confirm path raises this.
+CEILING_NANO = 50_000_000  # $0.05 exactly. Default scope. No confirm path raises this.
+TWO_DOLLAR_CEILING_NANO = 2_000_000_000  # $2 exactly. Only for an explicitly opened new scope.
+AUTHORIZED_CEILINGS_NANO = frozenset({CEILING_NANO, TWO_DOLLAR_CEILING_NANO})
+DEFAULT_AUTHORIZATION = "default-0.05"
+TWO_DOLLAR_AUTHORIZATION = "explicit-2.00"
 SNAPSHOT_ID = "deepseek-pricing-2026-11-18"
 RETRIEVED = "2026-11-18"
 PRICING_URL = "https://api-docs.deepseek.com/quick_start/pricing"
@@ -70,8 +89,12 @@ MAX_OUTPUT_SUPPORTED = 393_216  # 384K as parenthesized on the pricing / chat pa
 NON_THINKING_DEFAULT = 8_192
 THINKING_DEFAULT = 65_536
 THINKING_MAX_EFFORT_DEFAULT = 131_072
+ORDINARY_OUTPUT_DEFAULT = NON_THINKING_DEFAULT
+SUMMARY_OUTPUT_DEFAULT = NON_THINKING_DEFAULT
+MEMORY_BOOST_OUTPUT_DEFAULT = THINKING_DEFAULT
 _LEDGER_NAME = "llm_usd_ledger.json"
 _thread_lock = threading.Lock()
+_bound_ledger_path = None
 
 _SOURCES = (PRICING_URL, CHAT_URL, TOKEN_URL, VISION_URL, PRO_NEWS_URL)
 
@@ -149,8 +172,8 @@ _BLOCK_TEXT = {
         " / Official web search or fetch is billed per use with no count cap. Blocked before HTTP."
     ),
     "over_budget": (
-        "同一校验范围的 $0.05 硬顶不够覆盖最坏输入加最大输出，已在联网前阻断。确认不能提高硬顶。"
-        " / The shared $0.05 validation ceiling cannot cover worst-case input plus maximum output. Blocked before HTTP. Confirmation cannot raise the cap."
+        "同一校验范围的硬顶不够覆盖最坏输入加最大输出，已在联网前阻断。确认不能提高硬顶。"
+        " / The shared validation ceiling cannot cover worst-case input plus maximum output. Blocked before HTTP. Confirmation cannot raise the cap."
     ),
     "unsupported_output_cap": (
         "最大输出 token 缺失或不在官方支持范围内，已在联网前阻断。"
@@ -173,6 +196,10 @@ _BLOCK_TEXT = {
         " / The validation ledger cannot be read. Blocked before HTTP so the $0.05 ceiling is not reset."
     ),
 }
+
+
+class LlmScopeConflict(RuntimeError):
+    """Raised when opening a scope would reset, upgrade, or replace an existing ledger."""
 
 
 class LlmBudgetBlocked(RuntimeError):
@@ -237,9 +264,10 @@ def worst_case_nano(snapshot: dict, input_tokens: int, max_output_tokens: int) -
 
 
 def official_input_bound(body: dict, snapshot: dict) -> Bound:
-    """Production bound. Text, tools, and images are all unproven, so this never authorizes a send.
+    """Production bound. Text and images are unproven, so this never authorizes a send.
 
-    The character-count heuristic is intentionally not consulted.
+    Ordinary MCP function tools are not a structural block; they still do not
+    invent a billed-input ceiling. The character-count heuristic is not consulted.
     """
     structural = structural_block(body)
     if structural:
@@ -256,13 +284,15 @@ def structural_block(body: dict) -> str:
         return "unbounded_billed_input"
     if _web_tool_fee(body):
         return "unpriced_tool_fee"
-    if _has_tools(body):
+    if _has_nonordinary_tools(body):
         return "unbounded_tools"
     if _has_multimodal(body):
         return "unbounded_multimodal"
     for msg in messages:
         if not isinstance(msg, dict):
             return "unbounded_billed_input"
+        if _ordinary_mcp_message(msg):
+            continue
         if set(msg) - _TEXT_MSG_KEYS:
             return "unbounded_billed_input"
         if msg.get("role") not in _TEXT_ROLES:
@@ -292,16 +322,95 @@ def _structural_detail(code: str) -> str:
 
 def _web_tool_fee(body: dict) -> bool:
     tools = body.get("tools")
+    if isinstance(tools, list):
+        for tool in tools:
+            if not isinstance(tool, dict):
+                continue
+            fn = tool.get("function") if isinstance(tool.get("function"), dict) else {}
+            name = str(fn.get("name") or tool.get("name") or tool.get("type") or "")
+            if name in _WEB_TOOLS:
+                return True
+    choice = body.get("tool_choice")
+    if isinstance(choice, dict):
+        fn = choice.get("function") if isinstance(choice.get("function"), dict) else {}
+        name = fn.get("name") or choice.get("name")
+        if name in _WEB_TOOLS:
+            return True
+    return False
+
+
+_ORDINARY_TOOL_CHOICES = frozenset({None, "none", "auto", "required"})
+_ORDINARY_TOOL_MSG_KEYS = frozenset({"role", "content", "name", "tool_call_id"})
+_ORDINARY_ASSISTANT_TOOL_KEYS = frozenset({"role", "content", "name", "tool_calls"})
+
+
+def _function_tool_name(tool: dict) -> str | None:
+    """Return the function name when *tool* is an ordinary Chat Completions function tool."""
+    if tool.get("type") != "function":
+        return None
+    fn = tool.get("function")
+    if not isinstance(fn, dict):
+        return None
+    name = fn.get("name")
+    return name if type(name) is str and name else None
+
+
+def _ordinary_function_tools(tools) -> bool:
+    """True when every declared tool is a non-web Chat Completions function tool (MCP style)."""
+    if tools is None:
+        return True
     if not isinstance(tools, list):
         return False
     for tool in tools:
         if not isinstance(tool, dict):
-            continue
-        fn = tool.get("function") if isinstance(tool.get("function"), dict) else {}
-        name = str(fn.get("name") or tool.get("name") or tool.get("type") or "")
-        if name in _WEB_TOOLS:
-            return True
-    return False
+            return False
+        name = _function_tool_name(tool)
+        if name is None or name in _WEB_TOOLS:
+            return False
+    return True
+
+
+def _ordinary_function_tool_call(call) -> bool:
+    if not isinstance(call, dict):
+        return False
+    if call.get("type") not in (None, "function"):
+        return False
+    fn = call.get("function")
+    if not isinstance(fn, dict):
+        return False
+    name = fn.get("name")
+    return type(name) is str and bool(name) and name not in _WEB_TOOLS
+
+
+def _ordinary_mcp_message(msg: dict) -> bool:
+    """True for a client MCP tool result or an assistant function tool_calls message.
+
+    These are not vendor built-in web tools. Image parts are rejected earlier as
+    multimodal. Unknown keys or content shapes are not accepted here.
+    """
+    role = msg.get("role")
+    if role in ("tool", "function"):
+        if set(msg) - _ORDINARY_TOOL_MSG_KEYS:
+            return False
+        if "name" in msg and type(msg.get("name")) is not str:
+            return False
+        if "tool_call_id" in msg and type(msg.get("tool_call_id")) is not str:
+            return False
+        return type(msg.get("content")) is str
+    if role != "assistant" or "tool_calls" not in msg:
+        return False
+    if "server_tool_calls" in msg:
+        return False
+    if set(msg) - _ORDINARY_ASSISTANT_TOOL_KEYS:
+        return False
+    if "name" in msg and type(msg.get("name")) is not str:
+        return False
+    if msg.get("content") is not None and type(msg.get("content")) is not str:
+        return False
+    calls = msg.get("tool_calls")
+    if not isinstance(calls, list) or not calls:
+        return False
+    return all(_ordinary_function_tool_call(call) for call in calls)
 
 
 def _has_tools(body: dict) -> bool:
@@ -315,6 +424,50 @@ def _has_tools(body: dict) -> bool:
             continue
         if msg.get("role") in ("tool", "function") or msg.get("tool_calls") or msg.get("server_tool_calls"):
             return True
+    return False
+
+
+def _ordinary_tool_choice(value) -> bool:
+    """True for standard Chat Completions function-tool control values.
+
+    ``required`` and a named ``type: function`` choice are ordinary MCP controls,
+    not a vendor web-search fee. Unknown shapes stay rejected.
+    """
+    if isinstance(value, dict):
+        if set(value) - {"type", "function"}:
+            return False
+        if value.get("type") != "function":
+            return False
+        fn = value.get("function")
+        if not isinstance(fn, dict) or set(fn) - {"name"}:
+            return False
+        name = fn.get("name")
+        return type(name) is str and bool(name) and name not in _WEB_TOOLS
+    return value in _ORDINARY_TOOL_CHOICES
+
+
+def _has_nonordinary_tools(body: dict) -> bool:
+    """True when tool machinery is present and is not ordinary MCP function calling.
+
+    Ordinary MCP: ``type: function`` tools; ``tool_choice`` omitted / none / auto /
+    required / a named function; and function ``tool_calls`` plus ``role: tool`` /
+    ``function`` result messages. Vendor web tools are classified earlier as
+    ``unpriced_tool_fee``. Unknown tool types and ``server_tool_calls`` stay blocked.
+    """
+    if not _has_tools(body):
+        return False
+    if not _ordinary_tool_choice(body.get("tool_choice")):
+        return True
+    if not _ordinary_function_tools(body.get("tools")):
+        return True
+    for msg in body.get("messages") or []:
+        if not isinstance(msg, dict):
+            return True
+        if msg.get("server_tool_calls"):
+            return True
+        if msg.get("role") in ("tool", "function") or "tool_calls" in msg:
+            if not _ordinary_mcp_message(msg):
+                return True
     return False
 
 
@@ -450,14 +603,128 @@ def prepare(body: dict, route: dict, url: str, bound_fn: Optional[Callable[[dict
     }
 
 
-def _fresh() -> dict:
+def _fresh(*, ceiling_nano: int = CEILING_NANO, authorization: str = DEFAULT_AUTHORIZATION) -> dict:
+    if ceiling_nano not in AUTHORIZED_CEILINGS_NANO:
+        raise LlmScopeConflict("ceiling is not an authorized validation cap")
+    if authorization == TWO_DOLLAR_AUTHORIZATION:
+        if ceiling_nano != TWO_DOLLAR_CEILING_NANO:
+            raise LlmScopeConflict("authorization does not match the authorized ceiling")
+    elif authorization != DEFAULT_AUTHORIZATION or ceiling_nano != CEILING_NANO:
+        raise LlmScopeConflict("authorization does not match the authorized ceiling")
     return {
         "version": 1,
         "scope_id": "usd-" + uuid.uuid4().hex,
-        "ceiling_nano": CEILING_NANO,
+        "authorization": authorization,
+        "authorized_ceiling_nano": ceiling_nano,
+        "ceiling_nano": ceiling_nano,
         "accounted_nano": 0,
         "reservations": {},
     }
+
+
+def open_authorized_scope(path: str, ceiling_nano: int) -> dict:
+    """Create a new independent validation scope with a durable authorized cap.
+
+    An existing ledger is left unchanged: this will not upgrade, reset, merge a
+    prior balance, or replace the default $0.05 path. It does not reserve or spend.
+    """
+    if type(ceiling_nano) is not int or ceiling_nano not in AUTHORIZED_CEILINGS_NANO:
+        raise LlmScopeConflict("ceiling is not an authorized validation cap")
+    authorization = (
+        TWO_DOLLAR_AUTHORIZATION if ceiling_nano == TWO_DOLLAR_CEILING_NANO
+        else DEFAULT_AUTHORIZATION
+    )
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    with _thread_lock:
+        fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
+        try:
+            os.chmod(path, 0o600)
+            with os.fdopen(fd, "r+", encoding="utf-8") as handle:
+                fd = -1
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+                try:
+                    raw = handle.read()
+                    if raw.strip():
+                        raise LlmScopeConflict("a validation scope already exists at this path")
+                    data = _fresh(ceiling_nano=ceiling_nano, authorization=authorization)
+                    json.dump(data, handle, ensure_ascii=True, separators=(",", ":"))
+                    handle.flush()
+                    os.fsync(handle.fileno())
+                    return {
+                        "ok": True,
+                        "scope_id": data["scope_id"],
+                        "authorization": authorization,
+                        "authorized_ceiling_nano": ceiling_nano,
+                        "ceiling_nano": ceiling_nano,
+                        "accounted_nano": 0,
+                    }
+                finally:
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        finally:
+            if fd >= 0:
+                os.close(fd)
+
+
+def clear_authorized_scope() -> None:
+    """Drop the in-process bind. Does not change any ledger file or the default path."""
+    global _bound_ledger_path
+    with _thread_lock:
+        _bound_ledger_path = None
+
+
+def use_authorized_scope(path: str) -> dict:
+    """Bind later dispatch calls that omit ledger_path to an already-opened scope.
+
+    Does not open, upgrade, spend, or change ``default_ledger_path``. The official
+    install wrapper omits ``ledger_path``, so this is how that transport can
+    consume an explicit authorized ledger. Nothing in ``install`` binds a scope.
+    """
+    if type(path) is not str or not path or not os.path.isfile(path):
+        raise LlmScopeConflict("no authorized scope exists at this path")
+    try:
+        fd = os.open(path, os.O_RDONLY)
+        try:
+            with os.fdopen(fd, "r", encoding="utf-8") as handle:
+                fd = -1
+                fcntl.flock(handle.fileno(), fcntl.LOCK_SH)
+                try:
+                    raw = handle.read()
+                finally:
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        finally:
+            if fd >= 0:
+                os.close(fd)
+    except OSError as exc:
+        raise LlmScopeConflict("authorized scope is unreadable") from exc
+    if not raw.strip():
+        raise LlmScopeConflict("no authorized scope exists at this path")
+    try:
+        parsed = json.loads(raw)
+    except ValueError as exc:
+        raise LlmScopeConflict("authorized scope is unreadable") from exc
+    data = _normalize(parsed)
+    global _bound_ledger_path
+    with _thread_lock:
+        _bound_ledger_path = path
+    return {
+        "ok": True,
+        "path": path,
+        "scope_id": data["scope_id"],
+        "authorization": data["authorization"],
+        "authorized_ceiling_nano": data["authorized_ceiling_nano"],
+        "ceiling_nano": data["ceiling_nano"],
+        "accounted_nano": data["accounted_nano"],
+    }
+
+
+def resolved_ledger_path(ledger_path: Optional[str] = None) -> str:
+    """Explicit path, else the in-process bind, else the default $0.05 ledger path."""
+    if ledger_path:
+        return ledger_path
+    with _thread_lock:
+        return _bound_ledger_path or default_ledger_path()
 
 
 def _as_int(value: Any) -> Optional[int]:
@@ -475,6 +742,32 @@ def _row_hold(row: dict) -> Optional[int]:
     return None
 
 
+def _scope_binding(data: dict) -> tuple[int, str]:
+    """Return the authorized cap recorded in this ledger file.
+
+    Only a scope marked ``explicit-2.00`` with no default or legacy reservations
+    uses the $2 ceiling. Missing or default authorization stays at $0.05.
+    This is not a seal against rewriting the same file's authorization field.
+    """
+    auth = data.get("authorization")
+    if auth == TWO_DOLLAR_AUTHORIZATION:
+        binding, sealed = TWO_DOLLAR_CEILING_NANO, TWO_DOLLAR_AUTHORIZATION
+    else:
+        binding, sealed = CEILING_NANO, DEFAULT_AUTHORIZATION
+    rows = data.get("reservations")
+    if isinstance(rows, dict):
+        for row in rows.values():
+            if not isinstance(row, dict):
+                continue
+            row_auth = row.get("authorization")
+            row_ceil = _as_int(row.get("authorized_ceiling_nano"))
+            if row_auth == TWO_DOLLAR_AUTHORIZATION and row_ceil == TWO_DOLLAR_CEILING_NANO:
+                continue
+            binding, sealed = CEILING_NANO, DEFAULT_AUTHORIZATION
+            break
+    return binding, sealed
+
+
 def _normalize(data: Any) -> dict:
     if not isinstance(data, dict):
         raise LlmBudgetBlocked("ledger_unreadable", "shape")
@@ -486,8 +779,13 @@ def _normalize(data: Any) -> dict:
     rows = data.get("reservations")
     if ceiling is None or accounted is None or not isinstance(rows, dict):
         raise LlmBudgetBlocked("ledger_unreadable", "totals")
-    # A tampered file must not raise the hard cap or erase spend.
-    data["ceiling_nano"] = min(ceiling, CEILING_NANO)
+    # Clamp ceiling_nano to the file's authorization binding and do not erase
+    # spend. A default or legacy reservation still forces $0.05. Authorization
+    # lives in this same file, so an empty or rewritten ledger can be recast.
+    binding, authorization = _scope_binding(data)
+    data["authorization"] = authorization
+    data["authorized_ceiling_nano"] = binding
+    data["ceiling_nano"] = min(ceiling, binding)
     held = 0
     for key, row in rows.items():
         if not isinstance(key, str) or not isinstance(row, dict):
@@ -553,7 +851,10 @@ def reserve_nano(path: str, *, nano: int, record: dict) -> dict:
         rid = record["id"]
         if rid in data["reservations"]:
             raise LlmBudgetBlocked("ledger_unreadable", "duplicate")
-        data["reservations"][rid] = record
+        row = dict(record)
+        row["authorization"] = data["authorization"]
+        row["authorized_ceiling_nano"] = data["authorized_ceiling_nano"]
+        data["reservations"][rid] = row
         data["accounted_nano"] = accounted + nano
         return {
             "ok": True, "code": "reserved", "id": rid, "scope_id": scope_id,
@@ -568,6 +869,8 @@ def ledger_state(path: str) -> dict:
     def change(data: dict) -> dict:
         return {
             "scope_id": data["scope_id"],
+            "authorization": data.get("authorization"),
+            "authorized_ceiling_nano": data.get("authorized_ceiling_nano"),
             "ceiling_nano": data["ceiling_nano"],
             "accounted_nano": data["accounted_nano"],
             "reservations": {
@@ -682,7 +985,7 @@ async def dispatch(body: dict, *, route: dict, url: str, send: Callable[[], Awai
     pre = prepare(body, route, url, bound_fn)
     if not pre["ok"]:
         raise LlmBudgetBlocked(pre["code"], pre["detail"])
-    path = ledger_path or default_ledger_path()
+    path = resolved_ledger_path(ledger_path)
     rid = uuid.uuid4().hex
     record = {
         "id": rid,
