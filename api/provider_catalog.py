@@ -124,7 +124,7 @@ LLM_PROVIDERS = [
                     {"zh": "deepseek-flash 在非思考模式下 temperature 固定为 1.0，传入 0.2 会被忽略。", "en": "In non-thinking mode deepseek-flash fixes temperature at 1.0. A sent 0.2 is ignored."},
                     {"zh": "现有链路是整段 JSON，不开启 stream。官方流式是另一套 SSE，这里没有启用。", "en": "The current loop reads one JSON body and does not set stream. Official streaming is SSE and is not enabled here."},
                     {"zh": "工具调用按官方非思考示例保留 tools。本环境没有付费实测工具闭环。", "en": "tools are kept, matching the official non-thinking example. The tool loop was not live-tested here."},
-                    {"zh": "价格未知。此页不发起连通或模型探测。", "en": "Price unknown. This page does not run a connectivity or model probe."},
+                    {"zh": "单次调用仍不是固定报价。2026-11-18 官方价格页的峰值价已做快照，但计费输入 token 上界未证明，校验门会在发 HTTP 前阻断。此页不探测。", "en": "A single call is still not a fixed quote. Peak list prices were snapshotted from the official pricing page on 2026-11-18, but billed input tokens have no proven bound, so the validation gate blocks before HTTP. This page does not probe."},
                 ],
             },
             {
@@ -134,12 +134,12 @@ LLM_PROVIDERS = [
                 "request_model": "deepseek-v4-pro",
                 "quote": "unknown",
                 "note": {
-                    "zh": "官方列出的另一个模型，不是 Flash 1017。思考、温度和工具规则与 flash 不同，费用未知。",
-                    "en": "A different official model, not Flash 1017. Thinking, temperature and tool rules differ from flash. Price unknown.",
+                    "zh": "官方列出的另一个模型，不是 Flash 1017。思考、温度和工具规则与 flash 不同。列表价按价格页里更高的 Pro 峰值价快照，不是 WaveSpeed 价。",
+                    "en": "A different official model, not Flash 1017. Thinking, temperature and tool rules differ from flash. The list price snapshot uses the higher Pro peak rate on the pricing page, not a WaveSpeed price.",
                 },
                 "differences": [
                     {"zh": "同样关闭思考以适配现有 Agent，但官方写明 pro 在思考模式和工具调用上的温度规则与 flash 不同。未实测。", "en": "Thinking is disabled for the current agent, but the docs give pro different temperature rules for thinking and tool calls. Not live-tested."},
-                    {"zh": "价格未知。不会回退到 WaveSpeed。", "en": "Price unknown. It does not fall back to WaveSpeed."},
+                    {"zh": "计费输入上界未证明，校验门阻断 HTTP。不会回退到 WaveSpeed，也不使用 WaveSpeed 价格。", "en": "Billed input has no proven bound, so the validation gate blocks HTTP. It does not fall back to WaveSpeed or reuse a WaveSpeed price."},
                 ],
             },
         ],
@@ -488,7 +488,7 @@ def render_audit_markdown() -> str:
         "调用名不同。官方省略 thinking 时默认开启思考；思考模式下工具调用必须回传 reasoning_content，否则 400。",
         "现有 Agent 不回传 reasoning_content，因此官方路由会显式关闭思考。deepseek-flash 非思考温度固定 1.0。",
         "现有链路不使用 SSE 流式。工具调用形状按官方非思考文档对齐，本环境未做付费实测。",
-        "价格未知。不保存不改变活动配置。无密钥则新任务失败，不回退 WaveSpeed。",
+        "单次调用报价仍未知（quote 保持 unknown）。官方列表价有峰值快照，但计费输入 token 上界未证明，校验门在发 HTTP 前阻断。不保存不改变活动配置。无密钥则新任务失败，不回退 WaveSpeed。",
         "不能据此认为任意 OpenAI 兼容模型都可以换上。",
         "",
     ]
