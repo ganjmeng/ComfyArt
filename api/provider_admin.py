@@ -1473,6 +1473,27 @@ async def rehearse_llm(request: web.Request) -> web.Response:
     })
 
 
+async def gated_llm_http(session, method, url, *, headers, json_body=None, timeout=120,
+                         transport, ledger_path: str | None = None, bound_fn=None):
+    """Adapt the official body, then reserve a worst-case USD hold before the real send.
+
+    ``transport`` is the unwrapped HTTP function. Non-chat and non-official calls go
+    straight through. A blocked official chat completion never calls ``transport``.
+    """
+    from ..bot.llm_usd_gate import dispatch, route_requires_gate
+
+    body = adapt_llm_body(json_body, url)
+    route = _llm_lock.get()
+    if not route_requires_gate(method, url, route):
+        return await transport(session, method, url, headers=headers, json_body=body, timeout=timeout)
+
+    async def send():
+        return await transport(session, method, url, headers=headers, json_body=body, timeout=timeout)
+
+    return await dispatch(body, route=route, url=str(url), send=send,
+                          ledger_path=ledger_path, bound_fn=bound_fn)
+
+
 def install() -> None:
     global _image_orig, _estimate_orig, _quote_orig, _poll_orig, _llm_http, _llm_orig_send
     if getattr(install, "done", False):
@@ -1528,8 +1549,9 @@ def install() -> None:
         _llm_orig_send = provider.send
 
         async def _request_json(session, method, url, *, headers, json_body=None, timeout=120):
-            body = adapt_llm_body(json_body, url)
-            return await _llm_http(session, method, url, headers=headers, json_body=body, timeout=timeout)
+            return await gated_llm_http(
+                session, method, url, headers=headers, json_body=json_body, timeout=timeout,
+                transport=_llm_http)
 
         from ..bot.providers import ProviderStatus
         from dataclasses import replace
