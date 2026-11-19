@@ -1478,7 +1478,7 @@ async def rehearse_llm(request: web.Request) -> web.Response:
 
 async def gated_llm_http(session, method, url, *, headers, json_body=None, timeout=120,
                          transport, ledger_path: str | None = None, bound_fn=None,
-                         context_contract: bool = False, frozen_images=None):
+                         context_contract: bool = False, frozen_images=None, activation_runtime=None):
     """Adapt the official body, then reserve a worst-case USD hold before the real send.
 
     ``transport`` is the unwrapped HTTP function. Non-chat and non-official calls go
@@ -1507,8 +1507,44 @@ async def gated_llm_http(session, method, url, *, headers, json_body=None, timeo
 
     return await dispatch(body, route=route, url=str(url), send=send,
                           ledger_path=ledger_path, bound_fn=bound_fn,
-                          context_contract=context_contract, frozen_images=frozen_images,
+                          context_contract=context_contract, frozen_images=frozen_images, activation_runtime=activation_runtime,
                           send_frozen=send_frozen if context_contract else None)
+
+
+async def installed_llm_http(session, method, url, *, headers, json_body=None, timeout=120, transport):
+    """Real installed wrapper: explicit persisted activation or unchanged strict default.
+
+    Lookup is read-only (apart from stable lock files). Never opens a scope,
+    activates a manifest, reads a provider secret, or falls back to another
+    ledger after a configured binding fails validation.
+    """
+    from ..bot.llm_scope_activation import (
+        configured_runtime, active_binding, auxiliary_designation,
+        validate_auxiliary, auxiliary_no_redirects,
+    )
+    from ..bot.llm_usd_gate import route_requires_gate
+    runtime = configured_runtime(app_path())
+    route = _llm_lock.get()
+    binding = None
+    if runtime is not None:
+        # Explicit helper-created purpose, never URL substring/body guessing.
+        # The designation binds configured endpoint, method and immutable body.
+        auxiliary = auxiliary_designation()
+        binding = active_binding(runtime, route=route, url=None if auxiliary else str(url))
+        if binding is not None and auxiliary:
+            validate_auxiliary(binding, method, url, json_body)
+            with auxiliary_no_redirects():
+                return await transport(session, method, url, headers=headers,
+                                       json_body=json_body, timeout=timeout)
+        if binding is not None and not route_requires_gate(method, url, route):
+            from ..bot.llm_usd_gate import LlmBudgetBlocked
+            raise LlmBudgetBlocked("activation_route_mismatch", "physical_method/target")
+    return await gated_llm_http(
+        session, method, url, headers=headers, json_body=json_body, timeout=timeout,
+        transport=transport,
+        ledger_path=binding["manifest"]["canonical_absolute_ledger_path"] if binding else None,
+        context_contract=binding is not None,
+        activation_runtime=runtime if binding else None)
 
 
 def install() -> None:
@@ -1566,7 +1602,7 @@ def install() -> None:
         _llm_orig_send = provider.send
 
         async def _request_json(session, method, url, *, headers, json_body=None, timeout=120):
-            return await gated_llm_http(
+            return await installed_llm_http(
                 session, method, url, headers=headers, json_body=json_body, timeout=timeout,
                 transport=_llm_http)
 

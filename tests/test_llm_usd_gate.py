@@ -824,7 +824,8 @@ def test_primary_summary_retry_overflow_and_legacy_go_through_the_wrapper():
     loop = inspect.getsource(agent_loop.run)
     assert "_llm_request_fit(" in loop
     install = inspect.getsource(provider_admin.install)
-    assert "gated_llm_http(" in install
+    assert "installed_llm_http(" in install
+    assert "gated_llm_http(" in inspect.getsource(provider_admin.installed_llm_http)
     wrapper = inspect.getsource(provider_admin.gated_llm_http)
     assert "adapt_llm_body(" in wrapper
     assert wrapper.index("adapt_llm_body(") < wrapper.index("dispatch(")
@@ -1259,7 +1260,8 @@ async def test_install_wrapper_uses_bound_two_dollar_scope_for_real_summary_retr
             "install() did not wrap local-llm._request_json; cannot cover the official wrapper"
         )
     wrapper = inspect.getsource(provider._request_json)
-    assert "gated_llm_http(" in wrapper
+    assert "installed_llm_http(" in wrapper
+    assert "gated_llm_http(" in inspect.getsource(provider_admin.installed_llm_http)
     assert "ledger_path" not in wrapper
     assert "bound_fn" not in wrapper
 
