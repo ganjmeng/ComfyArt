@@ -23,6 +23,7 @@ from pathlib import Path
 import re
 import subprocess
 import threading
+import time
 import uuid
 from urllib.parse import urlsplit
 from dataclasses import dataclass
@@ -507,6 +508,147 @@ def migrate_source_fingerprint(runtime: RuntimeIdentity, *, authorization_id: st
                 _write_registry(registry_path, registry, stage_prefix="migration_active_")
                 return {"ok": True, "scope_id": scope_id, "activation_digest": entry["digest"], "resumed": True}
             _fail("migration_state_unsafe", "torn_binding")
+
+
+def _finalize_pending_path(path: str) -> str:
+    return path + ".finalize_pending"
+
+
+def _row_digest(row: dict) -> str:
+    return _digest({key: row.get(key) for key in ("id", "status", "reserved_nano", "actual_nano", "retain_reason", "body_sha256")})
+
+
+def _audit_entry(data: dict, request_id: str) -> dict | None:
+    rows = data.get("worst_case_finalizations")
+    if type(rows) is not list:
+        return None
+    found = [row for row in rows if type(row) is dict and row.get("request_id") == request_id]
+    return found[-1] if found else None
+
+
+def _finalize_pending(path: str) -> dict | None:
+    pending_path = _finalize_pending_path(path)
+    if not os.path.lexists(pending_path):
+        return None
+    try:
+        pending = json.loads(gate._read_raw(pending_path))
+    except (OSError, ValueError) as exc:
+        raise gate.LlmBudgetBlocked("finalize_refused", "pending_unreadable") from exc
+    if type(pending) is not dict:
+        _fail("finalize_refused", "pending_unreadable")
+    return pending
+
+
+def _same_finalize(pending: dict, *, authorization_id: str, scope_id: str, request_id: str,
+                   expected_reserve_nano: int, expected_body_sha256: str, operator_note: str) -> bool:
+    return (pending.get("op") == "finalize_unknown_as_worst_case"
+            and pending.get("authority_id") == authorization_id and pending.get("scope_id") == scope_id
+            and pending.get("request_id") == request_id and pending.get("reserve_nano") == expected_reserve_nano
+            and pending.get("body_sha256") == expected_body_sha256 and pending.get("operator_note") == operator_note)
+
+
+def _booked(row: dict, request_id: str, reserve: int) -> bool:
+    return (type(row) is dict and row.get("id") == request_id and row.get("status") == "reconciled"
+            and row.get("reserved_nano") == reserve and row.get("actual_nano") == reserve)
+
+
+def finalize_unknown_as_worst_case(runtime: RuntimeIdentity, *, authorization_id: str, scope_id: str,
+                                   request_id: str, expected_reserve_nano: int, expected_body_sha256: str,
+                                   operator_note: str) -> dict:
+    """Book one retained unknown at its full reserve, then close that anomaly's breaker.
+
+    Not an activation and not a release. Count, ceiling, and accounted total stay
+    put: the reserve is already in ``accounted_nano``, and booking it at the
+    reserve does not subtract. A second call with the same note is a no-op.
+    A crash after the pending marker resumes only this same operation.
+    """
+    _check_runtime(runtime)
+    if (type(authorization_id) is not str or not authorization_id.strip()
+            or type(scope_id) is not str or not scope_id.strip()
+            or type(request_id) is not str or not request_id.strip()
+            or type(expected_reserve_nano) is not int or expected_reserve_nano <= 0
+            or type(expected_body_sha256) is not str or not re.fullmatch(r"[0-9a-f]{64}", expected_body_sha256)
+            or type(operator_note) is not str or not operator_note.strip() or len(operator_note) > 500):
+        _fail("finalize_refused", "arguments")
+    with _registry_lock(runtime.home) as registry_path:
+        registry = _read_registry(registry_path)
+        if registry is None or registry["runtimes"].get(runtime.runtime_id) != authorization_id:
+            _fail("finalize_refused", "authority")
+        entry = registry["authorities"].get(authorization_id)
+        if (type(entry) is not dict or entry.get("status") != "active" or set(entry) != {"status", "binding", "digest"}
+                or _digest(entry.get("binding")) != entry.get("digest")):
+            _fail("finalize_refused", "authority")
+        binding = entry["binding"]
+        manifest = binding.get("manifest") if type(binding.get("manifest")) is dict else {}
+        path = manifest.get("canonical_absolute_ledger_path")
+        if (binding.get("home") != runtime.home or binding.get("runtime_id") != runtime.runtime_id
+                or manifest.get("scope_id") != scope_id or type(path) is not str):
+            _fail("finalize_refused", "scope")
+        with gate._with_ledger_lock(path):
+            if os.path.lexists(gate._outcome_pending_path(path)):
+                _fail("finalize_refused", "outcome_pending")
+            pending = _finalize_pending(path)
+            if pending is not None and not _same_finalize(pending, authorization_id=authorization_id, scope_id=scope_id,
+                                                          request_id=request_id, expected_reserve_nano=expected_reserve_nano,
+                                                          expected_body_sha256=expected_body_sha256, operator_note=operator_note):
+                _fail("finalize_refused", "pending_conflict")
+            data, _, _ = gate._load_ledger(path, create=False)
+            if data.get("scope_id") != scope_id or data.get("ceiling_nano") != gate.TWO_DOLLAR_CEILING_NANO:
+                _fail("finalize_refused", "scope")
+            row = data.get("reservations", {}).get(request_id) if type(data.get("reservations")) is dict else None
+            audit = _audit_entry(data, request_id)
+            if _booked(row, request_id, expected_reserve_nano) and type(audit) is dict and audit.get("operator_note") == operator_note:
+                if pending is not None:
+                    os.unlink(_finalize_pending_path(path))
+                return {"ok": True, "idempotent": True, "accounted_nano": data["accounted_nano"],
+                        "attempts_total": data["control_state"]["attempts_total"], "circuit_open": data["control_state"]["circuit_open"]}
+            if pending is not None and (_digest(_spend_view(data)) != pending.get("prior_state_digest")
+                                         or type(row) is not dict or _row_digest(row) != pending.get("row_digest")):
+                _fail("finalize_refused", "pending_digest")
+            if type(row) is not dict or row.get("status") != "retained" or row.get("id") != request_id:
+                _fail("finalize_refused", "request")
+            if row.get("reserved_nano") != expected_reserve_nano or row.get("actual_nano") is not None:
+                _fail("finalize_refused", "amount")
+            digest = row.get("body_sha256")
+            if digest != expected_body_sha256:
+                _fail("finalize_refused", "digest")
+            state = data.get("control_state") if type(data.get("control_state")) is dict else {}
+            rows = data["reservations"]
+            if any(other.get("status") == "reserved" for other in rows.values()):
+                _fail("finalize_refused", "inflight")
+            if any(key != request_id and other.get("status") != "reconciled" for key, other in rows.items()):
+                _fail("finalize_refused", "other_unknown")
+            if not state.get("circuit_open") or state.get("first_anomaly_id") != request_id:
+                _fail("finalize_refused", "breaker")
+            prior = _digest(_spend_view(data))
+            row_digest = _row_digest(row)
+            if pending is None:
+                gate._atomic_write(_finalize_pending_path(path), gate._dump({
+                    "version": 1, "op": "finalize_unknown_as_worst_case", "authority_id": authorization_id,
+                    "scope_id": scope_id, "request_id": request_id, "reserve_nano": expected_reserve_nano,
+                    "body_sha256": expected_body_sha256, "operator_note": operator_note,
+                    "prior_state_digest": prior, "row_digest": row_digest,
+                }), stage_prefix="finalize_pending_")
+            accounted, attempts, ceiling = data["accounted_nano"], state["attempts_total"], data["ceiling_nano"]
+            row["status"] = "reconciled"
+            row["actual_nano"] = expected_reserve_nano
+            previous_reason = row.get("retain_reason") or ""
+            row["retain_reason"] = ""
+            state["circuit_open"] = False
+            state["circuit_reason"] = ""
+            state["first_anomaly_id"] = ""
+            if data["accounted_nano"] != accounted or state["attempts_total"] != attempts or data["ceiling_nano"] != ceiling:
+                _fail("finalize_refused", "spend_changed")
+            data.setdefault("worst_case_finalizations", []).append({
+                "version": 1, "op": "finalize_unknown_as_worst_case", "request_id": request_id,
+                "reserve_nano": expected_reserve_nano, "prior_state_digest": prior, "prior_retain_reason": previous_reason,
+                "operator_note": operator_note, "runtime_id": runtime.runtime_id, "authority_id": authorization_id,
+                "at": int(time.time()),
+            })
+            gate._atomic_write(path, gate._dump(data), stage_prefix="finalize_ledger_")
+            if os.path.lexists(_finalize_pending_path(path)):
+                os.unlink(_finalize_pending_path(path))
+            return {"ok": True, "idempotent": False, "accounted_nano": accounted, "attempts_total": attempts, "circuit_open": False}
 
 
 def activate_scope(candidate: dict, *, expected: manifests.ManifestContext, runtime: RuntimeIdentity) -> dict:
