@@ -285,12 +285,13 @@ def _scope_matches(data, binding):
 # Provenance stores the pair the caller names. The loaded source hash is this
 # process tree, which changes when api/ or bot/ bytes change, so it is not the
 # tree of the "to" commit.
-# Pair 1: original protocol review. Pair 2: deployed 42413ac7 -> the commit that
-# added resolve_unknown_as_spent. The second commit SHA is filled by the commit
-# immediately after that addition; until then the placeholder is not a real tip.
+# Pair 1: original protocol review. Pair 2: deployed 42413ac7 -> a8c5c13c, the
+# commit that added resolve_unknown_as_spent. Recording that SHA changes the
+# loaded file hash again. Provenance stores this git pair; the destination
+# source hash is this process tree, not a8c5c13c's tree.
 REVIEWED_GIT_PAIRS = (
     ("571c7fb7184dc4e97c115429bd6859d445e98c21", "c3d3820e998985c678feea74a47ab4613946b761"),
-    ("42413ac72626671a1790dbed87544f9f32ebaedf", "e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7"),
+    ("42413ac72626671a1790dbed87544f9f32ebaedf", "a8c5c13c8977e2473ed3b1e2d12cbe414f3addbc"),
 )
 REVIEWED_FROM_GIT = REVIEWED_GIT_PAIRS[0][0]
 REVIEWED_PROTOCOL_GIT = REVIEWED_GIT_PAIRS[0][1]
