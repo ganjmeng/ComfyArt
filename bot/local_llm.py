@@ -15,6 +15,7 @@ from ._cli_common import (
     merge_usage,
 )
 from . import lms
+from .assistant_history import assistant_history_message
 from . import robustness as _rb
 from .agent_host import AgentHost
 from .guide import AGENT_GUIDE, CORE_MCP_TOOLS, PAID_TOOLS, resolve_host  # noqa: F401
@@ -1555,15 +1556,32 @@ class LocalLlmProvider(AgentProvider):
                             url: str, *, headers: dict,
                             json_body: Optional[dict] = None,
                             timeout: float = 120) -> dict:
+        from .llm_input_envelope import FrozenJsonBody
+        frozen = isinstance(json_body, FrozenJsonBody)
+        if frozen:
+            headers = {k: v for k, v in headers.items() if k.lower() != "content-type"}
+            headers["Content-Type"] = "application/json"
+        from .llm_scope_activation import no_auxiliary_redirects
+        no_redirect = frozen or no_auxiliary_redirects()
+        payload = {"data": json_body.encoded} if frozen else {"json": json_body}
+        if no_redirect:
+            payload["allow_redirects"] = False
         async with session.request(
-            method, url, headers=headers, json=json_body,
+            method, url, headers=headers, **payload,
             timeout=aiohttp.ClientTimeout(total=timeout),
         ) as resp:
             text = await resp.text()
-            if resp.status >= 400:
+            if resp.status >= 400 or (no_redirect and 300 <= resp.status < 400):
                 raise LlmHttpError(resp.status, text,
                                    _retry_after(resp.headers.get("Retry-After")))
             return json.loads(text) if text else {}
+
+    async def _request_auxiliary_json(self, purpose, session, method, url, *, headers,
+                                      json_body=None, timeout=120):
+        from .llm_scope_activation import auxiliary_request
+        with auxiliary_request(purpose, method, url, json_body):
+            return await self._request_json(session, method, url, headers=headers,
+                                            json_body=json_body, timeout=timeout)
 
     async def probe(self) -> ProviderStatus:
         now = time.monotonic()
@@ -1580,8 +1598,8 @@ class LocalLlmProvider(AgentProvider):
             return status
         try:
             async with aiohttp.ClientSession() as session:
-                data = await self._request_json(
-                    session, "GET", f"{base}/models",
+                data = await self._request_auxiliary_json(
+                    "catalog", session, "GET", f"{base}/models",
                     headers=self._api_headers(), timeout=10,
                 )
             models = [str(m.get("id") or "") for m in data.get("data") or []]
@@ -1607,8 +1625,8 @@ class LocalLlmProvider(AgentProvider):
             return []
         try:
             async with aiohttp.ClientSession() as session:
-                data = await self._request_json(
-                    session, "GET", f"{base}/models",
+                data = await self._request_auxiliary_json(
+                    "catalog", session, "GET", f"{base}/models",
                     headers=self._api_headers(), timeout=10,
                 )
             models = [str(m.get("id") or "") for m in data.get("data") or []]
@@ -1618,8 +1636,8 @@ class LocalLlmProvider(AgentProvider):
 
     async def _mcp_list_tools(self, session: aiohttp.ClientSession,
                               endpoint: str) -> list[dict]:
-        data = await self._request_json(
-            session, "POST", endpoint, headers=self._mcp_headers(),
+        data = await self._request_auxiliary_json(
+            "mcp_list", session, "POST", endpoint, headers=self._mcp_headers(),
             json_body={"jsonrpc": "2.0", "id": "tools", "method": "tools/list",
                        "params": {}}, timeout=30,
         )
@@ -1629,8 +1647,8 @@ class LocalLlmProvider(AgentProvider):
     async def _mcp_call_tool(self, session: aiohttp.ClientSession,
                              endpoint: str, name: str,
                              arguments: dict) -> tuple[str, list[str]]:
-        data = await self._request_json(
-            session, "POST", endpoint, headers=self._mcp_headers(),
+        data = await self._request_auxiliary_json(
+            "mcp_call", session, "POST", endpoint, headers=self._mcp_headers(),
             json_body={"jsonrpc": "2.0", "id": f"call-{name}",
                        "method": "tools/call",
                        "params": {"name": name, "arguments": arguments}},
@@ -1709,8 +1727,8 @@ class LocalLlmProvider(AgentProvider):
         if model and key in cache:
             return cache[key]
         try:
-            data = await self._request_json(
-                session, "GET", f"{base}/models", headers=self._api_headers(), timeout=10)
+            data = await self._request_auxiliary_json(
+                "catalog", session, "GET", f"{base}/models", headers=self._api_headers(), timeout=10)
         except _NET_ERRORS:
             return resolve_context_window(model)
         if isinstance(data, dict):
@@ -1841,11 +1859,21 @@ class LocalLlmProvider(AgentProvider):
         # #968: _price_one answers (price, source, reason); this single-call budget cap only needs the amount.
         return result[0] if isinstance(result, tuple) else result
 
+    def _blocked_model_post(self, handle: TurnHandle | None = None) -> str:
+        return str(getattr(self, "_model_blocked", "") or getattr(handle, "model_blocked", "") or "")
+
+    def _refuse_blocked_model_post(self, handle: TurnHandle | None = None) -> None:
+        reason = self._blocked_model_post(handle)
+        if reason:
+            from .llm_usd_gate import LlmBudgetBlocked
+            raise LlmBudgetBlocked("browser_tab_required", reason)
+
     async def _llm_request(self, session: aiohttp.ClientSession, url: str,
                            body: dict, emit: EmitFn, handle: TurnHandle) -> dict:
         """POST to the LLM; a timeout, 429 or 5xx is retried _LLM_RETRIES times. Each wait shows as a
         retry row in the chat (429: with a countdown). Tool calls never go through here, so a paid
         run is never repeated."""
+        self._refuse_blocked_model_post(handle)
         attempt = 0
         while True:
             try:
@@ -1916,6 +1944,7 @@ class LocalLlmProvider(AgentProvider):
 
     async def _summarize_llm(self, session, base: str, model: str, previous: str, new_turns: str) -> str:
         """One model call: previous summary + newly pushed-out turns -> updated summary. No retries."""
+        self._refuse_blocked_model_post()
         data = await self._request_json(
             session, "POST", f"{base}/chat/completions", headers=self._api_headers(),
             json_body={"model": model, "temperature": 0.1, "messages": [
@@ -2535,6 +2564,17 @@ class LocalLlmProvider(AgentProvider):
 
     async def send(self, turn: TurnRequest, emit: EmitFn,
                    handle: TurnHandle) -> TurnResult:
+        self._model_blocked = ""
+        handle.model_blocked = ""
+        project = str(getattr(turn, "project_id", "") or "")
+        # "local" is the run-log sentinel, not a canvas project. A requested canvas
+        # project must already be the live browser tab; this does not register one.
+        if project and project != "local":
+            from ..api.mcp_commands import require_project_tab
+            try:
+                require_project_tab(project)
+            except ValueError as exc:
+                return TurnResult(error=str(exc))
         base = self._base_url()
         if not base:
             return TurnResult(
@@ -2629,17 +2669,26 @@ class LocalLlmProvider(AgentProvider):
                     if not tool_calls:
                         return TurnResult(usage=usage)
 
-                    messages.append({
-                        "role": "assistant",
-                        "content": content or None,
-                        "tool_calls": tool_calls,
-                    })
+                    messages.append(assistant_history_message(message, content, tool_calls))
+                    sent_before = len(messages)
                     stopped = await self._dispatch_tools(
                         tool_calls, session=session, turn=turn, emit=emit, handle=handle,
                         messages=messages, done=done, lang=lang, skill_cache=skill_cache,
                         loop=loop, gate=gate, usage=usage, llm_model=model)
                     if stopped is not None:
                         return stopped
+                    from ..api.mcp_commands import mandatory_browser_stop
+                    blocked = ""
+                    for m in messages[sent_before:]:
+                        if m.get("role") != "tool":
+                            continue
+                        blocked = mandatory_browser_stop(str(m.get("content") or ""))
+                        if blocked:
+                            break
+                    if blocked:
+                        handle.model_blocked = blocked
+                        self._model_blocked = blocked
+                        return TurnResult(usage=usage, error=blocked)
                     # #400: paid_gate decline / unattended skip sets pending_stop; do not keep looping
                     if run_ctx.pending_stop is not None:
                         from .run_budget import StopReason

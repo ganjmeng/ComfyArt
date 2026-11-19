@@ -35,6 +35,31 @@ def _target(project: str) -> tuple[str, str]:
     return _target(projects[0])
 
 
+def require_project_tab(project: str) -> str:
+    """Read the live tab table. Does not register a page, open a socket, or start a session.
+
+    Missing, mismatched, stale, and disconnected tabs all fail through ``_target``
+    with the same actionable error the tool would raise later.
+    """
+    _client, resolved = _target(project)
+    return resolved
+
+
+def mandatory_browser_stop(text: str) -> str:
+    """Return *text* when the live-tab prerequisite failed, else ``""``.
+
+    Only the prerequisite failures raised by ``_target`` and a tab that closed
+    during the command. A page timeout or any other tool error stays recoverable.
+    """
+    if "is not open in any browser tab" in text or "no ComfyArt project is open in a browser tab" in text:
+        return text
+    if "several ComfyArt projects are open" in text:
+        return text
+    if "the ComfyArt tab of project " in text and " closed before " in text:
+        return text
+    return ""
+
+
 async def submit_command(action: str, payload: dict, project: str,
                          timeout: float = DEFAULT_TIMEOUT_S, chat: str = "") -> dict:
     client, project = _target(project)
