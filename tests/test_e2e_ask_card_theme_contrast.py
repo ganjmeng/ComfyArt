@@ -141,6 +141,7 @@ def test_dark_setup_ask_card_text_contrast():
     chrome = _chrome(got)
     assert chrome["badge_row"] >= 4.5, (got, chrome)
     assert chrome["badge_ink"] >= 4.5, (got, chrome)
+    assert _channels(got["bg"])[0] == (22, 22, 22), got
     assert chrome["page"] >= 4.5 and chrome["enabled"] >= 4.5, (got, chrome)
     assert chrome["disabled"] < chrome["enabled"], (got, chrome)
 
