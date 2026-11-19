@@ -2724,18 +2724,16 @@ class LocalLlmProvider(AgentProvider):
                         handle.model_blocked = blocked
                         self._model_blocked = blocked
                         return TurnResult(usage=usage, error=blocked)
-                    from .agent_loop import policy_denial
-                    denials = sum(1 for m in messages[sent_before:]
-                                  if m.get("role") == "tool" and policy_denial(str(m.get("content") or "")))
-                    if denials:
-                        loop["policy_denials"] = loop.get("policy_denials", 0) + denials
-                        if loop["policy_denials"] >= 2:
-                            from .agent_loop import stop_text
-                            from .run_budget import Stop, StopReason
-                            stop = Stop(StopReason.BLOCKED, "policy_denied_repeat", step=run_ctx.budget.used.steps,
-                                        detail="A tool was denied by policy twice in this turn.")
-                            run_ctx.pending_stop = stop
-                            return TurnResult(usage=usage, error=stop_text(stop, lang, done))
+                    from .agent_loop import repeated_tool_stop, stop_text
+                    from .run_budget import Stop, StopReason
+                    kind, loop["non_retryable_seen"] = repeated_tool_stop(
+                        [str(m.get("content") or "") for m in messages[sent_before:] if m.get("role") == "tool"],
+                        loop.get("non_retryable_seen", 0))
+                    if kind is not None:
+                        stop = Stop(StopReason.STUCK, "non_retryable", step=run_ctx.budget.used.steps,
+                                    detail="A policy denial or a repeated non-retryable tool error ended this turn.")
+                        run_ctx.pending_stop = stop
+                        return TurnResult(usage=usage, error=stop_text(stop, lang, done))
                     # #400: paid_gate decline / unattended skip sets pending_stop; do not keep looping
                     if run_ctx.pending_stop is not None:
                         from .run_budget import StopReason

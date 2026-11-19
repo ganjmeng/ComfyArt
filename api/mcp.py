@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import uuid
 
 from aiohttp import web
@@ -61,6 +62,22 @@ def _payload_to_content(payload) -> list[dict]:
     return blocks
 
 
+def _controlled_precheck_only() -> bool:
+    """Set by the controlled launcher. generate_image may precheck, not submit."""
+    return os.environ.get("COMFYART_CONTROLLED_PRECHECK_ONLY") == "1"
+
+
+def _controlled_precheck_refusal(name: str) -> str | None:
+    """Refuse a generate_image that would leave precheck and spend.
+
+    A quote card or redirect is returned by the preflight itself and never
+    reaches this. The message is a policy denial: the agent loop stops on it.
+    """
+    if name != "generate_image" or not _controlled_precheck_only():
+        return None
+    return "PermissionError: controlled_precheck_only: 受控模式，生图要等出图步骤"
+
+
 def _multi_angle_preflight(name: str, arguments: dict, chat_id: str) -> tuple[dict, dict | None]:
     """#1002 / Refs #911: resolve staged refs/replays before paid unit accounting.
 
@@ -97,6 +114,9 @@ def _wrap_paid_handler(name: str, original):
         arguments, staged_result = _multi_angle_preflight(name, arguments, chat_id)
         if staged_result is not None:
             return staged_result
+        held = _controlled_precheck_refusal(name)
+        if held:
+            raise PermissionError(held.removeprefix("PermissionError: "))
         refused = paid_guard.before_call(chat_id, name, arguments, external=external)
         if refused:
             raise paid_guard.PaidRefused(refused)
@@ -141,6 +161,9 @@ async def _tools_call(params: dict, *, external: bool = False) -> dict | None:
     arguments, staged_result = _multi_angle_preflight(name, arguments, chat_id)
     if staged_result is not None:
         return {"content": _payload_to_content(staged_result), "isError": False}
+    held = _controlled_precheck_refusal(name)
+    if held:
+        return {"content": [{"type": "text", "text": held}], "isError": True}
     # Paid handlers are also wrapped for direct calls; use _paid_inner here to avoid double-counting.
     refused = paid_guard.before_call(chat_id, name, arguments, external=external) if chat_id else None
     if refused:

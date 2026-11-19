@@ -41,14 +41,14 @@ async def test_linkedin_banner_chain_happy_path(monkeypatch, store):  # noqa: F8
 
 
 async def test_linkedin_banner_705_repro_stops_on_empty_id(monkeypatch, store):  # noqa: F811
-    """#705: no current skill (plain chat) and the model reads with an empty id. The tool returns the REAL format
-    (status success, "[tool error] ValueError: [non-retryable] ...") -> one hard, non-retryable stop."""
+    """A non-policy [non-retryable] tool error is returned once, then the second one stops the turn."""
     r = Rig(monkeypatch, lambda m, n: calls(("skill", {"action": "read", "id": ""})), store=store, mcp=_mcp)
     res, events = await r.send("Banner")
     s = stop_of(res)
     assert (s["reason"], s["sub"]) == ("stuck", "non_retryable"), s
     empties = [c for c in r.mcp if c[0] == "skill" and not (c[1].get("id") or c[1].get("name"))]
-    assert len(empties) == 1                       # never retried
+    assert len(empties) == 2
+    assert len(r.requests) == 2
     assert not [c for c in r.mcp if c[0] == "generate_image"]  # nothing paid
 
 

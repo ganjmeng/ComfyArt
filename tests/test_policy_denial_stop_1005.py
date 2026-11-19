@@ -1,4 +1,7 @@
-"""A repeated policy denial ends the turn before another model POST. No network."""
+"""Policy denials stop on the first result. Other non-retryable errors stop on the second.
+
+No further model POST happens after the stop. No network.
+"""
 from __future__ import annotations
 
 import pytest
@@ -11,21 +14,21 @@ from test_agent_budget_391 import calls, reply
 
 
 DENIAL = "PermissionError: controlled first turn: MCP side effects prohibited"
+OTHER = "[tool error] ValueError: [non-retryable] this call cannot succeed"
 
 
 async def _turn(monkeypatch, *, results, script, budget_loop=True):
     chat = chat_store.create_chat(user="default", project="mock-policy", provider="local-llm")
-    cid = chat["id"]
     provider = LocalLlmProvider(base_url=lambda: "http://mock-no-network/v1")
-    seen, trace = [], []
+    posts, trace = [], []
 
     async def fake_request(session, method, url, *, headers, json_body=None, timeout=120):
         if (json_body or {}).get("method") == "tools/list":
             return {"result": {"tools": [{"name": "get_canvas", "inputSchema": {"type": "object", "properties": {}}}]}}
         if not str(url).endswith("/chat/completions"):
             return {"data": [{"id": "mock-policy", "context_length": 32000}]}
-        seen.append(json_body["messages"])
-        return script[len(seen) - 1]
+        posts.append(json_body["messages"])
+        return script[len(posts) - 1]
 
     async def mcp_call(session, endpoint, name, arguments):
         trace.append(name)
@@ -54,35 +57,44 @@ async def _turn(monkeypatch, *, results, script, budget_loop=True):
         return None
 
     result = await provider.send(TurnRequest(
-        chat_id=cid, user_text="Look at the canvas.", goal_text="Look at the canvas.",
+        chat_id=chat["id"], user_text="Look at the canvas.", goal_text="Look at the canvas.",
         lang="en", mcp_endpoint="http://mock-no-network/mcp", model="mock-policy"), emit, TurnHandle())
-    return result, seen, trace
+    return result, posts, trace
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("budget_loop", [True, False])
-async def test_two_policy_denials_make_one_extra_post_then_stop(monkeypatch, budget_loop):
-    result, seen, trace = await _turn(
+async def test_policy_denial_stops_on_the_first_result(monkeypatch, budget_loop):
+    result, posts, trace = await _turn(
         monkeypatch, budget_loop=budget_loop,
-        results=[DENIAL, DENIAL, "should not run"],
-        script=[calls(("get_canvas", {})), calls(("get_canvas", {})), reply("should not be requested")])
-    assert trace == ["get_canvas", "get_canvas"]
-    assert len(seen) == 2
-    assert DENIAL in str(seen[1])
+        results=[DENIAL, DENIAL],
+        script=[calls(("get_canvas", {})), calls(("get_canvas", {})), reply("must not be requested")])
+    assert trace == ["get_canvas"]
+    assert len(posts) == 1
     if budget_loop:
-        assert result.run["stop"]["code"] == "blocked:policy_denied_repeat"
+        assert result.run["stop"]["code"] == "stuck:non_retryable"
     else:
-        assert "policy denial happened twice" in result.error
-        assert result.run is None or (result.run or {}).get("stop", {}).get("code") != "done"
+        assert result.run is None or result.run["stop"]["code"] == "stuck:non_retryable"
+
+
+@pytest.mark.asyncio
+async def test_other_non_retryable_stops_on_the_second_result(monkeypatch):
+    result, posts, trace = await _turn(
+        monkeypatch,
+        results=[OTHER, OTHER, "must not run"],
+        script=[calls(("get_canvas", {})), calls(("get_canvas", {})), reply("must not be requested")])
+    assert trace == ["get_canvas", "get_canvas"]
+    assert len(posts) == 2
+    assert OTHER in str(posts[1])
+    assert result.run["stop"]["code"] == "stuck:non_retryable"
 
 
 @pytest.mark.asyncio
 async def test_ordinary_tool_errors_do_not_end_the_turn(monkeypatch):
-    result, seen, trace = await _turn(
+    result, posts, trace = await _turn(
         monkeypatch,
         results=["ValueError: temporary", "ValueError: temporary again"],
         script=[calls(("get_canvas", {})), calls(("get_canvas", {})), reply("finished after ordinary errors")])
     assert trace == ["get_canvas", "get_canvas"]
-    assert len(seen) == 3
+    assert len(posts) == 3
     assert result.run["stop"]["reason"] == "done"
-    assert result.run["stop"]["code"] != "blocked:policy_denied_repeat"

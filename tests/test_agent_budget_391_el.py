@@ -179,7 +179,7 @@ async def test_billed_tokens_without_provider_usage_count_each_request(monkeypat
 
 def test_stop_enum_is_locked():
     assert {s.value for s in StopReason} == {"done", "budget", "stuck", "hard_cap", "user_stop", "error",
-                                               "awaiting_confirm", "blocked"}  # #418: a card nobody answered
+                                               "awaiting_confirm"}  # #418: a card nobody answered
     assert "self_check_failed" in SUB_REASONS[StopReason.STUCK]
     assert "quote_declined" in SUB_REASONS[StopReason.USER_STOP]
     assert "unattended_skipped" in SUB_REASONS[StopReason.BUDGET]
@@ -197,7 +197,6 @@ LOCKED = {
     "user_stop": ("已停止", "已保留生成的 {n} 张", "继续", None),
     "user_stop:quote_declined": ("已取消", "报价没有确认，不会扣费；已保留之前生成的 {n} 张", "继续", None),
     "awaiting_confirm:not_approved": ("等待确认未通过", "需要确认才能开始，未扣费", "继续", None),
-    "blocked:policy_denied_repeat": ("已停止", "同一策略拒绝出现了两次，本轮结束，没有继续请求模型", None, None),
     "awaiting_confirm:ask_expired": ("提问已过期", "没有收到回答，本轮已结束，未继续出图，未扣费", None, None),
     "error:network": ("网络断开了", "已保留生成的 {n} 张", "重试", None),
     "error": ("出错了", "{reason}", "重试", None),

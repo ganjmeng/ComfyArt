@@ -52,7 +52,9 @@ def test_instruction_describes_stages_reference_retention_and_no_old_lock():
     assert "nine-panel lineart preview" in text
     assert 'multi_angle_stage="preview"' in text and 'multi_angle_stage="final"' in text
     assert "Do not generate final images before that answer" in text
-    assert "Preserve reference, user description and selected final aspect" in text
+    assert "Preserve reference, user description and the chosen final aspect" in text
     assert "Reuse an attached reference" in text
     assert "If none is uploaded, use the subject described in the Additional notes or ask for one" in text
-    assert "exactly four" not in text and "1536×2048" not in text
+    assert "exactly four" not in text and "locked set of four" in text
+    assert "1152×2048" in text and "9:16" in text
+    assert "2048×2048" in text and "1536×2048" in text
