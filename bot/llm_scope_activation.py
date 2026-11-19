@@ -299,6 +299,8 @@ REVIEWED_GIT_PAIRS = (
     ("0b73f5dbf909cba9578dcc4129bafb3d64c10f99", "bcc804bc13f3fa684c0ecf5547ac71023163da09"),
     ("bcc804bc13f3fa684c0ecf5547ac71023163da09", "69dd1c334173aa8860251ae939535464050d8ef9"),
 )
+# Index 0 is the original protocol review, not the newest hop. A caller must
+# name the exact pair for the hop it is performing; nothing here means "latest".
 REVIEWED_FROM_GIT = REVIEWED_GIT_PAIRS[0][0]
 REVIEWED_PROTOCOL_GIT = REVIEWED_GIT_PAIRS[0][1]
 REVIEWED_DEPLOYED_GIT = REVIEWED_GIT_PAIRS[1][0]
