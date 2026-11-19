@@ -87,6 +87,7 @@ class PageRig:
     def __init__(self, monkeypatch, tmp_path, *, tool_error=""):
         self.p = LocalLlmProvider(base_url=lambda: "https://api.deepseek.com")
         self.path = controlled(tmp_path)
+        gate.use_authorized_scope(self.path)
         self.model_posts = []
         self.tool_error = tool_error
         self.tool_seen = asyncio.Event()

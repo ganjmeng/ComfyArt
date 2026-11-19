@@ -2604,7 +2604,8 @@ class LocalLlmProvider(AgentProvider):
         project = str(getattr(turn, "project_id", "") or "")
         # "local" is the run-log sentinel, not a canvas project. A requested canvas
         # project must already be the live browser tab; this does not register one.
-        if project and project != "local":
+        from .llm_usd_gate import controlled_policy_active
+        if project and project != "local" and controlled_policy_active():
             from ..api.mcp_commands import require_project_tab
             try:
                 require_project_tab(project)
@@ -2714,12 +2715,13 @@ class LocalLlmProvider(AgentProvider):
                         return stopped
                     from ..api.mcp_commands import mandatory_browser_stop
                     blocked = ""
-                    for m in messages[sent_before:]:
-                        if m.get("role") != "tool":
-                            continue
-                        blocked = mandatory_browser_stop(str(m.get("content") or ""))
-                        if blocked:
-                            break
+                    if controlled_policy_active():
+                        for m in messages[sent_before:]:
+                            if m.get("role") != "tool":
+                                continue
+                            blocked = mandatory_browser_stop(str(m.get("content") or ""))
+                            if blocked:
+                                break
                     if blocked:
                         handle.model_blocked = blocked
                         self._model_blocked = blocked
@@ -2729,6 +2731,8 @@ class LocalLlmProvider(AgentProvider):
                     kind, loop["non_retryable_seen"] = repeated_tool_stop(
                         [str(m.get("content") or "") for m in messages[sent_before:] if m.get("role") == "tool"],
                         loop.get("non_retryable_seen", 0))
+                    if kind == "policy" and not controlled_policy_active():
+                        kind = None
                     if kind is not None:
                         stop = Stop(StopReason.STUCK, "non_retryable", step=run_ctx.budget.used.steps,
                                     detail="A policy denial or a repeated non-retryable tool error ended this turn.")

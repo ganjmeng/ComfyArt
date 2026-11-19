@@ -323,14 +323,13 @@ def parse_card_aspect(selected: str, other: str) -> str:
 
 
 def _upload_reask(args: dict) -> bool:
+    """A later card re-asks the source question only when it carries that question id.
+
+    Prompt text such as 上传 / upload is too broad: ordinary follow-up questions
+    mention an upload without being a second source card.
+    """
     ids = {q.get("id") for q in args.get("questions") or [] if isinstance(q, dict)}
-    if SOURCE in ids:
-        return True
-    blob = " ".join(str(args.get(key) or "") for key in ("prompt", "placeholder"))
-    for question in args.get("questions") or []:
-        if isinstance(question, dict):
-            blob += " " + str(question.get("prompt") or "") + " " + str(question.get("placeholder") or "")
-    return any(token in blob for token in ("上传", "参考图怎么提供", "upload", "re-upload", "reupload"))
+    return SOURCE in ids
 
 
 def _clarifying_aspect_card(zh: bool) -> dict:

@@ -1068,7 +1068,10 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                         if a not in ctx.artifacts:
                             ctx.artifacts.append(a)
             from ..api.mcp_commands import mandatory_browser_stop
-            blocked = next((mandatory_browser_stop(o.result) for o in obs if mandatory_browser_stop(o.result)), "")
+            from .llm_usd_gate import controlled_policy_active
+            blocked = ""
+            if controlled_policy_active():
+                blocked = next((mandatory_browser_stop(o.result) for o in obs if mandatory_browser_stop(o.result)), "")
             if blocked:
                 # The tool result is already known. Stop before the next reserve,
                 # without waiting for an external poller to notice the error.
@@ -1078,9 +1081,12 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                                          detail=blocked), extra_error=blocked)
             kind, loop["non_retryable_seen"] = repeated_tool_stop(
                 [o.result for o in obs], loop.get("non_retryable_seen", 0))
+            if kind == "policy" and not controlled_policy_active():
+                kind = None
             if kind is not None:
-                # Policy denial stops on the first result. Any other non-retryable
-                # mark stops on the second. Either way there is no further model POST.
+                # Policy denial stops on the first result under a controlled policy.
+                # Any other non-retryable mark stops on the second. Either way there
+                # is no further model POST.
                 _log.warning("[ComfyArt/agent] run %s %s tool result, stopping before another POST", ctx.run_id, kind)
                 return await finish(Stop(StopReason.STUCK, "non_retryable", step=ctx.budget.used.steps,
                                          detail="A policy denial or a repeated non-retryable tool error ended this turn."))

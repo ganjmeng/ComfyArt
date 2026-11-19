@@ -6,7 +6,11 @@ from __future__ import annotations
 
 import pytest
 
+import tempfile
+from pathlib import Path
+
 from ComfyArt.api import chat_store
+from ComfyArt.bot import llm_usd_gate as gate
 from ComfyArt.bot.local_llm import LocalLlmProvider
 from ComfyArt.bot.providers import TurnHandle, TurnRequest
 from ComfyArt.bot.run_budget import resolve_policy
@@ -56,9 +60,15 @@ async def _turn(monkeypatch, *, results, script, budget_loop=True):
     async def emit(_event):
         return None
 
-    result = await provider.send(TurnRequest(
-        chat_id=chat["id"], user_text="Look at the canvas.", goal_text="Look at the canvas.",
-        lang="en", mcp_endpoint="http://mock-no-network/mcp", model="mock-policy"), emit, TurnHandle())
+    from test_llm_input_envelope_1004 import controlled
+    path = controlled(Path(tempfile.mkdtemp()))
+    gate.use_authorized_scope(path)
+    try:
+        result = await provider.send(TurnRequest(
+            chat_id=chat["id"], user_text="Look at the canvas.", goal_text="Look at the canvas.",
+            lang="en", mcp_endpoint="http://mock-no-network/mcp", model="mock-policy"), emit, TurnHandle())
+    finally:
+        gate.clear_authorized_scope()
     return result, posts, trace
 
 

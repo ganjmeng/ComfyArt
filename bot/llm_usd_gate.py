@@ -794,6 +794,24 @@ def _controlled(data: dict) -> bool:
     return "control_limits" in data
 
 
+def controlled_policy_active() -> bool:
+    """Live-tab stops and policy-denial stops apply only under a controlled policy.
+
+    A normal agent turn has neither the precheck switch nor a bound controlled
+    ledger, so a missing browser tab does not end it.
+    """
+    if os.environ.get("COMFYART_CONTROLLED_PRECHECK_ONLY") == "1":
+        return True
+    path = _bound_ledger_path
+    if not path:
+        return False
+    try:
+        data, _, _ = _load_ledger(path, create=False)
+    except Exception:
+        return True
+    return _controlled(data)
+
+
 def _trip(data: dict, reason: str, reservation_id: str = "") -> None:
     if _controlled(data):
         state = data["control_state"]
