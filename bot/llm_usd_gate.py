@@ -1242,6 +1242,7 @@ def ledger_state(path: str) -> dict:
         return {
             "scope_id": data["scope_id"],
             "authorization": data.get("authorization"),
+            "authorization": data["authorization"],
             "authorized_ceiling_nano": data.get("authorized_ceiling_nano"),
             "ceiling_nano": data["ceiling_nano"],
             "accounted_nano": data["accounted_nano"],
