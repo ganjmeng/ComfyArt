@@ -302,7 +302,7 @@ REVIEWED_RESOLVE_GIT = REVIEWED_GIT_PAIRS[1][1]
 
 def _spend_view(data: dict) -> dict:
     rows = data.get("reservations") if type(data.get("reservations")) is dict else {}
-    return {
+    view = {
         "scope_id": data.get("scope_id"),
         "authorization": data.get("authorization"),
         "authorized_ceiling_nano": data.get("authorized_ceiling_nano"),
@@ -313,6 +313,11 @@ def _spend_view(data: dict) -> dict:
         "reservations": {key: {field: row.get(field) for field in ("status", "reserved_nano", "actual_nano", "retain_reason")}
                          for key, row in rows.items() if type(row) is dict},
     }
+    if "external_spend" in data:
+        external = data.get("external_spend") if type(data.get("external_spend")) is dict else {}
+        view["external_spend"] = {key: {field: row.get(field) for field in ("status", "quote_nano", "actual_nano", "task_id")}
+                                  for key, row in external.items() if type(row) is dict}
+    return view
 
 
 def _fingerprint_for(home: str, runtime_id: str, source_sha256: str) -> str:
@@ -397,6 +402,10 @@ def _require_safe_spend(path: str, data: dict) -> None:
     rows = data.get("reservations") if type(data.get("reservations")) is dict else None
     if rows is None or any(type(row) is not dict or row.get("status") not in ("reconciled", "resolved_as_spent") for row in rows.values()):
         _fail("migration_state_unsafe", "hold")
+    external = data.get("external_spend")
+    if external is not None and (type(external) is not dict or any(
+            type(row) is not dict or row.get("status") != "reconciled" for row in external.values())):
+        _fail("migration_state_unsafe", "external_hold")
 
 
 def _loaded_spend(path: str) -> dict:
@@ -563,6 +572,10 @@ def _require_extendable(path: str, data: dict, binding: dict) -> None:
         _fail("extend_refused", "hold")
     if any(row.get("status") == "reserved" for row in rows.values()):
         _fail("extend_refused", "inflight")
+    external = data.get("external_spend")
+    if external is not None and (type(external) is not dict or any(
+            type(row) is not dict or row.get("status") != "reconciled" for row in external.values())):
+        _fail("extend_refused", "external_hold")
 
 
 def _extended_binding(old_binding: dict, runtime: RuntimeIdentity, new_max_posts: int) -> dict:

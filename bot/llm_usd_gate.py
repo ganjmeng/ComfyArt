@@ -773,9 +773,11 @@ def _install_controls(data: dict, max_posts: int) -> None:
 def _control_view(data: dict) -> dict:
     if not _controlled(data):
         return {}
+    external = data.get("external_spend") if type(data.get("external_spend")) is dict else {}
     return {"control_limits": dict(data["control_limits"]),
             "control_state": dict(data["control_state"]),
-            "inflight": sum(row["status"] == "reserved" for row in data["reservations"].values())}
+            "inflight": sum(row["status"] == "reserved" for row in data["reservations"].values()),
+            "external_inflight": sum(type(row) is dict and row.get("status") == "reserved" for row in external.values())}
 
 
 def _fresh(*, ceiling_nano: int = CEILING_NANO, authorization: str = DEFAULT_AUTHORIZATION) -> dict:
@@ -1080,6 +1082,36 @@ def _row_hold(row: dict) -> Optional[int]:
     return None
 
 
+def _external_rows(data: dict) -> dict:
+    """External rows are optional. A ledger written before them has no key."""
+    if "external_spend" not in data:
+        return {}
+    rows = data.get("external_spend")
+    if type(rows) is not dict:
+        raise LlmBudgetBlocked("ledger_unreadable", "external_spend")
+    return rows
+
+
+def _external_hold(row: dict) -> Optional[int]:
+    if type(row) is not dict:
+        return None
+    quote = _as_int(row.get("quote_nano"))
+    status = row.get("status")
+    if quote is None:
+        return None
+    if status in ("reserved", "retained"):
+        return quote if row.get("actual_nano") is None else None
+    if status == "reconciled":
+        return _as_int(row.get("actual_nano"))
+    return None
+
+
+def _external_row_readable(row: dict) -> bool:
+    if _external_hold(row) is None:
+        return False
+    return all(type(row.get(key)) is str for key in ("provider", "task_ref", "task_id", "operator", "retain_reason"))
+
+
 def _scope_binding(data: dict) -> tuple[int, str]:
     """Return the authorized cap recorded in this ledger file.
 
@@ -1132,6 +1164,11 @@ def _normalize(data: Any) -> dict:
         if piece is None:
             raise LlmBudgetBlocked("ledger_unreadable", "row_nano")
         held += piece
+    # Absent on every ledger that predates external spend. Do not insert the key.
+    for key, row in _external_rows(data).items():
+        if not isinstance(key, str) or not _external_row_readable(row):
+            raise LlmBudgetBlocked("ledger_unreadable", "external_row")
+        held += _external_hold(row)
     data["accounted_nano"] = max(accounted, held)
     if _controlled(data) or "control_state" in data:
         limits, state = data.get("control_limits"), data.get("control_state")
@@ -1155,6 +1192,8 @@ def _normalize(data: Any) -> dict:
         # A legacy retained result or partial historical migration cannot turn
         # an uncertainty into permission for another POST.
         if any(row["status"] == "retained" for row in rows.values()):
+            _trip(data, "historical_unknown_outcome")
+        if any(row.get("status") == "retained" for row in _external_rows(data).values()):
             _trip(data, "historical_unknown_outcome")
     return data
 
@@ -1454,6 +1493,106 @@ def settle(path: str, reservation_id: str, usage: Any) -> dict:
     return _mutate(path, change, create=False, preserve_on_failure=True)
 
 
+def reserve_external_spend(path: str, provider: str = "wavespeed", *, quote_nano: int, task_ref: str, operator: str) -> dict:
+    """Hold one provider quote against this ledger's USD ceiling.
+
+    The hold does not consume a DeepSeek POST and is not LLM inflight. A second
+    external hold is refused until the first is settled or retained. Over the
+    ceiling, an open breaker, or a pending outcome journal writes nothing.
+    """
+    if type(provider) is not str or not provider.strip():
+        raise LlmBudgetBlocked("external_refused", "provider")
+    if type(quote_nano) is not int or quote_nano <= 0:
+        raise LlmBudgetBlocked("external_refused", "quote")
+    if type(task_ref) is not str or not task_ref.strip() or type(operator) is not str or not operator.strip():
+        raise LlmBudgetBlocked("external_refused", "audit")
+
+    def change(data: dict) -> dict:
+        if data.get("control_state", {}).get("circuit_open") is True:
+            raise LlmBudgetBlocked("external_refused", "breaker")
+        external = _external_rows(data)
+        if any(type(row) is dict and row.get("status") == "reserved" for row in external.values()):
+            raise LlmBudgetBlocked("external_refused", "inflight")
+        accounted = data.get("accounted_nano")
+        ceiling = data.get("ceiling_nano")
+        if type(accounted) is not int or type(ceiling) is not int or accounted + quote_nano > ceiling:
+            raise LlmBudgetBlocked("external_refused", "ceiling")
+        attempts = data["control_state"]["attempts_total"] if _controlled(data) else None
+        reservation_id = uuid.uuid4().hex
+        data.setdefault("external_spend", {})[reservation_id] = {
+            "provider": provider, "status": "reserved", "quote_nano": quote_nano, "actual_nano": None,
+            "task_ref": task_ref, "task_id": "", "operator": operator, "retain_reason": "",
+        }
+        data["accounted_nano"] = accounted + quote_nano
+        if _controlled(data) and data["control_state"]["attempts_total"] != attempts:
+            raise LlmBudgetBlocked("external_refused", "post_count")
+        return {"ok": True, "reservation_id": reservation_id, "quote_nano": quote_nano,
+                "accounted_nano": data["accounted_nano"], "attempts_total": attempts}
+
+    return _mutate(path, change, create=False)
+
+
+def settle_external_spend(path: str, reservation_id: str, task_id: str, actual_nano: int | None, operator: str) -> dict:
+    """Record a provider task id and actual amount, or retain an unknown at the quote.
+
+    An actual above the quote is stored and opens the breaker. None keeps the
+    row retained and counted at the full quote. The same outcome again does not write.
+    """
+    if type(reservation_id) is not str or not reservation_id:
+        raise LlmBudgetBlocked("external_refused", "id")
+    if type(task_id) is not str or type(operator) is not str or not operator.strip():
+        raise LlmBudgetBlocked("external_refused", "audit")
+    if actual_nano is not None and (type(actual_nano) is not int or actual_nano < 0):
+        raise LlmBudgetBlocked("external_refused", "actual")
+    if actual_nano is not None and not task_id.strip():
+        raise LlmBudgetBlocked("external_refused", "task_id")
+
+    def change(data: dict) -> dict:
+        external = data.get("external_spend") if type(data.get("external_spend")) is dict else {}
+        row = external.get(reservation_id)
+        if type(row) is not dict:
+            raise LlmBudgetBlocked("external_refused", "id")
+        quote = row.get("quote_nano")
+        if type(quote) is not int or quote < 0:
+            raise LlmBudgetBlocked("external_refused", "quote")
+        attempts = data["control_state"]["attempts_total"] if _controlled(data) else None
+        accounted = data.get("accounted_nano")
+        circuit = data.get("control_state", {}).get("circuit_open") is True
+        if row.get("status") == "reconciled" and row.get("task_id") == task_id and row.get("actual_nano") == actual_nano:
+            return {"ok": True, "idempotent": True, "reservation_id": reservation_id, "status": "reconciled",
+                    "task_id": task_id, "actual_nano": actual_nano, "quote_nano": quote, "accounted_nano": accounted,
+                    "attempts_total": attempts, "circuit_open": circuit}
+        if row.get("status") == "retained" and actual_nano is None and row.get("task_id") == task_id:
+            return {"ok": True, "idempotent": True, "reservation_id": reservation_id, "status": "retained",
+                    "task_id": task_id, "actual_nano": None, "quote_nano": quote, "accounted_nano": accounted,
+                    "attempts_total": attempts, "circuit_open": circuit}
+        if row.get("status") != "reserved":
+            raise LlmBudgetBlocked("external_refused", "id")
+        row["task_id"] = task_id
+        row["operator"] = operator
+        if actual_nano is None:
+            row["status"] = "retained"
+            row["retain_reason"] = "external_unknown"
+            _trip(data, "external_unknown", reservation_id)
+            status = "retained"
+        else:
+            row["status"] = "reconciled"
+            row["actual_nano"] = actual_nano
+            row["retain_reason"] = ""
+            data["accounted_nano"] = accounted + (actual_nano - quote)
+            if actual_nano > quote:
+                _trip(data, "external_over_quote", reservation_id)
+            status = "reconciled"
+        if _controlled(data) and data["control_state"]["attempts_total"] != attempts:
+            raise LlmBudgetBlocked("external_refused", "post_count")
+        return {"ok": True, "idempotent": False, "reservation_id": reservation_id, "status": status,
+                "task_id": task_id, "actual_nano": actual_nano, "quote_nano": quote,
+                "accounted_nano": data["accounted_nano"], "attempts_total": attempts,
+                "circuit_open": data.get("control_state", {}).get("circuit_open") is True}
+
+    return _mutate(path, change, create=False)
+
+
 def retain(path: str, reservation_id: str, reason: str, *, usage: Any = None) -> dict:
     def change(data: dict) -> dict:
         row = data["reservations"].get(reservation_id)
@@ -1533,6 +1672,11 @@ def resolve_unknown_as_spent(path: str, reservation_id: str, operator: str, reas
             raise LlmBudgetBlocked("resolve_refused", "other_retained")
         if any(type(other) is dict and other.get("status") == "reserved" for other in rows.values()):
             raise LlmBudgetBlocked("resolve_refused", "inflight")
+        external = data.get("external_spend")
+        if type(external) is dict and any(type(other) is dict and other.get("status") == "retained" for other in external.values()):
+            raise LlmBudgetBlocked("resolve_refused", "other_retained")
+        if type(external) is dict and any(type(other) is dict and other.get("status") == "reserved" for other in external.values()):
+            raise LlmBudgetBlocked("resolve_refused", "external_inflight")
         if state.get("circuit_open") is not True or state.get("first_anomaly_id") != reservation_id:
             raise LlmBudgetBlocked("resolve_refused", "breaker")
         row["status"] = "resolved_as_spent"
