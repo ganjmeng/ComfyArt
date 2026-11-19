@@ -859,6 +859,8 @@ def _write_activation_marker(path: str, data: dict) -> None:
     }
     if _controlled(data):
         marker["control_limits"] = dict(data["control_limits"])
+    if "runtime_activation" in data:
+        marker["runtime_activation"] = data["runtime_activation"]
     _atomic_write(_ledger_marker_path(path), _dump(marker), stage_prefix="marker_")
 
 
@@ -879,6 +881,8 @@ def _check_control_marker(path: str, data: dict) -> None:
                 marker["control_limits"] != data.get("control_limits") or
                 marker.get("scope_id") != data["scope_id"]):
             raise LlmBudgetBlocked("ledger_unreadable", "controlled_limits_changed")
+        if "runtime_activation" in marker and marker["runtime_activation"] != data.get("runtime_activation"):
+            raise LlmBudgetBlocked("ledger_unreadable", "runtime_activation_changed")
 
 
 def _persist_ledger(path: str, data: dict, *, write_marker: bool) -> None:
@@ -888,7 +892,8 @@ def _persist_ledger(path: str, data: dict, *, write_marker: bool) -> None:
     # update or bind. ledger_state must not perform that write.
     _atomic_write(path, _dump(data))
     if write_marker and (not _marker_present(path) or (
-            _controlled(data) and "control_limits" not in _read_marker(path))):
+            _controlled(data) and "control_limits" not in _read_marker(path)) or (
+            "runtime_activation" in data and "runtime_activation" not in _read_marker(path))):
         _write_activation_marker(path, data)
 
 
@@ -1231,7 +1236,7 @@ def _mutate(path: str, change: Callable[[dict], Any], *, create: bool = True,
         return result
 
 
-def reserve_nano(path: str, *, nano: int, record: dict) -> dict:
+def reserve_nano(path: str, *, nano: int, record: dict, runtime_binding=None) -> dict:
     if type(nano) is not int or nano <= 0:
         raise LlmBudgetBlocked("over_budget", "reservation must be a positive integer nano-USD")
     if (not isinstance(record, dict) or not isinstance(record.get("id"), str) or not record["id"]
@@ -1244,6 +1249,11 @@ def reserve_nano(path: str, *, nano: int, record: dict) -> dict:
     needs_controlled_scope = (evidence or {}).get("mode") == "documented_context_contract"
 
     def change(data: dict) -> dict:
+        if "runtime_activation" in data or runtime_binding is not None:
+            if (runtime_binding is None or data.get("runtime_activation") != runtime_binding
+                    or not _marker_present(path)
+                    or _read_marker(path).get("runtime_activation") != runtime_binding):
+                raise LlmBudgetBlocked("activation_binding_required", "ledger/runtime/marker")
         ceiling = data["ceiling_nano"]
         accounted = data["accounted_nano"]
         scope_id = data["scope_id"]
@@ -1454,7 +1464,7 @@ def _response_anomaly(result: Any) -> str:
 async def dispatch(body: dict, *, route: dict, url: str, send: Callable[[], Awaitable[Any]],
                    ledger_path: Optional[str] = None,
                    bound_fn: Optional[Callable[[dict, dict], Bound]] = None,
-                   context_contract: bool = False, frozen_images=None,
+                   context_contract: bool = False, frozen_images=None, activation_runtime=None,
                    send_frozen: Optional[Callable[[bytes], Awaitable[Any]]] = None) -> Any:
     """Reserve then send. Explicit context profile is unactivated by default.
 
@@ -1483,7 +1493,13 @@ async def dispatch(body: dict, *, route: dict, url: str, send: Callable[[], Awai
         **({"input_evidence": pre["input_evidence"], "body_sha256": pre["input_evidence"]["body_sha256"]}
            if context_contract else {}),
     }
-    reserved = reserve_nano(path, nano=pre["reserved_nano"], record=record)
+    if activation_runtime is not None:
+        from .llm_scope_activation import reserve_for_runtime
+        tools = [(t.get("function") or {}).get("name") for t in json.loads(pre["body_bytes"]).get("tools", [])]
+        reserved = reserve_for_runtime(activation_runtime, path=path, nano=pre["reserved_nano"],
+                                       record=record, url=url, tools=tools)
+    else:
+        reserved = reserve_nano(path, nano=pre["reserved_nano"], record=record)
     if not reserved["ok"]:
         raise LlmBudgetBlocked(
             reserved.get("code") or "over_budget",

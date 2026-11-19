@@ -1,16 +1,16 @@
 """Offline activation-manifest validation, NOT activation or billing evidence.
 
-No caller in the transport/install path uses this module. A validated receipt
-never binds the global transport, creates/migrates a scope, reserves funds, or
-replaces structural/input proof. Execution must revalidate and reserve under the
-ledger lock in a later activation batch: this read-only receipt is not a lease.
+A validated receipt alone never binds the transport, creates/migrates a scope,
+reserves funds, or replaces structural/input proof. llm_scope_activation supplies
+separate explicit durable activation and runtime revalidation; reservation still
+happens under the ledger lock. This read-only receipt is not a lease.
 
 The expected context comes from independently reviewed configuration, not from
 copying fields out of the candidate manifest. Matching evidence hashes records
 identity, not proof that supplier error-path billing is bounded or that a user
 accepted risk. No signature / same-account tamper-resistance claim is made.
-One expected authorization binds one canonical path; durable cross-process
-registry/enforcement of authorization uniqueness belongs to activation execution.
+One expected authorization binds one canonical path; cross-process uniqueness
+is enforced by the separate deployment-home activation registry, not this helper.
 """
 from __future__ import annotations
 
