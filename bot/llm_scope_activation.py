@@ -287,17 +287,22 @@ def _scope_matches(data, binding):
 # process tree, which changes when api/ or bot/ bytes change, so it is not the
 # tree of the "to" commit.
 # Pair 1: original protocol review. Pair 2: deployed 42413ac7 -> a8c5c13c, the
-# commit that added resolve_unknown_as_spent. Recording that SHA changes the
-# loaded file hash again. Provenance stores this git pair; the destination
-# source hash is this process tree, not a8c5c13c's tree.
+# commit that added resolve_unknown_as_spent. Pair 3: deployed 0b73f5db ->
+# bcc804bc, the commit that contains extend_post_limit and
+# reserve_external_spend. Recording a pair changes the loaded file hash again.
+# Provenance stores the named git pair; the destination source hash is this
+# process tree, not the "to" commit's tree.
 REVIEWED_GIT_PAIRS = (
     ("571c7fb7184dc4e97c115429bd6859d445e98c21", "c3d3820e998985c678feea74a47ab4613946b761"),
     ("42413ac72626671a1790dbed87544f9f32ebaedf", "a8c5c13c8977e2473ed3b1e2d12cbe414f3addbc"),
+    ("0b73f5dbf909cba9578dcc4129bafb3d64c10f99", "bcc804bc13f3fa684c0ecf5547ac71023163da09"),
 )
 REVIEWED_FROM_GIT = REVIEWED_GIT_PAIRS[0][0]
 REVIEWED_PROTOCOL_GIT = REVIEWED_GIT_PAIRS[0][1]
 REVIEWED_DEPLOYED_GIT = REVIEWED_GIT_PAIRS[1][0]
 REVIEWED_RESOLVE_GIT = REVIEWED_GIT_PAIRS[1][1]
+REVIEWED_LIVE_GIT = REVIEWED_GIT_PAIRS[2][0]
+REVIEWED_LOGIC_GIT = REVIEWED_GIT_PAIRS[2][1]
 
 
 def _spend_view(data: dict) -> dict:
