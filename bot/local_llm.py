@@ -15,6 +15,7 @@ from ._cli_common import (
     merge_usage,
 )
 from . import lms
+from .assistant_history import assistant_history_message
 from . import robustness as _rb
 from .agent_host import AgentHost
 from .guide import AGENT_GUIDE, CORE_MCP_TOOLS, PAID_TOOLS, resolve_host  # noqa: F401
@@ -2637,11 +2638,7 @@ class LocalLlmProvider(AgentProvider):
                     if not tool_calls:
                         return TurnResult(usage=usage)
 
-                    messages.append({
-                        "role": "assistant",
-                        "content": content or None,
-                        "tool_calls": tool_calls,
-                    })
+                    messages.append(assistant_history_message(message, content, tool_calls))
                     stopped = await self._dispatch_tools(
                         tool_calls, session=session, turn=turn, emit=emit, handle=handle,
                         messages=messages, done=done, lang=lang, skill_cache=skill_cache,

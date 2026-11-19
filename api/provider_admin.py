@@ -451,8 +451,11 @@ def llm_route(active: dict | None = None) -> dict | None:
 
 
 def adapt_llm_body(body: dict | None, url: str) -> dict | None:
-    """Official DeepSeek defaults thinking on. The agent does not echo reasoning_content, so disable it.
+    """Official DeepSeek defaults thinking on when the field is omitted.
 
+    Ordinary agent turns still set an explicit disabled value so they keep the
+    documented non-thinking cap. A body that already enables thinking is left
+    unchanged. Assistant history echoes canonical reasoning_content when present.
     Streaming stays off: the agent reads one JSON body. This is not a drop-in conversion.
     """
     lock = _llm_lock.get()
