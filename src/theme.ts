@@ -11,7 +11,10 @@ const KEY = 'comfyart.theme'
 export const themeAtom = atom<Theme>('theme', 'dark')
 
 const systemDark = matchMedia('(prefers-color-scheme: dark)')
-const isDark = (theme: Theme) => theme === 'dark' || (theme === 'system' && systemDark.matches)
+/** Active document theme. `<html data-theme>` is what `--ca-*` resolves from. */
+export function themeIsDark(theme: Theme = themeAtom.get()) {
+  return theme === 'dark' || (theme === 'system' && systemDark.matches)
+}
 
 export async function initTheme() {
   const stored = readLocal(KEY)
@@ -21,14 +24,14 @@ export async function initTheme() {
     const palette = res?.ok ? await res.json().catch(() => null) : null
     themeAtom.set(palette === 'light' ? 'light' : 'dark')
   }
-  markDark(isDark(themeAtom.get()))
+  markDark(themeIsDark())
   systemDark.addEventListener('change', () => { if (themeAtom.get() === 'system') markDark(systemDark.matches) })
 }
 
 export function saveTheme(theme: Theme) {
   themeAtom.set(theme)
   writeLocal(KEY, theme)
-  markDark(isDark(theme))
+  markDark(themeIsDark(theme))
 }
 
 export function setTheme(editor: Editor, theme: Theme) {

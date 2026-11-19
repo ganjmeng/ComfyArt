@@ -16,7 +16,7 @@ import { loadModels } from './models'
 import { loadProject, NEW_PARAM } from './projects'
 import { saveStateAtom, startAutosave } from './autosave'
 import { restoreHandoff, takeHandoff } from './home/handoff'
-import { markDark, themeAtom } from './theme'
+import { markDark, themeAtom, themeIsDark } from './theme'
 import { overrides } from './overrides'
 import { CommentShapeUtil, CommentTool } from './shapes/CommentShape'
 import { AudioShapeUtil, HtmlShapeUtil, LottieShapeUtil, ModelShapeUtil } from './shapes/EmbedShapes'
@@ -153,7 +153,11 @@ export function App({ id, onCanvasReady }: { id: string; onCanvasReady?: () => v
   }, [])
 
   useEffect(() => {
-    if (editor) markDark(dark)
+    if (!editor) return
+    // `<html data-theme>` is the source of `--ca-*`. A false getIsDarkMode()
+    // before tldraw applies preferences must not put the light tokens on a
+    // dark canvas. The app theme wins; a dark canvas still keeps dark tokens.
+    markDark(themeIsDark() || dark)
   }, [editor, dark])
 
   useEffect(() => {
@@ -186,6 +190,10 @@ export function App({ id, onCanvasReady }: { id: string; onCanvasReady?: () => v
           loadSnapshot(editor.store, snap)
           saveStateAtom.set({ state: 'saved', time: Date.now() })  // #305: loaded from disk = real persist
         }
+        // A loaded snapshot can restore tldraw's color scheme after onMount.
+        // Put the app theme back so the ask card reads the same tokens as the canvas.
+        editor.user.updateUserPreferences({ colorScheme: themeAtom.get(), locale: lang === 'zh' ? 'zh-cn' : 'en' })
+        markDark(themeIsDark())
         const doc = editor.getDocumentSettings()
         const kit = new URL(location.href).searchParams.get('kit')
         // #539 PR-C: a character/product/custom kit rides `?kit=` too and is attached like LibraryPanel 「添加到对话」; brand kits unchanged
