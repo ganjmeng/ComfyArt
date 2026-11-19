@@ -260,8 +260,8 @@ def _read_registry(path, *, create=False):
         raise gate.LlmBudgetBlocked("activation_registry_unreadable", "registry/marker") from exc
 
 
-def _write_registry(path, data):
-    gate._atomic_write(path, gate._dump(data), stage_prefix="registry_")
+def _write_registry(path, data, stage_prefix="registry_"):
+    gate._atomic_write(path, gate._dump(data), stage_prefix=stage_prefix)
     if not os.path.lexists(path + ".activated"):
         gate._atomic_write(path + ".activated", gate._dump({"version": 1, "registry_id": data["registry_id"]}),
                            stage_prefix="registry_marker_")
@@ -279,6 +279,234 @@ def _scope_matches(data, binding):
             or data["ceiling_nano"] != gate.TWO_DOLLAR_CEILING_NANO
             or data.get("control_limits") != {"version": 1, **m["scope_limits"]}):
         _fail("activation_scope_mismatch", "scope/authority/limits")
+
+
+# Git commits that reviewed the protocol change. They are not file hashes.
+# The migration implementation itself changes api/ and bot/ bytes, so the
+# loaded source hash is not the tree of REVIEWED_PROTOCOL_GIT.
+REVIEWED_FROM_GIT = "571c7fb7184dc4e97c115429bd6859d445e98c21"
+REVIEWED_PROTOCOL_GIT = "c3d3820e998985c678feea74a47ab4613946b761"
+
+
+def _spend_view(data: dict) -> dict:
+    rows = data.get("reservations") if type(data.get("reservations")) is dict else {}
+    return {
+        "scope_id": data.get("scope_id"),
+        "authorization": data.get("authorization"),
+        "authorized_ceiling_nano": data.get("authorized_ceiling_nano"),
+        "ceiling_nano": data.get("ceiling_nano"),
+        "accounted_nano": data.get("accounted_nano"),
+        "control_limits": data.get("control_limits"),
+        "control_state": data.get("control_state"),
+        "reservations": {key: {field: row.get(field) for field in ("status", "reserved_nano", "actual_nano", "retain_reason")}
+                         for key, row in rows.items() if type(row) is dict},
+    }
+
+
+def _fingerprint_for(home: str, runtime_id: str, source_sha256: str) -> str:
+    return _digest({"home": home, "runtime_id": runtime_id, "source_sha256": source_sha256})
+
+
+def _migration_provenance(old_binding: dict, runtime: RuntimeIdentity) -> dict:
+    return {
+        "version": 1,
+        "from_source_sha256": old_binding["source_sha256"],
+        "to_source_sha256": runtime.source_sha256,
+        "from_runtime_fingerprint": old_binding["runtime_fingerprint"],
+        "to_runtime_fingerprint": runtime.fingerprint,
+        "reviewed_from_git": REVIEWED_FROM_GIT,
+        "reviewed_protocol_git": REVIEWED_PROTOCOL_GIT,
+        "previous_runtime_binding": old_binding["manifest"]["runtime_binding"],
+    }
+
+
+def _target_binding(old_binding: dict, runtime: RuntimeIdentity) -> dict:
+    """Same manifest identity, source fingerprint replaced by the loaded runtime."""
+    manifest = json.loads(_canonical(old_binding["manifest"]))
+    manifest["runtime_binding"] = {"approved_runtime_sha256": runtime.fingerprint}
+    receipt = _validate(manifest, _expected(manifest), runtime)
+    return {
+        "version": 1,
+        "home": runtime.home,
+        "runtime_id": runtime.runtime_id,
+        "runtime_fingerprint": runtime.fingerprint,
+        "source_sha256": runtime.source_sha256,
+        "manifest_sha256": receipt.manifest_sha256,
+        "manifest": manifest,
+        "source_migration": _migration_provenance(old_binding, runtime),
+    }
+
+
+def _is_old_binding(binding: dict, runtime: RuntimeIdentity, from_source: str, authorization_id: str,
+                    scope_id: str, ledger_path: str) -> bool:
+    manifest = binding.get("manifest") if type(binding.get("manifest")) is dict else {}
+    return (binding.get("home") == runtime.home and binding.get("runtime_id") == runtime.runtime_id
+            and binding.get("source_sha256") == from_source
+            and binding.get("runtime_fingerprint") == _fingerprint_for(runtime.home, runtime.runtime_id, from_source)
+            and manifest.get("authorization_id") == authorization_id
+            and manifest.get("scope_id") == scope_id
+            and manifest.get("canonical_absolute_ledger_path") == ledger_path)
+
+
+def _is_target_binding(binding: dict, runtime: RuntimeIdentity, from_source: str) -> bool:
+    migration = binding.get("source_migration")
+    return (type(binding) is dict and binding.get("home") == runtime.home
+            and binding.get("runtime_id") == runtime.runtime_id
+            and binding.get("source_sha256") == runtime.source_sha256
+            and binding.get("runtime_fingerprint") == runtime.fingerprint
+            and type(migration) is dict
+            and migration.get("from_source_sha256") == from_source
+            and migration.get("to_source_sha256") == runtime.source_sha256
+            and migration.get("reviewed_from_git") == REVIEWED_FROM_GIT
+            and migration.get("reviewed_protocol_git") == REVIEWED_PROTOCOL_GIT)
+
+
+def _raw_ledger(path: str) -> dict:
+    try:
+        data = json.loads(gate._read_raw(path))
+    except (OSError, ValueError) as exc:
+        raise gate.LlmBudgetBlocked("migration_state_unreadable", "ledger") from exc
+    if type(data) is not dict:
+        _fail("migration_state_unreadable", "ledger")
+    return data
+
+
+def _require_safe_spend(path: str, data: dict) -> None:
+    """Refuse an open breaker, an outstanding hold, or a pending outcome journal.
+
+    The refusal does not clear those fields. A reconciled history, including a
+    non-zero settled amount, is safe to rebind.
+    """
+    if os.path.lexists(gate._outcome_pending_path(path)):
+        _fail("migration_state_unsafe", "outcome_pending")
+    state = data.get("control_state") if type(data.get("control_state")) is dict else {}
+    if state.get("circuit_open") is True:
+        _fail("migration_state_unsafe", "breaker")
+    rows = data.get("reservations") if type(data.get("reservations")) is dict else None
+    if rows is None or any(type(row) is not dict or row.get("status") != "reconciled" for row in rows.values()):
+        _fail("migration_state_unsafe", "hold")
+
+
+def _loaded_spend(path: str) -> dict:
+    data, _, _ = gate._load_ledger(path, create=False)
+    _require_safe_spend(path, data)
+    if _spend_view(data) != _spend_view(_raw_ledger(path)):
+        _fail("migration_state_unsafe", "normalized_drift")
+    return data
+
+
+def _write_rebind(path: str, data: dict, binding: dict) -> None:
+    before = _spend_view(data)
+    data["runtime_activation"] = binding
+    gate._persist_ledger(path, data, write_marker=True)
+    # An existing marker is not rewritten by _persist_ledger. Leaving the old
+    # activation there makes the next read unreadable, so the marker moves in
+    # the same locked section, after the ledger fsync.
+    gate._write_activation_marker(path, data)
+    if _spend_view(_raw_ledger(path)) != before:
+        _fail("migration_state_unsafe", "spend_changed")
+
+
+def migrate_source_fingerprint(runtime: RuntimeIdentity, *, authorization_id: str, from_source_sha256: str,
+                               scope_id: str, ledger_path: str, reviewed_from_git: str,
+                               reviewed_protocol_git: str) -> dict:
+    """Move one active binding from a reviewed source hash onto this loaded source.
+
+    This is not activation. ``activate_scope`` still rejects any different
+    binding for an existing authority. The caller must name the bound source
+    hash, the scope, the ledger path, and both reviewed git commits. The new
+    source hash is this process's loaded tree, not a caller-supplied digest:
+    ``REVIEWED_PROTOCOL_GIT`` is the reviewed protocol commit, and loading this
+    migration changes the file hash again.
+
+    Preconditions for a real rollout, none of which this function performs:
+    the process is the new source; inflight is 0; every reservation is
+    reconciled; the breaker is closed; no outcome journal exists; the registry
+    entry is active for this same runtime id and authority. A failed check
+    writes nothing. Rollback is not a flag here. Before the pending registry
+    write, stopping is the rollback. After that write, sends stay blocked until
+    this same migration completes; completing it does not restore the old
+    fingerprint. A reverse move requires a later reviewed migration whose
+    loaded source is the source being restored.
+
+    Registry pending is published before the ledger binding changes. Pending
+    and active both fail closed for a process still loaded with the old source.
+    Interrupted work is finished only by repeating this same call.
+    """
+    _check_runtime(runtime)
+    if (reviewed_from_git != REVIEWED_FROM_GIT or reviewed_protocol_git != REVIEWED_PROTOCOL_GIT
+            or type(from_source_sha256) is not str or not re.fullmatch(r"[0-9a-f]{64}", from_source_sha256)
+            or from_source_sha256 == runtime.source_sha256):
+        _fail("migration_not_authorized", "reviewed_source")
+    if (type(authorization_id) is not str or not authorization_id.strip()
+            or type(scope_id) is not str or not scope_id.strip()
+            or type(ledger_path) is not str or not os.path.isabs(ledger_path)
+            or os.path.realpath(ledger_path) != ledger_path):
+        _fail("migration_not_authorized", "scope")
+    with _registry_lock(runtime.home) as registry_path:
+        registry = _read_registry(registry_path)
+        if registry is None or registry["runtimes"].get(runtime.runtime_id) != authorization_id:
+            _fail("migration_not_authorized", "runtime")
+        entry = registry["authorities"].get(authorization_id)
+        if type(entry) is not dict or set(entry) != {"status", "binding", "digest"} or entry["status"] not in ("pending", "active"):
+            _fail("migration_state_unsafe", "authority")
+        stored = entry["binding"]
+        if type(stored) is not dict or _digest(stored) != entry["digest"]:
+            _fail("migration_state_unsafe", "digest")
+        with gate._with_ledger_lock(ledger_path):
+            if _is_old_binding(stored, runtime, from_source_sha256, authorization_id, scope_id, ledger_path):
+                if entry["status"] != "active":
+                    _fail("migration_state_unsafe", "inactive_old_binding")
+                data = _loaded_spend(ledger_path)
+                _scope_matches(data, stored)
+                if data.get("runtime_activation") != stored:
+                    _fail("migration_state_unsafe", "ledger_binding")
+                target = _target_binding(stored, runtime)
+                registry["authorities"][authorization_id] = {"status": "pending", "digest": _digest(target), "binding": target}
+                _write_registry(registry_path, registry, stage_prefix="migration_pending_")
+                _write_rebind(ledger_path, data, target)
+                registry["authorities"][authorization_id]["status"] = "active"
+                _write_registry(registry_path, registry, stage_prefix="migration_active_")
+                return {"ok": True, "scope_id": scope_id, "activation_digest": _digest(target), "resumed": False}
+            if not _is_target_binding(stored, runtime, from_source_sha256):
+                _fail("migration_not_authorized", "binding")
+            target = stored
+            manifest = target.get("manifest") if type(target.get("manifest")) is dict else {}
+            if (manifest.get("authorization_id") != authorization_id or manifest.get("scope_id") != scope_id
+                    or manifest.get("canonical_absolute_ledger_path") != ledger_path):
+                _fail("migration_not_authorized", "scope")
+            raw = _raw_ledger(ledger_path)
+            marker = gate._read_marker(ledger_path)
+            ledger_activation = raw.get("runtime_activation")
+            marker_activation = marker.get("runtime_activation")
+            if ledger_activation == target and marker_activation == target:
+                data = _loaded_spend(ledger_path)
+                _scope_matches(data, target)
+                was_pending = entry["status"] == "pending"
+                if was_pending:
+                    registry["authorities"][authorization_id]["status"] = "active"
+                    _write_registry(registry_path, registry, stage_prefix="migration_active_")
+                return {"ok": True, "scope_id": scope_id, "activation_digest": entry["digest"], "resumed": was_pending}
+            if (ledger_activation == target and type(marker_activation) is dict
+                    and _is_old_binding(marker_activation, runtime, from_source_sha256, authorization_id, scope_id, ledger_path)):
+                if marker.get("scope_id") != raw.get("scope_id") or marker.get("control_limits") != raw.get("control_limits"):
+                    _fail("migration_state_unsafe", "marker")
+                gate._write_activation_marker(ledger_path, raw)
+                data = _loaded_spend(ledger_path)
+                _scope_matches(data, target)
+                registry["authorities"][authorization_id]["status"] = "active"
+                _write_registry(registry_path, registry, stage_prefix="migration_active_")
+                return {"ok": True, "scope_id": scope_id, "activation_digest": entry["digest"], "resumed": True}
+            if (type(ledger_activation) is dict
+                    and _is_old_binding(ledger_activation, runtime, from_source_sha256, authorization_id, scope_id, ledger_path)
+                    and marker_activation == ledger_activation):
+                data = _loaded_spend(ledger_path)
+                _scope_matches(data, ledger_activation)
+                _write_rebind(ledger_path, data, target)
+                registry["authorities"][authorization_id]["status"] = "active"
+                _write_registry(registry_path, registry, stage_prefix="migration_active_")
+                return {"ok": True, "scope_id": scope_id, "activation_digest": entry["digest"], "resumed": True}
+            _fail("migration_state_unsafe", "torn_binding")
 
 
 def activate_scope(candidate: dict, *, expected: manifests.ManifestContext, runtime: RuntimeIdentity) -> dict:
