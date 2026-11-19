@@ -246,7 +246,19 @@ def require_confirmed_quote(meta: dict, chat_id: str = "") -> dict | None:
         return None
     if quote_confirmed(chat_id):
         return None
-    return _blocked("Confirm the quote/approval card before any paid generate_image; nothing submitted. / 出图前请先确认报价，未提交。")
+    # Session state only (the setup/quote ask blocks), never the prompt text.
+    # The model must present the lineart quote card before any paid generate.
+    return {
+        **_blocked(
+            "先出示「线稿预览」报价卡并等待用户确认，再调用 generate_image。"
+            "未向 WaveSpeed 提交，未计次，未预留费用。"
+            " / Present the 「线稿预览」 quote card and wait for confirmation before generate_image. "
+            "No WaveSpeed request, no post count, no spend reserved."
+        ),
+        "redirect": "quote_card",
+        "next_step": "quote_card",
+        "quote_card": "线稿预览",
+    }
 
 
 def normalize_card(args: dict) -> dict:

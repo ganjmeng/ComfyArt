@@ -8,6 +8,14 @@ from ._context import BOT_CHAT_ID
 
 log = logging.getLogger("comfyart")
 
+# Stable marker the agent loop matches. An expired ask ends the turn in code;
+# the note must not invite the model to continue into a paid tool.
+ASK_EXPIRED_MARK = "[ask-expired-end-turn]"
+
+
+def is_ask_expired(text: str) -> bool:
+    return ASK_EXPIRED_MARK in str(text or "")
+
 
 def bot_turn_state():
     chat_id = BOT_CHAT_ID.get()
@@ -72,6 +80,11 @@ async def ask_user(args: dict) -> dict:
                     json.dumps(args, ensure_ascii=False, default=str)[:800], e)
         raise
     outcome = await _await_ask(chat_id, state, spec)
+    if outcome["status"] == "expired":
+        return {"status": "expired",
+                "note": "the user did not answer; this ask expired. End the turn now. "
+                        "Do not call generate_image or any other paid or side-effect tool. "
+                        + ASK_EXPIRED_MARK}
     if outcome["status"] != "answered":
         return {"status": outcome["status"],
                 "note": "the user did not answer; proceed conservatively or "

@@ -1529,6 +1529,29 @@ def _call_price_params(args: dict) -> dict:
     return {k: v for k, v in (args or {}).items() if not str(k).startswith("_")}
 
 
+def _chunk_ask_expired(chunk) -> bool:
+    if not chunk:
+        return False
+    from ..api.mcp_tools.bot_tools import is_ask_expired
+    return any(is_ask_expired(str(m.get("content") or "")) for m in chunk if isinstance(m, dict))
+
+
+def _finish_expired_ask(chunks, messages, loop, usage) -> TurnResult:
+    """An expired ask_user ends the turn before any later paid or side-effect tool."""
+    for ch in chunks:
+        if ch:
+            messages.extend(ch)
+    run = loop.get("run") if isinstance(loop, dict) else None
+    if run is not None and getattr(run, "pending_stop", None) is None:
+        from .run_budget import Stop, StopReason
+        budget = getattr(run, "budget", None)
+        step = budget.used.steps if budget is not None else 0
+        run.pending_stop = Stop(
+            StopReason.AWAITING_CONFIRM, "ask_expired", step=step,
+            detail="The ask card expired with no answer, so this turn ended before any paid tool.")
+    return TurnResult(usage=usage)
+
+
 class LocalLlmProvider(AgentProvider):
     id = "local-llm"
     label = "Local LLM"
@@ -2307,6 +2330,10 @@ class LocalLlmProvider(AgentProvider):
                 continue
             if it["name"] not in PAID_TOOLS and it["name"] != QUOTE_TOOL:
                 await run_mcp(i)
+                if _chunk_ask_expired(chunks[i]):
+                    # The user never answered. Do not price or run generate_image
+                    # (or any later paid/side-effect tool) in this same turn.
+                    return _finish_expired_ask(chunks, messages, loop, usage)
 
         decision = ""
         quote = None

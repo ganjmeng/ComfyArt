@@ -197,6 +197,7 @@ LOCKED = {
     "user_stop": ("已停止", "已保留生成的 {n} 张", "继续", None),
     "user_stop:quote_declined": ("已取消", "报价没有确认，不会扣费；已保留之前生成的 {n} 张", "继续", None),
     "awaiting_confirm:not_approved": ("等待确认未通过", "需要确认才能开始，未扣费", "继续", None),
+    "awaiting_confirm:ask_expired": ("提问已过期", "没有收到回答，本轮已结束，未继续出图，未扣费", None, None),
     "error:network": ("网络断开了", "已保留生成的 {n} 张", "重试", None),
     "error": ("出错了", "{reason}", "重试", None),
 }

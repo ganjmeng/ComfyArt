@@ -60,6 +60,8 @@ _STOP_TEXT = {
                                  "en": "Cancelled: the paid call over the quote was not confirmed; nothing charged."},
     "awaiting_confirm:not_approved": {"zh": "这次生成需要确认，但没有人确认，未开始，未扣费。",
                                       "en": "This generation needs a confirmation and none came, so it did not start; nothing charged."},
+    "awaiting_confirm:ask_expired": {"zh": "提问卡已过期，没有收到回答，本轮已结束，未继续出图，未扣费。",
+                                     "en": "The question card expired with no answer, so this turn ended before any further image; nothing charged."},
     "stuck": {"zh": "任务卡住了（{sub}），停在第 {step} 步，换思路重试后仍无进展，已停止，未继续扣费。",
                 "en": "The task is stuck ({sub}) at step {step}; still no progress after trying another "
                       "approach, so it stopped with no further charges."},
@@ -455,6 +457,8 @@ CARD_COPY = {
                                         "Continue", None)},
     "awaiting_confirm:not_approved": {"zh": ("等待确认未通过", "需要确认才能开始，未扣费", "继续", None),
                                       "en": ("Confirmation not approved", "Needs your OK to start; nothing charged", "Continue", None)},
+    "awaiting_confirm:ask_expired": {"zh": ("提问已过期", "没有收到回答，本轮已结束，未继续出图，未扣费", None, None),
+                                     "en": ("Question expired", "No answer arrived, so this turn ended before any further image; nothing charged", None, None)},
     "error:network": {"zh": ("网络断开了", "已保留生成的 {n} 张", "重试", None),
                       "en": ("Network disconnected", "Kept the {n} already generated", "Retry", None)},
     "error": {"zh": ("出错了", "{reason}", "重试", None),

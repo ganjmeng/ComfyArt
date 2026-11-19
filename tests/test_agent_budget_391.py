@@ -157,7 +157,7 @@ def test_policy_layers_defaults_and_legacy_env(caplog):
 
 def test_stop_reasons_and_sub_reasons_are_fixed():
     assert {r.value for r in StopReason} == {"done", "budget", "stuck", "hard_cap", "user_stop", "error", "awaiting_confirm"}
-    assert set(SUB_REASONS[StopReason.AWAITING_CONFIRM]) == {"not_approved"}
+    assert set(SUB_REASONS[StopReason.AWAITING_CONFIRM]) == {"not_approved", "ask_expired"}
     assert set(SUB_REASONS[StopReason.STUCK]) >= {"no_progress", "repeat", "tool_error", "readonly_limit"}
     assert set(SUB_REASONS[StopReason.BUDGET]) == {"paused", "exhausted", "unattended_skipped"}
     assert "self_check_failed" in SUB_REASONS[StopReason.STUCK]

@@ -71,9 +71,16 @@ def _multi_angle_preflight(name: str, arguments: dict, chat_id: str) -> tuple[di
         return arguments, None
     from . import multi_angle
     prepared, result = multi_angle.prepare(arguments, chat_id)
-    if result is None:
-        multi_angle.allow_selected_cap(prepared, chat_id)
-    return prepared, result
+    if result is not None:
+        return prepared, result
+    meta = prepared.get("_multi_angle") if isinstance(prepared, dict) else None
+    if isinstance(meta, dict):
+        # Before paid_guard.before_call and before any WaveSpeed catalog or submit.
+        blocked = multi_angle.require_confirmed_quote(meta, chat_id)
+        if blocked is not None:
+            return arguments, blocked
+    multi_angle.allow_selected_cap(prepared, chat_id)
+    return prepared, None
 
 
 def _wrap_paid_handler(name: str, original):
