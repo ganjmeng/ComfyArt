@@ -121,9 +121,12 @@ def validate_manifest(candidate: dict, *, expected: ManifestContext,
              and (key, binding[key]) == expected.runtime_binding, "runtime_binding")
     limits = c["scope_limits"]
     _require(type(limits) is dict and set(limits) == {"amount_nano", "max_posts", "max_inflight"}, "scope_limits")
+    post_cap = (gate.CONTROLLED_POSTS_EXTENDED_HARD_CAP
+                if limits["amount_nano"] == gate.FIVE_DOLLAR_EXTENDED_CEILING_NANO
+                else gate.CONTROLLED_POSTS_HARD_CAP)
     _require(all(type(v) is int for v in limits.values())
-             and limits["amount_nano"] == gate.TWO_DOLLAR_CEILING_NANO
-             and 1 <= limits["max_posts"] <= gate.CONTROLLED_POSTS_HARD_CAP
+             and limits["amount_nano"] in (gate.TWO_DOLLAR_CEILING_NANO, gate.FIVE_DOLLAR_EXTENDED_CEILING_NANO)
+             and 1 <= limits["max_posts"] <= post_cap
              and type(expected.max_posts) is int and limits["max_posts"] == expected.max_posts
              and limits["max_inflight"] == 1, "scope_limits")
     url = c["route_url"]

@@ -126,6 +126,8 @@ _log = logging.getLogger("comfyart.llm_usd_gate")
 
 CEILING_NANO = 50_000_000  # $0.05 exactly. Default scope. No confirm path raises this.
 TWO_DOLLAR_CEILING_NANO = 2_000_000_000  # $2 exactly. Only for an explicitly opened new scope.
+# $5 is not an opening ceiling. extend_ceiling is the only writer, and only on an existing ledger.
+FIVE_DOLLAR_EXTENDED_CEILING_NANO = 5_000_000_000
 AUTHORIZED_CEILINGS_NANO = frozenset({CEILING_NANO, TWO_DOLLAR_CEILING_NANO})
 DEFAULT_AUTHORIZATION = "default-0.05"
 TWO_DOLLAR_AUTHORIZATION = "explicit-2.00"
@@ -704,10 +706,12 @@ def prepare(body: dict, route: dict, url: str, bound_fn: Optional[Callable[[dict
 
 # Versioned local validation profile from billing-bound-evidence-plan.md §5.
 # The caller MUST specify max_posts. Six is the limit a scope can be opened
-# with. Twelve is the hard cap, and only extend_post_limit may cross six, by
-# writing a matching limit_extension record in the same ledger update.
+# with. Twelve is the hard cap at the $2 ceiling. Thirty is the hard cap only
+# after extend_ceiling has raised that same ledger to $5 (12 * 5/2). Only
+# extend_post_limit may cross six, by writing a matching limit_extension record.
 CONTROLLED_POSTS_LIMIT = 6
 CONTROLLED_POSTS_HARD_CAP = 12
+CONTROLLED_POSTS_EXTENDED_HARD_CAP = 30
 
 
 def _validate_max_posts(max_posts: int) -> None:
@@ -715,8 +719,55 @@ def _validate_max_posts(max_posts: int) -> None:
         raise LlmScopeConflict("max_posts must be an explicit integer between 1 and 12")
 
 
-def _extension_matches(data: dict, posts: int) -> bool:
+def _ceiling_extension_matches(data: dict, amount: int) -> bool:
+    """True when *amount* is the $2 opening ceiling, or a chain that ends at $5.
+
+    An absent ``ceiling_extension`` is the unextended ledger. The chain must
+    start at $2, stay contiguous, and never pass $5.
+    """
+    rows = data.get("ceiling_extension")
+    if amount == TWO_DOLLAR_CEILING_NANO:
+        return rows is None or rows == []
+    if amount != FIVE_DOLLAR_EXTENDED_CEILING_NANO or type(rows) is not list or not rows:
+        return False
+    previous = None
+    for row in rows:
+        if type(row) is not dict:
+            return False
+        old, new = row.get("old"), row.get("new")
+        if (type(old) is not int or type(new) is not int
+                or not TWO_DOLLAR_CEILING_NANO <= old < new <= FIVE_DOLLAR_EXTENDED_CEILING_NANO
+                or type(row.get("operator")) is not str or not str(row["operator"]).strip()
+                or type(row.get("reason")) is not str or not str(row["reason"]).strip()
+                or type(row.get("at")) is not int or row["at"] <= 0):
+            return False
+        if previous is None:
+            if old != TWO_DOLLAR_CEILING_NANO:
+                return False
+        elif old != previous:
+            return False
+        previous = new
+    return previous == amount
+
+
+def _ceiling_is_extended(data: dict) -> bool:
+    limits = data.get("control_limits") if type(data.get("control_limits")) is dict else {}
+    return (_as_int(data.get("ceiling_nano")) == FIVE_DOLLAR_EXTENDED_CEILING_NANO
+            and limits.get("amount_nano") == FIVE_DOLLAR_EXTENDED_CEILING_NANO
+            and _ceiling_extension_matches(data, FIVE_DOLLAR_EXTENDED_CEILING_NANO))
+
+
+def posts_hard_cap(data: dict) -> int:
+    """12 at the $2 ceiling; 30 only after that ledger was extended to $5."""
+    if _ceiling_is_extended(data):
+        return CONTROLLED_POSTS_EXTENDED_HARD_CAP
+    return CONTROLLED_POSTS_HARD_CAP
+
+
+def _extension_matches(data: dict, posts: int, cap: int | None = None) -> bool:
     """True when limit_extension is a contiguous chain that ends at *posts*."""
+    if cap is None:
+        cap = posts_hard_cap(data)
     rows = data.get("limit_extension")
     if type(rows) is not list or not rows or type(posts) is not int:
         return False
@@ -725,7 +776,7 @@ def _extension_matches(data: dict, posts: int) -> bool:
         if type(row) is not dict:
             return False
         old, new = row.get("old"), row.get("new")
-        if (type(old) is not int or type(new) is not int or not 1 <= old < new <= CONTROLLED_POSTS_HARD_CAP
+        if (type(old) is not int or type(new) is not int or not 1 <= old < new <= cap
                 or type(row.get("operator")) is not str or not row["operator"].strip()
                 or type(row.get("reason")) is not str or not row["reason"].strip()
                 or type(row.get("at")) is not int or row["at"] <= 0):
@@ -1125,6 +1176,8 @@ def _scope_binding(data: dict) -> tuple[int, str]:
     auth = data.get("authorization")
     if auth == TWO_DOLLAR_AUTHORIZATION:
         binding, sealed = TWO_DOLLAR_CEILING_NANO, TWO_DOLLAR_AUTHORIZATION
+        if _ceiling_is_extended(data):
+            binding = FIVE_DOLLAR_EXTENDED_CEILING_NANO
     else:
         binding, sealed = CEILING_NANO, DEFAULT_AUTHORIZATION
     rows = data.get("reservations")
@@ -1134,7 +1187,8 @@ def _scope_binding(data: dict) -> tuple[int, str]:
                 continue
             row_auth = row.get("authorization")
             row_ceil = _as_int(row.get("authorized_ceiling_nano"))
-            if row_auth == TWO_DOLLAR_AUTHORIZATION and row_ceil == TWO_DOLLAR_CEILING_NANO:
+            if row_auth == TWO_DOLLAR_AUTHORIZATION and row_ceil in (
+                    TWO_DOLLAR_CEILING_NANO, FIVE_DOLLAR_EXTENDED_CEILING_NANO):
                 continue
             binding, sealed = CEILING_NANO, DEFAULT_AUTHORIZATION
             break
@@ -1181,7 +1235,7 @@ def _normalize(data: Any) -> dict:
                 or type(limits.get("version")) is not int or limits["version"] != 1
                 or type(limits.get("max_inflight")) is not int or limits["max_inflight"] != 1
                 or type(limits.get("amount_nano")) is not int or limits["amount_nano"] != data["ceiling_nano"]
-                or type(limits.get("max_posts")) is not int or not 1 <= limits["max_posts"] <= CONTROLLED_POSTS_HARD_CAP
+                or type(limits.get("max_posts")) is not int or not 1 <= limits["max_posts"] <= posts_hard_cap(data)
                 or (limits["max_posts"] > CONTROLLED_POSTS_LIMIT and not _extension_matches(data, limits["max_posts"]))):
             raise LlmBudgetBlocked("ledger_unreadable", "controlled_limits")
         if (set(state) != {"attempts_total", "circuit_open", "circuit_reason", "first_anomaly_id"}
@@ -1338,7 +1392,8 @@ def reserve_nano(path: str, *, nano: int, record: dict, runtime_binding=None) ->
             # Same atomic transaction as amount/count/inflight. An offline
             # policy parameter cannot create/upgrade authority or omit controls.
             if (not _controlled(data) or data["authorization"] != TWO_DOLLAR_AUTHORIZATION
-                    or data["ceiling_nano"] != TWO_DOLLAR_CEILING_NANO):
+                    or data["ceiling_nano"] not in (TWO_DOLLAR_CEILING_NANO, FIVE_DOLLAR_EXTENDED_CEILING_NANO)
+                    or (data["ceiling_nano"] == FIVE_DOLLAR_EXTENDED_CEILING_NANO and not _ceiling_is_extended(data))):
                 return {"ok": False, "code": "controlled_scope_required", "scope_id": scope_id,
                         "accounted_nano": accounted, "ceiling_nano": ceiling}
         if _controlled(data):
@@ -1649,9 +1704,14 @@ def resolve_unknown_as_spent(path: str, reservation_id: str, operator: str, reas
                 bound = scope_limits.get("max_posts")
         if type(bound) is not int:
             bound = posts
-        if (type(limits) is not dict or limits.get("amount_nano") != TWO_DOLLAR_CEILING_NANO
+        ceiling_before = data.get("ceiling_nano")
+        amount = limits.get("amount_nano") if type(limits) is dict else None
+        post_cap = posts_hard_cap(data)
+        if (type(limits) is not dict or amount not in (TWO_DOLLAR_CEILING_NANO, FIVE_DOLLAR_EXTENDED_CEILING_NANO)
+                or ceiling_before != amount
+                or (amount == FIVE_DOLLAR_EXTENDED_CEILING_NANO and not _ceiling_is_extended(data))
                 or type(posts) is not int or type(bound) is not int
-                or not 1 <= posts <= bound <= CONTROLLED_POSTS_HARD_CAP
+                or not 1 <= posts <= bound <= post_cap
                 or limits.get("max_inflight") != 1
                 or (posts > CONTROLLED_POSTS_LIMIT and not _extension_matches(data, posts))
                 or type(state) is not dict):
@@ -1692,7 +1752,7 @@ def resolve_unknown_as_spent(path: str, reservation_id: str, operator: str, reas
             state["circuit_reason"] = ""
             state["first_anomaly_id"] = ""
             if (data.get("accounted_nano") != accounted or state.get("attempts_total") != attempts
-                    or data.get("control_limits") != limits or data.get("ceiling_nano") != TWO_DOLLAR_CEILING_NANO):
+                    or data.get("control_limits") != limits or data.get("ceiling_nano") != ceiling_before):
                 raise LlmBudgetBlocked("resolve_refused", "spend_changed")
             return {"ok": True, "idempotent": False, "reservation_id": reservation_id,
                     "status": "resolved_as_spent", "actual_nano": quote,
@@ -1731,7 +1791,7 @@ def resolve_unknown_as_spent(path: str, reservation_id: str, operator: str, reas
         state["circuit_reason"] = ""
         state["first_anomaly_id"] = ""
         if (data.get("accounted_nano") != accounted or state.get("attempts_total") != attempts
-                or data.get("control_limits") != limits or data.get("ceiling_nano") != TWO_DOLLAR_CEILING_NANO):
+                or data.get("control_limits") != limits or data.get("ceiling_nano") != ceiling_before):
             raise LlmBudgetBlocked("resolve_refused", "spend_changed")
         return {"ok": True, "idempotent": False, "reservation_id": reservation_id,
                 "status": "resolved_as_spent", "actual_nano": reserved,

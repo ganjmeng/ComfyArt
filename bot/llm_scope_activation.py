@@ -276,8 +276,11 @@ def _binding(candidate, receipt, runtime):
 
 def _scope_matches(data, binding):
     m = binding["manifest"]
+    ceiling = data.get("ceiling_nano")
     if (data["scope_id"] != m["scope_id"] or data["authorization"] != gate.TWO_DOLLAR_AUTHORIZATION
-            or data["ceiling_nano"] != gate.TWO_DOLLAR_CEILING_NANO
+            or ceiling not in (gate.TWO_DOLLAR_CEILING_NANO, gate.FIVE_DOLLAR_EXTENDED_CEILING_NANO)
+            or data.get("authorized_ceiling_nano") != ceiling
+            or not gate._ceiling_extension_matches(data, ceiling)
             or data.get("control_limits") != {"version": 1, **m["scope_limits"]}):
         _fail("activation_scope_mismatch", "scope/authority/limits")
 
@@ -570,11 +573,13 @@ def _require_extendable(path: str, data: dict, binding: dict) -> None:
     limits = data.get("control_limits") if type(data.get("control_limits")) is dict else {}
     manifest = binding.get("manifest") if type(binding.get("manifest")) is dict else {}
     scope_limits = manifest.get("scope_limits") if type(manifest.get("scope_limits")) is dict else {}
-    if (data.get("ceiling_nano") != gate.TWO_DOLLAR_CEILING_NANO
-            or data.get("authorized_ceiling_nano") != gate.TWO_DOLLAR_CEILING_NANO
-            or limits.get("amount_nano") != gate.TWO_DOLLAR_CEILING_NANO
+    ceiling = data.get("ceiling_nano")
+    if (ceiling not in (gate.TWO_DOLLAR_CEILING_NANO, gate.FIVE_DOLLAR_EXTENDED_CEILING_NANO)
+            or data.get("authorized_ceiling_nano") != ceiling
+            or limits.get("amount_nano") != ceiling
+            or scope_limits.get("amount_nano") != ceiling
+            or not gate._ceiling_extension_matches(data, ceiling)
             or limits.get("max_inflight") != 1
-            or scope_limits.get("amount_nano") != gate.TWO_DOLLAR_CEILING_NANO
             or scope_limits.get("max_inflight") != 1):
         _fail("extend_refused", "usd")
     if state.get("circuit_open") is True:
@@ -658,14 +663,15 @@ def extend_post_limit(runtime: RuntimeIdentity, *, authorization_id: str, scope_
 
     Registry pending is published before the ledger limit changes. A repeated
     call of the same extension finishes an interrupted write and does not append
-    a second audit row. A decrease, a ceiling change, an open breaker, a hold,
-    or a limit above 12 writes nothing.
+    a second audit row.     A decrease, a ceiling change, an open breaker, a hold,
+    or a limit above the ceiling's post cap writes nothing. That cap is 12
+    until extend_ceiling raises the same ledger to $5, and 30 after that.
     """
     _check_runtime(runtime)
-    if (type(new_max_posts) is not int or not 1 <= new_max_posts <= gate.CONTROLLED_POSTS_HARD_CAP
+    if (type(new_max_posts) is not int or not 1 <= new_max_posts <= gate.CONTROLLED_POSTS_EXTENDED_HARD_CAP
             or type(operator) is not str or not operator.strip()
             or type(reason) is not str or not reason.strip()):
-        _fail("extend_refused", "above_cap" if type(new_max_posts) is int and new_max_posts > gate.CONTROLLED_POSTS_HARD_CAP else "arguments")
+        _fail("extend_refused", "above_cap" if type(new_max_posts) is int and new_max_posts > gate.CONTROLLED_POSTS_EXTENDED_HARD_CAP else "arguments")
     if (type(authorization_id) is not str or not authorization_id.strip()
             or type(scope_id) is not str or not scope_id.strip()
             or type(ledger_path) is not str or not os.path.isabs(ledger_path)
@@ -720,6 +726,8 @@ def extend_post_limit(runtime: RuntimeIdentity, *, authorization_id: str, scope_
                 _fail("extend_refused", "decrease")
             data, _, _ = gate._load_ledger(ledger_path, create=False)
             _require_extendable(ledger_path, data, stored)
+            if new_max_posts > gate.posts_hard_cap(data):
+                _fail("extend_refused", "above_cap")
             _scope_matches(data, stored)
             if data.get("runtime_activation") != stored:
                 _fail("extend_refused", "ledger_binding")
@@ -733,6 +741,175 @@ def extend_post_limit(runtime: RuntimeIdentity, *, authorization_id: str, scope_
             registry["authorities"][authorization_id]["status"] = "active"
             _write_registry(registry_path, registry, stage_prefix="extension_active_")
             return {"ok": True, "scope_id": scope_id, "max_posts": new_max_posts, "idempotent": False, "resumed": False}
+
+
+def _manifest_amount(binding: dict) -> int | None:
+    manifest = binding.get("manifest") if type(binding.get("manifest")) is dict else {}
+    limits = manifest.get("scope_limits") if type(manifest.get("scope_limits")) is dict else {}
+    amount = limits.get("amount_nano")
+    return amount if type(amount) is int else None
+
+
+def _extended_ceiling_binding(old_binding: dict, runtime: RuntimeIdentity, new_amount: int) -> dict:
+    manifest = json.loads(_canonical(old_binding["manifest"]))
+    manifest["scope_limits"] = dict(manifest["scope_limits"])
+    manifest["scope_limits"]["amount_nano"] = new_amount
+    receipt = _validate(manifest, _expected(manifest), runtime)
+    binding = {
+        "version": 1,
+        "home": runtime.home,
+        "runtime_id": runtime.runtime_id,
+        "runtime_fingerprint": runtime.fingerprint,
+        "source_sha256": runtime.source_sha256,
+        "manifest_sha256": receipt.manifest_sha256,
+        "manifest": manifest,
+    }
+    if "source_migration" in old_binding:
+        binding["source_migration"] = old_binding["source_migration"]
+    return binding
+
+
+def _apply_ceiling_extension(path: str, data: dict, binding: dict, old_amount: int, new_amount: int,
+                             operator: str, reason: str) -> None:
+    accounted = data["accounted_nano"]
+    attempts = data["control_state"]["attempts_total"]
+    rows = _canonical(data["reservations"])
+    external = _canonical(data["external_spend"]) if "external_spend" in data else None
+    posts = data["control_limits"]["max_posts"]
+    inflight_limit = data["control_limits"]["max_inflight"]
+    data["ceiling_nano"] = new_amount
+    data["authorized_ceiling_nano"] = new_amount
+    data["control_limits"]["amount_nano"] = new_amount
+    audits = data.get("ceiling_extension")
+    if not (type(audits) is list and audits and audits[-1].get("new") == new_amount):
+        data.setdefault("ceiling_extension", []).append({
+            "old": old_amount, "new": new_amount, "operator": operator, "reason": reason, "at": int(time.time()),
+        })
+    data["runtime_activation"] = binding
+    if (data["accounted_nano"] != accounted or data["control_state"]["attempts_total"] != attempts
+            or _canonical(data["reservations"]) != rows
+            or ("external_spend" in data and _canonical(data["external_spend"]) != external)):
+        _fail("extend_refused", "spend_changed")
+    if (data["control_limits"]["max_posts"] != posts or data["control_limits"]["max_inflight"] != inflight_limit
+            or data["ceiling_nano"] != new_amount or data["control_limits"]["amount_nano"] != new_amount
+            or data["authorized_ceiling_nano"] != new_amount):
+        _fail("extend_refused", "usd")
+    if not gate._ceiling_extension_matches(data, new_amount):
+        _fail("extend_refused", "audit")
+    gate._persist_ledger(path, data, write_marker=True)
+    gate._write_activation_marker(path, data)
+
+
+def _ledger_ceiling_state(path: str, binding: dict) -> str:
+    raw = _raw_ledger(path)
+    marker = gate._read_marker(path)
+    limits = raw.get("control_limits") if type(raw.get("control_limits")) is dict else {}
+    marker_limits = marker.get("control_limits") if type(marker.get("control_limits")) is dict else {}
+    amount = _manifest_amount(binding)
+    if (limits.get("amount_nano") == amount and raw.get("ceiling_nano") == amount
+            and raw.get("authorized_ceiling_nano") == amount
+            and raw.get("runtime_activation") == binding
+            and gate._ceiling_extension_matches(raw, amount)):
+        if (marker_limits.get("amount_nano") == amount and marker.get("authorized_ceiling_nano") == amount
+                and marker.get("runtime_activation") == binding):
+            return "done"
+        return "marker"
+    if (marker.get("control_limits") == raw.get("control_limits")
+            and marker.get("runtime_activation") == raw.get("runtime_activation")
+            and marker.get("authorized_ceiling_nano") == raw.get("authorized_ceiling_nano")):
+        return "open"
+    _fail("extend_refused", "torn")
+
+
+def extend_ceiling(runtime: RuntimeIdentity, *, authorization_id: str, scope_id: str, ledger_path: str,
+                   new_amount_nano: int, operator: str, reason: str) -> dict:
+    """Raise one existing ledger's USD ceiling. No new ledger and no new authority.
+
+    The only increase is to FIVE_DOLLAR_EXTENDED_CEILING_NANO. Opening a scope
+    still uses TWO_DOLLAR_CEILING_NANO. Accounted spend, attempts, reservations,
+    external spend, the post limit, and inflight stay put. A repeated call of
+    the same ceiling finishes an interrupted write and does not append a second
+    audit row. A decrease, an amount above $5, an open breaker, a hold, or a
+    pending outcome journal writes nothing.
+    """
+    _check_runtime(runtime)
+    if (type(new_amount_nano) is not int or new_amount_nano <= 0
+            or type(operator) is not str or not operator.strip()
+            or type(reason) is not str or not reason.strip()):
+        _fail("extend_refused", "above_cap" if type(new_amount_nano) is int and new_amount_nano > gate.FIVE_DOLLAR_EXTENDED_CEILING_NANO else "arguments")
+    if new_amount_nano > gate.FIVE_DOLLAR_EXTENDED_CEILING_NANO:
+        _fail("extend_refused", "above_cap")
+    if (type(authorization_id) is not str or not authorization_id.strip()
+            or type(scope_id) is not str or not scope_id.strip()
+            or type(ledger_path) is not str or not os.path.isabs(ledger_path)
+            or os.path.realpath(ledger_path) != ledger_path):
+        _fail("extend_refused", "scope")
+    with _registry_lock(runtime.home) as registry_path:
+        registry = _read_registry(registry_path)
+        if registry is None or registry["runtimes"].get(runtime.runtime_id) != authorization_id:
+            _fail("extend_refused", "runtime")
+        entry = registry["authorities"].get(authorization_id)
+        if type(entry) is not dict or set(entry) != {"status", "binding", "digest"} or entry["status"] not in ("pending", "active"):
+            _fail("extend_refused", "authority")
+        stored = entry["binding"]
+        if type(stored) is not dict or _digest(stored) != entry["digest"]:
+            _fail("extend_refused", "digest")
+        if not _same_activated_scope(stored, runtime, authorization_id, scope_id, ledger_path):
+            _fail("extend_refused", "runtime")
+        current = _manifest_amount(stored)
+        if current is None:
+            _fail("extend_refused", "limits")
+        if current > new_amount_nano:
+            _fail("extend_refused", "decrease")
+        if new_amount_nano != current and new_amount_nano != gate.FIVE_DOLLAR_EXTENDED_CEILING_NANO:
+            _fail("extend_refused", "amount")
+        with gate._with_ledger_lock(ledger_path):
+            if os.path.lexists(gate._outcome_pending_path(ledger_path)):
+                _fail("extend_refused", "journal")
+            if current == new_amount_nano:
+                state = _ledger_ceiling_state(ledger_path, stored)
+                if state == "open":
+                    if entry["status"] != "pending":
+                        _fail("extend_refused", "decrease")
+                    data, _, _ = gate._load_ledger(ledger_path, create=False)
+                    _require_extendable(ledger_path, data, stored)
+                    old_amount = data["control_limits"]["amount_nano"]
+                    if type(old_amount) is not int or old_amount >= new_amount_nano:
+                        _fail("extend_refused", "decrease")
+                    _apply_ceiling_extension(ledger_path, data, stored, old_amount, new_amount_nano, operator, reason)
+                    registry["authorities"][authorization_id]["status"] = "active"
+                    _write_registry(registry_path, registry, stage_prefix="ceiling_active_")
+                    return {"ok": True, "scope_id": scope_id, "amount_nano": new_amount_nano, "idempotent": False, "resumed": True}
+                if state == "marker":
+                    gate._write_activation_marker(ledger_path, _raw_ledger(ledger_path))
+                data, _, _ = gate._load_ledger(ledger_path, create=False)
+                if data.get("ceiling_nano") != new_amount_nano or data.get("control_limits", {}).get("amount_nano") != new_amount_nano:
+                    _fail("extend_refused", "limits")
+                was_pending = entry["status"] == "pending"
+                if was_pending:
+                    registry["authorities"][authorization_id]["status"] = "active"
+                    _write_registry(registry_path, registry, stage_prefix="ceiling_active_")
+                return {"ok": True, "scope_id": scope_id, "amount_nano": new_amount_nano,
+                        "idempotent": not was_pending, "resumed": was_pending or state == "marker"}
+            if entry["status"] != "active":
+                _fail("extend_refused", "pending")
+            if new_amount_nano <= current:
+                _fail("extend_refused", "decrease")
+            data, _, _ = gate._load_ledger(ledger_path, create=False)
+            _require_extendable(ledger_path, data, stored)
+            _scope_matches(data, stored)
+            if data.get("runtime_activation") != stored:
+                _fail("extend_refused", "ledger_binding")
+            old_amount = data["control_limits"]["amount_nano"]
+            if old_amount != current or new_amount_nano <= old_amount:
+                _fail("extend_refused", "decrease")
+            target = _extended_ceiling_binding(stored, runtime, new_amount_nano)
+            registry["authorities"][authorization_id] = {"status": "pending", "digest": _digest(target), "binding": target}
+            _write_registry(registry_path, registry, stage_prefix="ceiling_pending_")
+            _apply_ceiling_extension(ledger_path, data, target, old_amount, new_amount_nano, operator, reason)
+            registry["authorities"][authorization_id]["status"] = "active"
+            _write_registry(registry_path, registry, stage_prefix="ceiling_active_")
+            return {"ok": True, "scope_id": scope_id, "amount_nano": new_amount_nano, "idempotent": False, "resumed": False}
 
 
 def activate_scope(candidate: dict, *, expected: manifests.ManifestContext, runtime: RuntimeIdentity) -> dict:
