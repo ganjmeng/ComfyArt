@@ -301,7 +301,7 @@ def test_concurrent_migration_keeps_one_authority_and_the_settlement(tmp_path, m
 DEPLOYED_0B73_SOURCE = "79e40ca0196cbab67c018755e1e36b7010b45a8a8b70d1c12717bc07d4d4bd24"
 
 
-def test_migration_hop_from_deployed_0b73_to_external_logic_commit(tmp_path, monkeypatch):
+def test_migration_hop_from_deployed_0b73_keeps_the_bcc804bc_pair(tmp_path, monkeypatch):
     path = str((tmp_path / "scope.json").resolve())
     scope = gate.open_authorized_scope(path, gate.TWO_DOLLAR_CEILING_NANO, max_posts=6)
     real_loaded, real_hash = activation._LOADED_SOURCE_HASH, activation._source_hash
@@ -323,17 +323,11 @@ def test_migration_hop_from_deployed_0b73_to_external_logic_commit(tmp_path, mon
             new, authorization_id=AUTHORITY, from_source_sha256=DEPLOYED_0B73_SOURCE,
             scope_id=scope["scope_id"], ledger_path=path,
             reviewed_from_git=activation.REVIEWED_LIVE_GIT, reviewed_protocol_git="0" * 40)
-    with pytest.raises(gate.LlmBudgetBlocked, match="migration_not_authorized"):
-        activation.migrate_source_fingerprint(
-            new, authorization_id=AUTHORITY, from_source_sha256=DEPLOYED_0B73_SOURCE,
-            scope_id=scope["scope_id"], ledger_path=path,
-            reviewed_from_git=activation.REVIEWED_LIVE_GIT,
-            reviewed_protocol_git="bcc804bc13f3fa684c0ecf5547ac71023163da09")
     assert _files(env) == files
     migrated = activation.migrate_source_fingerprint(
         new, authorization_id=AUTHORITY, from_source_sha256=DEPLOYED_0B73_SOURCE,
         scope_id=scope["scope_id"], ledger_path=path,
-        reviewed_from_git=activation.REVIEWED_LIVE_GIT, reviewed_protocol_git=activation.REVIEWED_LOGIC_GIT)
+        reviewed_from_git=activation.REVIEWED_LIVE_GIT, reviewed_protocol_git=activation.REVIEWED_EXTERNAL_GIT)
     binding = _binding(old.home)
     provenance = binding["source_migration"]
     assert migrated["ok"] is True
@@ -341,9 +335,46 @@ def test_migration_hop_from_deployed_0b73_to_external_logic_commit(tmp_path, mon
     assert provenance["from_source_sha256"] == DEPLOYED_0B73_SOURCE
     assert provenance["to_source_sha256"] == new_hash
     assert provenance["reviewed_from_git"] == "0b73f5dbf909cba9578dcc4129bafb3d64c10f99"
-    assert provenance["reviewed_protocol_git"] == "69dd1c334173aa8860251ae939535464050d8ef9"
-    assert provenance["reviewed_protocol_git"] == activation.REVIEWED_LOGIC_GIT
-    assert provenance["reviewed_from_git"] != activation.REVIEWED_FROM_GIT
-    assert provenance["reviewed_protocol_git"] != activation.REVIEWED_RESOLVE_GIT
+    assert provenance["reviewed_protocol_git"] == "bcc804bc13f3fa684c0ecf5547ac71023163da09"
+    assert provenance["reviewed_protocol_git"] == activation.REVIEWED_EXTERNAL_GIT
     assert gate.ledger_state(path) == before
     assert before["accounted_nano"] == CAPTURED_NANO
+
+
+# Loaded file hash of commit bcc804bc. Not a git SHA.
+BCC804_SOURCE = "89ec805041e30abd5237c10f7fd4c65ca9b55f9e3e0c10a32f00ed27aeaaeba0"
+
+
+def test_migration_hop_from_bcc804bc_to_external_resolve_commit(tmp_path, monkeypatch):
+    path = str((tmp_path / "scope.json").resolve())
+    scope = gate.open_authorized_scope(path, gate.TWO_DOLLAR_CEILING_NANO, max_posts=6)
+    real_loaded, real_hash = activation._LOADED_SOURCE_HASH, activation._source_hash
+    _use_source(monkeypatch, BCC804_SOURCE)
+    old = activation.runtime_identity(str((tmp_path / "home").resolve()), RUNTIME_ID)
+    candidate, expected = _candidate(scope, path, old.fingerprint)
+    activation.activate_scope(candidate, expected=expected, runtime=old)
+    monkeypatch.setattr(activation, "_LOADED_SOURCE_HASH", real_loaded)
+    monkeypatch.setattr(activation, "_source_hash", real_hash)
+    new = activation.runtime_identity(old.home, old.runtime_id)
+    env = {"path": path, "scope_id": scope["scope_id"], "old": old, "new": new}
+    settle_captured(env)
+    before = gate.ledger_state(path)
+    files = _files(env)
+    with pytest.raises(gate.LlmBudgetBlocked, match="migration_not_authorized"):
+        activation.migrate_source_fingerprint(
+            new, authorization_id=AUTHORITY, from_source_sha256=BCC804_SOURCE,
+            scope_id=scope["scope_id"], ledger_path=path,
+            reviewed_from_git=activation.REVIEWED_EXTERNAL_GIT, reviewed_protocol_git="0" * 40)
+    assert _files(env) == files
+    migrated = activation.migrate_source_fingerprint(
+        new, authorization_id=AUTHORITY, from_source_sha256=BCC804_SOURCE,
+        scope_id=scope["scope_id"], ledger_path=path,
+        reviewed_from_git=activation.REVIEWED_EXTERNAL_GIT, reviewed_protocol_git=activation.REVIEWED_LOGIC_GIT)
+    provenance = _binding(old.home)["source_migration"]
+    assert migrated["ok"] is True
+    assert provenance["from_source_sha256"] == BCC804_SOURCE
+    assert provenance["to_source_sha256"] == activation._source_hash()
+    assert provenance["reviewed_from_git"] == "bcc804bc13f3fa684c0ecf5547ac71023163da09"
+    assert provenance["reviewed_protocol_git"] == "69dd1c334173aa8860251ae939535464050d8ef9"
+    assert ("0b73f5dbf909cba9578dcc4129bafb3d64c10f99", "bcc804bc13f3fa684c0ecf5547ac71023163da09") in activation.REVIEWED_GIT_PAIRS
+    assert gate.ledger_state(path) == before
