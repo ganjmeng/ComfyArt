@@ -329,6 +329,12 @@ def test_migration_hop_from_deployed_0b73_keeps_the_bcc804bc_pair(tmp_path, monk
             scope_id=scope["scope_id"], ledger_path=path,
             reviewed_from_git="0b73f5dbf909cba9578dcc4129bafb3d64c10f99",
             reviewed_protocol_git="69dd1c334173aa8860251ae939535464050d8ef9")
+    with pytest.raises(gate.LlmBudgetBlocked, match="migration_not_authorized"):
+        activation.migrate_source_fingerprint(
+            new, authorization_id=AUTHORITY, from_source_sha256=DEPLOYED_0B73_SOURCE,
+            scope_id=scope["scope_id"], ledger_path=path,
+            reviewed_from_git="0b73f5dbf909cba9578dcc4129bafb3d64c10f99",
+            reviewed_protocol_git=activation.REVIEWED_LOGIC_GIT)
     assert _files(env) == files
     migrated = activation.migrate_source_fingerprint(
         new, authorization_id=AUTHORITY, from_source_sha256=DEPLOYED_0B73_SOURCE,
@@ -381,6 +387,8 @@ def test_migration_hop_from_bcc804bc_to_external_resolve_commit(tmp_path, monkey
     assert provenance["from_source_sha256"] == BCC804_SOURCE
     assert provenance["to_source_sha256"] == activation._source_hash()
     assert provenance["reviewed_from_git"] == "bcc804bc13f3fa684c0ecf5547ac71023163da09"
-    assert provenance["reviewed_protocol_git"] == "69dd1c334173aa8860251ae939535464050d8ef9"
+    assert provenance["reviewed_protocol_git"] == "6cc69e544cb73ec425c75f92df47181ef882f84d"
+    assert provenance["reviewed_protocol_git"] == activation.REVIEWED_LOGIC_GIT
     assert ("0b73f5dbf909cba9578dcc4129bafb3d64c10f99", "bcc804bc13f3fa684c0ecf5547ac71023163da09") in activation.REVIEWED_GIT_PAIRS
+    assert ("0b73f5dbf909cba9578dcc4129bafb3d64c10f99", "6cc69e544cb73ec425c75f92df47181ef882f84d") not in activation.REVIEWED_GIT_PAIRS
     assert gate.ledger_state(path) == before
