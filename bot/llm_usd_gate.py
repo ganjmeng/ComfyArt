@@ -1037,6 +1037,11 @@ def _row_hold(row: dict) -> Optional[int]:
     status = row.get("status")
     if status == "reconciled":
         return _as_int(row.get("actual_nano"))
+    if status == "resolved_as_spent":
+        # Booked at the full reserve. A different actual is unreadable, not a release.
+        actual = _as_int(row.get("actual_nano"))
+        reserved = _as_int(row.get("reserved_nano"))
+        return actual if actual is not None and actual == reserved else None
     if status in ("reserved", "retained"):
         reserved = _as_int(row.get("reserved_nano"))
         if "observed_nano" in row:
@@ -1441,6 +1446,69 @@ def retain(path: str, reservation_id: str, reason: str, *, usage: Any = None) ->
         return {"ok": True, "code": "retained", "accounted_nano": data["accounted_nano"], "reason": row["retain_reason"]}
 
     return _mutate(path, change, create=False, preserve_on_failure=True)
+
+
+def resolve_unknown_as_spent(path: str, reservation_id: str, operator: str, reason: str) -> dict:
+    """Book one retained row as spent at its full reserve. Never releases.
+
+    The hold is already inside accounted_nano, so accounted, the POST count,
+    the ceiling, and the inflight limit stay unchanged. Status becomes
+    resolved_as_spent and actual_nano becomes the full reserve. The breaker
+    closes only when this row is first_anomaly_id, no other row is retained,
+    inflight is 0, and no outcome journal exists. operator, reason, and time
+    are appended to resolution_audit. A second call returns the same result
+    and does not write. Any other state raises and writes nothing.
+    """
+    if type(reservation_id) is not str or not reservation_id:
+        raise LlmBudgetBlocked("resolve_refused", "id")
+    if type(operator) is not str or not operator.strip() or type(reason) is not str or not reason.strip():
+        raise LlmBudgetBlocked("resolve_refused", "audit")
+
+    def change(data: dict) -> dict:
+        limits = data.get("control_limits")
+        state = data.get("control_state")
+        if (type(limits) is not dict or limits.get("amount_nano") != TWO_DOLLAR_CEILING_NANO
+                or limits.get("max_posts") != CONTROLLED_POSTS_LIMIT or limits.get("max_inflight") != 1
+                or type(state) is not dict):
+            raise LlmBudgetBlocked("resolve_refused", "limits")
+        rows = data.get("reservations")
+        row = rows.get(reservation_id) if type(rows) is dict else None
+        if type(row) is not dict:
+            raise LlmBudgetBlocked("resolve_refused", "id")
+        reserved = row.get("reserved_nano")
+        if type(reserved) is not int or reserved < 0:
+            raise LlmBudgetBlocked("resolve_refused", "reserve")
+        accounted = data.get("accounted_nano")
+        attempts = state.get("attempts_total")
+        if row.get("status") == "resolved_as_spent" and row.get("actual_nano") == reserved:
+            return {"ok": True, "idempotent": True, "reservation_id": reservation_id,
+                    "status": "resolved_as_spent", "actual_nano": reserved,
+                    "accounted_nano": accounted, "attempts_total": attempts,
+                    "circuit_open": state.get("circuit_open") is True}
+        if row.get("status") != "retained":
+            raise LlmBudgetBlocked("resolve_refused", "id")
+        if any(type(other) is dict and other.get("status") == "retained" for rid, other in rows.items() if rid != reservation_id):
+            raise LlmBudgetBlocked("resolve_refused", "other_retained")
+        if any(type(other) is dict and other.get("status") == "reserved" for other in rows.values()):
+            raise LlmBudgetBlocked("resolve_refused", "inflight")
+        if state.get("circuit_open") is not True or state.get("first_anomaly_id") != reservation_id:
+            raise LlmBudgetBlocked("resolve_refused", "breaker")
+        row["status"] = "resolved_as_spent"
+        row["actual_nano"] = reserved
+        data.setdefault("resolution_audit", []).append({
+            "reservation_id": reservation_id, "operator": operator, "reason": reason, "at": int(time.time()),
+        })
+        state["circuit_open"] = False
+        state["circuit_reason"] = ""
+        state["first_anomaly_id"] = ""
+        if (data.get("accounted_nano") != accounted or state.get("attempts_total") != attempts
+                or data.get("control_limits") != limits or data.get("ceiling_nano") != TWO_DOLLAR_CEILING_NANO):
+            raise LlmBudgetBlocked("resolve_refused", "spend_changed")
+        return {"ok": True, "idempotent": False, "reservation_id": reservation_id,
+                "status": "resolved_as_spent", "actual_nano": reserved,
+                "accounted_nano": accounted, "attempts_total": attempts, "circuit_open": False}
+
+    return _mutate(path, change, create=False)
 
 
 def _response_anomaly(result: Any) -> str:

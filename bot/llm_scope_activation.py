@@ -281,11 +281,21 @@ def _scope_matches(data, binding):
         _fail("activation_scope_mismatch", "scope/authority/limits")
 
 
-# Git commits that reviewed the protocol change. They are not file hashes.
-# The migration implementation itself changes api/ and bot/ bytes, so the
-# loaded source hash is not the tree of REVIEWED_PROTOCOL_GIT.
-REVIEWED_FROM_GIT = "571c7fb7184dc4e97c115429bd6859d445e98c21"
-REVIEWED_PROTOCOL_GIT = "c3d3820e998985c678feea74a47ab4613946b761"
+# Exact reviewed git hops. They are not file hashes, and there is no wildcard.
+# Provenance stores the pair the caller names. The loaded source hash is this
+# process tree, which changes when api/ or bot/ bytes change, so it is not the
+# tree of the "to" commit.
+# Pair 1: original protocol review. Pair 2: deployed 42413ac7 -> the commit that
+# added resolve_unknown_as_spent. The second commit SHA is filled by the commit
+# immediately after that addition; until then the placeholder is not a real tip.
+REVIEWED_GIT_PAIRS = (
+    ("571c7fb7184dc4e97c115429bd6859d445e98c21", "c3d3820e998985c678feea74a47ab4613946b761"),
+    ("42413ac72626671a1790dbed87544f9f32ebaedf", "e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7"),
+)
+REVIEWED_FROM_GIT = REVIEWED_GIT_PAIRS[0][0]
+REVIEWED_PROTOCOL_GIT = REVIEWED_GIT_PAIRS[0][1]
+REVIEWED_DEPLOYED_GIT = REVIEWED_GIT_PAIRS[1][0]
+REVIEWED_RESOLVE_GIT = REVIEWED_GIT_PAIRS[1][1]
 
 
 def _spend_view(data: dict) -> dict:
@@ -307,20 +317,20 @@ def _fingerprint_for(home: str, runtime_id: str, source_sha256: str) -> str:
     return _digest({"home": home, "runtime_id": runtime_id, "source_sha256": source_sha256})
 
 
-def _migration_provenance(old_binding: dict, runtime: RuntimeIdentity) -> dict:
+def _migration_provenance(old_binding: dict, runtime: RuntimeIdentity, pair: tuple[str, str]) -> dict:
     return {
         "version": 1,
         "from_source_sha256": old_binding["source_sha256"],
         "to_source_sha256": runtime.source_sha256,
         "from_runtime_fingerprint": old_binding["runtime_fingerprint"],
         "to_runtime_fingerprint": runtime.fingerprint,
-        "reviewed_from_git": REVIEWED_FROM_GIT,
-        "reviewed_protocol_git": REVIEWED_PROTOCOL_GIT,
+        "reviewed_from_git": pair[0],
+        "reviewed_protocol_git": pair[1],
         "previous_runtime_binding": old_binding["manifest"]["runtime_binding"],
     }
 
 
-def _target_binding(old_binding: dict, runtime: RuntimeIdentity) -> dict:
+def _target_binding(old_binding: dict, runtime: RuntimeIdentity, pair: tuple[str, str]) -> dict:
     """Same manifest identity, source fingerprint replaced by the loaded runtime."""
     manifest = json.loads(_canonical(old_binding["manifest"]))
     manifest["runtime_binding"] = {"approved_runtime_sha256": runtime.fingerprint}
@@ -333,7 +343,7 @@ def _target_binding(old_binding: dict, runtime: RuntimeIdentity) -> dict:
         "source_sha256": runtime.source_sha256,
         "manifest_sha256": receipt.manifest_sha256,
         "manifest": manifest,
-        "source_migration": _migration_provenance(old_binding, runtime),
+        "source_migration": _migration_provenance(old_binding, runtime, pair),
     }
 
 
@@ -348,7 +358,7 @@ def _is_old_binding(binding: dict, runtime: RuntimeIdentity, from_source: str, a
             and manifest.get("canonical_absolute_ledger_path") == ledger_path)
 
 
-def _is_target_binding(binding: dict, runtime: RuntimeIdentity, from_source: str) -> bool:
+def _is_target_binding(binding: dict, runtime: RuntimeIdentity, from_source: str, pair: tuple[str, str]) -> bool:
     migration = binding.get("source_migration")
     return (type(binding) is dict and binding.get("home") == runtime.home
             and binding.get("runtime_id") == runtime.runtime_id
@@ -357,8 +367,8 @@ def _is_target_binding(binding: dict, runtime: RuntimeIdentity, from_source: str
             and type(migration) is dict
             and migration.get("from_source_sha256") == from_source
             and migration.get("to_source_sha256") == runtime.source_sha256
-            and migration.get("reviewed_from_git") == REVIEWED_FROM_GIT
-            and migration.get("reviewed_protocol_git") == REVIEWED_PROTOCOL_GIT)
+            and migration.get("reviewed_from_git") == pair[0]
+            and migration.get("reviewed_protocol_git") == pair[1])
 
 
 def _raw_ledger(path: str) -> dict:
@@ -374,8 +384,8 @@ def _raw_ledger(path: str) -> dict:
 def _require_safe_spend(path: str, data: dict) -> None:
     """Refuse an open breaker, an outstanding hold, or a pending outcome journal.
 
-    The refusal does not clear those fields. A reconciled history, including a
-    non-zero settled amount, is safe to rebind.
+    The refusal does not clear those fields. A reconciled row, or a row booked
+    by resolve_unknown_as_spent, is spent. retained and reserved rows stay refused.
     """
     if os.path.lexists(gate._outcome_pending_path(path)):
         _fail("migration_state_unsafe", "outcome_pending")
@@ -383,7 +393,7 @@ def _require_safe_spend(path: str, data: dict) -> None:
     if state.get("circuit_open") is True:
         _fail("migration_state_unsafe", "breaker")
     rows = data.get("reservations") if type(data.get("reservations")) is dict else None
-    if rows is None or any(type(row) is not dict or row.get("status") != "reconciled" for row in rows.values()):
+    if rows is None or any(type(row) is not dict or row.get("status") not in ("reconciled", "resolved_as_spent") for row in rows.values()):
         _fail("migration_state_unsafe", "hold")
 
 
@@ -414,14 +424,16 @@ def migrate_source_fingerprint(runtime: RuntimeIdentity, *, authorization_id: st
 
     This is not activation. ``activate_scope`` still rejects any different
     binding for an existing authority. The caller must name the bound source
-    hash, the scope, the ledger path, and both reviewed git commits. The new
-    source hash is this process's loaded tree, not a caller-supplied digest:
-    ``REVIEWED_PROTOCOL_GIT`` is the reviewed protocol commit, and loading this
-    migration changes the file hash again.
+    hash, the scope, the ledger path, and one exact pair from
+    ``REVIEWED_GIT_PAIRS``. Provenance stores that pair. The deployed 42413ac7
+    hop therefore records 42413ac7 and the resolve commit, not 571. The new
+    source hash is this process's loaded tree, not a caller-supplied digest.
+    Loading this migration changes the file hash again.
 
     Preconditions for a real rollout, none of which this function performs:
     the process is the new source; inflight is 0; every reservation is
-    reconciled; the breaker is closed; no outcome journal exists; the registry
+    reconciled or resolved_as_spent; the breaker is closed; no outcome journal
+    exists; the registry
     entry is active for this same runtime id and authority. A failed check
     writes nothing. Rollback is not a flag here. Before the pending registry
     write, stopping is the rollback. After that write, sends stay blocked until
@@ -434,7 +446,8 @@ def migrate_source_fingerprint(runtime: RuntimeIdentity, *, authorization_id: st
     Interrupted work is finished only by repeating this same call.
     """
     _check_runtime(runtime)
-    if (reviewed_from_git != REVIEWED_FROM_GIT or reviewed_protocol_git != REVIEWED_PROTOCOL_GIT
+    pair = (reviewed_from_git, reviewed_protocol_git)
+    if (pair not in REVIEWED_GIT_PAIRS
             or type(from_source_sha256) is not str or not re.fullmatch(r"[0-9a-f]{64}", from_source_sha256)
             or from_source_sha256 == runtime.source_sha256):
         _fail("migration_not_authorized", "reviewed_source")
@@ -461,14 +474,14 @@ def migrate_source_fingerprint(runtime: RuntimeIdentity, *, authorization_id: st
                 _scope_matches(data, stored)
                 if data.get("runtime_activation") != stored:
                     _fail("migration_state_unsafe", "ledger_binding")
-                target = _target_binding(stored, runtime)
+                target = _target_binding(stored, runtime, pair)
                 registry["authorities"][authorization_id] = {"status": "pending", "digest": _digest(target), "binding": target}
                 _write_registry(registry_path, registry, stage_prefix="migration_pending_")
                 _write_rebind(ledger_path, data, target)
                 registry["authorities"][authorization_id]["status"] = "active"
                 _write_registry(registry_path, registry, stage_prefix="migration_active_")
                 return {"ok": True, "scope_id": scope_id, "activation_digest": _digest(target), "resumed": False}
-            if not _is_target_binding(stored, runtime, from_source_sha256):
+            if not _is_target_binding(stored, runtime, from_source_sha256, pair):
                 _fail("migration_not_authorized", "binding")
             target = stored
             manifest = target.get("manifest") if type(target.get("manifest")) is dict else {}
