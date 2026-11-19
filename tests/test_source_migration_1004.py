@@ -431,12 +431,6 @@ def test_migration_hop_from_bcc804bc_to_external_resolve_commit(tmp_path, monkey
             scope_id=scope["scope_id"], ledger_path=path,
             reviewed_from_git=activation.REVIEWED_EXTERNAL_GIT,
             reviewed_protocol_git="93d7aa388f1bef7d3668e4c2a6936d653dab4a23")
-    with pytest.raises(gate.LlmBudgetBlocked, match="migration_not_authorized"):
-        activation.migrate_source_fingerprint(
-            new, authorization_id=AUTHORITY, from_source_sha256=BCC804_SOURCE,
-            scope_id=scope["scope_id"], ledger_path=path,
-            reviewed_from_git=activation.REVIEWED_EXTERNAL_GIT,
-            reviewed_protocol_git=activation.REVIEWED_SETUP_GIT)
     assert _files(env) == files
     migrated = activation.migrate_source_fingerprint(
         new, authorization_id=AUTHORITY, from_source_sha256=BCC804_SOURCE,
@@ -452,8 +446,9 @@ def test_migration_hop_from_bcc804bc_to_external_resolve_commit(tmp_path, monkey
     assert ("0b73f5dbf909cba9578dcc4129bafb3d64c10f99", "bcc804bc13f3fa684c0ecf5547ac71023163da09") in activation.REVIEWED_GIT_PAIRS
     assert ("bcc804bc13f3fa684c0ecf5547ac71023163da09", "8a9593797f84d9afbb675b682cd82066a3ddf703") not in activation.REVIEWED_GIT_PAIRS
     assert ("0b73f5dbf909cba9578dcc4129bafb3d64c10f99", "9c0a480753f6f9856fd137067e9026d20a425c3a") not in activation.REVIEWED_GIT_PAIRS
-    assert ("bcc804bc13f3fa684c0ecf5547ac71023163da09", "d83072c8a8bddf726fc9e68f94f6550d3a3823de") not in activation.REVIEWED_GIT_PAIRS
+    assert ("bcc804bc13f3fa684c0ecf5547ac71023163da09", "d83072c8a8bddf726fc9e68f94f6550d3a3823de") in activation.REVIEWED_GIT_PAIRS
     assert ("9c0a480753f6f9856fd137067e9026d20a425c3a", "d83072c8a8bddf726fc9e68f94f6550d3a3823de") in activation.REVIEWED_GIT_PAIRS
+    assert ("0b73f5dbf909cba9578dcc4129bafb3d64c10f99", "d83072c8a8bddf726fc9e68f94f6550d3a3823de") not in activation.REVIEWED_GIT_PAIRS
     assert gate.ledger_state(path) == before
 
 
@@ -474,3 +469,78 @@ def test_migration_hop_from_finals_commit_to_setup_card_commit(tmp_path, monkeyp
     state = gate.ledger_state(env["path"])
     assert state["accounted_nano"] == before["accounted_nano"]
     assert state["ceiling_nano"] == before["ceiling_nano"]
+
+
+DIRECT_FROM = "bcc804bc13f3fa684c0ecf5547ac71023163da09"
+DIRECT_TO = "d83072c8a8bddf726fc9e68f94f6550d3a3823de"
+
+
+def _live_bcc_binding(tmp_path, monkeypatch):
+    """The deployed binding: source hash of bcc804bc, provenance exactly 0b73 -> bcc804bc."""
+    path = str((tmp_path / "scope.json").resolve())
+    scope = gate.open_authorized_scope(path, gate.TWO_DOLLAR_CEILING_NANO, max_posts=6)
+    real_loaded, real_hash = activation._LOADED_SOURCE_HASH, activation._source_hash
+    _use_source(monkeypatch, DEPLOYED_0B73_SOURCE)
+    old = activation.runtime_identity(str((tmp_path / "home").resolve()), RUNTIME_ID)
+    candidate, expected = _candidate(scope, path, old.fingerprint)
+    activation.activate_scope(candidate, expected=expected, runtime=old)
+    _use_source(monkeypatch, BCC804_SOURCE)
+    deployed = activation.runtime_identity(old.home, old.runtime_id)
+    activation.migrate_source_fingerprint(
+        deployed, authorization_id=AUTHORITY, from_source_sha256=DEPLOYED_0B73_SOURCE,
+        scope_id=scope["scope_id"], ledger_path=path,
+        reviewed_from_git=activation.REVIEWED_LIVE_GIT, reviewed_protocol_git=activation.REVIEWED_EXTERNAL_GIT)
+    monkeypatch.setattr(activation, "_LOADED_SOURCE_HASH", real_loaded)
+    monkeypatch.setattr(activation, "_source_hash", real_hash)
+    new = activation.runtime_identity(old.home, old.runtime_id)
+    return {"path": path, "scope_id": scope["scope_id"], "old": old, "new": new}
+
+
+def _direct_hop(env):
+    return activation.migrate_source_fingerprint(
+        env["new"], authorization_id=AUTHORITY, from_source_sha256=BCC804_SOURCE,
+        scope_id=env["scope_id"], ledger_path=env["path"],
+        reviewed_from_git=DIRECT_FROM, reviewed_protocol_git=DIRECT_TO)
+
+
+def test_direct_hop_from_deployed_0b73_bcc804_binding(tmp_path, monkeypatch):
+    env = _live_bcc_binding(tmp_path, monkeypatch)
+    prior = _binding(env["new"].home)["source_migration"]
+    assert (prior["reviewed_from_git"], prior["reviewed_protocol_git"]) == (
+        "0b73f5dbf909cba9578dcc4129bafb3d64c10f99", DIRECT_FROM)
+    assert _binding(env["new"].home)["source_sha256"] == BCC804_SOURCE
+    settle_captured(env)
+    before = gate.ledger_state(env["path"])
+    migrated = _direct_hop(env)
+    binding = _binding(env["new"].home)
+    provenance = binding["source_migration"]
+    assert migrated["ok"] is True and migrated["resumed"] is False
+    assert binding["source_sha256"] == activation._source_hash()
+    assert (provenance["reviewed_from_git"], provenance["reviewed_protocol_git"]) == (DIRECT_FROM, DIRECT_TO)
+    assert provenance["from_source_sha256"] == BCC804_SOURCE
+    assert provenance["to_source_sha256"] == activation._source_hash()
+    assert type(provenance) is dict
+    assert activation.REVIEWED_GIT_PAIRS[3] == (DIRECT_FROM, "9c0a480753f6f9856fd137067e9026d20a425c3a")
+    assert activation.REVIEWED_GIT_PAIRS[4] == ("9c0a480753f6f9856fd137067e9026d20a425c3a", DIRECT_TO)
+    assert (DIRECT_FROM, DIRECT_TO) == activation.REVIEWED_GIT_PAIRS[5]
+    assert ("0b73f5dbf909cba9578dcc4129bafb3d64c10f99", DIRECT_TO) not in activation.REVIEWED_GIT_PAIRS
+    assert gate.ledger_state(env["path"]) == before
+
+
+def test_direct_hop_repeat_writes_no_new_audit_row(tmp_path, monkeypatch):
+    env = _live_bcc_binding(tmp_path, monkeypatch)
+    settle_captured(env)
+    first = _direct_hop(env)
+    files = _files(env)
+    provenance = copy.deepcopy(_binding(env["new"].home)["source_migration"])
+    ledger = json.loads(Path(env["path"]).read_text())
+    audits = {key: copy.deepcopy(ledger.get(key)) for key in ("limit_extension", "ceiling_extension")}
+    second = _direct_hop(env)
+    assert second["ok"] is True and second["resumed"] is False
+    assert second["activation_digest"] == first["activation_digest"]
+    assert _files(env) == files
+    again = _binding(env["new"].home)["source_migration"]
+    assert again == provenance
+    assert (again["reviewed_from_git"], again["reviewed_protocol_git"]) == (DIRECT_FROM, DIRECT_TO)
+    reread = json.loads(Path(env["path"]).read_text())
+    assert {key: reread.get(key) for key in ("limit_extension", "ceiling_extension")} == audits
