@@ -292,9 +292,9 @@ def _scope_matches(data, binding):
 # Pair 1: original protocol review. Pair 2: deployed 42413ac7 -> a8c5c13c, the
 # commit that added resolve_unknown_as_spent. Pair 3: deployed 0b73f5db ->
 # bcc804bc, recorded by c2ee84ac and deployed with that tree. Pair 4:
-# bcc804bc -> 32565038, the commit that keeps the lineart quote gate on
-# universal-multi-angle-grid only. 6cc69e54 remains an ancestor, not a pair
-# destination. A direct 0b73f5db -> 32565038 hop is not authorized.
+# bcc804bc -> 8a959379, the commit that adds extend_ceiling. 32565038 remains
+# an ancestor, not a pair destination. A direct 0b73f5db -> 8a959379 hop is
+# not authorized.
 # Recording a pair changes the loaded file hash again. Provenance stores the
 # named git pair; the destination source hash is this process tree, not the
 # "to" commit's tree.
@@ -302,7 +302,7 @@ REVIEWED_GIT_PAIRS = (
     ("571c7fb7184dc4e97c115429bd6859d445e98c21", "c3d3820e998985c678feea74a47ab4613946b761"),
     ("42413ac72626671a1790dbed87544f9f32ebaedf", "a8c5c13c8977e2473ed3b1e2d12cbe414f3addbc"),
     ("0b73f5dbf909cba9578dcc4129bafb3d64c10f99", "bcc804bc13f3fa684c0ecf5547ac71023163da09"),
-    ("bcc804bc13f3fa684c0ecf5547ac71023163da09", "325650381764923a82314777a03fd6cb52d2871c"),
+    ("bcc804bc13f3fa684c0ecf5547ac71023163da09", "8a9593797f84d9afbb675b682cd82066a3ddf703"),
 )
 # Index 0 is the original protocol review, not the newest hop. A caller must
 # name the exact pair for the hop it is performing; nothing here means "latest".
