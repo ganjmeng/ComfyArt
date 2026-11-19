@@ -69,10 +69,25 @@ _STOP_TEXT = {
                  "en": "Paused automatically; progress is saved. Press Continue to keep going."},
     "error:llm_retry_exhausted": {"zh": "{detail}", "en": "{detail}"},
     "error:tool": {"zh": "工具出错：{detail}", "en": "Tool error: {detail}"},
+    "blocked:policy_denied_repeat": {
+        "zh": "同一策略拒绝出现了两次，本轮已结束，没有继续请求模型。",
+        "en": "The same policy denial happened twice, so this turn ended before another model request.",
+    },
 }
 _DIM = {"zh": {"tokens": "token ", "credits": "积分", "time": "时长"},
         "en": {"tokens": "token", "credits": "credit", "time": "time"}}
 NON_RETRYABLE_MARK = "[non-retryable]"  # #705: keep in sync with SKILL_NON_RETRYABLE (src/skills.ts)
+
+
+def policy_denial(text: str) -> bool:
+    """True for a non-retryable PermissionError or policy denial in a tool result.
+
+    The first one is still shown to the model. A second one in the same turn
+    stops before another model POST. Ordinary tool errors do not match.
+    """
+    body = str(text or "")
+    return ("PermissionError" in body or "MCP side effects prohibited" in body
+            or "policy_denied" in body or "policy denial" in body.lower())
 _STALL_LABEL = {
     "zh": {"no_progress": "连续多步没有新产出", "repeat": "同一调用反复出现", "tool_error": "工具连续失败",
            "readonly_limit": "连续只读步骤过多", "same_tool": "同一工具连续调用超过 3 次", "non_retryable": "工具返回不可重试的错误", "budget": "超过单次运行的付费/工具调用上限", "timeout": "等待生成结果超时（30 分钟或 120 次轮询）", "self_check_failed": "结果未通过自检"},
@@ -459,6 +474,8 @@ CARD_COPY = {
                                       "en": ("Confirmation not approved", "Needs your OK to start; nothing charged", "Continue", None)},
     "awaiting_confirm:ask_expired": {"zh": ("提问已过期", "没有收到回答，本轮已结束，未继续出图，未扣费", None, None),
                                      "en": ("Question expired", "No answer arrived, so this turn ended before any further image; nothing charged", None, None)},
+    "blocked:policy_denied_repeat": {"zh": ("已停止", "同一策略拒绝出现了两次，本轮结束，没有继续请求模型", None, None),
+                                     "en": ("Stopped", "The same policy denial happened twice, so this turn ended before another model request", None, None)},
     "error:network": {"zh": ("网络断开了", "已保留生成的 {n} 张", "重试", None),
                       "en": ("Network disconnected", "Kept the {n} already generated", "Retry", None)},
     "error": {"zh": ("出错了", "{reason}", "重试", None),
@@ -1051,6 +1068,15 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                 provider._model_blocked = blocked
                 return await finish(Stop(StopReason.ERROR, "browser_tab", step=ctx.budget.used.steps,
                                          detail=blocked), extra_error=blocked)
+            denials = sum(1 for o in obs if policy_denial(o.result))
+            if denials:
+                # The first denial is already in this step's tool result, so the next
+                # model POST can see it. A second denial in this turn stops here.
+                loop["policy_denials"] = loop.get("policy_denials", 0) + denials
+                if loop["policy_denials"] >= 2:
+                    _log.warning("[ComfyArt/agent] run %s policy denial repeated, stopping before another POST", ctx.run_id)
+                    return await finish(Stop(StopReason.BLOCKED, "policy_denied_repeat", step=ctx.budget.used.steps,
+                                             detail="A tool was denied by policy twice in this turn."))
             fatal = next((o for o in obs if o.failed and NON_RETRYABLE_MARK in o.result), None)
             if fatal is not None:  # #705: never let the model retry a call the tool says cannot succeed
                 _log.warning("[ComfyArt/agent] run %s non-retryable %s error, stopping", ctx.run_id, fatal.tool)

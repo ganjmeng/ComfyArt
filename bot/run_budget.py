@@ -41,6 +41,7 @@ class StopReason(str, Enum):
     USER_STOP = "user_stop"
     AWAITING_CONFIRM = "awaiting_confirm"  # #418: a confirm card nobody approved (unattended)
     ERROR = "error"
+    BLOCKED = "blocked"  # a non-retryable policy denial repeated in the same turn
 
 
 SUB_REASONS: dict[StopReason, frozenset[str]] = {
@@ -51,6 +52,7 @@ SUB_REASONS: dict[StopReason, frozenset[str]] = {
     StopReason.USER_STOP: frozenset({"", "quote_declined"}),
     StopReason.AWAITING_CONFIRM: frozenset({"not_approved", "ask_expired"}),
     StopReason.ERROR: frozenset({"llm_retry_exhausted", "tool", "network", "browser_tab"}),
+    StopReason.BLOCKED: frozenset({"policy_denied_repeat"}),
 }
 BUDGET_DIMENSIONS = ("tokens", "credits", "time")
 
