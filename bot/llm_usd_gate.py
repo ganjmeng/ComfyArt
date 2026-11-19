@@ -48,6 +48,27 @@ lives in the same file, so an empty or rewritten ledger can be recast as $2
 by editing the file. ``open_authorized_scope`` itself will not upgrade or reset
 an existing scope.
 
+Ledger updates use a stable sibling ``.lock`` (not the replaced ledger inode),
+a same-directory temporary file, ``fsync`` of that file, ``os.replace``, and
+``fsync`` of the parent directory. Persist order is ledger first, then the
+``.activated`` marker. A crash after a successful ledger replace and before the
+marker is recovered by treating a valid ledger as already activated and
+completing the marker on the next update or bind, not on a read. A later
+missing or empty activated ledger fails closed and is never rebuilt with
+``_fresh()``. A valid ledger without a marker (legacy or crashed mid-activation)
+must not be reset. This does not claim recovery when both the marker and the
+ledger have been maliciously deleted or rewritten, and it does not prove
+power-loss durability on every filesystem. ``ledger_state`` is a read under the
+stable lock and must not write the ledger or the marker. ``settle`` and
+``retain`` never initialize a scope. First use of a missing unactivated path
+through ``reserve_nano`` or ``dispatch`` may still ``_fresh()`` a default
+scope; ``open_authorized_scope`` is the explicit trusted initializer for a
+chosen cap. If parent-directory ``fsync`` fails after ``replace``, the new
+reservation is already visible on this filesystem and the error is propagated
+so ``dispatch`` does not call transport (conservative hold). Process-level
+``os._exit`` at a persist stage skips Python ``finally`` cleanup; the kernel
+releases the lock fd.
+
 Billed input tokens are not a proven upper bound. The token-usage page gives
 approximate character ratios and says the actual number is the usage the model
 returns. The demo tokenizer zip is not a published ceiling on prompt tokens
@@ -61,6 +82,7 @@ The current direct route does not have that bound, so it stays blocked.
 """
 from __future__ import annotations
 
+import errno
 import fcntl
 import json
 import logging
@@ -68,6 +90,7 @@ import os
 import threading
 import time
 import uuid
+from contextlib import contextmanager
 from typing import Any, Awaitable, Callable, Optional
 from urllib.parse import urlparse
 
@@ -95,6 +118,8 @@ MEMORY_BOOST_OUTPUT_DEFAULT = THINKING_DEFAULT
 _LEDGER_NAME = "llm_usd_ledger.json"
 _thread_lock = threading.Lock()
 _bound_ledger_path = None
+# Test-only crash hook: called with a persist stage name. Production leaves this None.
+_write_fault = None
 
 _SOURCES = (PRICING_URL, CHAT_URL, TOKEN_URL, VISION_URL, PRO_NEWS_URL)
 
@@ -134,7 +159,7 @@ _BODY_KEYS = frozenset({
     "top_logprobs", "user_id", "frequency_penalty", "presence_penalty",
 })
 _TEXT_ROLES = frozenset({"system", "user", "assistant"})
-_TEXT_MSG_KEYS = frozenset({"role", "content", "name"})
+_TEXT_MSG_KEYS = frozenset({"role", "content", "name", "reasoning_content"})
 _WEB_TOOLS = frozenset({"deepseek_web_search", "deepseek_read_url"})
 _EFFORT = {
     "none": "none", "low": "low", "high": "high", "max": "max",
@@ -299,6 +324,8 @@ def structural_block(body: dict) -> str:
             return "unbounded_billed_input"
         if "name" in msg and type(msg.get("name")) is not str:
             return "unbounded_billed_input"
+        if "reasoning_content" in msg and type(msg.get("reasoning_content")) is not str:
+            return "unbounded_billed_input"
         if type(msg.get("content")) is not str:
             return "unbounded_billed_input"
     return ""
@@ -341,7 +368,7 @@ def _web_tool_fee(body: dict) -> bool:
 
 _ORDINARY_TOOL_CHOICES = frozenset({None, "none", "auto", "required"})
 _ORDINARY_TOOL_MSG_KEYS = frozenset({"role", "content", "name", "tool_call_id"})
-_ORDINARY_ASSISTANT_TOOL_KEYS = frozenset({"role", "content", "name", "tool_calls"})
+_ORDINARY_ASSISTANT_TOOL_KEYS = frozenset({"role", "content", "name", "tool_calls", "reasoning_content"})
 
 
 def _function_tool_name(tool: dict) -> str | None:
@@ -404,6 +431,8 @@ def _ordinary_mcp_message(msg: dict) -> bool:
     if set(msg) - _ORDINARY_ASSISTANT_TOOL_KEYS:
         return False
     if "name" in msg and type(msg.get("name")) is not str:
+        return False
+    if "reasoning_content" in msg and type(msg.get("reasoning_content")) is not str:
         return False
     if msg.get("content") is not None and type(msg.get("content")) is not str:
         return False
@@ -622,6 +651,128 @@ def _fresh(*, ceiling_nano: int = CEILING_NANO, authorization: str = DEFAULT_AUT
     }
 
 
+def _ledger_lock_path(path: str) -> str:
+    return path + ".lock"
+
+
+def _ledger_marker_path(path: str) -> str:
+    return path + ".activated"
+
+
+def _fault(stage: str) -> None:
+    hook = _write_fault
+    if hook is not None:
+        hook(stage)
+
+
+def _fsync_dir(directory: str, *, stage: str = "dir_fsync") -> None:
+    _fault(stage)
+    fd = os.open(directory or ".", os.O_RDONLY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+def _marker_present(path: str) -> bool:
+    return os.path.lexists(_ledger_marker_path(path))
+
+
+def _read_raw(path: str) -> str:
+    if not os.path.isfile(path):
+        return ""
+    with open(path, "r", encoding="utf-8") as handle:
+        return handle.read()
+
+
+def _dump(data: dict) -> str:
+    return json.dumps(data, ensure_ascii=True, separators=(",", ":"))
+
+
+def _write_all(fd: int, payload: bytes) -> None:
+    """Finish every byte before a temporary ledger or marker can be published.
+
+    A successful os.write may still be short. A zero (or invalid negative)
+    result cannot make progress and is a hard persistence failure, not success.
+    Other write errors propagate without reaching fsync/replace/transport.
+    """
+    remaining = memoryview(payload)
+    while remaining:
+        written = os.write(fd, remaining)
+        if written <= 0:
+            raise OSError(errno.EIO, "atomic write made no progress")
+        remaining = remaining[written:]
+
+
+def _atomic_write(path: str, payload: str, *, stage_prefix: str = "") -> None:
+    """Write *payload* to *path* via a same-directory temp file, fsync, and replace.
+
+    A crash before ``os.replace`` leaves the previous file (if any) in place. A
+    crash after replace but before the parent-directory fsync may still lose the
+    directory entry on some mounts after power loss; that case is not claimed as
+    proven here. Marker writes use stage names prefixed with ``marker_``.
+    """
+    parent = os.path.dirname(path) or "."
+    tmp = path + ".tmp"
+    encoded = payload.encode("utf-8")
+    _fault(stage_prefix + "before_temp")
+    if os.path.lexists(tmp):
+        os.unlink(tmp)
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    try:
+        _write_all(fd, encoded)
+        _fault(stage_prefix + "after_temp_write")
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+    os.chmod(tmp, 0o600)
+    _fault(stage_prefix + "after_temp_fsync")
+    _fault(stage_prefix + "before_replace")
+    os.replace(tmp, path)
+    _fault(stage_prefix + "after_replace")
+    _fsync_dir(parent, stage=stage_prefix + "dir_fsync")
+    _fault(stage_prefix + "after_dir_fsync")
+
+
+def _write_activation_marker(path: str, data: dict) -> None:
+    marker = {
+        "scope_id": data["scope_id"],
+        "authorization": data["authorization"],
+        "authorized_ceiling_nano": data["authorized_ceiling_nano"],
+    }
+    _atomic_write(_ledger_marker_path(path), _dump(marker), stage_prefix="marker_")
+
+
+def _persist_ledger(path: str, data: dict, *, write_marker: bool) -> None:
+    # Persist the ledger first, then the activation marker. A crash after the
+    # ledger write but before the marker is recovered by treating a valid
+    # ledger as already activated and completing the marker on the next
+    # update or bind. ledger_state must not perform that write.
+    _atomic_write(path, _dump(data))
+    if write_marker and not _marker_present(path):
+        _write_activation_marker(path, data)
+
+
+@contextmanager
+def _with_ledger_lock(path: str):
+    """Hold a process-shared exclusive lock on a sibling file that is never replaced."""
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    lock_path = _ledger_lock_path(path)
+    with _thread_lock:
+        fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
+        try:
+            os.chmod(lock_path, 0o600)
+            fcntl.flock(fd, fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(fd, fcntl.LOCK_UN)
+        finally:
+            os.close(fd)
+
+
 def open_authorized_scope(path: str, ceiling_nano: int) -> dict:
     """Create a new independent validation scope with a durable authorized cap.
 
@@ -634,37 +785,19 @@ def open_authorized_scope(path: str, ceiling_nano: int) -> dict:
         TWO_DOLLAR_AUTHORIZATION if ceiling_nano == TWO_DOLLAR_CEILING_NANO
         else DEFAULT_AUTHORIZATION
     )
-    parent = os.path.dirname(path)
-    if parent:
-        os.makedirs(parent, exist_ok=True)
-    with _thread_lock:
-        fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
-        try:
-            os.chmod(path, 0o600)
-            with os.fdopen(fd, "r+", encoding="utf-8") as handle:
-                fd = -1
-                fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
-                try:
-                    raw = handle.read()
-                    if raw.strip():
-                        raise LlmScopeConflict("a validation scope already exists at this path")
-                    data = _fresh(ceiling_nano=ceiling_nano, authorization=authorization)
-                    json.dump(data, handle, ensure_ascii=True, separators=(",", ":"))
-                    handle.flush()
-                    os.fsync(handle.fileno())
-                    return {
-                        "ok": True,
-                        "scope_id": data["scope_id"],
-                        "authorization": authorization,
-                        "authorized_ceiling_nano": ceiling_nano,
-                        "ceiling_nano": ceiling_nano,
-                        "accounted_nano": 0,
-                    }
-                finally:
-                    fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
-        finally:
-            if fd >= 0:
-                os.close(fd)
+    with _with_ledger_lock(path):
+        if _marker_present(path) or _read_raw(path).strip():
+            raise LlmScopeConflict("a validation scope already exists at this path")
+        data = _fresh(ceiling_nano=ceiling_nano, authorization=authorization)
+        _persist_ledger(path, data, write_marker=True)
+        return {
+            "ok": True,
+            "scope_id": data["scope_id"],
+            "authorization": authorization,
+            "authorized_ceiling_nano": ceiling_nano,
+            "ceiling_nano": ceiling_nano,
+            "accounted_nano": 0,
+        }
 
 
 def clear_authorized_scope() -> None:
@@ -681,30 +814,26 @@ def use_authorized_scope(path: str) -> dict:
     install wrapper omits ``ledger_path``, so this is how that transport can
     consume an explicit authorized ledger. Nothing in ``install`` binds a scope.
     """
-    if type(path) is not str or not path or not os.path.isfile(path):
+    if type(path) is not str or not path:
         raise LlmScopeConflict("no authorized scope exists at this path")
     try:
-        fd = os.open(path, os.O_RDONLY)
-        try:
-            with os.fdopen(fd, "r", encoding="utf-8") as handle:
-                fd = -1
-                fcntl.flock(handle.fileno(), fcntl.LOCK_SH)
-                try:
-                    raw = handle.read()
-                finally:
-                    fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
-        finally:
-            if fd >= 0:
-                os.close(fd)
+        with _with_ledger_lock(path):
+            raw = _read_raw(path)
+            if not raw.strip():
+                if _marker_present(path):
+                    raise LlmBudgetBlocked("ledger_unreadable", "activated_missing_or_empty")
+                raise LlmScopeConflict("no authorized scope exists at this path")
+            try:
+                parsed = json.loads(raw)
+            except ValueError as exc:
+                raise LlmScopeConflict("authorized scope is unreadable") from exc
+            data = _normalize(parsed)
+            if not _marker_present(path):
+                _write_activation_marker(path, data)
+    except LlmBudgetBlocked:
+        raise
     except OSError as exc:
         raise LlmScopeConflict("authorized scope is unreadable") from exc
-    if not raw.strip():
-        raise LlmScopeConflict("no authorized scope exists at this path")
-    try:
-        parsed = json.loads(raw)
-    except ValueError as exc:
-        raise LlmScopeConflict("authorized scope is unreadable") from exc
-    data = _normalize(parsed)
     global _bound_ledger_path
     with _thread_lock:
         _bound_ledger_path = path
@@ -798,39 +927,47 @@ def _normalize(data: Any) -> dict:
     return data
 
 
-def _mutate(path: str, change: Callable[[dict], Any]) -> Any:
-    parent = os.path.dirname(path)
-    if parent:
-        os.makedirs(parent, exist_ok=True)
-    with _thread_lock:
-        fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
-        try:
-            os.chmod(path, 0o600)
-            with os.fdopen(fd, "r+", encoding="utf-8") as handle:
-                fd = -1
-                fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
-                try:
-                    raw = handle.read()
-                    if not raw.strip():
-                        data = _fresh()
-                    else:
-                        try:
-                            parsed = json.loads(raw)
-                        except ValueError as exc:
-                            raise LlmBudgetBlocked("ledger_unreadable", "json") from exc
-                        data = _normalize(parsed)
-                    result = change(data)
-                    handle.seek(0)
-                    handle.truncate()
-                    json.dump(data, handle, ensure_ascii=True, separators=(",", ":"))
-                    handle.flush()
-                    os.fsync(handle.fileno())
-                    return result
-                finally:
-                    fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
-        finally:
-            if fd >= 0:
-                os.close(fd)
+def _load_ledger(path: str, *, create: bool) -> tuple[dict, bool, bool]:
+    """Read and normalize a ledger under an already-held lock. Never writes.
+
+    Returns ``(data, initializing, activated)``. First initialization happens
+    only when *create* is true and the path has no activation marker and no
+    ledger content. An activated missing or empty ledger never calls
+    ``_fresh()``. A valid ledger is not reset, with or without a marker.
+    """
+    raw = _read_raw(path)
+    activated = _marker_present(path)
+    if not raw.strip():
+        if activated or not create:
+            raise LlmBudgetBlocked(
+                "ledger_unreadable",
+                "activated_missing_or_empty" if activated else "missing",
+            )
+        return _fresh(), True, False
+    try:
+        parsed = json.loads(raw)
+    except ValueError as exc:
+        raise LlmBudgetBlocked("ledger_unreadable", "json") from exc
+    return _normalize(parsed), False, activated
+
+
+def _mutate(path: str, change: Callable[[dict], Any], *, create: bool = True) -> Any:
+    """Apply *change* under the stable ledger lock and persist atomically if needed.
+
+    First initialization happens only when *create* is true and the path has no
+    activation marker and no ledger content. An activated missing or empty
+    ledger never calls ``_fresh()``.
+    """
+    with _with_ledger_lock(path):
+        data, initializing, activated = _load_ledger(path, create=create)
+        before = _dump(data)
+        result = change(data)
+        after = _dump(data)
+        if initializing or after != before:
+            _persist_ledger(path, data, write_marker=initializing or not activated)
+        elif not activated:
+            _write_activation_marker(path, data)
+        return result
 
 
 def reserve_nano(path: str, *, nano: int, record: dict) -> dict:
@@ -866,7 +1003,9 @@ def reserve_nano(path: str, *, nano: int, record: dict) -> dict:
 
 
 def ledger_state(path: str) -> dict:
-    def change(data: dict) -> dict:
+    """Return a view of the ledger. Read-only: does not write the ledger or marker."""
+    with _with_ledger_lock(path):
+        data, _, _ = _load_ledger(path, create=False)
         return {
             "scope_id": data["scope_id"],
             "authorization": data.get("authorization"),
@@ -886,7 +1025,6 @@ def ledger_state(path: str) -> dict:
                 for key, row in data["reservations"].items()
             },
         }
-    return _mutate(path, change)
 
 
 def _usage_nano(usage: Any, snapshot: dict, input_bound: int, max_output: int) -> dict:
@@ -963,7 +1101,7 @@ def settle(path: str, reservation_id: str, usage: Any) -> dict:
         data["accounted_nano"] = data["accounted_nano"] - (reserved - actual)
         return {"ok": True, "code": "reconciled", "actual_nano": actual, "accounted_nano": data["accounted_nano"]}
 
-    return _mutate(path, change)
+    return _mutate(path, change, create=False)
 
 
 def retain(path: str, reservation_id: str, reason: str) -> dict:
@@ -975,7 +1113,7 @@ def retain(path: str, reservation_id: str, reason: str) -> dict:
         row["retain_reason"] = reason or "unknown"
         return {"ok": True, "code": "retained", "accounted_nano": data["accounted_nano"], "reason": row["retain_reason"]}
 
-    return _mutate(path, change)
+    return _mutate(path, change, create=False)
 
 
 async def dispatch(body: dict, *, route: dict, url: str, send: Callable[[], Awaitable[Any]],

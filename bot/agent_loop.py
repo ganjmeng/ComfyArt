@@ -22,6 +22,7 @@ from . import self_check as sc_mod
 from .guide import PAID_TOOLS
 from .plan_quote import canon_key
 from . import reasoning_boost
+from .assistant_history import assistant_history_message as _assistant_history_message
 from .run_budget import ui_credits
 from .providers import BotEvent, TurnResult
 from .run_budget import (
@@ -972,7 +973,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                     if not ctx.selfcheck_nudged:
                         ctx.selfcheck_nudged = True
                         lk = "zh" if ctx.lang == "zh" else "en"
-                        messages.append({"role": "assistant", "content": content or ""})
+                        messages.append(_assistant_history_message(message, content or ""))
                         messages.append({"role": "user", "content": _SELF_CHECK_NUDGE[lk].format(
                             exp=check.goal.count, kind=sc_mod._KIND_LABEL[lk][check.goal.kind],
                             placed=check.placed, miss=check.missing)})
@@ -984,7 +985,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                 ctx.budget.end_step()
                 return await finish(Stop(StopReason.DONE, step=ctx.budget.used.steps))
 
-            messages.append({"role": "assistant", "content": content or None, "tool_calls": tool_calls})
+            messages.append(_assistant_history_message(message, content, tool_calls))
             n_before = len(messages)
             b_before = len(ctx.blocks)
             has_wait = _tool_calls_wait(tool_calls)

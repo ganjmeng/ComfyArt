@@ -7,7 +7,9 @@ character-count heuristic and is not a WaveSpeed price.
 from __future__ import annotations
 
 import asyncio
+import errno
 import inspect
+import os
 import json
 import subprocess
 import sys
@@ -43,6 +45,7 @@ from ComfyArt.bot.llm_usd_gate import (
     price_snapshot,
     reserve_nano,
     resolved_ledger_path,
+    retain,
     settle,
     structural_block,
     use_authorized_scope,
@@ -50,7 +53,7 @@ from ComfyArt.bot.llm_usd_gate import (
     worst_case_nano,
 )
 from ComfyArt.bot.local_llm import LlmHttpError, LocalLlmProvider
-from ComfyArt.bot.providers import TurnHandle
+from ComfyArt.bot.providers import TurnHandle, TurnRequest
 
 URL = "https://api.deepseek.com/chat/completions"
 ROUTE = {
@@ -76,7 +79,9 @@ def _restore_prices():
 @pytest.fixture(autouse=True)
 def _unbind_authorized_scope():
     clear_authorized_scope()
+    llm_usd_gate._write_fault = None
     yield
+    llm_usd_gate._write_fault = None
     clear_authorized_scope()
 
 
@@ -854,7 +859,8 @@ def test_authorized_two_dollar_scope_is_independent_and_immutable(tmp_path):
     assert "open_authorized_scope(" not in inspect.getsource(llm_usd_gate.dispatch)
     assert "resolved_ledger_path(" in inspect.getsource(llm_usd_gate.dispatch)
     assert "open_authorized_scope(" not in inspect.getsource(llm_usd_gate.default_ledger_path)
-    assert "data = _fresh()" in inspect.getsource(llm_usd_gate._mutate)
+    assert "_fresh()" in inspect.getsource(llm_usd_gate._load_ledger)
+    assert "TWO_DOLLAR" not in inspect.getsource(llm_usd_gate._load_ledger)
     assert "TWO_DOLLAR" not in inspect.getsource(llm_usd_gate._mutate)
     install = inspect.getsource(provider_admin.install)
     wrapper = inspect.getsource(provider_admin.gated_llm_http)
@@ -1350,3 +1356,718 @@ async def test_install_wrapper_uses_bound_two_dollar_scope_for_real_summary_retr
         unused = ledger_state(str(default_path))
         assert unused["ceiling_nano"] == CEILING_NANO
         assert unused["accounted_nano"] == 0
+
+
+class _CrashAfter(Exception):
+    """In-process stand-in for a crash at a ledger persist stage."""
+
+
+def _crash_at(*stages: str):
+    def hook(stage: str) -> None:
+        if stage in stages:
+            raise _CrashAfter(stage)
+    return hook
+
+
+@pytest.mark.parametrize("stage", [
+    "before_temp",
+    "after_temp_write",
+    "after_temp_fsync",
+    "before_replace",
+])
+def test_crash_before_replace_keeps_prior_reservations(tmp_path, stage):
+    """A crash before os.replace must not empty the ledger or call _fresh()."""
+    path = str(tmp_path / "ledger.json")
+    first = reserve_nano(path, nano=10_000_000, record=_reserve_record(10_000_000, "kept"))
+    assert first["ok"] is True
+    before = ledger_state(path)
+    assert before["accounted_nano"] == 10_000_000
+    assert Path(path + ".activated").is_file()
+    lock_ino = Path(path + ".lock").stat().st_ino
+    prior = Path(path).read_text()
+
+    llm_usd_gate._write_fault = _crash_at(stage)
+    with pytest.raises(_CrashAfter) as crashed:
+        reserve_nano(path, nano=1_000_000, record=_reserve_record(1_000_000, "lost"))
+    assert crashed.value.args == (stage,)
+    llm_usd_gate._write_fault = None
+
+    assert Path(path).read_text() == prior
+    state = ledger_state(path)
+    assert state["scope_id"] == before["scope_id"]
+    assert state["accounted_nano"] == 10_000_000
+    assert "kept" in state["reservations"] and "lost" not in state["reservations"]
+    assert Path(path + ".lock").stat().st_ino == lock_ino
+
+
+@pytest.mark.parametrize("stage", ["after_replace", "after_dir_fsync"])
+def test_crash_after_replace_keeps_the_new_reservation(tmp_path, stage):
+    """Once replace has returned, this filesystem shows the new ledger.
+
+    Parent-directory fsync is still performed. That is not a proof of power-loss
+    durability on every mount.
+    """
+    path = str(tmp_path / "ledger.json")
+    first = reserve_nano(path, nano=10_000_000, record=_reserve_record(10_000_000, "kept"))
+    scope = first["scope_id"]
+
+    llm_usd_gate._write_fault = _crash_at(stage)
+    with pytest.raises(_CrashAfter) as crashed:
+        reserve_nano(path, nano=1_000_000, record=_reserve_record(1_000_000, "new"))
+    assert crashed.value.args == (stage,)
+    llm_usd_gate._write_fault = None
+
+    state = ledger_state(path)
+    assert state["scope_id"] == scope
+    assert state["accounted_nano"] == 11_000_000
+    assert set(state["reservations"]) == {"kept", "new"}
+
+
+def test_activated_empty_or_missing_ledger_is_fail_closed(tmp_path):
+    path = Path(tmp_path / "ledger.json")
+    first = reserve_nano(str(path), nano=10_000_000, record=_reserve_record(10_000_000, "kept"))
+    marker = Path(str(path) + ".activated")
+    assert marker.is_file()
+    marker_text = marker.read_text()
+
+    path.write_text("")
+    with pytest.raises(LlmBudgetBlocked) as empty:
+        reserve_nano(str(path), nano=1, record=_reserve_record(1, "reset"))
+    assert empty.value.code == "ledger_unreadable"
+    assert empty.value.detail == "activated_missing_or_empty"
+    assert path.read_text() == ""
+    assert marker.read_text() == marker_text
+    with pytest.raises(LlmBudgetBlocked) as empty_state:
+        ledger_state(str(path))
+    assert empty_state.value.detail == "activated_missing_or_empty"
+    with pytest.raises(LlmScopeConflict):
+        open_authorized_scope(str(path), TWO_DOLLAR_CEILING_NANO)
+
+    path.unlink()
+    with pytest.raises(LlmBudgetBlocked) as missing:
+        reserve_nano(str(path), nano=1, record=_reserve_record(1, "reset2"))
+    assert missing.value.code == "ledger_unreadable"
+    assert missing.value.detail == "activated_missing_or_empty"
+    assert not path.exists()
+    assert marker.is_file()
+
+
+def test_explicit_first_init_and_legacy_ledger_without_marker(tmp_path):
+    fresh_path = tmp_path / "fresh.json"
+    first = reserve_nano(str(fresh_path), nano=1_000_000, record=_reserve_record(1_000_000, "a"))
+    assert first["ok"] is True
+    assert (tmp_path / "fresh.json.activated").is_file()
+    assert (tmp_path / "fresh.json.lock").is_file()
+    again = reserve_nano(str(fresh_path), nano=1_000_000, record=_reserve_record(1_000_000, "b"))
+    assert again["scope_id"] == first["scope_id"]
+    assert ledger_state(str(fresh_path))["accounted_nano"] == 2_000_000
+
+    legacy = tmp_path / "legacy.json"
+    legacy.write_text(json.dumps({
+        "version": 1,
+        "scope_id": "usd-legacy",
+        "authorization": DEFAULT_AUTHORIZATION,
+        "authorized_ceiling_nano": CEILING_NANO,
+        "ceiling_nano": CEILING_NANO,
+        "accounted_nano": 20_000_000,
+        "reservations": {
+            "old": {
+                "id": "old", "status": "reserved", "reserved_nano": 20_000_000,
+                "actual_nano": None, "retain_reason": "", "input_bound": 0,
+                "max_output_tokens": 1, "authorization": DEFAULT_AUTHORIZATION,
+                "authorized_ceiling_nano": CEILING_NANO,
+            }
+        },
+    }))
+    assert not (tmp_path / "legacy.json.activated").exists()
+    added = reserve_nano(str(legacy), nano=1_000_000, record=_reserve_record(1_000_000, "new"))
+    assert added["ok"] is True
+    assert added["scope_id"] == "usd-legacy"
+    state = ledger_state(str(legacy))
+    assert state["accounted_nano"] == 21_000_000
+    assert "old" in state["reservations"] and "new" in state["reservations"]
+    assert (tmp_path / "legacy.json.activated").is_file()
+
+
+def test_lock_inode_survives_replace_and_restart_keeps_scope(tmp_path):
+    path = str(tmp_path / "ledger.json")
+    first = reserve_nano(path, nano=10_000_000, record=_reserve_record(10_000_000, "kept"))
+    lock = Path(path + ".lock")
+    lock_ino = lock.stat().st_ino
+    reserve_nano(path, nano=5_000_000, record=_reserve_record(5_000_000, "second"))
+    assert lock.stat().st_ino == lock_ino
+
+    script = (
+        "import importlib.util, json, sys\n"
+        "spec = importlib.util.spec_from_file_location('llm_usd_gate', sys.argv[1])\n"
+        "mod = importlib.util.module_from_spec(spec)\n"
+        "spec.loader.exec_module(mod)\n"
+        "state = mod.ledger_state(sys.argv[2])\n"
+        "print(json.dumps(state))\n"
+    )
+    out = subprocess.check_output(
+        [sys.executable, "-c", script, str(Path(llm_usd_gate.__file__).resolve()), path],
+        text=True,
+    )
+    restarted = json.loads(out)
+    assert restarted["scope_id"] == first["scope_id"]
+    assert restarted["accounted_nano"] == 15_000_000
+    assert set(restarted["reservations"]) == {"kept", "second"}
+    assert Path(path + ".lock").stat().st_ino == lock_ino
+
+
+_CHILD = Path(__file__).resolve().parent / "_llm_usd_gate_child.py"
+_GATE_FILE = Path(llm_usd_gate.__file__).resolve()
+_EXIT_FAULT = 91
+
+
+def _run_child(*args: str, timeout: int = 10) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        [sys.executable, str(_CHILD), str(_GATE_FILE), *args],
+        text=True,
+        capture_output=True,
+        timeout=timeout,
+    )
+
+
+def _fresh_state(path: str) -> dict:
+    """Reopen the ledger in a new interpreter after a child exit."""
+    proc = _run_child("state", path)
+    assert proc.returncode == 0, proc.stderr
+    return json.loads(proc.stdout)
+
+
+def test_ledger_state_is_readonly_and_does_not_write_marker(tmp_path):
+    path = tmp_path / "legacy.json"
+    raw = json.dumps({
+        "version": 1,
+        "scope_id": "usd-readonly",
+        "authorization": DEFAULT_AUTHORIZATION,
+        "authorized_ceiling_nano": CEILING_NANO,
+        "ceiling_nano": CEILING_NANO,
+        "accounted_nano": 20_000_000,
+        "reservations": {
+            "old": {
+                "id": "old", "status": "reserved", "reserved_nano": 20_000_000,
+                "actual_nano": None, "retain_reason": "", "input_bound": 0,
+                "max_output_tokens": 1, "authorization": DEFAULT_AUTHORIZATION,
+                "authorized_ceiling_nano": CEILING_NANO,
+            }
+        },
+    }, separators=(",", ":"))
+    path.write_text(raw)
+    marker = Path(str(path) + ".activated")
+    assert not marker.exists()
+    writes = []
+    saved = (
+        llm_usd_gate._persist_ledger,
+        llm_usd_gate._write_activation_marker,
+        llm_usd_gate._atomic_write,
+    )
+
+    def banned(*_args, **_kwargs):
+        writes.append(1)
+        raise AssertionError("ledger_state must not write")
+
+    llm_usd_gate._persist_ledger = banned
+    llm_usd_gate._write_activation_marker = banned
+    llm_usd_gate._atomic_write = banned
+    try:
+        state = ledger_state(str(path))
+    finally:
+        (
+            llm_usd_gate._persist_ledger,
+            llm_usd_gate._write_activation_marker,
+            llm_usd_gate._atomic_write,
+        ) = saved
+    assert writes == []
+    assert state["scope_id"] == "usd-readonly"
+    assert state["accounted_nano"] == 20_000_000
+    assert path.read_text() == raw
+    assert not marker.exists()
+
+
+def test_marker_only_or_ledger_only_does_not_reset_funds(tmp_path):
+    path = Path(tmp_path / "scope.json")
+    opened = open_authorized_scope(str(path), CEILING_NANO)
+    reserved = reserve_nano(str(path), nano=10_000_000, record=_reserve_record(10_000_000, "kept"))
+    assert reserved["ok"] is True
+    scope = reserved["scope_id"]
+    marker = Path(str(path) + ".activated")
+    assert marker.is_file()
+
+    # Ledger-only: valid spend, no marker. Must not mint a new scope or zero spend.
+    marker.unlink()
+    before = path.read_bytes()
+    state = ledger_state(str(path))
+    assert state["scope_id"] == scope
+    assert state["accounted_nano"] == 10_000_000
+    assert path.read_bytes() == before
+    assert not marker.exists()
+    with pytest.raises(LlmScopeConflict):
+        open_authorized_scope(str(path), TWO_DOLLAR_CEILING_NANO)
+    assert path.read_bytes() == before
+    again = reserve_nano(str(path), nano=1_000_000, record=_reserve_record(1_000_000, "more"))
+    assert again["ok"] is True
+    assert again["scope_id"] == scope
+    assert ledger_state(str(path))["accounted_nano"] == 11_000_000
+    assert marker.is_file()
+
+    # Marker-only: empty or missing ledger must not _fresh() new funds.
+    marker_text = marker.read_text()
+    path.write_text("")
+    for call in (
+        lambda: reserve_nano(str(path), nano=1, record=_reserve_record(1, "reset")),
+        lambda: ledger_state(str(path)),
+        lambda: settle(str(path), "kept", None),
+        lambda: retain(str(path), "kept", "test"),
+        lambda: use_authorized_scope(str(path)),
+    ):
+        with pytest.raises(LlmBudgetBlocked) as blocked:
+            call()
+        assert blocked.value.code == "ledger_unreadable"
+        assert blocked.value.detail == "activated_missing_or_empty"
+    with pytest.raises(LlmScopeConflict):
+        open_authorized_scope(str(path), TWO_DOLLAR_CEILING_NANO)
+    assert path.read_text() == ""
+    assert marker.read_text() == marker_text
+
+    path.unlink()
+    with pytest.raises(LlmBudgetBlocked) as missing:
+        reserve_nano(str(path), nano=1, record=_reserve_record(1, "reset2"))
+    assert missing.value.detail == "activated_missing_or_empty"
+    with pytest.raises(LlmBudgetBlocked):
+        use_authorized_scope(str(path))
+    with pytest.raises(LlmScopeConflict):
+        open_authorized_scope(str(path), CEILING_NANO)
+    assert not path.exists()
+    assert marker.is_file()
+
+
+def test_dir_fsync_failure_holds_reservation_and_does_not_send(tmp_path):
+    path = str(tmp_path / "ledger.json")
+    open_authorized_scope(path, CEILING_NANO)
+    reserve_nano(path, nano=10_000_000, record=_reserve_record(10_000_000, "kept"))
+    sent = []
+
+    async def send():
+        sent.append("sent")
+        return {"id": "fake", "choices": [{"message": {"role": "assistant", "content": "ok"}}]}
+
+    def fail_fsync(stage: str) -> None:
+        if stage == "dir_fsync":
+            raise OSError("injected directory fsync failure")
+
+    llm_usd_gate._write_fault = fail_fsync
+    with pytest.raises(OSError, match="injected directory fsync failure"):
+        asyncio.run(dispatch(
+            _text(max_tokens=1), route=_route(), url=URL, send=send,
+            ledger_path=path, bound_fn=_zero_bound,
+        ))
+    llm_usd_gate._write_fault = None
+    assert sent == []
+    state = ledger_state(path)
+    assert "kept" in state["reservations"]
+    assert state["accounted_nano"] > 10_000_000
+    assert len(state["reservations"]) == 2
+
+
+@pytest.mark.parametrize("stage", [
+    "after_temp_write",
+    "after_temp_fsync",
+    "before_replace",
+])
+def test_process_exit_before_replace_does_not_send_or_reset(tmp_path, stage):
+    path = str(tmp_path / "ledger.json")
+    init = _run_child("init", path, str(CEILING_NANO))
+    assert init.returncode == 0, init.stderr
+    first = _run_child("reserve", path, "10000000", "kept", "")
+    assert first.returncode == 0, first.stderr
+    before = _fresh_state(path)
+    assert before["accounted_nano"] == 10_000_000
+    lock_ino = json.loads(_run_child("inos", path).stdout)["lock_ino"]
+    sent = str(tmp_path / "sent")
+
+    crashed = _run_child("dispatch", path, sent, stage)
+    assert crashed.returncode == _EXIT_FAULT, (crashed.returncode, crashed.stdout, crashed.stderr)
+    assert not Path(sent).exists()
+
+    state = _fresh_state(path)
+    assert state["scope_id"] == before["scope_id"]
+    assert state["accounted_nano"] == 10_000_000
+    assert "kept" in state["reservations"]
+    assert json.loads(_run_child("inos", path).stdout)["lock_ino"] == lock_ino
+
+
+@pytest.mark.parametrize("stage", ["after_replace", "dir_fsync", "after_dir_fsync"])
+def test_process_exit_after_replace_keeps_conservative_reservation(tmp_path, stage):
+    path = str(tmp_path / "ledger.json")
+    assert _run_child("init", path, str(CEILING_NANO)).returncode == 0
+    first = _run_child("reserve", path, "10000000", "kept", "")
+    assert first.returncode == 0, first.stderr
+    scope = json.loads(first.stdout)["scope_id"]
+    sent = str(tmp_path / "sent")
+
+    crashed = _run_child("dispatch", path, sent, stage)
+    assert crashed.returncode == _EXIT_FAULT, (crashed.returncode, crashed.stdout, crashed.stderr)
+    assert not Path(sent).exists()
+
+    state = _fresh_state(path)
+    assert state["scope_id"] == scope
+    assert state["accounted_nano"] > 10_000_000
+    assert "kept" in state["reservations"]
+    assert len(state["reservations"]) == 2
+
+
+def test_process_exit_during_first_marker_leaves_ledger_funds(tmp_path):
+    """Crash after ledger replace and before the activation marker.
+
+    The next fresh interpreter must see the reserved funds and must not _fresh().
+    """
+    path = str(tmp_path / "ledger.json")
+    # First persist of an explicit init writes the ledger, then the marker.
+    crashed = _run_child("init_fault", path, str(CEILING_NANO), "marker_before_replace")
+    # init_fault is added below in the child if present; fallback: reserve with
+    # no prior marker, inject at marker_before_replace after ledger replace.
+    if crashed.returncode == 2 and "unknown action" in crashed.stderr:
+        raise AssertionError("child missing init_fault action")
+    assert crashed.returncode == _EXIT_FAULT, (crashed.returncode, crashed.stdout, crashed.stderr)
+    assert Path(path).is_file()
+    assert Path(path).read_text().strip()
+    assert not Path(path + ".activated").exists()
+    state = _fresh_state(path)
+    assert state["accounted_nano"] == 0
+    assert state["ceiling_nano"] == CEILING_NANO
+    # A later update must keep this scope, not mint a default replacement.
+    added = _run_child("reserve", path, "10000000", "kept", "")
+    assert added.returncode == 0, added.stderr
+    after = _fresh_state(path)
+    assert after["scope_id"] == state["scope_id"]
+    assert after["accounted_nano"] == 10_000_000
+    assert Path(path + ".activated").is_file()
+
+
+def test_separate_processes_contend_on_lock_while_ledger_inode_replaced(tmp_path):
+    path = str(tmp_path / "ledger.json")
+    assert _run_child("init", path, str(CEILING_NANO)).returncode == 0
+    first = _run_child("reserve", path, "5000000", "seed", "")
+    assert first.returncode == 0, first.stderr
+    before_inos = json.loads(_run_child("inos", path).stdout)
+    lock_ino = before_inos["lock_ino"]
+    assert lock_ino is not None
+    assert Path(path + ".lock").is_file()
+
+    procs = [
+        subprocess.Popen(
+            [sys.executable, str(_CHILD), str(_GATE_FILE), "reserve", path, "5000000", f"p{i}", ""],
+            text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        )
+        for i in range(12)
+    ]
+    codes = [proc.wait(15) for proc in procs]
+    assert codes == [0] * 12, [proc.stderr.read() if proc.stderr else "" for proc in procs]
+    state = _fresh_state(path)
+    # $0.05 / 5_000_000 = 10; seed already used one slot → 9 more succeed, 3 denied
+    ok = sum(1 for row in state["reservations"].values() if row["status"] == "reserved")
+    assert state["accounted_nano"] == ok * 5_000_000
+    assert state["accounted_nano"] <= CEILING_NANO
+    assert ok == 10
+    after_inos = json.loads(_run_child("inos", path).stdout)
+    assert after_inos["lock_ino"] == lock_ino
+    # The ledger inode may change when os.replace installs a new file.
+    assert after_inos["ledger_ino"] is not None
+
+
+REASONING_TEXT = "I will inspect the canvas first."
+
+
+def test_reasoning_content_is_whitelisted_on_assistant_history():
+    snap = price_snapshot("deepseek-flash")
+    body = _text(max_tokens=8192)
+    body["thinking"] = {"type": "enabled"}
+    body["tools"] = [
+        {"type": "function", "function": {"name": "get_canvas", "parameters": {"type": "object"}}},
+    ]
+    body["tool_choice"] = "auto"
+    body["messages"] = [
+        {"role": "user", "content": "draw a card"},
+        {
+            "role": "assistant",
+            "content": None,
+            "reasoning_content": REASONING_TEXT,
+            "tool_calls": [{
+                "id": "call_canvas",
+                "type": "function",
+                "function": {"name": "get_canvas", "arguments": "{}"},
+            }],
+        },
+        {"role": "tool", "tool_call_id": "call_canvas", "content": "canvas is empty"},
+    ]
+    assert structural_block(body) == ""
+    prod = official_input_bound(body, snap)
+    assert prod.ok is False and prod.code == "unbounded_billed_input"
+
+    text_only = _text(max_tokens=8192)
+    text_only["thinking"] = {"type": "enabled"}
+    text_only["messages"] = [
+        {"role": "user", "content": "hi"},
+        {"role": "assistant", "content": "hello", "reasoning_content": REASONING_TEXT},
+    ]
+    assert structural_block(text_only) == ""
+
+    bad_type = dict(body)
+    bad_type["messages"] = list(body["messages"])
+    bad_type["messages"][1] = dict(body["messages"][1], reasoning_content=1)
+    assert structural_block(bad_type) == "unbounded_tools"
+
+    unknown = dict(body)
+    unknown["messages"] = list(body["messages"])
+    unknown["messages"][1] = dict(body["messages"][1], reasoning="not-canonical")
+    assert structural_block(unknown) == "unbounded_tools"
+
+
+async def test_two_round_fake_http_replays_reasoning_content_with_thinking_and_tools(tmp_path, monkeypatch):
+    """Official thinking+tools: the second request must echo reasoning_content.
+
+    The fake server returns 400 when that field is dropped. The test does not
+    disable thinking to avoid the 400. Model and MCP tools stay unchanged.
+    """
+    think = REASONING_TEXT
+    calls = []
+    two_path = tmp_path / "two.json"
+    # Thinking-on default 64K output cannot fit the $0.05 ceiling; use an explicit
+    # local $2 scope. This does not disable thinking and is not a live activation.
+    open_authorized_scope(str(two_path), TWO_DOLLAR_CEILING_NANO)
+
+    async def no_plan(ctx, turn, handle, messages):
+        return None
+
+    monkeypatch.setattr("ComfyArt.bot.shot_plan.run_plan_card", no_plan)
+
+    provider = LocalLlmProvider(base_url=lambda: "https://api.deepseek.com")
+    monkeypatch.setattr(local_llm, "_RETRY_BACKOFF_S", (0.0, 0.0))
+
+    async def ctx_window(session, model):
+        return 32_000
+
+    monkeypatch.setattr(provider, "_context_window", ctx_window)
+    monkeypatch.setattr(provider, "_run_store", lambda: None)
+
+    async def fake_call(session, endpoint, name, arguments):
+        assert name == "get_canvas"
+        return '{"shapes": []}', []
+
+    monkeypatch.setattr(provider, "_mcp_call_tool", fake_call)
+
+    async def fake_http(session, method, url, *, headers, json_body=None, timeout=120):
+        if not str(url).endswith("/chat/completions"):
+            return {"result": {"tools": [{"name": "get_canvas"}]}}
+        body = json_body or {}
+        calls.append(body)
+        # Do not disable thinking to make this pass.
+        thinking = body.get("thinking")
+        assert thinking != {"type": "disabled"}
+        msgs = body.get("messages") or []
+        if len(calls) == 1:
+            return {
+                "id": "r1",
+                "choices": [{
+                    "message": {
+                        "role": "assistant",
+                        "content": "",
+                        "reasoning_content": think,
+                        "tool_calls": [{
+                            "id": "call_canvas",
+                            "type": "function",
+                            "function": {"name": "get_canvas", "arguments": "{}"},
+                        }],
+                    }
+                }],
+                "usage": {
+                    "prompt_tokens": 8, "completion_tokens": 16, "total_tokens": 24,
+                    "prompt_cache_hit_tokens": 0, "prompt_cache_miss_tokens": 8,
+                    "prompt_tokens_details": {"cached_tokens": 0},
+                },
+            }
+        prior = [m for m in msgs if m.get("role") == "assistant" and m.get("tool_calls")]
+        if not prior or prior[-1].get("reasoning_content") != think:
+            raise LlmHttpError(400, "official thinking+tools requires reasoning_content")
+        return {
+            "id": "r2",
+            "choices": [{"message": {"role": "assistant", "content": "the canvas is empty", "tool_calls": []}}],
+            "usage": {
+                "prompt_tokens": 12, "completion_tokens": 6, "total_tokens": 18,
+                "prompt_cache_hit_tokens": 0, "prompt_cache_miss_tokens": 12,
+                "prompt_tokens_details": {"cached_tokens": 0},
+            },
+        }
+
+    # Route the production HTTP wrapper so the gate sees the replay body, with a
+    # test input bound only. Thinking stays enabled on this official-style body.
+    token = provider_admin._llm_lock.set(_route())
+
+    async def transport(session, method, url, *, headers, json_body=None, timeout=120):
+        body = json_body or {}
+        if str(url).endswith("/chat/completions"):
+            if body.get("thinking") == {"type": "disabled"}:
+                raise AssertionError("test must not disable thinking to pass")
+        return await fake_http(session, method, url, headers=headers, json_body=json_body, timeout=timeout)
+
+    async def _request_json(session, method, url, *, headers, json_body=None, timeout=120):
+        body = dict(json_body or {})
+        if str(url).endswith("/chat/completions"):
+            # Official thinking+tools scenario: enable thinking before adapt so
+            # setdefault(disabled) cannot flip it off to avoid the protocol 400.
+            body["thinking"] = {"type": "enabled"}
+        return await provider_admin.gated_llm_http(
+            session, method, url, headers=headers, json_body=body, timeout=timeout,
+            transport=transport, ledger_path=str(two_path), bound_fn=_zero_bound)
+
+    provider._request_json = _request_json
+    events = []
+
+    async def emit(ev):
+        events.append(ev)
+
+    try:
+        result = await provider.send(
+            TurnRequest(
+                chat_id="c",
+                user_text="look at the canvas",
+                lang="en",
+                mcp_endpoint="http://x/mcp",
+                model="deepseek-flash",
+            ),
+            emit,
+            TurnHandle(),
+        )
+    finally:
+        provider_admin._llm_lock.reset(token)
+
+    assert result.error == ""
+    assert len(calls) >= 2
+    assert calls[0]["model"] == "deepseek-flash"
+    assert calls[1]["model"] == "deepseek-flash"
+    assert calls[0].get("thinking") == {"type": "enabled"}
+    assert calls[1].get("thinking") == {"type": "enabled"}
+    assert any(
+        (t.get("function") or {}).get("name") == "get_canvas" or t.get("name") == "get_canvas"
+        for t in (calls[1].get("tools") or [])
+    )
+    prior = [m for m in calls[1]["messages"] if m.get("role") == "assistant" and m.get("tool_calls")]
+    assert prior and prior[-1]["reasoning_content"] == think
+    assert any(m.get("role") == "tool" and m.get("tool_call_id") == "call_canvas" for m in calls[1]["messages"])
+    assert any(getattr(ev, "t", None) == "thinking" and think in (getattr(ev, "text", "") or "") for ev in events)
+
+
+# R1: exercise the actual os.write return contract, below the persist hooks.
+def _inject_r1_writes(monkeypatch, target: Path, mode: str):
+    real_open = os.open
+    real_write = os.write
+    real_replace = os.replace
+    opened = {}
+    writes = []
+    replacements = []
+
+    def tracking_open(path, flags, *args, **kwargs):
+        fd = real_open(path, flags, *args, **kwargs)
+        # Record every open: a closed target descriptor can be reused by a later
+        # ledger, marker or directory open during this same dispatch.
+        opened[fd] = os.fspath(path)
+        return fd
+
+    def injected_write(fd, data):
+        if opened.get(fd) != str(target) + ".tmp":
+            return real_write(fd, data)
+        writes.append(len(data))
+        if mode == "zero":
+            return 0
+        if mode == "enospc" and len(writes) > 1:
+            raise OSError(errno.ENOSPC, "injected disk full after short write")
+        return real_write(fd, data[:7])
+
+    def tracking_replace(src, dst, *args, **kwargs):
+        replacements.append(os.fspath(dst))
+        return real_replace(src, dst, *args, **kwargs)
+
+    monkeypatch.setattr(os, "open", tracking_open)
+    monkeypatch.setattr(os, "write", injected_write)
+    monkeypatch.setattr(os, "replace", tracking_replace)
+    return writes, replacements
+
+
+def _r1_existing_ledger(tmp_path, target_kind):
+    path = tmp_path / "ledger.json"
+    reserve_nano(str(path), nano=10_000_000, record=_reserve_record(10_000_000, "kept"))
+    marker = Path(str(path) + ".activated")
+    before = path.read_bytes()
+    state = ledger_state(str(path))
+    if target_kind == "marker":
+        # Recovery of an already valid, nonzero ledger must write the missing
+        # marker, without resetting funds. Its write must be complete too.
+        marker.unlink()
+    target = path if target_kind == "ledger" else marker
+    return path, marker, target, before, state
+
+
+@pytest.mark.parametrize("target_kind", ["ledger", "marker"])
+def test_r1_segmented_writes_complete_before_send(tmp_path, monkeypatch, target_kind):
+    path, marker, target, _, before = _r1_existing_ledger(tmp_path, target_kind)
+    sent = []
+    writes, replacements = _inject_r1_writes(monkeypatch, target, "segmented")
+
+    async def send():
+        # Verify both durable JSON documents are complete before transport.
+        state = ledger_state(str(path))
+        assert state["scope_id"] == before["scope_id"]
+        assert state["accounted_nano"] > before["accounted_nano"]
+        assert json.loads(marker.read_text())["scope_id"] == state["scope_id"]
+        sent.append("sent")
+        return {"choices": [{"message": {"role": "assistant", "content": "ok"}}]}
+
+    asyncio.run(dispatch(
+        _text(max_tokens=1), route=_route(), url=URL, send=send,
+        ledger_path=str(path), bound_fn=_zero_bound,
+    ))
+    assert sent == ["sent"]
+    assert len(writes) > 1
+    assert writes[-1] <= 7
+    assert str(target) in replacements
+    assert json.loads(target.read_text())["scope_id"] == before["scope_id"]
+
+
+@pytest.mark.parametrize("target_kind", ["ledger", "marker"])
+@pytest.mark.parametrize("mode", ["enospc", "zero"])
+def test_r1_incomplete_write_never_replaces_target_or_sends(tmp_path, monkeypatch, target_kind, mode):
+    path, marker, target, old_bytes, before = _r1_existing_ledger(tmp_path, target_kind)
+    lock_ino = Path(str(path) + ".lock").stat().st_ino
+    sent = []
+    writes, replacements = _inject_r1_writes(monkeypatch, target, mode)
+
+    async def send():
+        sent.append("sent")
+        raise AssertionError("incomplete persistent reservation must not send")
+
+    with pytest.raises(OSError) as error:
+        asyncio.run(dispatch(
+            _text(max_tokens=1), route=_route(), url=URL, send=send,
+            ledger_path=str(path), bound_fn=_zero_bound,
+        ))
+    assert error.value.errno == (errno.ENOSPC if mode == "enospc" else errno.EIO)
+    assert len(writes) == (2 if mode == "enospc" else 1)
+    assert str(target) not in replacements
+    assert sent == []
+    assert Path(str(path) + ".lock").stat().st_ino == lock_ino
+    state = ledger_state(str(path))
+    assert state["scope_id"] == before["scope_id"]
+    assert "kept" in state["reservations"]
+    if target_kind == "ledger":
+        assert path.read_bytes() == old_bytes
+        assert state == before
+        assert marker.is_file()
+    else:
+        # Ledger-first ordering means marker failure leaves the additional
+        # reservation conservatively held, with a valid ledger and no send.
+        assert state["accounted_nano"] > before["accounted_nano"]
+        assert len(state["reservations"]) == 2
+        assert not marker.exists()
