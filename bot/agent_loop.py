@@ -1069,9 +1069,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                             ctx.artifacts.append(a)
             from ..api.mcp_commands import mandatory_browser_stop
             from .llm_usd_gate import controlled_policy_active
-            blocked = ""
-            if controlled_policy_active():
-                blocked = next((mandatory_browser_stop(o.result) for o in obs if mandatory_browser_stop(o.result)), "")
+            blocked = next((mandatory_browser_stop(o.result) for o in obs if mandatory_browser_stop(o.result)), "")
             if blocked:
                 # The tool result is already known. Stop before the next reserve,
                 # without waiting for an external poller to notice the error.

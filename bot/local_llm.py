@@ -2605,7 +2605,7 @@ class LocalLlmProvider(AgentProvider):
         # "local" is the run-log sentinel, not a canvas project. A requested canvas
         # project must already be the live browser tab; this does not register one.
         from .llm_usd_gate import controlled_policy_active
-        if project and project != "local" and controlled_policy_active():
+        if project and project != "local":
             from ..api.mcp_commands import require_project_tab
             try:
                 require_project_tab(project)
@@ -2715,13 +2715,12 @@ class LocalLlmProvider(AgentProvider):
                         return stopped
                     from ..api.mcp_commands import mandatory_browser_stop
                     blocked = ""
-                    if controlled_policy_active():
-                        for m in messages[sent_before:]:
-                            if m.get("role") != "tool":
-                                continue
-                            blocked = mandatory_browser_stop(str(m.get("content") or ""))
-                            if blocked:
-                                break
+                    for m in messages[sent_before:]:
+                        if m.get("role") != "tool":
+                            continue
+                        blocked = mandatory_browser_stop(str(m.get("content") or ""))
+                        if blocked:
+                            break
                     if blocked:
                         handle.model_blocked = blocked
                         self._model_blocked = blocked
