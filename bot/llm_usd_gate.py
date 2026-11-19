@@ -69,6 +69,26 @@ so ``dispatch`` does not call transport (conservative hold). Process-level
 ``os._exit`` at a persist stage skips Python ``finally`` cleanup; the kernel
 releases the lock fd.
 
+Optional controlled scopes require an explicit ``max_posts`` (1..6, the local
+profile in billing-bound-evidence-plan.md), retain the existing amount authority,
+and allow one outstanding POST at a time. ``open_authorized_scope(...,
+max_posts=N)`` creates this profile; ``constrain_authorized_scope`` explicitly
+migrates existing history without resetting it. Omitting the parameter keeps the
+legacy amount-only API; it is NOT a controlled profile or a live activation.
+Limits are immutable through these APIs and copied into the durable marker.
+There is no circuit-reset API. Unknown legacy results migrate to a stopped scope.
+A reservation durably consumes an attempt before transport, including an attempt
+whose process dies before the socket opens; preflight/budget/inflight rejections
+do not consume attempts. Every physical official POST is one attempt regardless
+of main/summary/retry/overflow/boost call site. MCP calls consume no model attempt.
+First uncertain/failed controlled outcome latches a persistent breaker and keeps
+its full reservation. Only trusted normal success releases inflight and excess
+money, never an attempt. If storage persistently fails, no software can guarantee
+a new breaker record reaches disk. A durable pre-outcome journal retains the
+last outstanding hold if outcome persistence fails, even after a visible replace;
+a leftover journal blocks all later mutation and needs manual review. These
+local controls do not bound an undocumented supplier bill.
+
 Billed input tokens are not a proven upper bound. The token-usage page gives
 approximate character ratios and says the actual number is the usage the model
 returns. The demo tokenizer zip is not a published ceiling on prompt tokens
@@ -238,6 +258,14 @@ class LlmBudgetBlocked(RuntimeError):
         if detail:
             text = f"{text} [{detail}]"
         super().__init__(text)
+
+
+class LlmScopeStopped(LlmBudgetBlocked):
+    """A controlled POST outcome stopped the scope; never a retryable HTTP error.
+
+    The original transport exception is retained as __cause__. Cancellation and
+    other BaseException subclasses retain their original type instead.
+    """
 
 
 class Bound:
@@ -632,6 +660,54 @@ def prepare(body: dict, route: dict, url: str, bound_fn: Optional[Callable[[dict
     }
 
 
+# Versioned local validation profile from billing-bound-evidence-plan.md §5.
+# The caller MUST specify max_posts; six is an upper policy limit, not a default
+# inferred from an amount or a statement about supplier billable tokens.
+CONTROLLED_POSTS_LIMIT = 6
+
+
+def _validate_max_posts(max_posts: int) -> None:
+    if type(max_posts) is not int or not 1 <= max_posts <= CONTROLLED_POSTS_LIMIT:
+        raise LlmScopeConflict("max_posts must be an explicit integer between 1 and 6")
+
+
+def _controlled(data: dict) -> bool:
+    return "control_limits" in data
+
+
+def _trip(data: dict, reason: str, reservation_id: str = "") -> None:
+    if _controlled(data):
+        state = data["control_state"]
+        if not state["circuit_open"]:
+            state.update(circuit_open=True, circuit_reason=reason, first_anomaly_id=reservation_id)
+
+
+def _install_controls(data: dict, max_posts: int) -> None:
+    _validate_max_posts(max_posts)
+    limits = {"version": 1, "amount_nano": data["ceiling_nano"],
+              "max_posts": max_posts, "max_inflight": 1}
+    if _controlled(data):
+        if data["control_limits"] != limits:
+            raise LlmScopeConflict("controlled scope limits are immutable")
+        return
+    data["control_limits"] = limits
+    data["control_state"] = {"attempts_total": len(data["reservations"]),
+                             "circuit_open": False, "circuit_reason": "", "first_anomaly_id": ""}
+    # Migration never discards spend, attempts, or an ambiguous legacy outcome.
+    if any(row["status"] != "reconciled" for row in data["reservations"].values()):
+        _trip(data, "legacy_unknown_outcome")
+    elif len(data["reservations"]) > max_posts:
+        _trip(data, "legacy_attempts_exceed_limit")
+
+
+def _control_view(data: dict) -> dict:
+    if not _controlled(data):
+        return {}
+    return {"control_limits": dict(data["control_limits"]),
+            "control_state": dict(data["control_state"]),
+            "inflight": sum(row["status"] == "reserved" for row in data["reservations"].values())}
+
+
 def _fresh(*, ceiling_nano: int = CEILING_NANO, authorization: str = DEFAULT_AUTHORIZATION) -> dict:
     if ceiling_nano not in AUTHORIZED_CEILINGS_NANO:
         raise LlmScopeConflict("ceiling is not an authorized validation cap")
@@ -740,7 +816,28 @@ def _write_activation_marker(path: str, data: dict) -> None:
         "authorization": data["authorization"],
         "authorized_ceiling_nano": data["authorized_ceiling_nano"],
     }
+    if _controlled(data):
+        marker["control_limits"] = dict(data["control_limits"])
     _atomic_write(_ledger_marker_path(path), _dump(marker), stage_prefix="marker_")
+
+
+def _read_marker(path: str) -> dict:
+    try:
+        marker = json.loads(_read_raw(_ledger_marker_path(path)))
+    except ValueError as exc:
+        raise LlmBudgetBlocked("ledger_unreadable", "activation_marker") from exc
+    if not isinstance(marker, dict):
+        raise LlmBudgetBlocked("ledger_unreadable", "activation_marker")
+    return marker
+
+
+def _check_control_marker(path: str, data: dict) -> None:
+    if _marker_present(path):
+        marker = _read_marker(path)
+        if "control_limits" in marker and (
+                marker["control_limits"] != data.get("control_limits") or
+                marker.get("scope_id") != data["scope_id"]):
+            raise LlmBudgetBlocked("ledger_unreadable", "controlled_limits_changed")
 
 
 def _persist_ledger(path: str, data: dict, *, write_marker: bool) -> None:
@@ -749,7 +846,8 @@ def _persist_ledger(path: str, data: dict, *, write_marker: bool) -> None:
     # ledger as already activated and completing the marker on the next
     # update or bind. ledger_state must not perform that write.
     _atomic_write(path, _dump(data))
-    if write_marker and not _marker_present(path):
+    if write_marker and (not _marker_present(path) or (
+            _controlled(data) and "control_limits" not in _read_marker(path))):
         _write_activation_marker(path, data)
 
 
@@ -773,22 +871,29 @@ def _with_ledger_lock(path: str):
             os.close(fd)
 
 
-def open_authorized_scope(path: str, ceiling_nano: int) -> dict:
+def open_authorized_scope(path: str, ceiling_nano: int, *, max_posts: Optional[int] = None) -> dict:
     """Create a new independent validation scope with a durable authorized cap.
 
     An existing ledger is left unchanged: this will not upgrade, reset, merge a
     prior balance, or replace the default $0.05 path. It does not reserve or spend.
+    Explicit max_posts opts into immutable amount/count/one-inflight controls and
+    first-anomaly stop. Omission preserves the legacy amount-only API, NOT an
+    authorization to use a controlled profile. Production input proof is unchanged.
     """
     if type(ceiling_nano) is not int or ceiling_nano not in AUTHORIZED_CEILINGS_NANO:
         raise LlmScopeConflict("ceiling is not an authorized validation cap")
+    if max_posts is not None:
+        _validate_max_posts(max_posts)
     authorization = (
         TWO_DOLLAR_AUTHORIZATION if ceiling_nano == TWO_DOLLAR_CEILING_NANO
         else DEFAULT_AUTHORIZATION
     )
     with _with_ledger_lock(path):
-        if _marker_present(path) or _read_raw(path).strip():
+        if _marker_present(path) or os.path.lexists(_outcome_pending_path(path)) or _read_raw(path).strip():
             raise LlmScopeConflict("a validation scope already exists at this path")
         data = _fresh(ceiling_nano=ceiling_nano, authorization=authorization)
+        if max_posts is not None:
+            _install_controls(data, max_posts)
         _persist_ledger(path, data, write_marker=True)
         return {
             "ok": True,
@@ -797,7 +902,24 @@ def open_authorized_scope(path: str, ceiling_nano: int) -> dict:
             "authorized_ceiling_nano": ceiling_nano,
             "ceiling_nano": ceiling_nano,
             "accounted_nano": 0,
+            **_control_view(data),
         }
+
+
+def constrain_authorized_scope(path: str, *, max_posts: int) -> dict:
+    """Explicit conservative migration; cannot raise amount or reset history.
+
+    Unknown legacy outcomes open the circuit permanently. There is no automatic
+    migration at send/bind/read time and no circuit-reset API. All legacy rows
+    conservatively count as POST attempts, even if a socket was never opened.
+    """
+    _validate_max_posts(max_posts)
+
+    def change(data: dict) -> dict:
+        _install_controls(data, max_posts)
+        return {"ok": True, "scope_id": data["scope_id"], **_control_view(data)}
+
+    return _mutate(path, change, create=False)
 
 
 def clear_authorized_scope() -> None:
@@ -828,7 +950,9 @@ def use_authorized_scope(path: str) -> dict:
             except ValueError as exc:
                 raise LlmScopeConflict("authorized scope is unreadable") from exc
             data = _normalize(parsed)
-            if not _marker_present(path):
+            _check_control_marker(path, data)
+            data = _apply_pending_outcome(path, data)
+            if not _marker_present(path) or (_controlled(data) and "control_limits" not in _read_marker(path)):
                 _write_activation_marker(path, data)
     except LlmBudgetBlocked:
         raise
@@ -845,6 +969,7 @@ def use_authorized_scope(path: str) -> dict:
         "authorized_ceiling_nano": data["authorized_ceiling_nano"],
         "ceiling_nano": data["ceiling_nano"],
         "accounted_nano": data["accounted_nano"],
+        **_control_view(data),
     }
 
 
@@ -867,7 +992,11 @@ def _row_hold(row: dict) -> Optional[int]:
     if status == "reconciled":
         return _as_int(row.get("actual_nano"))
     if status in ("reserved", "retained"):
-        return _as_int(row.get("reserved_nano"))
+        reserved = _as_int(row.get("reserved_nano"))
+        if "observed_nano" in row:
+            observed = _as_int(row["observed_nano"])
+            return max(reserved, observed) if reserved is not None and observed is not None else None
+        return reserved
     return None
 
 
@@ -924,6 +1053,28 @@ def _normalize(data: Any) -> dict:
             raise LlmBudgetBlocked("ledger_unreadable", "row_nano")
         held += piece
     data["accounted_nano"] = max(accounted, held)
+    if _controlled(data) or "control_state" in data:
+        limits, state = data.get("control_limits"), data.get("control_state")
+        if not isinstance(limits, dict) or not isinstance(state, dict):
+            raise LlmBudgetBlocked("ledger_unreadable", "controlled_shape")
+        if (set(limits) != {"version", "amount_nano", "max_posts", "max_inflight"}
+                or type(limits.get("version")) is not int or limits["version"] != 1
+                or type(limits.get("max_inflight")) is not int or limits["max_inflight"] != 1
+                or type(limits.get("amount_nano")) is not int or limits["amount_nano"] != data["ceiling_nano"]
+                or type(limits.get("max_posts")) is not int or not 1 <= limits["max_posts"] <= CONTROLLED_POSTS_LIMIT):
+            raise LlmBudgetBlocked("ledger_unreadable", "controlled_limits")
+        if (set(state) != {"attempts_total", "circuit_open", "circuit_reason", "first_anomaly_id"}
+                or _as_int(state.get("attempts_total")) is None
+                or type(state.get("circuit_open")) is not bool
+                or type(state.get("circuit_reason")) is not str
+                or type(state.get("first_anomaly_id")) is not str
+                or state["circuit_open"] != bool(state["circuit_reason"])):
+            raise LlmBudgetBlocked("ledger_unreadable", "controlled_state")
+        state["attempts_total"] = max(state["attempts_total"], len(rows))
+        # A legacy retained result or partial historical migration cannot turn
+        # an uncertainty into permission for another POST.
+        if any(row["status"] == "retained" for row in rows.values()):
+            _trip(data, "historical_unknown_outcome")
     return data
 
 
@@ -938,7 +1089,7 @@ def _load_ledger(path: str, *, create: bool) -> tuple[dict, bool, bool]:
     raw = _read_raw(path)
     activated = _marker_present(path)
     if not raw.strip():
-        if activated or not create:
+        if activated or os.path.lexists(_outcome_pending_path(path)) or not create:
             raise LlmBudgetBlocked(
                 "ledger_unreadable",
                 "activated_missing_or_empty" if activated else "missing",
@@ -948,10 +1099,41 @@ def _load_ledger(path: str, *, create: bool) -> tuple[dict, bool, bool]:
         parsed = json.loads(raw)
     except ValueError as exc:
         raise LlmBudgetBlocked("ledger_unreadable", "json") from exc
-    return _normalize(parsed), False, activated
+    data = _normalize(parsed)
+    _check_control_marker(path, data)
+    return _apply_pending_outcome(path, data), False, activated
 
 
-def _mutate(path: str, change: Callable[[dict], Any], *, create: bool = True) -> Any:
+def _outcome_pending_path(path: str) -> str:
+    return path + ".outcome_pending"
+
+
+def _apply_pending_outcome(path: str, data: dict) -> dict:
+    if not os.path.lexists(_outcome_pending_path(path)):
+        return data
+    try:
+        pending = _normalize(json.loads(_read_raw(_outcome_pending_path(path))))
+    except (ValueError, LlmBudgetBlocked) as exc:
+        raise LlmBudgetBlocked("ledger_unreadable", "pending_outcome") from exc
+    if (not _controlled(pending) or pending["scope_id"] != data["scope_id"]
+            or pending["control_limits"] != data.get("control_limits")):
+        raise LlmBudgetBlocked("ledger_unreadable", "pending_scope_mismatch")
+    # The journal is the last confirmed outstanding hold. A possibly visible
+    # success replace whose fsync failed cannot free that hold after restart.
+    for rid, row in data["reservations"].items():
+        if "observed_nano" in row and rid in pending["reservations"]:
+            for key in ("observed_nano", "reservation_violation", "budget_violation"):
+                pending["reservations"][rid][key] = row[key]
+    pending["accounted_nano"] = max(pending["accounted_nano"], data["accounted_nano"])
+    pending["control_state"]["attempts_total"] = max(
+        pending["control_state"]["attempts_total"], data["control_state"]["attempts_total"])
+    current = data["control_state"]
+    _trip(pending, current["circuit_reason"] or "outcome_persistence_failed", current["first_anomaly_id"])
+    return _normalize(pending)
+
+
+def _mutate(path: str, change: Callable[[dict], Any], *, create: bool = True,
+            preserve_on_failure: bool = False) -> Any:
     """Apply *change* under the stable ledger lock and persist atomically if needed.
 
     First initialization happens only when *create* is true and the path has no
@@ -960,11 +1142,49 @@ def _mutate(path: str, change: Callable[[dict], Any], *, create: bool = True) ->
     """
     with _with_ledger_lock(path):
         data, initializing, activated = _load_ledger(path, create=create)
+        if os.path.lexists(_outcome_pending_path(path)):
+            raise LlmScopeStopped("scope_circuit_open", "outcome persistence needs manual review", scope_id=data["scope_id"])
         before = _dump(data)
         result = change(data)
         after = _dump(data)
         if initializing or after != before:
-            _persist_ledger(path, data, write_marker=initializing or not activated)
+            journaled = preserve_on_failure and _controlled(data)
+            if journaled:
+                # Persist the old outstanding reservation BEFORE any outcome
+                # replace. A leftover journal is a persistent stop, never auto-
+                # cleared or replayed on restart. Uses the same write-all path.
+                _atomic_write(_outcome_pending_path(path), before, stage_prefix="outcome_")
+            try:
+                _persist_ledger(path, data, write_marker=initializing or not activated or _controlled(data))
+            except Exception:
+                if preserve_on_failure and _controlled(data):
+                    # Keep the stable lock while latching a persistence failure.
+                    # Restore the pre-settlement holds, not a possibly visible
+                    # reconciled state. If storage cannot persist anything, the
+                    # preceding reserved ledger is the conservative fallback.
+                    fallback = json.loads(before)
+                    for rid, row in data["reservations"].items():
+                        if "observed_nano" in row and rid in fallback["reservations"]:
+                            for key in ("observed_nano", "reservation_violation", "budget_violation"):
+                                fallback["reservations"][rid][key] = row[key]
+                    fallback["accounted_nano"] = max(fallback["accounted_nano"], data["accounted_nano"])
+                    current = data["control_state"]
+                    _trip(fallback, current["circuit_reason"] or "outcome_persistence_failed", current["first_anomaly_id"])
+                    try:
+                        _persist_ledger(path, fallback, write_marker=True)
+                    except Exception:
+                        _log.exception("could not durably latch controlled outcome persistence failure")
+                raise
+            if journaled:
+                # The ledger outcome is now durably committed. If cleanup fails
+                # before unlink, the journal remains a conservative stop. A dir
+                # fsync failure AFTER unlink can only resurrect a stop after a
+                # power loss; it cannot lose the already-fsynced ledger hold.
+                os.unlink(_outcome_pending_path(path))
+                try:
+                    _fsync_dir(os.path.dirname(path), stage="outcome_cleanup_dir_fsync")
+                except OSError:
+                    _log.warning("outcome journal cleanup was not directory-fsynced; durable ledger retained")
         elif not activated:
             _write_activation_marker(path, data)
         return result
@@ -973,13 +1193,23 @@ def _mutate(path: str, change: Callable[[dict], Any], *, create: bool = True) ->
 def reserve_nano(path: str, *, nano: int, record: dict) -> dict:
     if type(nano) is not int or nano <= 0:
         raise LlmBudgetBlocked("over_budget", "reservation must be a positive integer nano-USD")
-    if not isinstance(record, dict) or not isinstance(record.get("id"), str):
+    if (not isinstance(record, dict) or not isinstance(record.get("id"), str) or not record["id"]
+            or record.get("status") != "reserved" or _as_int(record.get("reserved_nano")) != nano
+            or record.get("actual_nano") is not None):
         raise LlmBudgetBlocked("ledger_unreadable", "record")
 
     def change(data: dict) -> dict:
         ceiling = data["ceiling_nano"]
         accounted = data["accounted_nano"]
         scope_id = data["scope_id"]
+        if _controlled(data):
+            limits, state = data["control_limits"], data["control_state"]
+            code = ("scope_circuit_open" if state["circuit_open"] else
+                    "scope_posts_exhausted" if state["attempts_total"] >= limits["max_posts"] else
+                    "scope_inflight" if any(r["status"] == "reserved" for r in data["reservations"].values()) else "")
+            if code:
+                return {"ok": False, "code": code, "scope_id": scope_id,
+                        "accounted_nano": accounted, "ceiling_nano": ceiling}
         if accounted + nano > ceiling:
             return {
                 "ok": False, "code": "over_budget", "scope_id": scope_id,
@@ -993,10 +1223,13 @@ def reserve_nano(path: str, *, nano: int, record: dict) -> dict:
         row["authorized_ceiling_nano"] = data["authorized_ceiling_nano"]
         data["reservations"][rid] = row
         data["accounted_nano"] = accounted + nano
+        if _controlled(data):
+            data["control_state"]["attempts_total"] += 1
         return {
             "ok": True, "code": "reserved", "id": rid, "scope_id": scope_id,
             "accounted_nano": data["accounted_nano"], "ceiling_nano": ceiling,
             "reserved_nano": nano,
+            "controlled": _controlled(data),
         }
 
     return _mutate(path, change)
@@ -1012,6 +1245,7 @@ def ledger_state(path: str) -> dict:
             "authorized_ceiling_nano": data.get("authorized_ceiling_nano"),
             "ceiling_nano": data["ceiling_nano"],
             "accounted_nano": data["accounted_nano"],
+            **_control_view(data),
             "reservations": {
                 key: {
                     "status": row.get("status"),
@@ -1021,6 +1255,9 @@ def ledger_state(path: str) -> dict:
                     "max_output_tokens": row.get("max_output_tokens"),
                     "input_bound": row.get("input_bound"),
                     "snapshot_id": (row.get("snapshot") or {}).get("snapshot_id"),
+                    **({"observed_nano": row["observed_nano"],
+                        "reservation_violation": row.get("reservation_violation", False),
+                        "budget_violation": row.get("budget_violation", False)} if "observed_nano" in row else {}),
                 }
                 for key, row in data["reservations"].items()
             },
@@ -1047,8 +1284,6 @@ def _usage_nano(usage: Any, snapshot: dict, input_bound: int, max_output: int) -
         return {"ok": False, "code": "missing_or_malformed_usage"}
     if hit + miss != prompt or prompt + completion != total:
         return {"ok": False, "code": "missing_or_malformed_usage"}
-    if prompt > input_bound or completion > max_output:
-        return {"ok": False, "code": "usage_exceeds_bound"}
     comp_details = usage.get("completion_tokens_details", None)
     if comp_details is not None:
         if not isinstance(comp_details, dict) or set(comp_details) - {"reasoning_tokens", "safety_tokens"}:
@@ -1070,7 +1305,17 @@ def _usage_nano(usage: Any, snapshot: dict, input_bound: int, max_output: int) -
     nano = (hit * snapshot["input_hit_peak_nano"]
             + miss * snapshot["input_miss_peak_nano"]
             + completion * snapshot["output_peak_nano"])
+    if prompt > input_bound or completion > max_output:
+        return {"ok": False, "code": "usage_exceeds_bound", "observed_nano": nano}
     return {"ok": True, "nano": nano}
+
+
+def _observe_violation(data: dict, row: dict, observed: int, reserved: int) -> None:
+    if _controlled(data):
+        row["observed_nano"] = observed
+        row["reservation_violation"] = observed > reserved
+        data["accounted_nano"] += max(0, observed - reserved)
+        row["budget_violation"] = data["accounted_nano"] > data["ceiling_nano"]
 
 
 def settle(path: str, reservation_id: str, usage: Any) -> dict:
@@ -1085,35 +1330,72 @@ def settle(path: str, reservation_id: str, usage: Any) -> dict:
         if reserved is None or input_bound is None or max_output is None or not isinstance(snapshot, dict):
             row["status"] = "retained"
             row["retain_reason"] = "ledger_row"
+            _trip(data, "ledger_row", reservation_id)
             return {"ok": True, "code": "retained", "accounted_nano": data["accounted_nano"], "reason": "ledger_row"}
         decision = _usage_nano(usage, snapshot, input_bound, max_output)
         if not decision.get("ok"):
             row["status"] = "retained"
             row["retain_reason"] = decision.get("code") or "missing_or_malformed_usage"
+            _trip(data, row["retain_reason"], reservation_id)
+            if "observed_nano" in decision:
+                _observe_violation(data, row, decision["observed_nano"], reserved)
             return {"ok": True, "code": "retained", "accounted_nano": data["accounted_nano"], "reason": row["retain_reason"]}
         actual = decision["nano"]
         if type(actual) is not int or actual > reserved:
             row["status"] = "retained"
             row["retain_reason"] = "usage_exceeds_reservation"
+            _trip(data, row["retain_reason"], reservation_id)
+            if type(actual) is int and actual >= 0:
+                _observe_violation(data, row, actual, reserved)
             return {"ok": True, "code": "retained", "accounted_nano": data["accounted_nano"], "reason": row["retain_reason"]}
         row["status"] = "reconciled"
         row["actual_nano"] = actual
         data["accounted_nano"] = data["accounted_nano"] - (reserved - actual)
         return {"ok": True, "code": "reconciled", "actual_nano": actual, "accounted_nano": data["accounted_nano"]}
 
-    return _mutate(path, change, create=False)
+    return _mutate(path, change, create=False, preserve_on_failure=True)
 
 
-def retain(path: str, reservation_id: str, reason: str) -> dict:
+def retain(path: str, reservation_id: str, reason: str, *, usage: Any = None) -> dict:
     def change(data: dict) -> dict:
         row = data["reservations"].get(reservation_id)
         if not isinstance(row, dict) or row.get("status") != "reserved":
             return {"ok": False, "code": "missing_reservation", "accounted_nano": data.get("accounted_nano")}
         row["status"] = "retained"
         row["retain_reason"] = reason or "unknown"
+        _trip(data, row["retain_reason"], reservation_id)
+        # A failed/refused HTTP200 can still carry billed usage. Keep the full
+        # hold, but never hide a trustworthy observed amount above it.
+        if _controlled(data) and isinstance(row.get("snapshot"), dict):
+            input_bound = _as_int(row.get("input_bound"))
+            output_cap = _as_int(row.get("max_output_tokens"))
+            reserved = _as_int(row.get("reserved_nano"))
+            if input_bound is not None and output_cap is not None and reserved is not None:
+                observation = _usage_nano(usage, row["snapshot"], input_bound, output_cap)
+                observed = observation.get("nano") if observation.get("ok") else observation.get("observed_nano")
+                if type(observed) is int and observed >= 0:
+                    _observe_violation(data, row, observed, reserved)
         return {"ok": True, "code": "retained", "accounted_nano": data["accounted_nano"], "reason": row["retain_reason"]}
 
-    return _mutate(path, change, create=False)
+    return _mutate(path, change, create=False, preserve_on_failure=True)
+
+
+def _response_anomaly(result: Any) -> str:
+    if not isinstance(result, dict):
+        return "malformed_response"
+    if result.get("error") is not None:
+        return "response_error"
+    choices = result.get("choices")
+    if not isinstance(choices, list) or not choices:
+        return "malformed_response"
+    for choice in choices:
+        if not isinstance(choice, dict) or not isinstance(choice.get("message"), dict):
+            return "malformed_response"
+        if choice.get("finish_reason") == "error" or choice.get("error") is not None:
+            return "response_error"
+        if choice.get("finish_reason") == "content_filter" or choice["message"].get("refusal"):
+            return "response_refusal"
+    return ""
 
 
 async def dispatch(body: dict, *, route: dict, url: str, send: Callable[[], Awaitable[Any]],
@@ -1141,10 +1423,11 @@ async def dispatch(body: dict, *, route: dict, url: str, send: Callable[[], Awai
     reserved = reserve_nano(path, nano=pre["reserved_nano"], record=record)
     if not reserved["ok"]:
         raise LlmBudgetBlocked(
-            "over_budget",
+            reserved.get("code") or "over_budget",
             f"scope={reserved.get('scope_id', '')} accounted={reserved.get('accounted_nano')} need={pre['reserved_nano']}",
             scope_id=str(reserved.get("scope_id") or ""),
         )
+    controlled = reserved.get("controlled", False)
     try:
         result = await send()
     except BaseException as exc:
@@ -1152,10 +1435,28 @@ async def dispatch(body: dict, *, route: dict, url: str, send: Callable[[], Awai
             retain(path, rid, "transport:" + type(exc).__name__)
         except Exception:
             _log.exception("llm usd gate could not mark a failed send; reservation stays")
+        if controlled and isinstance(exc, Exception):
+            raise LlmScopeStopped("scope_circuit_open", "transport outcome uncertain", scope_id=reserved["scope_id"]) from exc
         raise
+    if controlled:
+        anomaly = _response_anomaly(result)
+        if anomaly:
+            try:
+                retain(path, rid, anomaly, usage=result.get("usage") if isinstance(result, dict) else None)
+            except Exception as exc:
+                raise LlmScopeStopped("scope_persistence_failed", "response outcome not durably recorded",
+                                      scope_id=reserved["scope_id"]) from exc
+            raise LlmScopeStopped("scope_circuit_open", anomaly, scope_id=reserved["scope_id"])
     try:
         usage = result.get("usage") if isinstance(result, dict) else None
-        settle(path, rid, usage)
-    except Exception:
+        decision = settle(path, rid, usage)
+    except Exception as exc:
+        if controlled:
+            raise LlmScopeStopped("scope_persistence_failed", "settlement not durably recorded",
+                                  scope_id=reserved["scope_id"]) from exc
         _log.exception("llm usd gate could not reconcile; reservation stays")
+    else:
+        if controlled and decision.get("code") != "reconciled":
+            raise LlmScopeStopped("scope_circuit_open", decision.get("reason") or decision.get("code") or "unknown",
+                                  scope_id=reserved["scope_id"])
     return result
