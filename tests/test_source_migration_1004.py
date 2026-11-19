@@ -359,6 +359,12 @@ def test_migration_hop_from_deployed_0b73_keeps_the_bcc804bc_pair(tmp_path, monk
             scope_id=scope["scope_id"], ledger_path=path,
             reviewed_from_git="0b73f5dbf909cba9578dcc4129bafb3d64c10f99",
             reviewed_protocol_git=activation.REVIEWED_LOGIC_GIT)
+    with pytest.raises(gate.LlmBudgetBlocked, match="migration_not_authorized"):
+        activation.migrate_source_fingerprint(
+            new, authorization_id=AUTHORITY, from_source_sha256=DEPLOYED_0B73_SOURCE,
+            scope_id=scope["scope_id"], ledger_path=path,
+            reviewed_from_git="0b73f5dbf909cba9578dcc4129bafb3d64c10f99",
+            reviewed_protocol_git=activation.REVIEWED_SETUP_GIT)
     assert _files(env) == files
     migrated = activation.migrate_source_fingerprint(
         new, authorization_id=AUTHORITY, from_source_sha256=DEPLOYED_0B73_SOURCE,
@@ -425,6 +431,12 @@ def test_migration_hop_from_bcc804bc_to_external_resolve_commit(tmp_path, monkey
             scope_id=scope["scope_id"], ledger_path=path,
             reviewed_from_git=activation.REVIEWED_EXTERNAL_GIT,
             reviewed_protocol_git="93d7aa388f1bef7d3668e4c2a6936d653dab4a23")
+    with pytest.raises(gate.LlmBudgetBlocked, match="migration_not_authorized"):
+        activation.migrate_source_fingerprint(
+            new, authorization_id=AUTHORITY, from_source_sha256=BCC804_SOURCE,
+            scope_id=scope["scope_id"], ledger_path=path,
+            reviewed_from_git=activation.REVIEWED_EXTERNAL_GIT,
+            reviewed_protocol_git=activation.REVIEWED_SETUP_GIT)
     assert _files(env) == files
     migrated = activation.migrate_source_fingerprint(
         new, authorization_id=AUTHORITY, from_source_sha256=BCC804_SOURCE,
@@ -440,4 +452,25 @@ def test_migration_hop_from_bcc804bc_to_external_resolve_commit(tmp_path, monkey
     assert ("0b73f5dbf909cba9578dcc4129bafb3d64c10f99", "bcc804bc13f3fa684c0ecf5547ac71023163da09") in activation.REVIEWED_GIT_PAIRS
     assert ("bcc804bc13f3fa684c0ecf5547ac71023163da09", "8a9593797f84d9afbb675b682cd82066a3ddf703") not in activation.REVIEWED_GIT_PAIRS
     assert ("0b73f5dbf909cba9578dcc4129bafb3d64c10f99", "9c0a480753f6f9856fd137067e9026d20a425c3a") not in activation.REVIEWED_GIT_PAIRS
+    assert ("bcc804bc13f3fa684c0ecf5547ac71023163da09", "d83072c8a8bddf726fc9e68f94f6550d3a3823de") not in activation.REVIEWED_GIT_PAIRS
+    assert ("9c0a480753f6f9856fd137067e9026d20a425c3a", "d83072c8a8bddf726fc9e68f94f6550d3a3823de") in activation.REVIEWED_GIT_PAIRS
     assert gate.ledger_state(path) == before
+
+
+def test_migration_hop_from_finals_commit_to_setup_card_commit(tmp_path, monkeypatch):
+    env = bound(tmp_path, monkeypatch)
+    before = gate.ledger_state(env["path"])
+    files = _files(env)
+    with pytest.raises(gate.LlmBudgetBlocked, match="migration_not_authorized"):
+        migrate(env, reviewed_from_git=activation.REVIEWED_FINALS_GIT, reviewed_protocol_git="0" * 40)
+    assert _files(env) == files
+    migrated = migrate(env, reviewed_from_git=activation.REVIEWED_FINALS_GIT,
+                       reviewed_protocol_git=activation.REVIEWED_SETUP_GIT)
+    provenance = _binding(env["new"].home)["source_migration"]
+    assert migrated["ok"] is True
+    assert provenance["reviewed_from_git"] == "9c0a480753f6f9856fd137067e9026d20a425c3a"
+    assert provenance["reviewed_protocol_git"] == "d83072c8a8bddf726fc9e68f94f6550d3a3823de"
+    assert provenance["reviewed_protocol_git"] == activation.REVIEWED_SETUP_GIT
+    state = gate.ledger_state(env["path"])
+    assert state["accounted_nano"] == before["accounted_nano"]
+    assert state["ceiling_nano"] == before["ceiling_nano"]

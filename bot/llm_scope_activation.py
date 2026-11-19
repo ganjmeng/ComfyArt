@@ -293,8 +293,9 @@ def _scope_matches(data, binding):
 # commit that added resolve_unknown_as_spent. Pair 3: deployed 0b73f5db ->
 # bcc804bc, recorded by c2ee84ac and deployed with that tree. Pair 4:
 # bcc804bc -> 9c0a4807, the commit that aligns multi-angle finals and stops a
-# controlled generate after precheck. 8a959379 remains an ancestor, not a pair
-# destination. A direct 0b73f5db -> 9c0a4807 hop is not authorized.
+# controlled generate after precheck. Pair 5: 9c0a4807 -> d83072c8, the commit
+# that always asks both setup questions. 8a959379 remains an ancestor. A direct
+# 0b73f5db -> d83072c8 hop, or bcc804bc -> d83072c8, is not authorized.
 # Recording a pair changes the loaded file hash again. Provenance stores the
 # named git pair; the destination source hash is this process tree, not the
 # "to" commit's tree.
@@ -303,6 +304,7 @@ REVIEWED_GIT_PAIRS = (
     ("42413ac72626671a1790dbed87544f9f32ebaedf", "a8c5c13c8977e2473ed3b1e2d12cbe414f3addbc"),
     ("0b73f5dbf909cba9578dcc4129bafb3d64c10f99", "bcc804bc13f3fa684c0ecf5547ac71023163da09"),
     ("bcc804bc13f3fa684c0ecf5547ac71023163da09", "9c0a480753f6f9856fd137067e9026d20a425c3a"),
+    ("9c0a480753f6f9856fd137067e9026d20a425c3a", "d83072c8a8bddf726fc9e68f94f6550d3a3823de"),
 )
 # Index 0 is the original protocol review, not the newest hop. A caller must
 # name the exact pair for the hop it is performing; nothing here means "latest".
@@ -313,6 +315,8 @@ REVIEWED_RESOLVE_GIT = REVIEWED_GIT_PAIRS[1][1]
 REVIEWED_LIVE_GIT = REVIEWED_GIT_PAIRS[2][0]
 REVIEWED_EXTERNAL_GIT = REVIEWED_GIT_PAIRS[2][1]
 REVIEWED_LOGIC_GIT = REVIEWED_GIT_PAIRS[3][1]
+REVIEWED_FINALS_GIT = REVIEWED_GIT_PAIRS[4][0]
+REVIEWED_SETUP_GIT = REVIEWED_GIT_PAIRS[4][1]
 
 
 def _spend_view(data: dict) -> dict:
