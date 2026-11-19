@@ -49,8 +49,8 @@ def test_explicit_description_pixels_override_model_guesses_and_survive_resume(r
 
 
 @pytest.mark.parametrize("other,expected", [("5:4", (2048, 1638, "5:4", False)),
-                                           ("custom aspect 7:5", (2048, 1463, "7:5", False)),
-                                           ("1250x1000 pixels", (1250, 1000, "5:4", True))])
+                                           ("custom aspect 7:5", (2048, 1536, "4:3", False)),
+                                           ("1250x1000 pixels", (2048, 1638, "5:4", False))])
 def test_existing_aspect_other_field_accepts_custom_ratio_or_exact_pixels(run, other, expected):
     rows, _ = run
     root = setup(rows)
@@ -74,7 +74,7 @@ def test_source_other_text_is_kept_in_prompt_state_and_not_replaced_by_model(run
     source_q = next((q for q in root["questions"] if q["id"] == ma.SOURCE), None)
     if source_q is not None:
         assert source_q["allow_other"] is True
-    assert all(not q["allow_other"] for q in root["questions"] if q["id"] == ma.ASPECT)
+    assert all(q["allow_other"] for q in root["questions"] if q["id"] == ma.ASPECT)
     root["answers"][ma.SOURCE] = {"selected": [], "other_text": text}
     args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "prompt": "model invented source"})
     assert blocked is None and text not in args["prompt"]  # raw source is frozen, final-only
@@ -185,12 +185,12 @@ def test_provider_unknown_or_unsupported_custom_ratio_reports_actionable_limit(r
 def test_pixels_or_preview_edits_after_dispatch_fail_before_cached_replay(run):
     rows, _ = run
     root = setup(rows)
-    root["answers"][ma.ASPECT] = {"selected": [], "other_text": "1200x1200"}
+    root["answers"][ma.ASPECT] = {"selected": [], "other_text": "16:9"}
     args, _ = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL})
     complete_preview(args)
     original = copy.deepcopy(rows)
     root = rows[1]["blocks"][0]
-    root["answers"][ma.ASPECT]["other_text"] = "1000x1000"
+    root["answers"][ma.ASPECT]["other_text"] = "3:4"
     _, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview"})
     assert blocked["submitted"] is False and "changed after submission" in blocked["error"]
     rows[:] = original
@@ -471,7 +471,7 @@ def test_chat_stage_pixels_survive_preset_only_aspect_card(run, text, preview, f
     add_text(rows, text)
     root = setup(rows, "1:1")
     aspect = next(q for q in root["questions"] if q["id"] == ma.ASPECT)
-    assert aspect["allow_other"] is False
+    assert aspect["allow_other"] is True
     args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL})
     assert blocked is None
     assert (args["width"], args["height"]) == preview
@@ -491,7 +491,7 @@ def test_missing_aspect_error_points_to_card_or_stage_specific_chat_not_hidden_o
     root["answers"][ma.ASPECT] = {"selected": [], "other_text": ""}
     _, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL})
     assert blocked is not None
-    assert "画幅卡" in blocked["error"] and "预览还是成品" in blocked["error"]
+    assert "不要出图" in blocked["error"] and "clarification" in blocked["error"]
     assert "其他栏" not in blocked["error"] and "in Other" not in blocked["error"]
 
 

@@ -1053,10 +1053,10 @@ def _run_hint_declared(name: object, user_text: str = "", ref_image: bytes | Non
         return ""
     if sid == MULTI_ANGLE:
         return (
-            "Multi-angle staged delivery: use ask_user once for a single card with source and final aspect "
-            "(recommended 1:1, not a forced default; Skip and Submit). If a reference is already attached, "
-            "reuse it and do not ask the source question again (one image = single front hero; more than one = "
-            "multi-angle product photos). After the setup card, do not call generate_image until the existing "
+            "Multi-angle staged delivery: use ask_user once for BOTH source and final aspect on one card, "
+            "even when images are already attached (recommended 1:1, not a forced default; Skip and Submit). "
+            "After that answer, do not ask for another upload. Use attached references regardless of the source "
+            "answer; if none are attached, continue from the description. After the setup card, do not call generate_image until the existing "
             "quote/approval card is confirmed. Then generate_image skill='universal-multi-angle-grid', multi_angle_stage='preview', count=1, at 1152x2048 (9:16). "
             "The aspect chosen on the question card does not change this preview; it stays 1152x2048 9:16 unless the user explicitly specifies a preview size. "
             "The selected final aspect applies to finals only: "

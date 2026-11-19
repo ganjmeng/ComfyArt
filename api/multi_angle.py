@@ -139,12 +139,16 @@ def _messages(chat_id: str) -> list[dict]:
 
 
 def _root(chat_id: str) -> tuple[dict | None, dict | None]:
-    for row in reversed(_messages(chat_id)):
-        for block in reversed(row.get("blocks") or []):
+    """The setup card. A later aspect-only clarification does not replace it."""
+    found = None
+    for row in _messages(chat_id):
+        for block in row.get("blocks") or []:
             ids = {q.get("id") for q in block.get("questions") or []}
-            if block.get("type") == "ask" and ids.intersection({SOURCE, ASPECT}):
-                return row, block
-    return None, None
+            if block.get("type") != "ask" or not ids.intersection({SOURCE, ASPECT}):
+                continue
+            if SOURCE in ids or found is None:
+                found = (row, block)
+    return found or (None, None)
 
 
 def applies(args: dict, chat_id: str = "") -> bool:
@@ -179,6 +183,13 @@ SOURCE_OPTIONS = (
     ("no_photo", "暂无实拍图，先做产品示意", "No real product photos yet, start with a product concept"),
 )
 # D is the allow_other field, not a fourth selectable id.
+SOURCE_OTHER_ZH = "其他情况（直接说明）..."
+SOURCE_OTHER_EN = "Other situation (describe it)..."
+ASPECT_OTHER_ZH = "自定义比例或像素尺寸..."
+ASPECT_OTHER_EN = "Custom ratio or pixel size..."
+COMPOSITION_OTHER_ZH = "输入编号"
+COMPOSITION_OTHER_EN = "Enter panel numbers"
+ASPECT_CLARIFY_ZH = "自定义画幅没看懂，请再写一次比例或像素尺寸"
 ASPECT_OPTIONS = (
     ("1:1", "1:1 方图（推荐）", "1:1 square (recommended)"),
     ("3:4", "3:4 竖图", "3:4 portrait"),
@@ -266,6 +277,82 @@ def require_confirmed_quote(meta: dict, chat_id: str = "") -> dict | None:
     }
 
 
+class AspectClarify(ValueError):
+    """The setup card's custom aspect is not a ratio or a pixel size."""
+
+
+def _nearest_ratio(width: int, height: int) -> str:
+    target = width / height
+    best, best_d = RATIOS[0], None
+    for key in RATIOS:
+        a, b = (int(part) for part in key.split(":"))
+        distance = abs(a / b - target)
+        if best_d is None or distance < best_d:
+            best, best_d = key, distance
+    return best
+
+
+def parse_card_aspect(selected: str, other: str) -> str:
+    """Ratio for the setup card. A WxH answer becomes its reduced or nearest supported ratio."""
+    chosen = str(selected or "").strip()
+    if chosen in RATIOS:
+        return chosen
+    text = str(other or "").strip()
+    if not text:
+        raise AspectClarify("missing aspect")
+    try:
+        spec = _parse_spec(text)
+    except ValueError as exc:
+        raise AspectClarify(str(exc)) from exc
+    if not spec:
+        raise AspectClarify("unparsed aspect")
+    width, height = spec.get("width"), spec.get("height")
+    if width and height:
+        reduced = _ratio(str(width), str(height))
+        named = spec.get("ratio")
+        if named and named != reduced:
+            raise AspectClarify("pixels conflict with the written ratio")
+        return reduced if reduced in RATIOS else _nearest_ratio(int(width), int(height))
+    named = spec.get("ratio")
+    if not named:
+        raise AspectClarify("unparsed aspect")
+    if named in RATIOS:
+        return named
+    a, b = named.split(":")
+    return _nearest_ratio(int(a), int(b))
+
+
+def _upload_reask(args: dict) -> bool:
+    ids = {q.get("id") for q in args.get("questions") or [] if isinstance(q, dict)}
+    if SOURCE in ids:
+        return True
+    blob = " ".join(str(args.get(key) or "") for key in ("prompt", "placeholder"))
+    for question in args.get("questions") or []:
+        if isinstance(question, dict):
+            blob += " " + str(question.get("prompt") or "") + " " + str(question.get("placeholder") or "")
+    return any(token in blob for token in ("上传", "参考图怎么提供", "upload", "re-upload", "reupload"))
+
+
+def _clarifying_aspect_card(zh: bool) -> dict:
+    aspect = _question(
+        ASPECT, ASPECT_CLARIFY_ZH if zh else "The custom aspect was unclear. Send the ratio or pixel size once more.",
+        [{"id": key, "label": z if zh else e} for key, z, e in ASPECT_OPTIONS],
+        allow_other=True, placeholder=ASPECT_OTHER_ZH if zh else ASPECT_OTHER_EN)
+    return {"questions": [aspect], "page_count": 1, "allow_skip": True}
+
+
+def _has_aspect_clarification(chat_id: str) -> bool:
+    for row in _messages(chat_id):
+        for block in row.get("blocks") or []:
+            if block.get("type") != "ask":
+                continue
+            for question in block.get("questions") or []:
+                if question.get("prompt") == ASPECT_CLARIFY_ZH or str(question.get("prompt") or "").startswith(
+                        "The custom aspect was unclear"):
+                    return True
+    return False
+
+
 def normalize_card(args: dict) -> dict:
     # Do not intercept approval cards or unrelated skills/cards.
     if args.get("kind") in ("run_approval", "plan_approval", "plan_quote"):
@@ -278,19 +365,26 @@ def normalize_card(args: dict) -> dict:
     chat_id = _chat_id()
     _, root = _root(chat_id)
     if root is None or (root.get("status") in {"expired", "cancelled"} and not root.get(LEDGER)):
-        refs = _attached_refs(chat_id)
+        source = _question(
+            SOURCE, "产品参考图怎么提供？" if zh else "How should product reference images be provided?",
+            [{"id": key, "label": z if zh else e} for key, z, e in SOURCE_OPTIONS],
+            placeholder=SOURCE_OTHER_ZH if zh else SOURCE_OTHER_EN)
         aspect = _question(ASPECT, "详情页主画幅用哪个？" if zh else "Which aspect should the detail-page hero use?", [
             {"id": key, "label": z if zh else e} for key, z, e in ASPECT_OPTIONS],
-            allow_other=False)
-        questions = [aspect]
-        if not refs:
-            questions.insert(0, _question(
-                SOURCE, "产品参考图怎么提供？" if zh else "How should product reference images be provided?",
-                [{"id": key, "label": z if zh else e} for key, z, e in SOURCE_OPTIONS],
-                placeholder="直接说明" if zh else "Describe the other situation"))
-        return {"questions": questions, "page_count": 1, "allow_skip": True}
+            allow_other=True, placeholder=ASPECT_OTHER_ZH if zh else ASPECT_OTHER_EN)
+        return {"questions": [source, aspect], "page_count": 1, "allow_skip": True}
+    if _upload_reask(args):
+        raise ValueError("Do not ask for another image upload after the setup card is answered. / 线稿卡已回答，不要再要求上传。")
     if root.get("status") != "answered":
         raise ValueError("Answer the existing multi-angle source/aspect card; do not create another.")
+    try:
+        parse_card_aspect(
+            (_answer(root, ASPECT).get("selected") or [""])[0],
+            str(_answer(root, ASPECT).get("other_text") or ""))
+    except AspectClarify:
+        if _has_aspect_clarification(chat_id):
+            raise ValueError("The custom aspect was already clarified once; do not ask again and do not generate.")
+        return _clarifying_aspect_card(zh)
     ledger = root.get(LEDGER) or {}
     if not ledger.get("preview", {}).get("delivered"):
         raise ValueError("Generate and wait for the numbered nine-panel lineart preview before composition selection.")
@@ -303,9 +397,9 @@ def normalize_card(args: dict) -> dict:
     plan = validate_plan(ledger.get("composition_plan"))
     q = _question(COMPOSITIONS, "选择想生成的构图（可多选，按图中编号）" if zh else
                   "Choose compositions (multiple panel numbers allowed)", [
-                      {"id": panel["id"], "label": f"{panel['id']} {panel['name']}",
+                      {"id": panel["id"], "label": f"{panel['id']}｜{panel['name']}",
                        "description": panel["description"]} for panel in plan["panels"]],
-                  multi=True, placeholder="输入编号 / Enter panel numbers")
+                  multi=True, placeholder=COMPOSITION_OTHER_ZH if zh else COMPOSITION_OTHER_EN)
     return {"questions": [q], "allow_skip": False}
 
 
@@ -534,11 +628,13 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
             return args, blocked
     try:
         original_description, user_final, user_preview = _user_specs(chat_id)
-        card_spec = _parse_spec(aspect_other)
-        if aspect_selected:
-            card_spec = _merge_specs(card_spec, {"ratio": _ratio(*str(aspect_selected).split(":"))})
-        if not card_spec:
-            raise ValueError("请在画幅卡选择主画幅；如需自定义比例或精确像素，请在对话中注明用于预览还是成品 / Select a hero aspect in the setup card; for a custom aspect or exact pixels, specify preview or final in the conversation.")
+        try:
+            card_spec = {"ratio": parse_card_aspect(aspect_selected, aspect_other)}
+        except AspectClarify as exc:
+            raise ValueError(
+                "自定义画幅无法识别，请只再问一次画幅，不要出图。 / "
+                "Custom aspect was not a ratio or pixel size; ask once for clarification and do not generate. "
+                + str(exc)) from exc
         # Explicit user conversation specs override the preset-only final card.
         # Conflicts within user text are still rejected by _user_specs.
         final_spec = _complete_spec(_merge_specs(user_final or card_spec))
@@ -605,10 +701,14 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
         return args, result
     from .skill_param_guard import context_from_chat, _text_of
     uploads = context_from_chat(chat_id).uploads
-    refs = (list(ledger["refs"]) if "refs" in ledger else
-            uploads or ([] if source in TEXT_ONLY_SOURCES else list(args.get("refs") or [])))
-    if source not in TEXT_ONLY_SOURCES and not refs:
-        return args, _blocked("Attach the reference once; no paid call without the chosen reference source.")
+    # Attached references win regardless of the source answer. With none attached,
+    # an upload choice still continues from the description; do not ask again.
+    if "refs" in ledger:
+        refs = list(ledger["refs"])
+    elif uploads:
+        refs = list(uploads)
+    else:
+        refs = []
     description = ledger["description"] if "description" in ledger else original_description or source_other
     if not description and not refs:
         return args, _blocked("请提供主体图片或描述 / Supply a subject image or description.")

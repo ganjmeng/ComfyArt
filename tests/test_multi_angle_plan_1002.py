@@ -56,7 +56,7 @@ def test_subject_specific_plan_is_only_mapping_for_lineart_card_and_selected_fin
     card = rows[-1]["blocks"][0]
     opts = card["questions"][0]["options"]
     assert [(p["id"], p["label"], p["description"]) for p in opts] == [
-        (p["id"], f"{p['id']} {p['name']}", p["description"]) for p in plan["panels"]]
+        (p["id"], f"{p['id']}｜{p['name']}", p["description"]) for p in plan["panels"]]
     for number in ("2", "7", "9"):
         final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": number})
         assert blocked is None
