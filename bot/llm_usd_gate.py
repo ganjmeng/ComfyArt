@@ -76,9 +76,10 @@ bytes without redirects and requires an existing controlled $2 scope in the same
 reservation transaction. Strict default behavior and install remain unchanged;
 this engineering context interpretation is not charged-error proof or activation.
 
-Optional controlled scopes require an explicit ``max_posts`` (1..6, the local
-profile in billing-bound-evidence-plan.md), retain the existing amount authority,
-and allow one outstanding POST at a time. ``open_authorized_scope(...,
+Optional controlled scopes require an explicit ``max_posts`` (1..6, or 1..12
+only after ``extend_post_limit`` writes a matching ``limit_extension`` record),
+retain the existing amount authority, and allow one outstanding POST at a time.
+``open_authorized_scope(...,
 max_posts=N)`` creates this profile; ``constrain_authorized_scope`` explicitly
 migrates existing history without resetting it. Omitting the parameter keeps the
 legacy amount-only API; it is NOT a controlled profile or a live activation.
@@ -702,14 +703,40 @@ def prepare(body: dict, route: dict, url: str, bound_fn: Optional[Callable[[dict
 
 
 # Versioned local validation profile from billing-bound-evidence-plan.md §5.
-# The caller MUST specify max_posts; six is an upper policy limit, not a default
-# inferred from an amount or a statement about supplier billable tokens.
+# The caller MUST specify max_posts. Six is the limit a scope can be opened
+# with. Twelve is the hard cap, and only extend_post_limit may cross six, by
+# writing a matching limit_extension record in the same ledger update.
 CONTROLLED_POSTS_LIMIT = 6
+CONTROLLED_POSTS_HARD_CAP = 12
 
 
 def _validate_max_posts(max_posts: int) -> None:
-    if type(max_posts) is not int or not 1 <= max_posts <= CONTROLLED_POSTS_LIMIT:
-        raise LlmScopeConflict("max_posts must be an explicit integer between 1 and 6")
+    if type(max_posts) is not int or not 1 <= max_posts <= CONTROLLED_POSTS_HARD_CAP:
+        raise LlmScopeConflict("max_posts must be an explicit integer between 1 and 12")
+
+
+def _extension_matches(data: dict, posts: int) -> bool:
+    """True when limit_extension is a contiguous chain that ends at *posts*."""
+    rows = data.get("limit_extension")
+    if type(rows) is not list or not rows or type(posts) is not int:
+        return False
+    previous = None
+    for row in rows:
+        if type(row) is not dict:
+            return False
+        old, new = row.get("old"), row.get("new")
+        if (type(old) is not int or type(new) is not int or not 1 <= old < new <= CONTROLLED_POSTS_HARD_CAP
+                or type(row.get("operator")) is not str or not row["operator"].strip()
+                or type(row.get("reason")) is not str or not row["reason"].strip()
+                or type(row.get("at")) is not int or row["at"] <= 0):
+            return False
+        if previous is None:
+            if old > CONTROLLED_POSTS_LIMIT:
+                return False
+        elif old != previous:
+            return False
+        previous = new
+    return previous == posts
 
 
 def _controlled(data: dict) -> bool:
@@ -725,6 +752,8 @@ def _trip(data: dict, reason: str, reservation_id: str = "") -> None:
 
 def _install_controls(data: dict, max_posts: int) -> None:
     _validate_max_posts(max_posts)
+    if max_posts > CONTROLLED_POSTS_LIMIT:
+        raise LlmScopeConflict("posts above 6 require limit_extension")
     limits = {"version": 1, "amount_nano": data["ceiling_nano"],
               "max_posts": max_posts, "max_inflight": 1}
     if _controlled(data):
@@ -1112,7 +1141,8 @@ def _normalize(data: Any) -> dict:
                 or type(limits.get("version")) is not int or limits["version"] != 1
                 or type(limits.get("max_inflight")) is not int or limits["max_inflight"] != 1
                 or type(limits.get("amount_nano")) is not int or limits["amount_nano"] != data["ceiling_nano"]
-                or type(limits.get("max_posts")) is not int or not 1 <= limits["max_posts"] <= CONTROLLED_POSTS_LIMIT):
+                or type(limits.get("max_posts")) is not int or not 1 <= limits["max_posts"] <= CONTROLLED_POSTS_HARD_CAP
+                or (limits["max_posts"] > CONTROLLED_POSTS_LIMIT and not _extension_matches(data, limits["max_posts"]))):
             raise LlmBudgetBlocked("ledger_unreadable", "controlled_limits")
         if (set(state) != {"attempts_total", "circuit_open", "circuit_reason", "first_anomaly_id"}
                 or _as_int(state.get("attempts_total")) is None
@@ -1467,8 +1497,20 @@ def resolve_unknown_as_spent(path: str, reservation_id: str, operator: str, reas
     def change(data: dict) -> dict:
         limits = data.get("control_limits")
         state = data.get("control_state")
+        posts = limits.get("max_posts") if type(limits) is dict else None
+        activation = data.get("runtime_activation")
+        bound = None
+        if type(activation) is dict and type(activation.get("manifest")) is dict:
+            scope_limits = activation["manifest"].get("scope_limits")
+            if type(scope_limits) is dict:
+                bound = scope_limits.get("max_posts")
+        if type(bound) is not int:
+            bound = posts
         if (type(limits) is not dict or limits.get("amount_nano") != TWO_DOLLAR_CEILING_NANO
-                or limits.get("max_posts") != CONTROLLED_POSTS_LIMIT or limits.get("max_inflight") != 1
+                or type(posts) is not int or type(bound) is not int
+                or not 1 <= posts <= bound <= CONTROLLED_POSTS_HARD_CAP
+                or limits.get("max_inflight") != 1
+                or (posts > CONTROLLED_POSTS_LIMIT and not _extension_matches(data, posts))
                 or type(state) is not dict):
             raise LlmBudgetBlocked("resolve_refused", "limits")
         rows = data.get("reservations")

@@ -23,6 +23,7 @@ from pathlib import Path
 import re
 import subprocess
 import threading
+import time
 import uuid
 from urllib.parse import urlsplit
 from dataclasses import dataclass
@@ -521,6 +522,192 @@ def migrate_source_fingerprint(runtime: RuntimeIdentity, *, authorization_id: st
                 _write_registry(registry_path, registry, stage_prefix="migration_active_")
                 return {"ok": True, "scope_id": scope_id, "activation_digest": entry["digest"], "resumed": True}
             _fail("migration_state_unsafe", "torn_binding")
+
+
+def _manifest_posts(binding: dict) -> int | None:
+    manifest = binding.get("manifest") if type(binding.get("manifest")) is dict else {}
+    limits = manifest.get("scope_limits") if type(manifest.get("scope_limits")) is dict else {}
+    posts = limits.get("max_posts")
+    return posts if type(posts) is int else None
+
+
+def _same_activated_scope(binding: dict, runtime: RuntimeIdentity, authorization_id: str, scope_id: str,
+                          ledger_path: str) -> bool:
+    manifest = binding.get("manifest") if type(binding.get("manifest")) is dict else {}
+    return (binding.get("home") == runtime.home and binding.get("runtime_id") == runtime.runtime_id
+            and binding.get("source_sha256") == runtime.source_sha256
+            and binding.get("runtime_fingerprint") == runtime.fingerprint
+            and manifest.get("authorization_id") == authorization_id
+            and manifest.get("scope_id") == scope_id
+            and manifest.get("canonical_absolute_ledger_path") == ledger_path)
+
+
+def _require_extendable(path: str, data: dict, binding: dict) -> None:
+    if os.path.lexists(gate._outcome_pending_path(path)):
+        _fail("extend_refused", "journal")
+    state = data.get("control_state") if type(data.get("control_state")) is dict else {}
+    limits = data.get("control_limits") if type(data.get("control_limits")) is dict else {}
+    manifest = binding.get("manifest") if type(binding.get("manifest")) is dict else {}
+    scope_limits = manifest.get("scope_limits") if type(manifest.get("scope_limits")) is dict else {}
+    if (data.get("ceiling_nano") != gate.TWO_DOLLAR_CEILING_NANO
+            or data.get("authorized_ceiling_nano") != gate.TWO_DOLLAR_CEILING_NANO
+            or limits.get("amount_nano") != gate.TWO_DOLLAR_CEILING_NANO
+            or limits.get("max_inflight") != 1
+            or scope_limits.get("amount_nano") != gate.TWO_DOLLAR_CEILING_NANO
+            or scope_limits.get("max_inflight") != 1):
+        _fail("extend_refused", "usd")
+    if state.get("circuit_open") is True:
+        _fail("extend_refused", "breaker")
+    rows = data.get("reservations") if type(data.get("reservations")) is dict else None
+    if rows is None or any(type(row) is not dict or row.get("status") not in ("reconciled", "resolved_as_spent") for row in rows.values()):
+        _fail("extend_refused", "hold")
+    if any(row.get("status") == "reserved" for row in rows.values()):
+        _fail("extend_refused", "inflight")
+
+
+def _extended_binding(old_binding: dict, runtime: RuntimeIdentity, new_max_posts: int) -> dict:
+    manifest = json.loads(_canonical(old_binding["manifest"]))
+    manifest["scope_limits"] = dict(manifest["scope_limits"])
+    manifest["scope_limits"]["max_posts"] = new_max_posts
+    receipt = _validate(manifest, _expected(manifest), runtime)
+    binding = {
+        "version": 1,
+        "home": runtime.home,
+        "runtime_id": runtime.runtime_id,
+        "runtime_fingerprint": runtime.fingerprint,
+        "source_sha256": runtime.source_sha256,
+        "manifest_sha256": receipt.manifest_sha256,
+        "manifest": manifest,
+    }
+    if "source_migration" in old_binding:
+        binding["source_migration"] = old_binding["source_migration"]
+    return binding
+
+
+def _apply_post_extension(path: str, data: dict, binding: dict, old_posts: int, new_posts: int,
+                          operator: str, reason: str) -> None:
+    accounted = data["accounted_nano"]
+    attempts = data["control_state"]["attempts_total"]
+    rows = _canonical(data["reservations"])
+    ceiling = data["ceiling_nano"]
+    amount = data["control_limits"]["amount_nano"]
+    inflight_limit = data["control_limits"]["max_inflight"]
+    data["control_limits"]["max_posts"] = new_posts
+    audits = data.get("limit_extension")
+    if not (type(audits) is list and audits and audits[-1].get("new") == new_posts):
+        data.setdefault("limit_extension", []).append({
+            "old": old_posts, "new": new_posts, "operator": operator, "reason": reason, "at": int(time.time()),
+        })
+    data["runtime_activation"] = binding
+    if (data["accounted_nano"] != accounted or data["control_state"]["attempts_total"] != attempts
+            or _canonical(data["reservations"]) != rows):
+        _fail("extend_refused", "spend_changed")
+    if (data["ceiling_nano"] != ceiling or data["control_limits"]["amount_nano"] != amount
+            or data["control_limits"]["max_inflight"] != inflight_limit or data["control_limits"]["max_posts"] != new_posts):
+        _fail("extend_refused", "usd")
+    if not gate._extension_matches(data, new_posts):
+        _fail("extend_refused", "audit")
+    gate._persist_ledger(path, data, write_marker=True)
+    gate._write_activation_marker(path, data)
+
+
+def _ledger_extension_state(path: str, binding: dict) -> str:
+    """Return 'done', 'marker', or 'open' without treating a torn marker as unreadable."""
+    raw = _raw_ledger(path)
+    marker = gate._read_marker(path)
+    limits = raw.get("control_limits") if type(raw.get("control_limits")) is dict else {}
+    marker_limits = marker.get("control_limits") if type(marker.get("control_limits")) is dict else {}
+    posts = _manifest_posts(binding)
+    if limits.get("max_posts") == posts and raw.get("runtime_activation") == binding and gate._extension_matches(raw, posts):
+        if marker_limits.get("max_posts") == posts and marker.get("runtime_activation") == binding:
+            return "done"
+        return "marker"
+    if marker.get("control_limits") == raw.get("control_limits") and marker.get("runtime_activation") == raw.get("runtime_activation"):
+        return "open"
+    _fail("extend_refused", "torn")
+
+
+def extend_post_limit(runtime: RuntimeIdentity, *, authorization_id: str, scope_id: str, ledger_path: str,
+                      new_max_posts: int, operator: str, reason: str) -> dict:
+    """Raise one scope's POST limit. Ceiling, inflight, spend, and rows stay put.
+
+    Registry pending is published before the ledger limit changes. A repeated
+    call of the same extension finishes an interrupted write and does not append
+    a second audit row. A decrease, a ceiling change, an open breaker, a hold,
+    or a limit above 12 writes nothing.
+    """
+    _check_runtime(runtime)
+    if (type(new_max_posts) is not int or not 1 <= new_max_posts <= gate.CONTROLLED_POSTS_HARD_CAP
+            or type(operator) is not str or not operator.strip()
+            or type(reason) is not str or not reason.strip()):
+        _fail("extend_refused", "above_cap" if type(new_max_posts) is int and new_max_posts > gate.CONTROLLED_POSTS_HARD_CAP else "arguments")
+    if (type(authorization_id) is not str or not authorization_id.strip()
+            or type(scope_id) is not str or not scope_id.strip()
+            or type(ledger_path) is not str or not os.path.isabs(ledger_path)
+            or os.path.realpath(ledger_path) != ledger_path):
+        _fail("extend_refused", "scope")
+    with _registry_lock(runtime.home) as registry_path:
+        registry = _read_registry(registry_path)
+        if registry is None or registry["runtimes"].get(runtime.runtime_id) != authorization_id:
+            _fail("extend_refused", "runtime")
+        entry = registry["authorities"].get(authorization_id)
+        if type(entry) is not dict or set(entry) != {"status", "binding", "digest"} or entry["status"] not in ("pending", "active"):
+            _fail("extend_refused", "authority")
+        stored = entry["binding"]
+        if type(stored) is not dict or _digest(stored) != entry["digest"]:
+            _fail("extend_refused", "digest")
+        if not _same_activated_scope(stored, runtime, authorization_id, scope_id, ledger_path):
+            _fail("extend_refused", "runtime")
+        current = _manifest_posts(stored)
+        if current is None:
+            _fail("extend_refused", "limits")
+        if current > new_max_posts:
+            _fail("extend_refused", "decrease")
+        with gate._with_ledger_lock(ledger_path):
+            if current == new_max_posts:
+                state = _ledger_extension_state(ledger_path, stored)
+                if state == "open":
+                    if entry["status"] != "pending":
+                        _fail("extend_refused", "decrease")
+                    data, _, _ = gate._load_ledger(ledger_path, create=False)
+                    _require_extendable(ledger_path, data, stored)
+                    old_posts = data["control_limits"]["max_posts"]
+                    if type(old_posts) is not int or old_posts >= new_max_posts:
+                        _fail("extend_refused", "decrease")
+                    _apply_post_extension(ledger_path, data, stored, old_posts, new_max_posts, operator, reason)
+                    registry["authorities"][authorization_id]["status"] = "active"
+                    _write_registry(registry_path, registry, stage_prefix="extension_active_")
+                    return {"ok": True, "scope_id": scope_id, "max_posts": new_max_posts, "idempotent": False, "resumed": True}
+                if state == "marker":
+                    gate._write_activation_marker(ledger_path, _raw_ledger(ledger_path))
+                data, _, _ = gate._load_ledger(ledger_path, create=False)
+                if data.get("control_limits", {}).get("max_posts") != new_max_posts:
+                    _fail("extend_refused", "limits")
+                was_pending = entry["status"] == "pending"
+                if was_pending:
+                    registry["authorities"][authorization_id]["status"] = "active"
+                    _write_registry(registry_path, registry, stage_prefix="extension_active_")
+                return {"ok": True, "scope_id": scope_id, "max_posts": new_max_posts,
+                        "idempotent": not was_pending, "resumed": was_pending or state == "marker"}
+            if entry["status"] != "active":
+                _fail("extend_refused", "pending")
+            if new_max_posts <= current:
+                _fail("extend_refused", "decrease")
+            data, _, _ = gate._load_ledger(ledger_path, create=False)
+            _require_extendable(ledger_path, data, stored)
+            _scope_matches(data, stored)
+            if data.get("runtime_activation") != stored:
+                _fail("extend_refused", "ledger_binding")
+            old_posts = data["control_limits"]["max_posts"]
+            if old_posts != current or new_max_posts <= old_posts:
+                _fail("extend_refused", "decrease")
+            target = _extended_binding(stored, runtime, new_max_posts)
+            registry["authorities"][authorization_id] = {"status": "pending", "digest": _digest(target), "binding": target}
+            _write_registry(registry_path, registry, stage_prefix="extension_pending_")
+            _apply_post_extension(ledger_path, data, target, old_posts, new_max_posts, operator, reason)
+            registry["authorities"][authorization_id]["status"] = "active"
+            _write_registry(registry_path, registry, stage_prefix="extension_active_")
+            return {"ok": True, "scope_id": scope_id, "max_posts": new_max_posts, "idempotent": False, "resumed": False}
 
 
 def activate_scope(candidate: dict, *, expected: manifests.ManifestContext, runtime: RuntimeIdentity) -> dict:

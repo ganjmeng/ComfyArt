@@ -128,6 +128,28 @@ def test_other_retained_row_is_refused_with_no_write(tmp_path, monkeypatch):
     assert Path(env["path"]).read_bytes() == before
 
 
+def test_retained_row_that_is_not_first_anomaly_is_refused_by_the_breaker(tmp_path, monkeypatch):
+    env = bound(tmp_path, monkeypatch)
+
+    def plant(data):
+        data["control_state"]["circuit_open"] = True
+        data["control_state"]["circuit_reason"] = "transport:other"
+        data["control_state"]["first_anomaly_id"] = "someone-else"
+        data["reservations"]["held"] = {
+            "id": "held", "status": "retained", "reserved_nano": 1200, "actual_nano": None,
+            "retain_reason": "not_the_first_anomaly", "authorization": data["authorization"],
+            "authorized_ceiling_nano": data["authorized_ceiling_nano"],
+        }
+        return {"ok": True}
+
+    gate._mutate(env["path"], plant, create=False)
+    before = Path(env["path"]).read_bytes()
+    with pytest.raises(gate.LlmBudgetBlocked, match="breaker"):
+        resolve(env, "held")
+    assert Path(env["path"]).read_bytes() == before
+    assert gate.ledger_state(env["path"])["control_state"]["first_anomaly_id"] == "someone-else"
+
+
 def test_second_call_is_idempotent_and_does_not_write(tmp_path, monkeypatch):
     env = bound(tmp_path, monkeypatch)
     reproduce(env)
