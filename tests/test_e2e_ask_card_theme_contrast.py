@@ -12,11 +12,16 @@ CSS = "\n".join((ROOT / "src/styles" / name).read_text() for name in ("base.css"
 CARD = """
 <div class="ca-chat__dock" data-testid="question-dock">
   <div class="ca-q">
+    <div class="ca-q__head">
+      <div class="ca-q__page">1 / 2</div>
+      <button type="button" class="ca-q__chev">‹</button>
+      <button type="button" class="ca-q__chev" disabled>›</button>
+    </div>
     <div class="ca-q__body">
       <div class="ca-q__block">
         <div class="ca-q__prompt">产品参考图怎么提供？</div>
         <div class="ca-q__opts">
-          <button type="button" class="ca-q__opt"><span class="ca-q__letter">A</span><span class="ca-q__text">上传多角度产品图</span></button>
+          <button type="button" class="ca-q__opt" data-on=""><span class="ca-q__letter">A</span><span class="ca-q__text">上传多角度产品图</span></button>
           <button type="button" class="ca-q__opt"><span class="ca-q__letter">B</span><span class="ca-q__text">只上传 1 张正面主图</span></button>
           <button type="button" class="ca-q__opt"><span class="ca-q__letter">C</span><span class="ca-q__text">暂无实拍图，先做产品示意</span></button>
         </div>
@@ -72,16 +77,47 @@ def _measure(theme):
                 const prompt = document.querySelector('.ca-q__prompt');
                 const option = document.querySelector('.ca-q__opt:not([data-on]) .ca-q__text');
                 const cs = (el) => getComputedStyle(el);
+                const row = document.querySelector('.ca-q__opt[data-on]');
+                const badge = row.querySelector('.ca-q__letter');
+                const page = document.querySelector('.ca-q__page');
+                const enabled = document.querySelector('.ca-q__chev:not([disabled])');
+                const disabled = document.querySelector('.ca-q__chev[disabled]');
                 return {
                     theme: document.documentElement.dataset.theme,
                     token: cs(prompt).getPropertyValue('--ca-text').trim(),
                     bg: cs(card).backgroundColor,
                     prompt: cs(prompt).color,
                     option: cs(option).color,
+                    row: cs(row).backgroundColor,
+                    badge: cs(badge).backgroundColor,
+                    badgeText: cs(badge).color,
+                    page: cs(page).color,
+                    enabled: cs(enabled).color,
+                    disabled: cs(disabled).color,
                 };
             }""")
         finally:
             browser.close()
+
+
+def _paint(value, onto):
+    rgb, alpha = _channels(value)
+    return _composite(rgb, alpha, onto)
+
+
+def _chrome(got):
+    bg, bg_a = _channels(got["bg"])
+    assert bg_a == 1, got
+    row = _paint(got["row"], bg)
+    badge = _paint(got["badge"], row)
+    ink = _paint(got["badgeText"], badge)
+    return {
+        "badge_row": _contrast(badge, row),
+        "badge_ink": _contrast(ink, badge),
+        "page": _contrast(_paint(got["page"], bg), bg),
+        "enabled": _contrast(_paint(got["enabled"], bg), bg),
+        "disabled": _contrast(_paint(got["disabled"], bg), bg),
+    }
 
 
 def _ratios(got):
@@ -102,6 +138,11 @@ def test_dark_setup_ask_card_text_contrast():
     assert got["token"] == "rgba(255,255,255,.9)", got
     assert prompt_ratio >= 4.5, (got, prompt_ratio)
     assert option_ratio >= 4.5, (got, option_ratio)
+    chrome = _chrome(got)
+    assert chrome["badge_row"] >= 4.5, (got, chrome)
+    assert chrome["badge_ink"] >= 4.5, (got, chrome)
+    assert chrome["page"] >= 4.5 and chrome["enabled"] >= 4.5, (got, chrome)
+    assert chrome["disabled"] < chrome["enabled"], (got, chrome)
 
 
 def test_light_setup_ask_card_text_contrast():
@@ -111,3 +152,8 @@ def test_light_setup_ask_card_text_contrast():
     assert got["token"] == "rgba(0,0,0,.9)", got
     assert prompt_ratio >= 4.5, (got, prompt_ratio)
     assert option_ratio >= 4.5, (got, option_ratio)
+    chrome = _chrome(got)
+    assert chrome["badge_row"] >= 4.5, (got, chrome)
+    assert chrome["badge_ink"] >= 4.5, (got, chrome)
+    assert chrome["page"] >= 4.5 and chrome["enabled"] >= 4.5, (got, chrome)
+    assert chrome["disabled"] < chrome["enabled"], (got, chrome)
