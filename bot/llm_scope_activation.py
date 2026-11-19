@@ -409,7 +409,7 @@ def _require_safe_spend(path: str, data: dict) -> None:
         _fail("migration_state_unsafe", "hold")
     external = data.get("external_spend")
     if external is not None and (type(external) is not dict or any(
-            type(row) is not dict or row.get("status") != "reconciled" for row in external.values())):
+            type(row) is not dict or row.get("status") not in ("reconciled", "resolved_as_spent") for row in external.values())):
         _fail("migration_state_unsafe", "external_hold")
 
 
@@ -579,7 +579,7 @@ def _require_extendable(path: str, data: dict, binding: dict) -> None:
         _fail("extend_refused", "inflight")
     external = data.get("external_spend")
     if external is not None and (type(external) is not dict or any(
-            type(row) is not dict or row.get("status") != "reconciled" for row in external.values())):
+            type(row) is not dict or row.get("status") not in ("reconciled", "resolved_as_spent") for row in external.values())):
         _fail("extend_refused", "external_hold")
 
 

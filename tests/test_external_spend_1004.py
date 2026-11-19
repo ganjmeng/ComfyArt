@@ -115,6 +115,54 @@ def test_llm_plus_external_reaching_the_ceiling_blocks_another_llm_reserve(tmp_p
     assert Path(path).read_bytes() == before
 
 
+def test_external_unknown_resolves_and_a_deepseek_post_can_proceed(tmp_path):
+    path = scope(tmp_path)
+    held = gate.reserve_external_spend(path, quote_nano=9_000, task_ref="unknown-ext", operator="ops")
+    gate.settle_external_spend(path, held["reservation_id"], "", None, "ops")
+    blocked = gate.reserve_nano(path, nano=1200, record=_reserve_record(1200, "blocked"))
+    assert blocked["ok"] is False and blocked["code"] == "scope_circuit_open"
+    result = gate.resolve_unknown_as_spent(path, held["reservation_id"], "tech-lead", "book the external unknown")
+    row = json.loads(Path(path).read_text())["external_spend"][held["reservation_id"]]
+    state = gate.ledger_state(path)
+    assert result["ok"] is True and result["circuit_open"] is False and result["actual_nano"] == 9_000
+    assert row["status"] == "resolved_as_spent" and row["actual_nano"] == row["quote_nano"] == 9_000
+    assert state["accounted_nano"] == 9_000
+    assert state["control_state"]["circuit_open"] is False
+    assert state["control_state"]["attempts_total"] == 0
+    assert state["external_inflight"] == 0 and state["inflight"] == 0
+    posted = gate.reserve_nano(path, nano=1200, record=_reserve_record(1200, "after"))
+    assert posted["ok"] is True
+    assert gate.settle(path, "after", _usage(0, 1)["usage"])["code"] == "reconciled"
+    assert gate.ledger_state(path)["control_state"]["attempts_total"] == 1
+    with gate._with_ledger_lock(path):
+        data, _, _ = gate._load_ledger(path, create=False)
+        activation._require_safe_spend(path, data)
+
+
+def test_other_retained_row_refuses_external_resolve_and_leaves_the_breaker_open(tmp_path):
+    path = scope(tmp_path)
+    held = gate.reserve_external_spend(path, quote_nano=4_000, task_ref="unknown-ext", operator="ops")
+    gate.settle_external_spend(path, held["reservation_id"], "", None, "ops")
+
+    def plant(data):
+        data["reservations"]["still"] = {
+            "id": "still", "status": "retained", "reserved_nano": 1200, "actual_nano": None,
+            "retain_reason": "other", "authorization": data["authorization"],
+            "authorized_ceiling_nano": data["authorized_ceiling_nano"],
+        }
+        return {"ok": True}
+
+    gate._mutate(path, plant, create=False)
+    before = Path(path).read_bytes()
+    with pytest.raises(gate.LlmBudgetBlocked, match="other_retained"):
+        gate.resolve_unknown_as_spent(path, held["reservation_id"], "tech-lead", "book the external unknown")
+    assert Path(path).read_bytes() == before
+    state = gate.ledger_state(path)
+    assert state["control_state"]["circuit_open"] is True
+    assert state["control_state"]["first_anomaly_id"] == held["reservation_id"]
+    assert json.loads(before)["external_spend"][held["reservation_id"]]["status"] == "retained"
+
+
 def test_existing_ledger_without_external_rows_loads_unchanged(tmp_path):
     path = scope(tmp_path)
     before = Path(path).read_bytes()
