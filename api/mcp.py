@@ -74,7 +74,9 @@ def _multi_angle_preflight(name: str, arguments: dict, chat_id: str) -> tuple[di
     if result is not None:
         return prepared, result
     meta = prepared.get("_multi_angle") if isinstance(prepared, dict) else None
-    if isinstance(meta, dict):
+    # prepare attaches _multi_angle only for universal-multi-angle-grid. Other
+    # skills and a plain generate_image keep the existing cost-confirmation path.
+    if isinstance(meta, dict) and multi_angle.applies(prepared, chat_id):
         # Before paid_guard.before_call and before any WaveSpeed catalog or submit.
         blocked = multi_angle.require_confirmed_quote(meta, chat_id)
         if blocked is not None:

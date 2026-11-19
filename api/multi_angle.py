@@ -216,21 +216,26 @@ def _selected_ids(block: dict) -> set[str]:
 
 
 def quote_confirmed(chat_id: str = "") -> bool:
-    """True when a plan_quote / run_approval card was confirmed after the setup card."""
+    """True only when the latest quote/approval ask after setup was confirmed.
+
+    Expired, pending, cancelled, and any other unanswered ask do not confirm the
+    lineart quote. A later unanswered card also clears an earlier confirmation.
+    """
     chat_id = chat_id or _chat_id()
     setup_row, _root_block = _root(chat_id)
     seen_setup = setup_row is None
+    confirmed = False
     for row in _messages(chat_id):
         if setup_row is not None and row.get("id") == setup_row.get("id"):
             seen_setup = True
         if not seen_setup:
             continue
         for block in row.get("blocks") or []:
-            if (block.get("type") == "ask" and block.get("kind") in QUOTE_KINDS
-                    and block.get("status") == "answered"
-                    and _selected_ids(block) & QUOTE_CONFIRM_IDS):
-                return True
-    return False
+            if block.get("type") != "ask" or block.get("kind") not in QUOTE_KINDS:
+                continue
+            confirmed = (block.get("status") == "answered"
+                         and bool(_selected_ids(block) & QUOTE_CONFIRM_IDS))
+    return confirmed
 
 
 def require_confirmed_quote(meta: dict, chat_id: str = "") -> dict | None:
