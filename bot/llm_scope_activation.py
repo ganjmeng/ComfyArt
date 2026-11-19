@@ -295,9 +295,11 @@ def _scope_matches(data, binding):
 # bcc804bc -> 9c0a4807, the commit that aligns multi-angle finals and stops a
 # controlled generate after precheck. Pair 5: 9c0a4807 -> d83072c8, the commit
 # that always asks both setup questions. Pair 6: bcc804bc -> d83072c8 in one
-# hop. After hop 1 the binding source equals this tree, so a second hop fails
-# reviewed_source; _is_old_binding does not walk the pair chain. 8a959379
-# remains an ancestor. A direct 0b73f5db -> d83072c8 hop stays unauthorized.
+# hop. Pair 7: bcc804bc -> d6b8047f, the commit that keeps live-tab and
+# policy-denial stops on controlled turns. After hop 1 the binding source
+# equals this tree, so a second hop fails reviewed_source; _is_old_binding
+# does not walk the pair chain. 8a959379 remains an ancestor. A direct
+# 0b73f5db -> d83072c8 hop stays unauthorized.
 # Recording a pair changes the loaded file hash again. Provenance stores the
 # named git pair; the destination source hash is this process tree, not the
 # "to" commit's tree.
@@ -308,6 +310,7 @@ REVIEWED_GIT_PAIRS = (
     ("bcc804bc13f3fa684c0ecf5547ac71023163da09", "9c0a480753f6f9856fd137067e9026d20a425c3a"),
     ("9c0a480753f6f9856fd137067e9026d20a425c3a", "d83072c8a8bddf726fc9e68f94f6550d3a3823de"),
     ("bcc804bc13f3fa684c0ecf5547ac71023163da09", "d83072c8a8bddf726fc9e68f94f6550d3a3823de"),
+    ("bcc804bc13f3fa684c0ecf5547ac71023163da09", "d6b8047fb9f38a57e2f8400f71f9b360ccd6aafc"),
 )
 # Index 0 is the original protocol review, not the newest hop. A caller must
 # name the exact pair for the hop it is performing; nothing here means "latest".

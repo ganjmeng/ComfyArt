@@ -544,3 +544,50 @@ def test_direct_hop_repeat_writes_no_new_audit_row(tmp_path, monkeypatch):
     assert (again["reviewed_from_git"], again["reviewed_protocol_git"]) == (DIRECT_FROM, DIRECT_TO)
     reread = json.loads(Path(env["path"]).read_text())
     assert {key: reread.get(key) for key in ("limit_extension", "ceiling_extension")} == audits
+
+
+LOGIC_TO = "d6b8047fb9f38a57e2f8400f71f9b360ccd6aafc"
+
+
+def _logic_hop(env):
+    return activation.migrate_source_fingerprint(
+        env["new"], authorization_id=AUTHORITY, from_source_sha256=BCC804_SOURCE,
+        scope_id=env["scope_id"], ledger_path=env["path"],
+        reviewed_from_git=DIRECT_FROM, reviewed_protocol_git=LOGIC_TO)
+
+
+def test_direct_hop_from_deployed_binding_to_controlled_stop_commit(tmp_path, monkeypatch):
+    env = _live_bcc_binding(tmp_path, monkeypatch)
+    prior = _binding(env["new"].home)["source_migration"]
+    assert (prior["reviewed_from_git"], prior["reviewed_protocol_git"]) == (
+        "0b73f5dbf909cba9578dcc4129bafb3d64c10f99", DIRECT_FROM)
+    settle_captured(env)
+    before = gate.ledger_state(env["path"])
+    migrated = _logic_hop(env)
+    provenance = _binding(env["new"].home)["source_migration"]
+    assert migrated["ok"] is True and migrated["resumed"] is False
+    assert (provenance["reviewed_from_git"], provenance["reviewed_protocol_git"]) == (DIRECT_FROM, LOGIC_TO)
+    assert provenance["from_source_sha256"] == BCC804_SOURCE
+    assert provenance["to_source_sha256"] == activation._source_hash()
+    assert activation.REVIEWED_GIT_PAIRS[5] == (DIRECT_FROM, DIRECT_TO)
+    assert activation.REVIEWED_GIT_PAIRS[6] == (DIRECT_FROM, LOGIC_TO)
+    assert gate.ledger_state(env["path"]) == before
+
+
+def test_controlled_stop_hop_repeat_writes_no_new_audit_row(tmp_path, monkeypatch):
+    env = _live_bcc_binding(tmp_path, monkeypatch)
+    settle_captured(env)
+    first = _logic_hop(env)
+    files = _files(env)
+    provenance = copy.deepcopy(_binding(env["new"].home)["source_migration"])
+    ledger = json.loads(Path(env["path"]).read_text())
+    audits = {key: copy.deepcopy(ledger.get(key)) for key in ("limit_extension", "ceiling_extension")}
+    second = _logic_hop(env)
+    assert second["ok"] is True and second["resumed"] is False
+    assert second["activation_digest"] == first["activation_digest"]
+    assert _files(env) == files
+    again = _binding(env["new"].home)["source_migration"]
+    assert again == provenance
+    assert (again["reviewed_from_git"], again["reviewed_protocol_git"]) == (DIRECT_FROM, LOGIC_TO)
+    reread = json.loads(Path(env["path"]).read_text())
+    assert {key: reread.get(key) for key in ("limit_extension", "ceiling_extension")} == audits
