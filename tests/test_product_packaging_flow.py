@@ -508,7 +508,7 @@ PINNED_SHA256 = {
     "api/skill_size.py": "d7f052db320b1993b0f2a7c3e2248f627fe4b8c504774755967b3f06730ad746",
     "api/curated_models.json": "fb5c6a1acd2782cb3d7da42837bef92bd4485fe90abd84dd272de1170f9fe04b",
     "api/wavespeed_models.json": "8be944b91aeaf2f4fc24fb5099e36664d2136004dc828737c95ff7943a7363fb",
-    "bot/skill_output.py": "d5cd2a21d575b83d230a83fadddc2885579da7037bc953342ee185f5807899f7",  # #1003 multi-angle hint: planner gives panels[].content, frozen plans pass panel_content on finals; 9:16 preview default hint, first-quote preview guard and unrelated locks preserved
+    "bot/skill_output.py": "91a57f85be12dcda3b09c83923c4a4a3ffc59f8187e323800738998659824706",  # setup-card hint: both questions, preview stays 9:16, finals follow the card aspect
     "api/portrait_studio.py": "61257848a9e23d13c066d01c103c565d6804e58c926d3905c6ed8b0890569224",
     "bot/self_check.py": "1a9b4f7eda7e915adf83df42ff31ccf3c27e83253d9636ba5c85aead447993b6",
 }
