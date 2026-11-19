@@ -1477,7 +1477,8 @@ async def rehearse_llm(request: web.Request) -> web.Response:
 
 
 async def gated_llm_http(session, method, url, *, headers, json_body=None, timeout=120,
-                         transport, ledger_path: str | None = None, bound_fn=None):
+                         transport, ledger_path: str | None = None, bound_fn=None,
+                         context_contract: bool = False, frozen_images=None):
     """Adapt the official body, then reserve a worst-case USD hold before the real send.
 
     ``transport`` is the unwrapped HTTP function. Non-chat and non-official calls go
@@ -1486,15 +1487,28 @@ async def gated_llm_http(session, method, url, *, headers, json_body=None, timeo
     from ..bot.llm_usd_gate import dispatch, route_requires_gate
 
     body = adapt_llm_body(json_body, url)
+    if context_contract:
+        import copy
+        body = copy.deepcopy(body)
     route = _llm_lock.get()
     if not route_requires_gate(method, url, route):
+        if context_contract:
+            from ..bot.llm_usd_gate import LlmBudgetBlocked
+            raise LlmBudgetBlocked("route_mismatch", "context profile requires official gated POST")
         return await transport(session, method, url, headers=headers, json_body=body, timeout=timeout)
 
     async def send():
         return await transport(session, method, url, headers=headers, json_body=body, timeout=timeout)
 
+    async def send_frozen(encoded):
+        from ..bot.llm_input_envelope import FrozenJsonBody
+        return await transport(session, method, url, headers=headers,
+                               json_body=FrozenJsonBody(encoded), timeout=timeout)
+
     return await dispatch(body, route=route, url=str(url), send=send,
-                          ledger_path=ledger_path, bound_fn=bound_fn)
+                          ledger_path=ledger_path, bound_fn=bound_fn,
+                          context_contract=context_contract, frozen_images=frozen_images,
+                          send_frozen=send_frozen if context_contract else None)
 
 
 def install() -> None:

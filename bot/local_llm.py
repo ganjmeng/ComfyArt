@@ -1556,12 +1556,18 @@ class LocalLlmProvider(AgentProvider):
                             url: str, *, headers: dict,
                             json_body: Optional[dict] = None,
                             timeout: float = 120) -> dict:
+        from .llm_input_envelope import FrozenJsonBody
+        frozen = isinstance(json_body, FrozenJsonBody)
+        if frozen:
+            headers = {k: v for k, v in headers.items() if k.lower() != "content-type"}
+            headers["Content-Type"] = "application/json"
+        payload = {"data": json_body.encoded, "allow_redirects": False} if frozen else {"json": json_body}
         async with session.request(
-            method, url, headers=headers, json=json_body,
+            method, url, headers=headers, **payload,
             timeout=aiohttp.ClientTimeout(total=timeout),
         ) as resp:
             text = await resp.text()
-            if resp.status >= 400:
+            if resp.status >= 400 or (frozen and 300 <= resp.status < 400):
                 raise LlmHttpError(resp.status, text,
                                    _retry_after(resp.headers.get("Retry-After")))
             return json.loads(text) if text else {}

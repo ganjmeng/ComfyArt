@@ -69,6 +69,13 @@ so ``dispatch`` does not call transport (conservative hold). Process-level
 ``os._exit`` at a persist stage skips Python ``finally`` cleanup; the kernel
 releases the lock fd.
 
+An explicit, unactivated ``context_contract=True`` profile validates supported
+images/full function tools and reserves documented C=1048576 as input PLUS the
+actual output cap, with images already included in C. It sends frozen validated
+bytes without redirects and requires an existing controlled $2 scope in the same
+reservation transaction. Strict default behavior and install remain unchanged;
+this engineering context interpretation is not charged-error proof or activation.
+
 Optional controlled scopes require an explicit ``max_posts`` (1..6, the local
 profile in billing-bound-evidence-plan.md), retain the existing amount authority,
 and allow one outstanding POST at a time. ``open_authorized_scope(...,
@@ -302,7 +309,7 @@ def price_snapshot(model: str) -> Optional[dict]:
         "input_hit_peak_nano": row["input_hit_peak_nano"],
         "output_peak_nano": row["output_peak_nano"],
         "max_output_supported": MAX_OUTPUT_SUPPORTED,
-        "context_length": 1_000_000,
+        "context_length": 1_048_576 if model == "deepseek-flash" else 1_000_000,
         "peak_policy": "always_peak",
         "cache_policy": "reserve_cache_miss",
         "currency": "USD",
@@ -316,12 +323,32 @@ def worst_case_nano(snapshot: dict, input_tokens: int, max_output_tokens: int) -
             + max_output_tokens * snapshot["output_peak_nano"])
 
 
-def official_input_bound(body: dict, snapshot: dict) -> Bound:
-    """Production bound. Text and images are unproven, so this never authorizes a send.
+class BoundEvidence(Bound):
+    """Explicit, non-strict context-contract interpretation; never live activation."""
+    __slots__ = ("envelope",)
 
-    Ordinary MCP function tools are not a structural block; they still do not
-    invent a billed-input ceiling. The character-count heuristic is not consulted.
+    def __init__(self, envelope) -> None:
+        from .llm_input_envelope import CONTEXT_TOKENS
+        super().__init__(True, CONTEXT_TOKENS, "", "documented context contract; charged-error coverage not proven")
+        self.envelope = envelope
+
+
+def official_input_bound(body: dict, snapshot: dict, *, context_contract: bool = False,
+                         frozen_images=None) -> Bound:
+    """Strict default denies unproven input; explicit context mode is non-strict.
+
+    Context mode validates full images/tools and reserves the documented whole
+    window, not a tokenizer/character estimate or an absolute supplier bill cap.
+    It is unactivated by default and cannot upgrade or open scope authority.
     """
+    if context_contract:
+        from .llm_input_envelope import EnvelopeInvalid, validate_envelope
+        if snapshot.get("model") != "deepseek-flash" or snapshot.get("version") != "DeepSeek-V4.1-Flash-1017":
+            return Bound(False, 0, "route_mismatch", "context-contract model pin")
+        try:
+            return BoundEvidence(validate_envelope(body, frozen_images=frozen_images))
+        except EnvelopeInvalid as exc:
+            return Bound(False, 0, exc.code, exc.field)
     structural = structural_block(body)
     if structural:
         return Bound(False, 0, structural, _structural_detail(structural))
@@ -608,7 +635,8 @@ def _fail(code: str, detail: str = "") -> dict:
     return {"ok": False, "code": code, "detail": detail or _BLOCK_TEXT.get(code, code)}
 
 
-def prepare(body: dict, route: dict, url: str, bound_fn: Optional[Callable[[dict, dict], Bound]] = None) -> dict:
+def prepare(body: dict, route: dict, url: str, bound_fn: Optional[Callable[[dict, dict], Bound]] = None,
+            *, context_contract: bool = False, frozen_images=None) -> dict:
     """Decide the reservation. May set ``max_tokens`` on ``body``. Does not touch the ledger or the network."""
     if not isinstance(body, dict) or not isinstance(route, dict):
         return _fail("route_mismatch")
@@ -626,13 +654,24 @@ def prepare(body: dict, route: dict, url: str, bound_fn: Optional[Callable[[dict
     snapshot = price_snapshot(model)
     if snapshot is None:
         return _fail("unpriced", model)
-    structural = structural_block(body)
-    if structural:
-        return _fail(structural, _structural_detail(structural))
+    if type(context_contract) is not bool:
+        return _fail("invalid_input_profile")
+    if context_contract:
+        if bound_fn is not None:
+            return _fail("conflicting_input_bound")
+        if (url not in ("https://api.deepseek.com/chat/completions", "https://api.deepseek.com/v1/chat/completions")
+                or route.get("adapter") != "deepseek_official" or route.get("passthrough")
+                or route.get("base_url") not in ("https://api.deepseek.com", "https://api.deepseek.com/v1")):
+            return _fail("route_mismatch", "context-contract official route")
+    else:
+        structural = structural_block(body)
+        if structural:
+            return _fail(structural, _structural_detail(structural))
     cap, cap_code = apply_output_cap(body)
     if cap is None:
         return _fail(cap_code or "unsupported_output_cap")
-    bound = (bound_fn or official_input_bound)(body, snapshot)
+    bound = (official_input_bound(body, snapshot, context_contract=True, frozen_images=frozen_images)
+             if context_contract else (bound_fn or official_input_bound)(body, snapshot))
     if not isinstance(bound, Bound) or not bound.ok or type(bound.tokens) is not int or bound.tokens < 0:
         code = bound.code if isinstance(bound, Bound) and bound.code else "unbounded_billed_input"
         detail = bound.detail if isinstance(bound, Bound) else ""
@@ -648,6 +687,8 @@ def prepare(body: dict, route: dict, url: str, bound_fn: Optional[Callable[[dict
         "input_tokens": bound.tokens,
         "max_output_tokens": cap,
         "reserved_nano": nano,
+        **({"input_evidence": bound.envelope.evidence(), "body_bytes": bound.envelope.frozen.encoded}
+           if isinstance(bound, BoundEvidence) else {}),
         "route": {
             "provider": str(route.get("provider") or ""),
             "model": model,
@@ -1197,11 +1238,22 @@ def reserve_nano(path: str, *, nano: int, record: dict) -> dict:
             or record.get("status") != "reserved" or _as_int(record.get("reserved_nano")) != nano
             or record.get("actual_nano") is not None):
         raise LlmBudgetBlocked("ledger_unreadable", "record")
+    evidence = record.get("input_evidence")
+    if evidence is not None and type(evidence) is not dict:
+        raise LlmBudgetBlocked("ledger_unreadable", "input_evidence")
+    needs_controlled_scope = (evidence or {}).get("mode") == "documented_context_contract"
 
     def change(data: dict) -> dict:
         ceiling = data["ceiling_nano"]
         accounted = data["accounted_nano"]
         scope_id = data["scope_id"]
+        if needs_controlled_scope:
+            # Same atomic transaction as amount/count/inflight. An offline
+            # policy parameter cannot create/upgrade authority or omit controls.
+            if (not _controlled(data) or data["authorization"] != TWO_DOLLAR_AUTHORIZATION
+                    or data["ceiling_nano"] != TWO_DOLLAR_CEILING_NANO):
+                return {"ok": False, "code": "controlled_scope_required", "scope_id": scope_id,
+                        "accounted_nano": accounted, "ceiling_nano": ceiling}
         if _controlled(data):
             limits, state = data["control_limits"], data["control_state"]
             code = ("scope_circuit_open" if state["circuit_open"] else
@@ -1232,7 +1284,7 @@ def reserve_nano(path: str, *, nano: int, record: dict) -> dict:
             "controlled": _controlled(data),
         }
 
-    return _mutate(path, change)
+    return _mutate(path, change, create=not needs_controlled_scope)
 
 
 def ledger_state(path: str) -> dict:
@@ -1392,7 +1444,7 @@ def _response_anomaly(result: Any) -> str:
     for choice in choices:
         if not isinstance(choice, dict) or not isinstance(choice.get("message"), dict):
             return "malformed_response"
-        if choice.get("finish_reason") == "error" or choice.get("error") is not None:
+        if choice.get("finish_reason") in ("error", "aborted", "insufficient_system_resource") or choice.get("error") is not None:
             return "response_error"
         if choice.get("finish_reason") == "content_filter" or choice["message"].get("refusal"):
             return "response_refusal"
@@ -1401,11 +1453,19 @@ def _response_anomaly(result: Any) -> str:
 
 async def dispatch(body: dict, *, route: dict, url: str, send: Callable[[], Awaitable[Any]],
                    ledger_path: Optional[str] = None,
-                   bound_fn: Optional[Callable[[dict, dict], Bound]] = None) -> Any:
-    """Reserve the worst case, then call ``send``. Unknown outcomes keep the reservation."""
-    pre = prepare(body, route, url, bound_fn)
+                   bound_fn: Optional[Callable[[dict, dict], Bound]] = None,
+                   context_contract: bool = False, frozen_images=None,
+                   send_frozen: Optional[Callable[[bytes], Awaitable[Any]]] = None) -> Any:
+    """Reserve then send. Explicit context profile is unactivated by default.
+
+    No manifest receipt is a send permit; activation/worker binding is separate.
+    Context mode uses the documented-window interpretation, NOT strict proof.
+    """
+    pre = prepare(body, route, url, bound_fn, context_contract=context_contract, frozen_images=frozen_images)
     if not pre["ok"]:
         raise LlmBudgetBlocked(pre["code"], pre["detail"])
+    if context_contract and send_frozen is None:
+        raise LlmBudgetBlocked("frozen_transport_required", "no immutable-byte transport")
     path = resolved_ledger_path(ledger_path)
     rid = uuid.uuid4().hex
     record = {
@@ -1420,6 +1480,8 @@ async def dispatch(body: dict, *, route: dict, url: str, send: Callable[[], Awai
         "route": pre["route"],
         "snapshot": pre["snapshot"],
         "created_at": int(time.time()),
+        **({"input_evidence": pre["input_evidence"], "body_sha256": pre["input_evidence"]["body_sha256"]}
+           if context_contract else {}),
     }
     reserved = reserve_nano(path, nano=pre["reserved_nano"], record=record)
     if not reserved["ok"]:
@@ -1430,7 +1492,7 @@ async def dispatch(body: dict, *, route: dict, url: str, send: Callable[[], Awai
         )
     controlled = reserved.get("controlled", False)
     try:
-        result = await send()
+        result = await send_frozen(pre["body_bytes"]) if context_contract else await send()
     except BaseException as exc:
         try:
             retain(path, rid, "transport:" + type(exc).__name__)
