@@ -1867,11 +1867,21 @@ class LocalLlmProvider(AgentProvider):
         # #968: _price_one answers (price, source, reason); this single-call budget cap only needs the amount.
         return result[0] if isinstance(result, tuple) else result
 
+    def _blocked_model_post(self, handle: TurnHandle | None = None) -> str:
+        return str(getattr(self, "_model_blocked", "") or getattr(handle, "model_blocked", "") or "")
+
+    def _refuse_blocked_model_post(self, handle: TurnHandle | None = None) -> None:
+        reason = self._blocked_model_post(handle)
+        if reason:
+            from .llm_usd_gate import LlmBudgetBlocked
+            raise LlmBudgetBlocked("browser_tab_required", reason)
+
     async def _llm_request(self, session: aiohttp.ClientSession, url: str,
                            body: dict, emit: EmitFn, handle: TurnHandle) -> dict:
         """POST to the LLM; a timeout, 429 or 5xx is retried _LLM_RETRIES times. Each wait shows as a
         retry row in the chat (429: with a countdown). Tool calls never go through here, so a paid
         run is never repeated."""
+        self._refuse_blocked_model_post(handle)
         attempt = 0
         while True:
             try:
@@ -1942,6 +1952,7 @@ class LocalLlmProvider(AgentProvider):
 
     async def _summarize_llm(self, session, base: str, model: str, previous: str, new_turns: str) -> str:
         """One model call: previous summary + newly pushed-out turns -> updated summary. No retries."""
+        self._refuse_blocked_model_post()
         data = await self._request_json(
             session, "POST", f"{base}/chat/completions", headers=self._api_headers(),
             json_body={"model": model, "temperature": 0.1, "messages": [
@@ -2561,6 +2572,17 @@ class LocalLlmProvider(AgentProvider):
 
     async def send(self, turn: TurnRequest, emit: EmitFn,
                    handle: TurnHandle) -> TurnResult:
+        self._model_blocked = ""
+        handle.model_blocked = ""
+        project = str(getattr(turn, "project_id", "") or "")
+        # "local" is the run-log sentinel, not a canvas project. A requested canvas
+        # project must already be the live browser tab; this does not register one.
+        if project and project != "local":
+            from ..api.mcp_commands import require_project_tab
+            try:
+                require_project_tab(project)
+            except ValueError as exc:
+                return TurnResult(error=str(exc))
         base = self._base_url()
         if not base:
             return TurnResult(
@@ -2656,12 +2678,25 @@ class LocalLlmProvider(AgentProvider):
                         return TurnResult(usage=usage)
 
                     messages.append(assistant_history_message(message, content, tool_calls))
+                    sent_before = len(messages)
                     stopped = await self._dispatch_tools(
                         tool_calls, session=session, turn=turn, emit=emit, handle=handle,
                         messages=messages, done=done, lang=lang, skill_cache=skill_cache,
                         loop=loop, gate=gate, usage=usage, llm_model=model)
                     if stopped is not None:
                         return stopped
+                    from ..api.mcp_commands import mandatory_browser_stop
+                    blocked = ""
+                    for m in messages[sent_before:]:
+                        if m.get("role") != "tool":
+                            continue
+                        blocked = mandatory_browser_stop(str(m.get("content") or ""))
+                        if blocked:
+                            break
+                    if blocked:
+                        handle.model_blocked = blocked
+                        self._model_blocked = blocked
+                        return TurnResult(usage=usage, error=blocked)
                     # #400: paid_gate decline / unattended skip sets pending_stop; do not keep looping
                     if run_ctx.pending_stop is not None:
                         from .run_budget import StopReason

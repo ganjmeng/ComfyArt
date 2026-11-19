@@ -65,6 +65,7 @@ class TurnHandle:
     def __init__(self) -> None:
         self.process: Any = None
         self.stop_requested = False
+        self.model_blocked = ""  # Set from a mandatory tool result before the next reserve.
 
 
 EmitFn = Callable[[BotEvent], Awaitable[None]]

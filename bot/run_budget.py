@@ -50,7 +50,7 @@ SUB_REASONS: dict[StopReason, frozenset[str]] = {
     StopReason.HARD_CAP: frozenset({""}),
     StopReason.USER_STOP: frozenset({"", "quote_declined"}),
     StopReason.AWAITING_CONFIRM: frozenset({"not_approved"}),
-    StopReason.ERROR: frozenset({"llm_retry_exhausted", "tool", "network"}),
+    StopReason.ERROR: frozenset({"llm_retry_exhausted", "tool", "network", "browser_tab"}),
 }
 BUDGET_DIMENSIONS = ("tokens", "credits", "time")
 
