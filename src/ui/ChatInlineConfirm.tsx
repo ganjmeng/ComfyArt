@@ -90,7 +90,7 @@ export function ChatInlineConfirm({
       <p className="ca-chat-confirm__desc" data-testid="chat-inline-confirm-desc">{desc}</p>
       {lines?.length ? lines.map((line, i) => (
         <div key={i} className="ca-keys__row">
-          <span className="ca-lib__name">{line.text}</span>
+          <span className="ca-lib__name ca-chat-confirm__line">{line.text}</span>
           <span className="ca-panel__val">{line.price}</span>
         </div>
       )) : null}

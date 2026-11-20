@@ -155,11 +155,15 @@
   min-height: 30px;
   align-items: flex-start;
 }
-.ca-chat-confirm .ca-keys__row .ca-lib__name {
+.ca-chat-confirm .ca-keys__row .ca-lib__name,
+.ca-chat-confirm__line {
   white-space: normal;
   overflow: visible;
   text-overflow: clip;
-  overflow-wrap: anywhere;
+  /* Break at the separators between stage, spec, and model. Do not force a
+     break inside the spec itself. */
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 .ca-chat-confirm .ca-keys__row .ca-panel__val {
   flex: none;
@@ -173,6 +177,39 @@
 .ca-ask .ca-panel__foot > button { height: 32px; padding: 0 14px; border-radius: 8px; font: inherit; cursor: pointer; }
 .ca-chat__memo { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--ca-muted); }
 .ca-chat__memo .ca-icon { width: 14px; height: 14px; }
+/* Cancelled quote receipt. The confirm-card wrap rules do not cover this line.
+   The status word (已取消 / Canceled) stays one unsplittable run and is not
+   clipped by a tight line box. The prompt in front of it may wrap. */
+.ca-chat__memo--quote {
+  display: flex;
+  align-items: flex-start;
+  box-sizing: border-box;
+  max-width: 100%;
+  width: 100%;
+  padding: 4px 0 6px;
+  overflow: visible;
+  font-size: 12px;
+  line-height: 20px;
+}
+.ca-chat__memo--quote .ca-icon {
+  flex: none;
+  margin-top: 3px;
+}
+.ca-chat__memo--quote .ca-chat__memo-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: visible;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: break-word;
+  line-height: 20px;
+}
+.ca-chat__memo--quote .ca-chat__memo-suffix {
+  white-space: nowrap;
+  word-break: keep-all;
+  line-break: strict;
+  overflow-wrap: normal;
+}
 
 /* #328/#335/#337 Question card — reference 1:1 remaining (PIXEL-GAP-REMAINING post-#338) */
 .ca-q {

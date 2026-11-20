@@ -898,10 +898,14 @@ function PlanQuote({ b }: { b: BotBlock }) {
   }
   if (pending) return error ? <div className="ca-chat__hint">{error}</div> : null
   const started = b.status === 'answered' && (b.selected ?? []).includes('start')
+  const suffix = started ? chrome.ok : b.status === 'expired' ? chrome.timedOut : chrome.canceled
   return (
-    <div className="ca-chat__memo">
+    <div className="ca-chat__memo ca-chat__memo--quote" data-kind="plan_quote">
       <span className="ca-icon">{started ? Icons.check : Icons.close}</span>
-      {b.prompt} → {started ? chrome.ok : b.status === 'expired' ? chrome.timedOut : chrome.canceled}
+      <span className="ca-chat__memo-body">
+        {b.prompt}
+        <span className="ca-chat__memo-suffix"> → {suffix}</span>
+      </span>
     </div>
   )
 }

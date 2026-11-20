@@ -187,7 +187,20 @@ def test_quote_chrome_and_cancel_suffix_follow_the_ui_language():
     assert "Canceled" not in chrome and "Confirm cost" not in chrome and "Generate" not in chrome
     assert "chrome.title" in memo and "chrome.ok" in memo and "chrome.cancel" in memo
     assert "chrome.canceled" in memo
+    assert "ca-chat__memo-suffix" in memo
     assert '"Canceled"' not in memo and "'Canceled'" not in memo
+
+
+def test_committed_dist_serves_the_quote_card_start_label():
+    """The served bundle must include this card's 开始 / Start key. Source alone
+    is not enough: the previous tip left dist equal to #1013."""
+    js = "".join(p.read_text(errors="ignore") for p in (ROOT / "dist" / "assets").glob("*.js"))
+    css = "".join(p.read_text(errors="ignore") for p in (ROOT / "dist" / "assets").glob("*.css"))
+    assert "jobs.planQuoteStart" in js
+    assert "jobs.confirmOk" in js
+    assert "ca-chat-confirm__line" in css
+    assert "ca-chat__memo-suffix" in css
+    assert "word-break:keep-all" in css or "word-break: keep-all" in css
 
 
 def test_quote_card_reason_is_not_a_single_line_ellipsis():
@@ -196,15 +209,21 @@ def test_quote_card_reason_is_not_a_single_line_ellipsis():
     css = (ROOT / "src/styles/overlays.css").read_text(encoding="utf-8")
     assert ".ca-lib__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }" in css
     row = css.split(".ca-chat-confirm .ca-keys__row {", 1)[1].split("}", 1)[0]
-    name = css.split(".ca-chat-confirm .ca-keys__row .ca-lib__name {", 1)[1].split("}", 1)[0]
+    name = css.split(".ca-chat-confirm .ca-keys__row .ca-lib__name,", 1)[1].split("}", 1)[0]
     desc = css.split(".ca-chat-confirm__desc {", 1)[1].split("}", 1)[0]
     price = css.split(".ca-chat-confirm .ca-keys__row .ca-panel__val {", 1)[1].split("}", 1)[0]
     assert "height: auto" in row
+    assert ".ca-chat-confirm__line" in name
     assert "white-space: normal" in name and "text-overflow: clip" in name
     assert "ellipsis" not in name and "nowrap" not in name
     assert "white-space: pre-line" in desc and "text-overflow: clip" in desc
     assert "ellipsis" not in desc
     assert "white-space: nowrap" in price  # the credit amount itself stays intact
+    suffix = css.split(".ca-chat__memo--quote .ca-chat__memo-suffix {", 1)[1].split("}", 1)[0]
+    memo = css.split(".ca-chat__memo--quote {", 1)[1].split("}", 1)[0]
+    assert "white-space: nowrap" in suffix and "word-break: keep-all" in suffix
+    assert "break-all" not in suffix
+    assert "line-height: 20px" in memo and "overflow: visible" in memo and "padding:" in memo
 
 
 async def test_ordinary_calls_keep_the_threshold_and_unpriced_keeps_its_sentence():
