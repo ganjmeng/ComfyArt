@@ -32,18 +32,26 @@ async def test_chat_read_hides_unknown_unauthorized_and_mismatched(bot_client, f
     orphan = chat_store.create_chat(user="default", project="proj-alice", provider="fake-test", title="orphan-title")
     chat_store.create_message(chat_id=orphan["id"], role="user", blocks=[{"type": "text", "text": SECRET}])
 
+    newer = await bot_client.post("/comfyart/bot/chats", json={"project": "proj-a", "provider": "fake-test", "title": "newer-chat"})
+    assert newer.status == 200
+    latest = (await newer.json())["chat"]
+    chat_store.create_message(chat_id=latest["id"], role="user", blocks=[{"type": "text", "text": "LATEST_OTHER_CHAT"}])
+
     ok = await bot_client.get(f"/comfyart/bot/chats/{chat['id']}?project=proj-a")
     assert ok.status == 200
     body = await ok.json()
-    assert SECRET in json.dumps(body)
+    assert body["chat"]["id"] == chat["id"]
     assert body["chat"]["project"] == "proj-a"
+    assert SECRET in json.dumps(body)
+    assert "LATEST_OTHER_CHAT" not in json.dumps(body)
 
     unknown = await bot_client.get("/comfyart/bot/chats/does-not-exist?project=proj-a")
     mismatch = await bot_client.get(f"/comfyart/bot/chats/{chat['id']}?project=proj-b")
     unauthorized = await bot_client.get(f"/comfyart/bot/chats/{orphan['id']}?project=proj-alice")
+    invalid_project = await bot_client.get(f"/comfyart/bot/chats/{chat['id']}?project=no-such-project")
     missing_project = await bot_client.get(f"/comfyart/bot/chats/{chat['id']}")
     texts = []
-    for resp in (unknown, mismatch, unauthorized, missing_project):
+    for resp in (unknown, mismatch, unauthorized, invalid_project, missing_project):
         assert resp.status == 404
         text = await _text(resp)
         texts.append(text)
@@ -65,7 +73,13 @@ def test_chat_link_parser_and_stale_reads():
     assert proc.stdout.strip() == "ok"
     src = (ROOT / "src/bot.ts").read_text(encoding="utf-8")
     assert "if (link.kind === 'open' && link.project === project) void openChat(link.chat)" in src
+    assert "openChat(chats" not in src and "chats[0]" not in src
+    assert "void loadChats().then(() => openChat(chatIdAtom.get()))" in src
+    assert "chatReads.invalidate()" in src
     assert "chatReadPath(requestedProject, id)" in src
     assert "chatReadStillCurrent" in src
     panel = (ROOT / "src/ui/AgentPanel.tsx").read_text(encoding="utf-8")
     assert "bot.chatOpenFailed" in panel and "returnToCurrentProject" in panel
+    home = (ROOT / "src/main.tsx").read_text(encoding="utf-8")
+    assert 'chatLink="invalid"' in home
+    assert "chatLink={project && chatParam ? 'denied' : undefined}" in home

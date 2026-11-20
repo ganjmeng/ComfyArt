@@ -2,6 +2,8 @@ import { ChatReadGate, chatReadPath, readChatLink } from '../../../src/chatLink.
 
 const absent = readChatLink(new URLSearchParams('project=quote-card-fc8d1a79'))
 if (absent.kind !== 'absent') throw new Error('project without chat must stay absent')
+const blankChat = readChatLink(new URLSearchParams('project=quote-card-fc8d1a79&chat='))
+if (blankChat.kind !== 'absent') throw new Error('an empty chat param must not select a chat')
 
 const invalid = readChatLink(new URLSearchParams('chat=8c140643962742f993e078febaf4268a'))
 if (invalid.kind !== 'invalid') throw new Error('chat without project must be an invalid link')
