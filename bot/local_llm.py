@@ -645,6 +645,11 @@ def explain_unsubmitted(name: str, text: str, lang: str) -> Optional[tuple[str, 
     if _CANCEL_RE.search(raw):
         return None
     data = _payload_of(raw)
+    # A lineart redirect is the instruction to show the quote card, not a
+    # finished refusal. Replacing it with the generic "did not submit" copy
+    # drops next_step/quote_card, so the card is never asked.
+    if isinstance(data, dict) and (data.get("next_step") == "quote_card" or data.get("redirect") == "quote_card"):
+        return None
     if isinstance(data, dict) and _generation_submitted(data):
         return None
     blob = raw
@@ -2309,14 +2314,46 @@ class LocalLlmProvider(AgentProvider):
         if quote_item is not None or len(paid) >= 2 or (single and not gate.strict):
             steps = (quote_item["args"].get("steps") if quote_item is not None
                      else [self._implicit_step(it, lang) for it in paid])
+            from .plan_quote import _forces_quote_card, normalize_steps
+            raw_steps = steps if isinstance(steps, list) else []
+            forced_quote = _forces_quote_card(normalize_steps(raw_steps)) or _forces_quote_card(raw_steps)
+            if not forced_quote:
+                forced_quote = _forces_quote_card(
+                    [{"tool": it["name"], "arguments": it["args"]} for it in paid])
             try:
-                quote = await self._quote_steps(steps if isinstance(steps, list) else [], lang)
+                # quote_route reads BOT_CHAT_ID, which the MCP handler sets only
+                # for the later tool HTTP call. Building the quote in the agent
+                # task left it empty, so multi_angle.prepare blocked ("Use
+                # ask_user…"), units stayed 0, and ask stayed False. ask=False
+                # takes the same start=true result as a confirmed card and never
+                # calls _confirm_plan. The turn chat is the one the tool will use.
+                from ..api.mcp_tools._context import BOT_CHAT_ID
+                chat_token = BOT_CHAT_ID.set(str(getattr(turn, "chat_id", "") or ""))
+                try:
+                    quote = await self._quote_steps(raw_steps, lang)
+                finally:
+                    BOT_CHAT_ID.reset(chat_token)
             except Exception as e:
                 _log.exception("[ComfyArt/local-llm] plan quote failed")
                 quote_error = f"[error] {type(e).__name__}: {e}"
                 decision = "error"
             else:
-                if quote is None:
+                if quote is not None and forced_quote:
+                    # Pricing may have left ask False (zero units / under the
+                    # line). That is not a confirmation. The card still has to
+                    # be shown and answered.
+                    quote.ask = True
+                if quote is None and forced_quote:
+                    # build_quote returned None (empty steps or a single priced
+                    # line under the confirm line). Do not report start=true.
+                    decision = "error"
+                    quote_error = json.dumps({
+                        "ok": False, "start": False, "submitted": False,
+                        "redirect": "quote_card", "next_step": "quote_card",
+                        "quote_card": "线稿预览",
+                        "error": "线稿预览报价卡没有生成，不能开始，也没有提交。",
+                    }, ensure_ascii=False)
+                elif quote is None:
                     decision = "passthrough"
                 elif not quote.ask:
                     gate.allow(quote, False)
