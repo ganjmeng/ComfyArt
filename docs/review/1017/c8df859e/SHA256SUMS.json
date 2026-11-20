@@ -1,0 +1,11 @@
+{
+  "direct-entry.png": "3b0bbf8256f58fb5cc0bb66513626e1257c2ed8e6424bdb0e77d4be7c48b99c8",
+  "after-refresh.png": "3b0bbf8256f58fb5cc0bb66513626e1257c2ed8e6424bdb0e77d4be7c48b99c8",
+  "01-unknown-chat-error.png": "7fa27cba0448bdbc0148a347723602c890f74c030869afcd323cd68f2e172bf9",
+  "02-cross-project-error.png": "7fa27cba0448bdbc0148a347723602c890f74c030869afcd323cd68f2e172bf9",
+  "03-missing-project-invalid-link.png": "1ab59a8302c2661965f1143e6dac8b8e9d4caa1a2f17dc827ea54f19eb8d071e",
+  "04-unknown-unobscured.png": "f84dcbbbc41f64b9fca8dbd2014be47535d743811c5c9eed6a5ce7b5896e0206",
+  "04-unknown-returned.png": "9aefd0a3be2dd64fa0fce85e0cd85da7c16c0245ddff0759675bcbddafec700e",
+  "05-cross-unobscured.png": "f84dcbbbc41f64b9fca8dbd2014be47535d743811c5c9eed6a5ce7b5896e0206",
+  "05-cross-returned.png": "9aefd0a3be2dd64fa0fce85e0cd85da7c16c0245ddff0759675bcbddafec700e"
+}
