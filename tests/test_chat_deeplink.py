@@ -1,0 +1,71 @@
+"""Deep link chat read: server checks project access and chat.project before any transcript."""
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+from pathlib import Path
+
+from ComfyArt.api import chat_store, project_store
+
+ROOT = Path(__file__).resolve().parent.parent
+SECRET = "OTHER_PROJECT_SECRET"
+HIDDEN = '{"error": "chat not found"}'
+
+
+def _owns(user: str, project_id: str) -> None:
+    project_store.save_project(user, project_id, "{}", project_id, [])
+
+
+async def _text(resp) -> str:
+    return await resp.text()
+
+
+async def test_chat_read_hides_unknown_unauthorized_and_mismatched(bot_client, fake_provider):
+    _owns("default", "proj-a")
+    _owns("default", "proj-b")
+    _owns("alice", "proj-alice")
+    created = await bot_client.post("/comfyart/bot/chats", json={"project": "proj-a", "provider": "fake-test"})
+    assert created.status == 200
+    chat = (await created.json())["chat"]
+    chat_store.create_message(chat_id=chat["id"], role="user", blocks=[{"type": "text", "text": SECRET}])
+    orphan = chat_store.create_chat(user="default", project="proj-alice", provider="fake-test", title="orphan-title")
+    chat_store.create_message(chat_id=orphan["id"], role="user", blocks=[{"type": "text", "text": SECRET}])
+
+    ok = await bot_client.get(f"/comfyart/bot/chats/{chat['id']}?project=proj-a")
+    assert ok.status == 200
+    body = await ok.json()
+    assert SECRET in json.dumps(body)
+    assert body["chat"]["project"] == "proj-a"
+
+    unknown = await bot_client.get("/comfyart/bot/chats/does-not-exist?project=proj-a")
+    mismatch = await bot_client.get(f"/comfyart/bot/chats/{chat['id']}?project=proj-b")
+    unauthorized = await bot_client.get(f"/comfyart/bot/chats/{orphan['id']}?project=proj-alice")
+    missing_project = await bot_client.get(f"/comfyart/bot/chats/{chat['id']}")
+    texts = []
+    for resp in (unknown, mismatch, unauthorized, missing_project):
+        assert resp.status == 404
+        text = await _text(resp)
+        texts.append(text)
+        assert text == HIDDEN
+        assert SECRET not in text
+        assert "orphan-title" not in text
+        assert "messages" not in text
+        assert json.loads(text) == {"error": "chat not found"}
+    assert len(set(texts)) == 1
+
+
+def test_chat_link_parser_and_stale_reads():
+    out = Path(os.environ.get("TMPDIR", "/tmp")) / "chatlink-deeplink.mjs"
+    subprocess.run(
+        [str(ROOT / "node_modules/.bin/rolldown"), "-c", "tests/js/chatlink/rolldown.config.mjs"],
+        cwd=ROOT, check=True, env={**os.environ, "OUT": str(out)},
+    )
+    proc = subprocess.run(["node", str(out)], cwd=ROOT, check=True, capture_output=True, text=True)
+    assert proc.stdout.strip() == "ok"
+    src = (ROOT / "src/bot.ts").read_text(encoding="utf-8")
+    assert "if (link.kind === 'open' && link.project === project) void openChat(link.chat)" in src
+    assert "chatReadPath(requestedProject, id)" in src
+    assert "chatReadStillCurrent" in src
+    panel = (ROOT / "src/ui/AgentPanel.tsx").read_text(encoding="utf-8")
+    assert "bot.chatOpenFailed" in panel and "returnToCurrentProject" in panel

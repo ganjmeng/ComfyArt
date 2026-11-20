@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { atom, useValue, type Editor, type TLShapeId } from 'tldraw'
 
 import { draftAtom, isRefShape, sendToAgent, uploadRefs, type RefShape } from '../agent'
-import { BUILTIN_AGENT, NO_KEY_DETAIL, botEnabledAtom, branchFrom, chatIdAtom, chatsAtom, deleteChat, messagesAtom, openChat, providersAtom, type BotMessage } from '../bot'
+import { BUILTIN_AGENT, NO_KEY_DETAIL, botEnabledAtom, branchFrom, chatIdAtom, chatLinkErrorAtom, chatsAtom, deleteChat, messagesAtom, openChat, providersAtom, returnToCurrentProject, type BotMessage } from '../bot'
 import { chatFrameOf, locateChatFrame } from '../chatFrame'
 import { errorText } from '../jobs'
 import { libraryAtom } from '../library'
@@ -117,6 +117,7 @@ export function AgentPanel({ editor, projectId, max, onMax, onCollapse, onError 
   onError: (msg: string) => void
 }) {
   const messages = useValue(messagesAtom)
+  const linkError = useValue(chatLinkErrorAtom)
   const chat = useValue('current chat', () => (chatsAtom.get() ?? []).find((c) => c.id === chatIdAtom.get()) ?? null, [])
   const providers = useValue(providersAtom) ?? []
   const keyStatus = useValue(keyStatusAtom)
@@ -176,6 +177,12 @@ export function AgentPanel({ editor, projectId, max, onMax, onCollapse, onError 
         </button>
       </ProjectHeader>
       <div ref={list} className="ca-chat" onScroll={onScroll}>
+        {linkError === 'denied' && (
+          <div className="ca-chat__notice" data-level="error" data-testid="chat-open-failed">
+            <div>{t('bot.chatOpenFailed')}</div>
+            <button type="button" className="ca-panel__primary" onClick={() => returnToCurrentProject()}>{t('bot.backToProject')}</button>
+          </div>
+        )}
         {enabled === false && (
           <div className="ca-chat__empty">
             <span className="ca-chat__hello"><LoomiMono /></span>
@@ -191,7 +198,7 @@ export function AgentPanel({ editor, projectId, max, onMax, onCollapse, onError 
             <a href="#" onClick={(e) => { e.preventDefault(); keySettingsOpenAtom.set(true) }}>{t('agentPanel.setWavespeedKey')}</a>
           </div>
         )}
-        {enabled !== false && messages.length === 0 && (
+        {enabled !== false && messages.length === 0 && linkError !== 'denied' && (
           <div className="ca-chat__empty" data-creator={creating || undefined} data-testid="chat-empty">
             {creating
               ? <div className="ca-chat__title" data-testid="creator-landing-title">{t('agentPanel.creatorStartTitle')}</div>

@@ -173,7 +173,7 @@ function main(view: View) {
   return <NotFound id={view.missing} />
 }
 
-export function HomeApp({ view }: { view: View }) {
+export function HomeApp({ view, chatLink }: { view: View; chatLink?: 'invalid' | 'denied' }) {
   const [collapsed, setCollapsed] = useState(() => readLocal(RAIL_COLLAPSE_KEY) === '1') // #607: desktop default expanded; only '1' persists collapsed (clears #546 default-collapsed)
   const expanded = !collapsed
   const [recent, setRecent] = useState<ProjectEntry[] | null>(null)
@@ -271,7 +271,22 @@ export function HomeApp({ view }: { view: View }) {
           <SettingsRailBtn open={open} toggle={toggle} expanded={expanded} />
         )} />
       </nav>
-      <main className="ca-home__main">{main(view)}</main>
+      <main className="ca-home__main">
+        {chatLink === 'invalid' && <div className="ca-missing" data-testid="chat-link-invalid"><h1>{t('bot.chatLinkInvalid')}</h1></div>}
+        {chatLink === 'denied' && (
+          <div className="ca-missing" data-testid="chat-open-failed">
+            <h1>{t('bot.chatOpenFailed')}</h1>
+            <div className="ca-missing__acts">
+              <button type="button" className="ca-landing__chip" onClick={() => {
+                const url = new URL(location.href)
+                url.searchParams.delete('chat')
+                location.assign(url.toString())
+              }}>{t('bot.backToProject')}</button>
+            </div>
+          </div>
+        )}
+        {main(view)}
+      </main>
       <Confirm />
       <MemoryChooser />
       <MemoryToast />
