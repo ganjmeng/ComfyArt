@@ -1,0 +1,126 @@
+{
+  "kind": "declarative_unactivated_proposal",
+  "activated": false,
+  "directories_created": false,
+  "port_bound": false,
+  "ledger_migrated": false,
+  "authorization_created": false,
+  "product_defaults_unchanged": true,
+  "logical_sha": "d4a096667bcf4dd7e3f27070f9dba403256d4ad2",
+  "logical_sha_is_latest_source_logic": true,
+  "source_logic_files_after_logical_sha": [],
+  "delivery_parent_before_this_file": "a61d2464884ad84eab6483ff9be0d7e09e55e554",
+  "this_file_commit_is_not_the_authorization_target": true,
+  "dist_delivery_sha": "1cc1a279a0d1d2cd3ec907bf818f5c5451249acb",
+  "dist_delivery_changes": "docs/integrate/1013-1014-dist-sha256.json only; dist bytes match d4a09666",
+  "authorization_target": "logical_sha",
+  "authorization_target_is_not": [
+    "1cc1a279a0d1d2cd3ec907bf818f5c5451249acb",
+    "1f1664e661d2b9de0a91a31a53afa54281870133",
+    "a61d2464884ad84eab6483ff9be0d7e09e55e554",
+    "the commit that adds this file"
+  ],
+  "candidate_source_sha256": "530967f0412acdac93b438cd7b0965ee0767d408df068d596200b1af31a24931",
+  "source_file_count": 92,
+  "frozen_launcher_sha256": "8b57e33e5c194ffb39d6e092e71a6b2352e52e8b2e2b94156bcd585d42a8bc20",
+  "frozen_launcher_binds": "80d1d1fe source tree and reads a secret env file; not the proposed launcher",
+  "proposed_launcher_file": "docs/integrate/protection-v3/proposed-launcher.unactivated.txt",
+  "tech_confirmed_frozen_originals": {
+    "bootstrap_controlled.py": "778b6eec40d46e31c855836180855136722540214ffba75b96ed7f7bc97282a8",
+    "wavespeed_price_guard.py": "565b321b4f2773d100be570642d0eb8a003f1fa68ed1e429921d36a5a3ce3526",
+    "hardcoded_git": "c7c891955e6402bf566af47f5a2dc37925cff7df",
+    "hardcoded_source": "da5dbe0b30b5eaa2d31d550d3db6f56a6d1f26f6cd4e9a5666f4965e7abffdc4",
+    "hardcoded_port": 8931,
+    "hardcoded_plugin": "/workspace/wt_1008_final_c7c89195",
+    "hardcoded_home": "/workspace/comfyart-authority-1004"
+  },
+  "old_mapping_not_copied": {
+    "provenance_path_not_read": "/workspace/comfyart-authority-1004/authorization-provenance.json",
+    "provenance_present_on_this_vm": false,
+    "ledger_not_read_or_altered": true,
+    "tech_ledger": {
+      "ceiling_usd": 5,
+      "charged_usd": 0.353834352,
+      "post_budget": "30/30 exhausted",
+      "hash_unchanged": "8faa0432a522d004c7209045860c7385618d8c222f42f5bde934af25caeea9fe",
+      "user_approved_versus_test_added_limits": "PM remit, not this review"
+    },
+    "reviewed_git_pairs_in_source_not_reused": true
+  },
+  "proposed_paths": {
+    "home": "/var/lib/comfyart-unactivated/logical-d4a09666/home",
+    "source_tree": "/var/lib/comfyart-unactivated/logical-d4a09666/source",
+    "port": 8946,
+    "runtime_id": "logical-d4a09666-unactivated"
+  },
+  "port_8946": {
+    "bound_by_this_review": false,
+    "listening_on_this_vm": false,
+    "also_not_listening_on_this_vm": [
+      8931,
+      8932,
+      8933,
+      8934,
+      8935
+    ],
+    "qa_host_not_probed": true
+  },
+  "runtime_identity": {
+    "formula": "canonical_digest({home, runtime_id, source_sha256}) from bot/llm_aux_context.py; keys sorted by json.dumps sort_keys",
+    "home_realpath_equals_literal_on_this_vm": true,
+    "directory_exists": false,
+    "fingerprint": "ca76d4c48564cf632ac9fee804b16663df415aae7c2c67fcd8b3b9208600bcab",
+    "runtime_identity_not_called": true,
+    "if_host_realpath_differs_fingerprint_does_not_apply": true
+  },
+  "binding_diff_unactivated": {
+    "git": {
+      "from": "c7c891955e6402bf566af47f5a2dc37925cff7df",
+      "to_logical": "d4a096667bcf4dd7e3f27070f9dba403256d4ad2"
+    },
+    "source_sha256": {
+      "from": "da5dbe0b30b5eaa2d31d550d3db6f56a6d1f26f6cd4e9a5666f4965e7abffdc4",
+      "to": "530967f0412acdac93b438cd7b0965ee0767d408df068d596200b1af31a24931"
+    },
+    "home": {
+      "from": "/workspace/comfyart-authority-1004",
+      "to": "/var/lib/comfyart-unactivated/logical-d4a09666/home"
+    },
+    "plugin": {
+      "from": "/workspace/wt_1008_final_c7c89195",
+      "to": "/var/lib/comfyart-unactivated/logical-d4a09666/source"
+    },
+    "port": {
+      "from": 8931,
+      "to": 8946
+    },
+    "runtime_id": {
+      "from": "COMFYART_RUNTIME_ID on the old deployment; value not read",
+      "to": "logical-d4a09666-unactivated"
+    },
+    "runtime_fingerprint": {
+      "from": "not read from the old provenance",
+      "to": "ca76d4c48564cf632ac9fee804b16663df415aae7c2c67fcd8b3b9208600bcab"
+    },
+    "authorization_id": "unassigned",
+    "ledger": "not created and not the existing 1004 ledger"
+  },
+  "permissions": {
+    "deepseek_model_post": "Original v3 allows the official DeepSeek chat URL. Tech reports the existing ledger POST budget is 30/30 exhausted, so that POST cannot run on that ledger. This proposal does not migrate the ledger and does not add a product restriction.",
+    "wavespeed_pricing_only": "Separate from DeepSeek. GET https://api.wavespeed.ai/api/v3/models and POST https://api.wavespeed.ai/api/v3/model/price with singular input. No generation, submit, upload, or balance endpoint.",
+    "network_test": "not performed"
+  },
+  "qa_on_1cc1a279": {
+    "pytest": "102 passed in 7.38s, independent",
+    "dist_files": 148,
+    "dist_exact_versus_d4a09666": true,
+    "covers": [
+      "offline simulation",
+      "card empty defaults",
+      "preview sizing",
+      "no composition before preview"
+    ],
+    "cancellation": "tests assert copy and CSS only (locale strings, wrap, no ellipsis). They do not show cancellation persistence. The earlier #1014 persistence result does not transfer to this candidate."
+  },
+  "proposed_launcher_sha256": "8d97073d1870b8837296e242431099961bf5b735e650f2c1d5c074a4bb84d132"
+}
