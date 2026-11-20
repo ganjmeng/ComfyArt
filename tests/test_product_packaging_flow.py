@@ -557,10 +557,11 @@ LOCALE_EXTRAS = {
            "wsErr.userRatioUnsupported": RATIO_REFUSAL_LOCALE_994[lang]}
     for lang in ("zh", "en")
 }
-# sha256 of the canonical JSON of main e8c4a855's locale files (minus the extras above).
+# sha256 of the canonical JSON of the locale files (minus the extras above).
+# Includes jobs.planQuoteStart (开始 / Start) for this quote card only.
 LOCALE_BASE_SHA256 = {
-    "src/locales/zh.json": "4a96ca4d146ccb8c8a336c643ebd9e1d830ebee5d843d5f5719062209472755a",
-    "src/locales/en.json": "887b52a29e5a337c54d2ca86e650971eea7e78a7acb71cafd78ac984eca4369e",
+    "src/locales/zh.json": "be709b1a75a6352a967ead68636cf2d3238c27e1270fe177e092b2b4498a991f",
+    "src/locales/en.json": "af95bb333fd0bdb7e987d23084abb0e59e99eaeb87f3e021279e4c695e59ef5c",
 }
 
 

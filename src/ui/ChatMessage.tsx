@@ -844,12 +844,14 @@ export function OverQuote({ b }: { b: BotBlock }) {
 }
 
 /** Title, buttons, and the after-cancel suffix follow the active UI language.
- * Chinese UI: 确认费用 / 取消 / 继续生成, and 已取消 after cancel.
- * English UI: Confirm cost / Cancel / Generate, and Canceled. Not a fixed English set. */
+ * Chinese UI: 确认费用 / 取消 / 开始, and 已取消 after cancel.
+ * English UI: Confirm cost / Cancel / Start, and Canceled.
+ * The primary button is quote-card-only (开始 / Start), matching 确定开始吗？.
+ * jobs.confirmOk stays 继续生成 / Generate for the other cards. */
 function planQuoteChrome() {
   return {
     title: t('jobs.confirmTitle'),
-    ok: t('jobs.confirmOk'),
+    ok: t('jobs.planQuoteStart'),
     cancel: t('common.cancel'),
     canceled: t('chatMessage.canceled'),
     timedOut: t('chatMessage.timedOut'),

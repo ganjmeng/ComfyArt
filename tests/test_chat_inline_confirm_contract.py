@@ -24,13 +24,14 @@ def test_inline_card_has_no_modal_scrim():
 
 
 def test_inline_primary_uses_jobs_confirm_ok():
-    """Plan-quote title, Generate, and Cancel follow the UI language.
-    The after-cancel suffix is chatMessage.canceled (已取消 / Canceled), not a
-    hardcoded English word. Over-quote still uses jobs.confirmOk too."""
+    """Over-quote keeps jobs.confirmOk (继续生成 / Generate). The plan quote's
+    primary button is jobs.planQuoteStart (开始 / Start). Title, Cancel, and
+    the after-cancel suffix still follow the UI language."""
     assert "okLabel={t('jobs.confirmOk')}" in CHAT or 'okLabel={t("jobs.confirmOk")}' in CHAT
     assert "okLabel={copy.confirm}" not in CHAT
     assert "okLabel={startLabel" not in CHAT
     assert "function planQuoteChrome()" in CHAT
+    assert "t('jobs.planQuoteStart')" in CHAT
     assert "t('jobs.confirmTitle')" in CHAT and "t('common.cancel')" in CHAT
     assert "t('chatMessage.canceled')" in CHAT
     assert 'title="Confirm cost"' not in CHAT and "title='Confirm cost'" not in CHAT

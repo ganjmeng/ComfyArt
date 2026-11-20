@@ -388,8 +388,10 @@ def test_card_reuses_the_confirm_component_and_skips_the_second_dialog():
     assert "Modal" not in inline and "createPortal" not in inline
     assert "ca-quote" not in css and "plan_quote" not in css
     assert "setAgentPlanConfirmed(true)" in chat
-    # Title, Generate, Cancel, and the after-cancel suffix follow the UI language.
-    assert "t('jobs.confirmTitle')" in chat and "t('jobs.confirmOk')" in chat
+    # Title, cancel, and the after-cancel suffix follow the UI language.
+    # This card's primary button is 开始 / Start, not the shared 继续生成 / Generate.
+    assert "t('jobs.confirmTitle')" in chat and "t('jobs.planQuoteStart')" in chat
+    assert "t('jobs.confirmOk')" in chat
     assert "t('common.cancel')" in chat and "t('chatMessage.canceled')" in chat
     assert "planBypassNow" in comfy and "inputs.confirmed = true" in comfy
     assert "const skipConfirm = planBypassNow()" in jobs

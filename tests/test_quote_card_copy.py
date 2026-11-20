@@ -167,20 +167,23 @@ async def test_multi_step_wording_splits_the_same_way():
 def test_quote_chrome_and_cancel_suffix_follow_the_ui_language():
     """Title, buttons, and the after-cancel suffix use the active UI language.
 
-    Chinese interface: 确认费用 / 取消 / 继续生成, and 已取消 after cancel.
-    English interface: Confirm cost / Cancel / Generate, and Canceled.
+    Chinese interface: 确认费用 / 取消 / 开始, and 已取消 after cancel.
+    English interface: Confirm cost / Cancel / Start, and Canceled.
+    The primary button is this card only. jobs.confirmOk stays 继续生成 / Generate.
     """
     zh = json.loads((ROOT / "src/locales/zh.json").read_text(encoding="utf-8"))
     en = json.loads((ROOT / "src/locales/en.json").read_text(encoding="utf-8"))
     assert zh["jobs.confirmTitle"] == "确认费用" and en["jobs.confirmTitle"] == "Confirm cost"
     assert zh["common.cancel"] == "取消" and en["common.cancel"] == "Cancel"
+    assert zh["jobs.planQuoteStart"] == "开始" and en["jobs.planQuoteStart"] == "Start"
     assert zh["jobs.confirmOk"] == "继续生成" and en["jobs.confirmOk"] == "Generate"
     assert zh["chatMessage.canceled"] == "已取消" and en["chatMessage.canceled"] == "Canceled"
     chat = (ROOT / "src/ui/ChatMessage.tsx").read_text(encoding="utf-8")
     chrome = chat.split("function planQuoteChrome()", 1)[1].split("function PlanQuote", 1)[0]
     memo = chat.split("function PlanQuote", 1)[1].split("function Task", 1)[0]
-    for key in ("jobs.confirmTitle", "jobs.confirmOk", "common.cancel", "chatMessage.canceled"):
+    for key in ("jobs.confirmTitle", "jobs.planQuoteStart", "common.cancel", "chatMessage.canceled"):
         assert f"t('{key}')" in chrome
+    assert "jobs.confirmOk" not in chrome
     assert "Canceled" not in chrome and "Confirm cost" not in chrome and "Generate" not in chrome
     assert "chrome.title" in memo and "chrome.ok" in memo and "chrome.cancel" in memo
     assert "chrome.canceled" in memo
