@@ -75,6 +75,16 @@ _PROMPT_ONE = {
     "zh": "这次生成预计约 {total} 积分，达到了你设置的 {threshold} 积分确认线。确定开始吗？",
     "en": "This generation will cost about {total} credits, at or above your {threshold} credits confirm limit. Start?",
 }
+# A skill can still force this card when the estimate is under the confirmation line.
+# That path must not claim the line was reached. The number is the real estimate.
+_PROMPT_FORCED = {
+    "zh": "这个任务共 {n} 步，预计约 {total} 积分，需要确认后才能开始。确定开始吗？",
+    "en": "This task has {n} steps and will cost about {total} credits, and confirmation is required before it starts. Start?",
+}
+_PROMPT_FORCED_ONE = {
+    "zh": "这次生成预计约 {total} 积分，这一步需要确认。确定开始吗？",
+    "en": "This generation will cost about {total} credits, and this step needs confirmation. Start?",
+}
 # #968: an unpriced step forces a confirm card without claiming any amount (never "约 0 积分").
 _PROMPT_UNPRICED = {
     "zh": "这个任务共 {n} 步，价格暂未确定，需要你确认后按实际价格执行。确定开始吗？",
@@ -480,6 +490,8 @@ class _StepPrice:
     units: int
     source: str = SOURCE_QUOTE
     reason: str = ""
+    # Display-only stage snapshot from the quote route. Not a price input.
+    stage: Optional[dict] = None
 
 
 async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
@@ -497,6 +509,7 @@ async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
     feature = feature_of_step(tool, args)
     routed = _route(router, tool, args, position) if router is not None and not step.get("svg_blocked") else None
     choice = None
+    stage_view = None
     if routed and isinstance(routed, tuple) and (routed[1] or {}).get("param_blocked"):
         # #956 / #957: do not price a silent text-to-image fallback when required params are missing.
         return _StepPrice(None, True, "", None, routed[1]["param_blocked"], 0, SOURCE_UNPRICED, "param_blocked")
@@ -507,6 +520,10 @@ async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
         maybe = payload.pop("_model_choice", None)
         if isinstance(maybe, dict):
             choice = maybe
+        # Display only. Pop before the price-key filter so the snapshot cannot be billed.
+        stage_view = payload.pop("_quote_stage", None)
+        if not isinstance(stage_view, dict):
+            stage_view = None
         inputs = {**inputs, **{k: v for k, v in payload.items() if k in _PRICE_KEYS or k in ("images", "width", "height")}}
         # #956 / #957: units follow the validated args (e.g. packaging/portrait lock count to 1).
         if "count" in payload or "n" in payload:
@@ -532,9 +549,10 @@ async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
         source = SOURCE_ESTIMATE if amount is not None else SOURCE_UNPRICED
         reason = "dearest_model"
     if amount is None:
-        return _StepPrice(None, True, show, choice, None, units, SOURCE_UNPRICED, reason)
+        return _StepPrice(None, True, show, choice, None, units, SOURCE_UNPRICED, reason, stage=stage_view)
     return _StepPrice(round(float(amount) * units, 6),
-                      approx or source == SOURCE_ESTIMATE, show, choice, None, units, source, reason)
+                      approx or source == SOURCE_ESTIMATE, show, choice, None, units, source, reason,
+                      stage=stage_view)
 
 
 def _forces_quote_card(prepared: list[dict]) -> bool:
@@ -581,6 +599,56 @@ def not_ready_payload(lang: str, detail: str = "") -> str:
         "ok": False, "start": False, "submitted": False,
         "quote_ready": False, "error": error,
     }, ensure_ascii=False)
+
+
+def _estimate_reached_line(total: float, threshold: float) -> bool:
+    """True when this estimate itself meets the confirmation line.
+
+    ``threshold == 0`` is the settings contract "always confirm", so the existing
+    line sentence stays true. A positive line is met only by a positive estimate
+    at or above it. A skill can still force a card below that line; that card
+    must not reuse the reached-line sentence.
+    """
+    threshold = round(float(threshold), 4)
+    if threshold == 0:
+        return True
+    total = round(float(total), 4)
+    return total > 0 and total >= threshold
+
+
+def _stage_spec_text(view: Optional[dict], lang: str) -> str:
+    """Size/spec for this quoted stage, read from that stage's snapshot.
+
+    The format string has no pixel or ratio literal. Preview is the snapshot
+    size. A final/output stage adds the user's composition count when the
+    quote recorded one. A single-line ellipsis cuts the end of the row, so
+    the caller places this immediately after the stage label.
+    """
+    if not isinstance(view, dict):
+        return ""
+    stage = str(view.get("stage") or "")
+    snapshot = view.get("snapshot") if isinstance(view.get("snapshot"), dict) else {}
+    spec = snapshot.get(stage) if isinstance(snapshot.get(stage), dict) else {}
+    if not spec.get("width"):
+        fallback = view.get("stage_spec")
+        spec = fallback if isinstance(fallback, dict) else {}
+    width, height, ratio = spec.get("width"), spec.get("height"), spec.get("ratio")
+    if isinstance(width, bool) or isinstance(height, bool):
+        return ""
+    if not isinstance(width, int) or not isinstance(height, int) or width <= 0 or height <= 0:
+        return ""
+    if not isinstance(ratio, str) or not ratio:
+        return ""
+    text = f"{width}×{height} / {ratio}"
+    if stage != "final":
+        return text
+    count = view.get("composition_count")
+    if isinstance(count, bool) or not isinstance(count, int) or count <= 0:
+        return text
+    if _lang(lang) == "zh":
+        return f"{text} · {count} 个构图"
+    word = "composition" if count == 1 else "compositions"
+    return f"{text} · {count} {word}"
 
 
 def _needs_ask(total: float, threshold: float, unknown_price: bool) -> bool:
@@ -632,9 +700,10 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         amount, approx, source, reason = priced.amount, priced.approx, priced.source, priced.reason
         unpriced = amount is None
         name = step["text"] or step["tool"]
+        preview_name = ""
         if step["tool"] == "generate_image":
             from ..api.multi_angle import quote_step_label
-            preview_name = quote_step_label(step.get("arguments") or {}, lang)
+            preview_name = quote_step_label(step.get("arguments") or {}, lang) or ""
             if preview_name:
                 name = preview_name
         label = model_label(show) if show else AUTO_LABEL[lang]
@@ -647,7 +716,15 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
                 label = copied
         # #968: the row label is a single-line ellipsis (.ca-lib__name), so a long tag at the END gets
         # cut. Keep the list-price tag one short word and put it BEFORE the (often long) model copy.
-        parts = [name]
+        # The stage spec sits immediately after the stage label (or leads the row when this
+        # stage has no label) for the same reason: a trailing size is what the ellipsis hides.
+        parts = [name] if name else []
+        spec_text = _stage_spec_text(priced.stage, lang)
+        if spec_text:
+            if preview_name and parts[:1] == [preview_name]:
+                parts.insert(1, spec_text)
+            else:
+                parts.insert(0, spec_text)
         if source == SOURCE_ESTIMATE and reason == "list_price":
             parts.append(LIST_PRICE_NOTE[lang])
         if label:
@@ -671,8 +748,11 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
     acquired = all(_line_acquired(ln) for ln in lines)
     # A forced lineart card waits only on a quotation that was actually acquired,
     # including a priced zero. A param block or a missing price is not that quote
-    # and must not keep the unpriced "confirm to run" Start.
-    if _forces_quote_card(prepared):
+    # and must not keep the unpriced "confirm to run" Start. Forcing the card
+    # does not change the confirmation line and does not make an under-line
+    # estimate count as having reached it.
+    forced = _forces_quote_card(prepared)
+    if forced:
         ask = acquired
     if len(lines) == 1 and not ask and not lines[0].unpriced:
         # #904: a known 0-credit (or under-line) single call runs as before. A single refusal
@@ -698,6 +778,9 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         template = (_PROMPT_UNPRICED_ONE if len(lines) == 1 else
                     (_PROMPT_UNPRICED if all_unpriced else _PROMPT_PARTIAL_UNPRICED))
         prompt = template[lang].format(n=len(lines))
+    elif forced and not _estimate_reached_line(total, threshold):
+        template = _PROMPT_FORCED_ONE if len(lines) == 1 else _PROMPT_FORCED
+        prompt = template[lang].format(n=len(lines), total=total_credits)
     else:
         prompt = (_PROMPT_ONE if len(lines) == 1 else _PROMPT)[lang].format(
             n=len(lines), total=total_credits, threshold=ui_credits(threshold))

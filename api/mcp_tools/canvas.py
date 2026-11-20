@@ -731,6 +731,19 @@ def quote_route(action: str, args: dict, user_text: str | None = None, catalog: 
             inputs["images"] = [f"ref-{i + 1}" for i in range(len(refs))]
     # #953: display-only payload for the quote card; plan_quote pops this before pricing.
     inputs["_model_choice"] = {k: v for k, v in choice.items() if k != "_exact_args"}
+    if multi_meta is not None:
+        # The quote line reads this snapshot. It is not a price field and it is
+        # not the tool's width/height, which prepare() already replaced.
+        view = multi_angle.quote_stage_view(multi_meta)
+        if isinstance(view, dict) and view.get("stage") == "final":
+            try:
+                picked = multi_angle.selection(BOT_CHAT_ID.get() or "")
+            except ValueError:
+                picked = []
+            if picked:
+                view = {**view, "composition_count": len(picked)}
+        if view:
+            inputs["_quote_stage"] = view
     return model, inputs
 
 
