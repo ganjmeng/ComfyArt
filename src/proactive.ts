@@ -4,6 +4,7 @@ import type { TLShape } from 'tldraw'
 
 import { api, readUserJson, uploadImage, viewUrl, writeUserJson } from './comfy'
 import { botEnabledAtom, settingsAtom, type BotMessage } from './bot'
+import { chatReadPath } from './chatLink'
 import { errorText, mediaAsset, onImagePlaced, type ErrorSink } from './jobs'
 import { ask as askDefault, parseJson } from './llm'
 import { announceMemoryUpdated } from './bot'
@@ -66,7 +67,7 @@ function take(state: State, a: Ability): boolean {
 export const runsToday = () => readUserJson<State | null>(FILE, null).then((s) => (s?.day === today() ? s.runs : {}))
 
 async function exchange(chatId: string, messageId: string) {
-  const res = await api(`/comfyart/bot/chats/${chatId}`)
+  const res = await api(chatReadPath(currentProject(), chatId))
   if (!res.ok) return null
   const { messages } = await res.json() as { messages: BotMessage[] }
   const reply = messages.find((m) => m.id === messageId)
