@@ -2,7 +2,7 @@ from aiohttp import web
 
 from ..bot import get_provider, list_providers
 from ..bot.providers import ProviderStatus
-from . import bot_asks, chat_store
+from . import bot_asks, chat_store, project_store
 from . import bot_send as send_core
 from ._common import error, json_body, request_user, routes
 from .bot_turns import ACTIVE_TURNS, QUEUED, broadcast
@@ -91,10 +91,21 @@ async def bot_status(request: web.Request) -> web.Response:
     return web.json_response({"enabled": True, "user": user, "providers": out, "llm": llm})
 
 
+_CHAT_HIDDEN = '{"error": "chat not found"}'
+
+
+def _hide_chat() -> None:
+    """Same body for an unknown chat, a project this user cannot open, or a project mismatch.
+
+    Raised before any message lookup so another project's transcript cannot be in the response.
+    """
+    raise web.HTTPNotFound(text=_CHAT_HIDDEN, content_type="application/json")
+
+
 def _owned_chat(request: web.Request) -> dict:
     chat = chat_store.get_chat(request.match_info["cid"])
     if chat is None or chat["user"] != request_user(request):
-        raise web.HTTPNotFound(text='{"error": "chat not found"}', content_type="application/json")
+        raise web.HTTPNotFound(text=_CHAT_HIDDEN, content_type="application/json")
     return chat
 
 
@@ -133,7 +144,16 @@ async def bot_create_chat(request: web.Request) -> web.Response:
 async def bot_get_chat(request: web.Request) -> web.Response:
     if not bot_enabled():
         return bot_disabled()
-    chat = _owned_chat(request)
+    # The existing chat read. Project access and chat.project are checked before messages are loaded.
+    # A missing project query is not a read: the deep link `chat` without `project` never reaches here
+    # from the UI, and a direct call still must not receive a transcript.
+    project_id = request.query.get("project", "")
+    user = request_user(request)
+    if not project_id or project_store.get_snapshot(user, project_id) is None:
+        _hide_chat()
+    chat = chat_store.get_chat(request.match_info["cid"])
+    if chat is None or chat["user"] != user or chat.get("project") != project_id:
+        _hide_chat()
     messages = chat_store.list_messages(chat["id"])
     state = ACTIVE_TURNS.get(chat["id"])
     if state is not None:

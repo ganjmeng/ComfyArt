@@ -551,10 +551,23 @@ RATIO_REFUSAL_LOCALE_994 = {
     "zh": "该模型不支持你指定的比例；未提交、未扣费。请明确选择它支持的比例或另一个模型，不会自动改回默认值。",
     "en": "Requested ratio is not supported by this model. Nothing submitted; no charge. Choose a supported ratio or a different model explicitly; the default was not substituted.",
 }
+CHAT_LINK_LOCALE = {
+    "zh": {
+        "bot.backToProject": "返回当前项目",
+        "bot.chatLinkInvalid": "链接无效",
+        "bot.chatOpenFailed": "无法打开该会话",
+    },
+    "en": {
+        "bot.backToProject": "Back to this project",
+        "bot.chatLinkInvalid": "This link is invalid",
+        "bot.chatOpenFailed": "Can't open this chat",
+    },
+}
 LOCALE_EXTRAS = {
     lang: {"bot.composeBannerText": BANNER_LOCALE[lang], **PORTRAIT_LOCALE[lang],
            "runStop.stillGenerating": RUN_STOP_LOCALE[lang],
-           "wsErr.userRatioUnsupported": RATIO_REFUSAL_LOCALE_994[lang]}
+           "wsErr.userRatioUnsupported": RATIO_REFUSAL_LOCALE_994[lang],
+           **CHAT_LINK_LOCALE[lang]}
     for lang in ("zh", "en")
 }
 # sha256 of the canonical JSON of main e8c4a855's locale files (minus the extras above).

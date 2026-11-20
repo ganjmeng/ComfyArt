@@ -8,6 +8,7 @@ import { onComfyEvent, onReconnect } from './ws'
 import { lang, t } from './i18n'
 import { wsBodyError } from './wsErrors'
 import { handleScheduleTurnDone, isSchedulePending, noteScheduleNotify } from './schedulePending'
+import { ChatReadGate, InitEpoch, chatReadPath, readChatLink, settleBotInit } from './chatLink'
 
 export interface AskOption { id: string; label: string; description?: string; image_url?: string; recommended?: boolean }
 export interface AskQuestion {
@@ -165,6 +166,18 @@ export const newProviderAtom = atom<string>('bot new provider', '')
 export const providersStateAtom = atom<{ state: 'loading' | 'ready' | 'error'; error?: string }>('bot providers state', { state: 'loading' })
 
 let project = ''
+const chatReads = new ChatReadGate()
+const initEpoch = new InitEpoch()
+
+export const chatLinkErrorAtom = atom<'denied' | null>('chat link error', null)
+
+export function returnToCurrentProject() {
+  chatLinkErrorAtom.set(null)
+  const url = new URL(location.href)
+  url.searchParams.delete('chat')
+  history.replaceState(null, '', url)
+  void openChat(null)
+}
 let me = ''
 
 async function json<T>(path: string, init?: RequestInit): Promise<T> {
@@ -293,21 +306,39 @@ function mergePendingAsks(messages: BotMessage[], asks: Array<BotBlock & { messa
   })
 }
 
+function chatReadStillCurrent(token: number, requestedProject: string, id: string): boolean {
+  return chatReads.isCurrent(token) && project === requestedProject && chatIdAtom.get() === id
+}
+
 export async function openChat(id: string | null) {
+  const token = chatReads.begin()
+  const requestedProject = project
   chatIdAtom.set(id)
-  if (!id) return messagesAtom.set([])
-  const { chat, messages } = await json<{ chat: BotChat; messages: BotMessage[] }>(`/comfyart/bot/chats/${id}`)
-  if (chatIdAtom.get() !== id) return
-  upsertChat(chat)
-  let merged = messages
-  try {
-    const { asks } = await json<{ asks: BotBlock[] }>(`/comfyart/bot/chats/${id}/asks`)
-    if (asks?.length) merged = mergePendingAsks(messages, asks)
-  } catch {
-    /* list is best-effort; messages alone usually already hold pending blocks */
+  if (!id) {
+    messagesAtom.set([])
+    chatLinkErrorAtom.set(null)
+    return
   }
-  if (chatIdAtom.get() !== id) return
-  messagesAtom.set(merged)
+  try {
+    const { chat, messages } = await json<{ chat: BotChat; messages: BotMessage[] }>(chatReadPath(requestedProject, id))
+    if (!chatReadStillCurrent(token, requestedProject, id)) return
+    chatLinkErrorAtom.set(null)
+    upsertChat(chat)
+    let merged = messages
+    try {
+      const { asks } = await json<{ asks: BotBlock[] }>(`/comfyart/bot/chats/${id}/asks`)
+      if (asks?.length) merged = mergePendingAsks(messages, asks)
+    } catch {
+      /* list is best-effort; messages alone usually already hold pending blocks */
+    }
+    if (!chatReadStillCurrent(token, requestedProject, id)) return
+    messagesAtom.set(merged)
+  } catch {
+    if (!chatReadStillCurrent(token, requestedProject, id)) return
+    messagesAtom.set([])
+    chatIdAtom.set(null)
+    chatLinkErrorAtom.set('denied')
+  }
 }
 
 function upsertChat(chat: BotChat) {
@@ -522,7 +553,21 @@ export async function refreshBot(opts?: { refresh?: boolean }) {
 
 export function startBot(projectId: string, isStale: () => boolean) {
   project = projectId
+  const epoch = initEpoch.begin()
+  const captured = readChatLink(new URL(location.href).searchParams)
   void refreshBot().catch(() => {})  // #294: a failed first load is kept in providersStateAtom and shown on send
+    .finally(() => {
+      // Re-read the URL. A cancelled epoch must not call openChat, which would mint a fresh read token.
+      const chat = settleBotInit({
+        epoch,
+        currentEpoch: initEpoch.current(),
+        stale: isStale(),
+        captured,
+        live: readChatLink(new URL(location.href).searchParams),
+        projectId: project,
+      })
+      if (chat) void openChat(chat)
+    })
   const stops = [
     onComfyEvent('comfyart-bot', (e: { event: string }) => {
       if (!isStale()) reducers[e.event]?.(e)
@@ -533,5 +578,9 @@ export function startBot(projectId: string, isStale: () => boolean) {
       void loadChats().then(() => openChat(chatIdAtom.get()))
     }),
   ]
-  return () => stops.forEach((stop) => stop())
+  return () => {
+    initEpoch.cancel()
+    chatReads.invalidate()
+    stops.forEach((stop) => stop())
+  }
 }
