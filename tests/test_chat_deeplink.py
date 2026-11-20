@@ -63,15 +63,21 @@ async def test_chat_read_hides_unknown_unauthorized_and_mismatched(bot_client, f
     assert len(set(texts)) == 1
 
 
-def test_startbot_refresh_finally_does_not_reopen_a_cancelled_init():
+def _trace_path(tmp_path: Path) -> Path:
+    """Writable trace file. COMFYART_CHATLINK_TRACE overrides; otherwise pytest's tmp_path."""
+    override = os.environ.get("COMFYART_CHATLINK_TRACE", "").strip()
+    return Path(override) if override else tmp_path / "startbot-chain-trace.txt"
+
+
+def test_startbot_refresh_finally_does_not_reopen_a_cancelled_init(tmp_path):
     """Real startBot: deferred refreshBot, then cleanup or a later link, then the old refresh resolves."""
-    out = Path(os.environ.get("TMPDIR", "/tmp")) / "chatlink-chain.mjs"
+    out = tmp_path / "chatlink-chain.mjs"
     subprocess.run(
         [str(ROOT / "node_modules/.bin/rolldown"), "-c", "tests/js/chatlink/rolldown.chain.mjs"],
         cwd=ROOT, check=True, env={**os.environ, "OUT": str(out)},
     )
     proc = subprocess.run(["node", str(out)], cwd=ROOT, check=True, capture_output=True, text=True)
-    trace = Path("/opt/cursor/artifacts/1017-startbot-chain-trace.txt")
+    trace = _trace_path(tmp_path)
     trace.write_text(proc.stdout + ("\n--- stderr ---\n" + proc.stderr if proc.stderr else ""), encoding="utf-8")
     lines = [line for line in proc.stdout.splitlines() if line]
     assert lines[-1] == "ok", proc.stdout + proc.stderr
@@ -84,8 +90,8 @@ def test_startbot_refresh_finally_does_not_reopen_a_cancelled_init():
     assert "/comfyart/bot/chats/A?" not in proc.stdout, proc.stdout
 
 
-def test_chat_link_parser_and_stale_reads():
-    out = Path(os.environ.get("TMPDIR", "/tmp")) / "chatlink-deeplink.mjs"
+def test_chat_link_parser_and_stale_reads(tmp_path):
+    out = tmp_path / "chatlink-deeplink.mjs"
     subprocess.run(
         [str(ROOT / "node_modules/.bin/rolldown"), "-c", "tests/js/chatlink/rolldown.config.mjs"],
         cwd=ROOT, check=True, env={**os.environ, "OUT": str(out)},
