@@ -36,10 +36,17 @@ FINAL_FINISH = (
 # camera come ONLY from the delivered cell crop. Directional/camera wording is rejected, never edited.
 CONTENT_MAX = 200
 _CONTENT_DIRECTION = re.compile(
-    r"\b(?:left|right|leftward|rightward|viewer'?s?|subject'?s|camera|lens|toward|towards|facing|faces|"
+    r"\b(?:left|right|leftward|rightward|viewer'?s?|subject'?s|camera|lens|toward|towards|facing|"
     r"mirror(?:ed)?|flip(?:ped)?|clockwise|counter-?clockwise|overhead|top-?down|bird'?s-?eye|eye-?level|"
     r"closer|nearer|farther|further|near[- ]side|far[- ]side)\b"
     r"|镜头|机位|左|右|观者|朝向|俯视|仰视|视角|近侧|远侧", re.I)
+# "faces" as a noun ("earcup inner faces") names a surface. The same word as a verb
+# ("faces forward / front / upward") is a direction and stays rejected.
+_FACES_VERB = re.compile(
+    r"\bfaces\s+(?:(?:the|a|an)\s+)?(?:forward|forwards|front|backward|backwards|back|"
+    r"upward|upwards|up|downward|downwards|down|left|right|leftward|rightward|"
+    r"ahead|away|camera|viewer|lens|toward|towards)\b",
+    re.I)
 
 
 def validate_content(value: object, label: str = "panel_content") -> str:
@@ -47,7 +54,7 @@ def validate_content(value: object, label: str = "panel_content") -> str:
     if not isinstance(value, str) or len(value.strip()) > CONTENT_MAX:
         raise ValueError(f"{label} must be a short string (max {CONTENT_MAX} characters).")
     text = value.strip()
-    hit = _CONTENT_DIRECTION.search(text)
+    hit = _CONTENT_DIRECTION.search(text) or _FACES_VERB.search(text)
     if hit:
         raise ValueError(f"{label} must describe only what the composition shows, with no left/right, camera or direction wording "
                          f"(found {hit.group(0)!r}); orientation comes only from the delivered preview cell. Nothing submitted.")

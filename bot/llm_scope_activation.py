@@ -298,6 +298,9 @@ def _scope_matches(data, binding):
 # hop. Pair 7: bcc804bc -> d6b8047f, the commit that keeps live-tab and
 # policy-denial stops on controlled turns. Pair 8: bcc804bc -> d5a0c30d,
 # the commit that restores the live-tab stop on every non-local turn.
+# Pair 9: b94d521a -> 867c4577, the reviewed logic commit for the lineart
+# quote card. That destination is 867c4577, not the commit that records
+# the pair. REVIEWED_PROTOCOL_GIT stays pair 0.
 # After hop 1 the binding source equals this tree, so a second hop fails
 # reviewed_source; _is_old_binding
 # does not walk the pair chain. 8a959379 remains an ancestor. A direct
@@ -314,6 +317,7 @@ REVIEWED_GIT_PAIRS = (
     ("bcc804bc13f3fa684c0ecf5547ac71023163da09", "d83072c8a8bddf726fc9e68f94f6550d3a3823de"),
     ("bcc804bc13f3fa684c0ecf5547ac71023163da09", "d6b8047fb9f38a57e2f8400f71f9b360ccd6aafc"),
     ("bcc804bc13f3fa684c0ecf5547ac71023163da09", "d5a0c30d2d32f9a2dbde1cfcb61cb9b411d14906"),
+    ("b94d521ace9ecf9a71510cdc35cdb1b359b08b6f", "867c4577b522012217b1527c559f7f8745a84569"),
 )
 # Index 0 is the original protocol review, not the newest hop. A caller must
 # name the exact pair for the hop it is performing; nothing here means "latest".

@@ -514,10 +514,11 @@ async def test_positive_app_stack_scripted_agent_real_asks_persistence_and_place
         return 32000
 
     async def no_price(*a, **k):
-        return None
+        # A missing price is not a Start card. This stack confirms a real quotation.
+        return 0.01
 
     async def no_models(*a):
-        return []
+        return [("mock/edit", 0.01)]
 
     async def emit(event):
         pass
@@ -547,7 +548,7 @@ async def test_positive_app_stack_scripted_agent_real_asks_persistence_and_place
         assert all("shape:delivered:1" not in a["refs"] for a in sent[1:])  # #1003: never the whole grid
         stored = chat_store.list_messages(cid)
         asks = [b for row in stored for b in row["blocks"] if b["type"] == "ask" and b.get("kind") == "question"]
-        assert quote_approvals, "Unpriced plan_quote cards must be handled, not mistaken for questions"
+        assert quote_approvals, "A priced plan_quote card must be confirmed before generate"
         quote_cards = [b for row in stored for b in row["blocks"] if b.get("kind") == "plan_quote"]
         assert all(b["status"] == "answered" and b["selected"] == ["start"] for b in quote_cards)
         assert len(asks) == 2 and all(a["status"] == "answered" for a in asks)
