@@ -140,7 +140,36 @@
   width: 100%;
 }
 .ca-chat-confirm__title { font-weight: 600; font-size: 14px; line-height: 20px; color: var(--ca-strong); }
-.ca-chat-confirm__desc { margin: 0; color: var(--ca-text); font: 400 13px/20px var(--ca-font); white-space: pre-line; }
+/* The trigger sentence (why this card is showing, including the credit estimate)
+   wraps in full. It is not a single-line ellipsis. */
+.ca-chat-confirm__desc {
+  margin: 0; color: var(--ca-text); font: 400 13px/20px var(--ca-font);
+  white-space: pre-line; overflow: visible; text-overflow: clip; overflow-wrap: anywhere;
+}
+/* .ca-keys__row is 30px and .ca-lib__name ellipsizes. This card's line must show
+   the whole row, with the size still at the start of the text (after the stage
+   label) rather than pushed to the end where a clip would hide it. The price
+   stays on the row and does not shrink away. */
+.ca-chat-confirm .ca-keys__row {
+  height: auto;
+  min-height: 30px;
+  align-items: flex-start;
+}
+.ca-chat-confirm .ca-keys__row .ca-lib__name,
+.ca-chat-confirm__line {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  /* Break at the separators between stage, spec, and model. Do not force a
+     break inside the spec itself. */
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+.ca-chat-confirm .ca-keys__row .ca-panel__val {
+  flex: none;
+  margin-left: 12px;
+  white-space: nowrap;
+}
 .ca-chat-confirm__status { margin: 0; color: var(--ca-muted); font: 400 12px/18px var(--ca-font); }
 .ca-chat-confirm__actions { gap: 8px; }
 .ca-chat-confirm .ca-panel__foot > button { height: 32px; padding: 0 14px; border-radius: 8px; font: inherit; cursor: pointer; }
@@ -148,6 +177,39 @@
 .ca-ask .ca-panel__foot > button { height: 32px; padding: 0 14px; border-radius: 8px; font: inherit; cursor: pointer; }
 .ca-chat__memo { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--ca-muted); }
 .ca-chat__memo .ca-icon { width: 14px; height: 14px; }
+/* Cancelled quote receipt. The confirm-card wrap rules do not cover this line.
+   The status word (已取消 / Canceled) stays one unsplittable run and is not
+   clipped by a tight line box. The prompt in front of it may wrap. */
+.ca-chat__memo--quote {
+  display: flex;
+  align-items: flex-start;
+  box-sizing: border-box;
+  max-width: 100%;
+  width: 100%;
+  padding: 4px 0 6px;
+  overflow: visible;
+  font-size: 12px;
+  line-height: 20px;
+}
+.ca-chat__memo--quote .ca-icon {
+  flex: none;
+  margin-top: 3px;
+}
+.ca-chat__memo--quote .ca-chat__memo-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: visible;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: break-word;
+  line-height: 20px;
+}
+.ca-chat__memo--quote .ca-chat__memo-suffix {
+  white-space: nowrap;
+  word-break: keep-all;
+  line-break: strict;
+  overflow-wrap: normal;
+}
 
 /* #328/#335/#337 Question card — reference 1:1 remaining (PIXEL-GAP-REMAINING post-#338) */
 .ca-q {
