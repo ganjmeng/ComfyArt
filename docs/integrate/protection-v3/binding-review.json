@@ -152,6 +152,12 @@
     },
     "status": "NOT APPLIED. Existing QA acceptance does not authorize this rebind."
   },
+  "product_price_body_on_d4a09666": {
+    "file": "api/wavespeed.py _quote",
+    "body": {"model_id": "<model>", "input": "gif_image.billable(priced), a dict"},
+    "matches_PRICE_BODY_KEYS": true,
+    "stale_guard_comment": "wavespeed_price_guard.py lines 118-119 say the product sends inputs plural. That comment describes an older tree. It is left unchanged in the frozen copy. On d4a09666 the official price POST uses singular input. Plural inputs remains the internal job field and the frontend pseudo-graph, and the guard still rejects it if it is placed in the price body."
+  },
   "guard_contract": {
     "allowed": [
       "GET https://api.wavespeed.ai/api/v3/models with no body",
@@ -160,8 +166,8 @@
     "singular_input_exception": "inputs (plural) is denied as inputs_plural_not_official and the strict bootstrap raises PermissionError('controlled wavespeed purpose not allowed') without DNS",
     "revocation": "end_price_request sets scope.active False, drops registered sockets, and resets the ContextVar. The strict bootstrap calls it in the request finally. Quote-card cancel is not wired to this scope."
   },
-  "missing_tests_before_this_commit": [
-    "No in-repo test imported the machine-local guard.",
-    "No test showed quote-card cancel calling end_price_request."
-  ]
+  "tests": {
+    "added_offline": "tests/test_protection_v3_guard_offline.py covers the two allowed requests, inputs_plural_not_official, DENIED_PATHS, and end_price_request. 2 passed in 0.07s, exit 0. No socket and no provider call.",
+    "still_missing": "No test can show quote-card cancel calling end_price_request, because the product cancel path does not. The bootstrap revokes only in the price-request finally. That wiring was not added."
+  }
 }
