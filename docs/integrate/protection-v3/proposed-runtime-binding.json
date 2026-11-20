@@ -1,5 +1,6 @@
 {
   "kind": "declarative_unactivated_proposal",
+  "classification": "732138ec is materials only and is not an access launcher",
   "activated": false,
   "directories_created": false,
   "port_bound": false,
@@ -53,22 +54,29 @@
     "port": 8946,
     "runtime_id": "logical-d4a09666-unactivated"
   },
-  "port_8946": {
-    "bound_by_this_review": false,
-    "listening_on_this_vm": false,
-    "also_not_listening_on_this_vm": [
-      8931,
-      8932,
-      8933,
-      8934,
-      8935
-    ],
-    "qa_host_not_probed": true
+  "port_observations": {
+    "correction": "The earlier also_not_listening_on_this_vm list was a cloud-VM /proc/net/tcp read. It does not establish target-box state.",
+    "cloud_vm": {
+      "host": "this cloud VM",
+      "cannot_establish_target_box_state": true
+    },
+    "target_box": {
+      "source": "QA independent check",
+      "reported_at": "2026-11-21T03:16+08:00",
+      "evidence_directory": "/workspace/qa-1018-732138ec-indep/evidence/",
+      "evidence_host": "target box, not this cloud VM",
+      "listening": [8931, 8932, 8933, 8934, 8935],
+      "port_8946_listening": false,
+      "proposed_directories_present": false,
+      "instances_stopped_by_this_review": false,
+      "directories_created_by_this_review": false
+    }
   },
   "runtime_identity": {
     "formula": "canonical_digest({home, runtime_id, source_sha256}) from bot/llm_aux_context.py; keys sorted by json.dumps sort_keys",
     "home_realpath_equals_literal_on_this_vm": true,
-    "directory_exists": false,
+    "directory_exists_on_this_cloud_vm": false,
+    "target_box_directories": "QA 2026-11-21T03:16+08:00 reports the proposed directories absent. This cloud VM check is not that observation.",
     "fingerprint": "ca76d4c48564cf632ac9fee804b16663df415aae7c2c67fcd8b3b9208600bcab",
     "runtime_identity_not_called": true,
     "if_host_realpath_differs_fingerprint_does_not_apply": true

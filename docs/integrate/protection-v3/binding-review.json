@@ -164,10 +164,10 @@
       "POST https://api.wavespeed.ai/api/v3/model/price body keys exactly {model_id, input?}; input if present must be an object"
     ],
     "singular_input_exception": "inputs (plural) is denied as inputs_plural_not_official and the strict bootstrap raises PermissionError('controlled wavespeed purpose not allowed') without DNS",
-    "revocation": "end_price_request sets scope.active False, drops registered sockets, and resets the ContextVar. The strict bootstrap calls it in the request finally. Quote-card cancel is not wired to this scope."
+    "revocation": "One price request. end_price_request runs in the request finally after success, a transport exception, or cancellation of that request task. Quote-card Cancel is a separate product gap and is not required to call end_price_request."
   },
   "tests": {
-    "added_offline": "tests/test_protection_v3_guard_offline.py covers the two allowed requests, inputs_plural_not_official, DENIED_PATHS, and end_price_request. 2 passed in 0.07s, exit 0. No socket and no provider call.",
-    "still_missing": "No test can show quote-card cancel calling end_price_request, because the product cancel path does not. The bootstrap revokes only in the price-request finally. That wiring was not added."
+    "guard_offline": "tests/test_protection_v3_guard_offline.py covers allow and deny decisions. It does not execute the request wrapper.",
+    "price_request_lifecycle": "tools/protection_v3/wrapper.py plus tests/test_protection_v3_price_lifecycle.py. Not quote-card cancellation persistence."
   }
 }
