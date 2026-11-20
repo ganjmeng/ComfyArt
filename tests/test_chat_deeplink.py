@@ -71,10 +71,17 @@ def test_startbot_refresh_finally_does_not_reopen_a_cancelled_init():
         cwd=ROOT, check=True, env={**os.environ, "OUT": str(out)},
     )
     proc = subprocess.run(["node", str(out)], cwd=ROOT, check=True, capture_output=True, text=True)
+    trace = Path("/opt/cursor/artifacts/1017-startbot-chain-trace.txt")
+    trace.write_text(proc.stdout + ("\n--- stderr ---\n" + proc.stderr if proc.stderr else ""), encoding="utf-8")
     lines = [line for line in proc.stdout.splitlines() if line]
     assert lines[-1] == "ok", proc.stdout + proc.stderr
     for case in ("ok chain-cleanup-then-refresh", "ok chain-A-finishes-after-B", "ok chain-no-chat"):
         assert case in lines, proc.stdout
+    assert "trace mark switch-after-B-refresh selected=B" in proc.stdout
+    assert "trace mark switch-after-A-finish selected=B" in proc.stdout
+    assert "trace mark cleanup-after-old-refresh selected=null" in proc.stdout
+    assert "selected=A" not in proc.stdout, proc.stdout
+    assert "/comfyart/bot/chats/A?" not in proc.stdout, proc.stdout
 
 
 def test_chat_link_parser_and_stale_reads():

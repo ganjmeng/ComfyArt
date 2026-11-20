@@ -4,6 +4,12 @@ type Gate = { path: string; finish: () => void }
 
 export const gates: Gate[] = []
 export const chatReads: string[] = []
+/** Production selection sampled by the test at each release and chat read. */
+let noteSelection: (where: string) => void = () => {}
+
+export function setNoteSelection(fn: (where: string) => void) {
+  noteSelection = fn
+}
 
 function ok(body: unknown) {
   return { ok: true, status: 200, json: async () => body }
@@ -21,11 +27,21 @@ function bodyFor(path: string): unknown {
 export function api(path: string) {
   if (/^\/comfyart\/bot\/chats\/[^/?]+\?project=/.test(path)) {
     chatReads.push(path)
+    noteSelection(`read ${path}`)
     return Promise.resolve(ok(bodyFor(path)))
   }
   if (path.includes('/asks')) return Promise.resolve(ok({ asks: [] }))
   return new Promise((resolve) => {
-    gates.push({ path, finish: () => resolve(ok(bodyFor(path))) })
+    let done = false
+    gates.push({
+      path,
+      finish: () => {
+        if (done) return
+        done = true
+        noteSelection(`release ${path}`)
+        resolve(ok(bodyFor(path)))
+      },
+    })
   })
 }
 
