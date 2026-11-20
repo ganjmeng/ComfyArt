@@ -63,6 +63,20 @@ async def test_chat_read_hides_unknown_unauthorized_and_mismatched(bot_client, f
     assert len(set(texts)) == 1
 
 
+def test_startbot_refresh_finally_does_not_reopen_a_cancelled_init():
+    """Real startBot: deferred refreshBot, then cleanup or a later link, then the old refresh resolves."""
+    out = Path(os.environ.get("TMPDIR", "/tmp")) / "chatlink-chain.mjs"
+    subprocess.run(
+        [str(ROOT / "node_modules/.bin/rolldown"), "-c", "tests/js/chatlink/rolldown.chain.mjs"],
+        cwd=ROOT, check=True, env={**os.environ, "OUT": str(out)},
+    )
+    proc = subprocess.run(["node", str(out)], cwd=ROOT, check=True, capture_output=True, text=True)
+    lines = [line for line in proc.stdout.splitlines() if line]
+    assert lines[-1] == "ok", proc.stdout + proc.stderr
+    for case in ("ok chain-cleanup-then-refresh", "ok chain-A-finishes-after-B", "ok chain-no-chat"):
+        assert case in lines, proc.stdout
+
+
 def test_chat_link_parser_and_stale_reads():
     out = Path(os.environ.get("TMPDIR", "/tmp")) / "chatlink-deeplink.mjs"
     subprocess.run(
