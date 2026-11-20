@@ -36,8 +36,10 @@ lowers an explicit cap to make the call fit a budget.
 
 The default validation scope is $0.05. A separate cumulative $2 scope exists
 only as explicit code support: it must be opened on its own ledger path and
-then bound with ``use_authorized_scope`` before ``dispatch`` or the official
-HTTP wrapper, which omits ``ledger_path``, will use it. Binding is in-process,
+then bound with ``use_authorized_scope`` before ``dispatch``. The product
+install wrapper omits ``ledger_path`` and enters this gate only when that
+in-process bind is set, or when ``COMFYART_RUNTIME_ID`` selects a runtime.
+An ordinary process does not open the default ledger. Binding is in-process,
 does not replace ``default_ledger_path``, does not absorb a prior balance, and
 is not performed by ``install``. Opening a scope is not a live activation.
 
@@ -73,8 +75,12 @@ An explicit, unactivated ``context_contract=True`` profile validates supported
 images/full function tools and reserves documented C=1048576 as input PLUS the
 actual output cap, with images already included in C. It sends frozen validated
 bytes without redirects and requires an existing controlled $2 scope in the same
-reservation transaction. Strict default behavior and install remain unchanged;
-this engineering context interpretation is not charged-error proof or activation.
+reservation transaction. Direct ``prepare`` / ``dispatch`` without
+``context_contract`` stays strict and still denies an unproven input bound.
+The product install wrapper does not call this gate unless ``COMFYART_RUNTIME_ID``
+is non-empty or an in-process authorized scope is bound. A non-empty runtime
+id without a committed binding is rejected and is not treated as an ordinary
+send. This context interpretation is not charged-error proof or activation.
 
 Optional controlled scopes require an explicit ``max_posts`` (1..6, the local
 profile in billing-bound-evidence-plan.md), retain the existing amount authority,
@@ -110,7 +116,6 @@ The current direct route does not have that bound, so it stays blocked.
 from __future__ import annotations
 
 import errno
-import fcntl
 import json
 import logging
 import os
@@ -897,9 +902,19 @@ def _persist_ledger(path: str, data: dict, *, write_marker: bool) -> None:
         _write_activation_marker(path, data)
 
 
+def _posix_fcntl():
+    """POSIX lock primitive. Missing fcntl fails closed and does not skip the lock."""
+    try:
+        import fcntl
+    except ImportError as exc:
+        raise LlmBudgetBlocked("posix_lock_unavailable", "fcntl") from exc
+    return fcntl
+
+
 @contextmanager
 def _with_ledger_lock(path: str):
     """Hold a process-shared exclusive lock on a sibling file that is never replaced."""
+    fcntl = _posix_fcntl()
     parent = os.path.dirname(path)
     if parent:
         os.makedirs(parent, exist_ok=True)
@@ -971,7 +986,9 @@ def constrain_authorized_scope(path: str, *, max_posts: int) -> dict:
 def clear_authorized_scope() -> None:
     """Drop the in-process bind. Does not change any ledger file or the default path."""
     global _bound_ledger_path
+    from .llm_scope_bind import clear_scope
     with _thread_lock:
+        clear_scope()
         _bound_ledger_path = None
 
 
@@ -1005,7 +1022,9 @@ def use_authorized_scope(path: str) -> dict:
     except OSError as exc:
         raise LlmScopeConflict("authorized scope is unreadable") from exc
     global _bound_ledger_path
+    from .llm_scope_bind import bind_scope
     with _thread_lock:
+        bind_scope(path)
         _bound_ledger_path = path
     return {
         "ok": True,
