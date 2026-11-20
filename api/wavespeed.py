@@ -1580,6 +1580,33 @@ async def quote_detail(model: str, inputs: dict) -> tuple[float | None, str, str
     return price, source, reason
 
 
+def _quote_amount(payload: object) -> float | None:
+    """Finite nonnegative USD from an application-success body, or None.
+
+    Business `code` must be 200. A genuine discounted price of 0 is valid.
+    Bool, NaN, infinity, negative, missing, and non-numeric amounts are not.
+    Callers must also require HTTP 200; this function does not treat a bare
+    number, or a 0 stuffed into an error body, as a quote.
+    """
+    if not isinstance(payload, dict) or payload.get("code") != 200:
+        return None
+    data = payload.get("data")
+    if not isinstance(data, dict):
+        return None
+    if "discounted_price" in data:
+        price = data.get("discounted_price")
+    elif "price" in data:
+        price = data.get("price")
+    else:
+        return None
+    if isinstance(price, bool) or not isinstance(price, (int, float)):
+        return None
+    amount = float(price)
+    if not math.isfinite(amount) or amount < 0:
+        return None
+    return amount
+
+
 async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
     """Price of one run via WaveSpeed's free POST /api/v3/model/price, cached 5 minutes, for the tier that will be
     submitted. #159: when the price API fails the catalog base_price is returned as source 'estimate' only if the
@@ -1598,8 +1625,10 @@ async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
         if stub is None:
             return _Quoted(None, "unpriced")
         return _Quoted(float(stub), "estimate", "svg_stub")
-    # #825: frame_count / frame_duration_ms are quoted on the confirm line but not sent to the price API.
-    body = {"model_id": model, "inputs": gif_image.billable(priced)}
+    # Official POST /api/v3/model/price takes singular `input`. Omitting it, or sending
+    # the unused key `inputs`, returns the model's base price. That response is HTTP 200
+    # and is not a price for resolution, quality, or reference count.
+    body = {"model_id": model, "input": gif_image.billable(priced)}
     ck = json.dumps(body, sort_keys=True)
     hit = _quotes.get(ck)
     if hit and time.time() - hit[1] < QUOTE_TTL:
@@ -1612,8 +1641,8 @@ async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
             async with aiohttp.ClientSession(headers=_headers()) as session:
                 async with session.post(f"{_base()}/api/v3/model/price", json=body,
                                         timeout=aiohttp.ClientTimeout(total=QUOTE_TIMEOUT_S)) as res:
-                    data = ((await _json(res)) or {}).get("data") or {} if res.status < 400 else {}
-                    if res.status >= 400:
+                    payload = await _json(res) if res.status == 200 else {}
+                    if res.status != 200:
                         if res.status >= 500 and attempt < QUOTE_RETRIES:
                             # #968: a 5xx can be transient (cold start / upstream blip): retry once.
                             log.warning("WaveSpeed price API %s for %s (attempt %d); retrying once",
@@ -1622,10 +1651,10 @@ async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
                             continue
                         log.warning("WaveSpeed price API %s for %s %s; showing an estimate", res.status, model, priced)
                         break
-            price = data.get("discounted_price", data.get("price")) if isinstance(data, dict) else None
-            if isinstance(price, (int, float)) and not isinstance(price, bool):
-                _quotes[ck] = (float(price), time.time())
-                return _Quoted(float(price), "quote", "live")
+            price = _quote_amount(payload)
+            if price is not None:
+                _quotes[ck] = (price, time.time())
+                return _Quoted(price, "quote", "live")
             break
         except (aiohttp.ClientError, asyncio.TimeoutError, ValueError) as e:
             if attempt >= QUOTE_RETRIES:
