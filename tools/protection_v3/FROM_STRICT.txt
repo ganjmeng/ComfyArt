@@ -1,0 +1,29 @@
+Old strict launcher docs/integrate/protection-v3/frozen/start_quote_only_strict.py
+sha256 8b57e33e5c194ffb39d6e092e71a6b2352e52e8b2e2b94156bcd585d42a8bc20
+and bootstrap_quote_only_strict.py
+sha256 fab44c9a26114200fcc0b21f29e92db1dfce7c166e3da8684dd709847f2557ff
+are unchanged.
+
+Removed from the adapter, which those files still do:
+- read /home/box/.secrets/comfyart-test.env and copy WAVESPEED_API_KEY
+- os.execve /workspace/cu-venv/bin/python
+- COMFYART_PLUGIN=source-80d1d1fe
+- COMFYART_QUOTE_PROBE_EXECUTE=1 and COMFYART_CONTROLLED_PRECHECK_ONLY=1
+- quote_detail_probe_80d1d1fe.strict.py hash pin and module.main()
+- hardcoded git 80d1d1fe and source 8826430a
+- hardcoded port 8932 and listen argv
+- getaddrinfo for api.wavespeed.ai and api.deepseek.com
+- DeepSeek reservation branch and local MCP branch
+- ledger read, attestation thread, runpy of ComfyUI
+- sys.addaudithook and aiohttp patch at import
+
+Adapter files:
+- tools/protection_v3/declaration.py requires explicit source git, source digest, home, port, runtime id
+- accepted logical pair is only d4a09666 / 530967f0; delivery commits and the old trees fail
+- ports 8931-8935 fail; a declared port is not bound
+- probe flags and credential env names fail closed and are not forwarded
+- require_authorization fails for a missing id and for any supplied id
+- tools/protection_v3/wrapper.py is the single price-request try/finally
+- tools/protection_v3/launcher.py exits 2 or 3 and has no start path
+
+Quote-card Cancel is not part of this wrapper.

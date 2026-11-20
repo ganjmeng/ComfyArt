@@ -182,6 +182,44 @@ def quote_step_label(args: dict, lang: str = "zh", chat_id: str = "") -> str:
     return "线稿预览" if lang == "zh" else "Lineart preview"
 
 
+def _size_view(spec: object) -> dict:
+    """Width, height and ratio only. No pixel or ratio literal."""
+    if not isinstance(spec, dict):
+        return {}
+    out = {}
+    for key in ("width", "height", "ratio"):
+        if key in spec:
+            out[key] = spec[key]
+    return out
+
+
+def quote_stage_view(meta: dict | None) -> dict | None:
+    """Display-only size of this quote's stage, copied from the setup snapshot.
+
+    ``preview`` and ``final`` stay the snapshot slices. ``stage`` says which one
+    this quote is for. Composition count is not part of the size snapshot; the
+    quote route adds the answered selection separately.
+    """
+    if not isinstance(meta, dict):
+        return None
+    key = str(meta.get("key") or "")
+    if key == "preview":
+        stage = "preview"
+    elif key.startswith("final:"):
+        stage = "final"
+    else:
+        return None
+    snapshot = meta.get("setup_snapshot") if isinstance(meta.get("setup_snapshot"), dict) else {}
+    return {
+        "stage": stage,
+        "snapshot": {
+            "preview": _size_view(snapshot.get("preview")),
+            "final": _size_view(snapshot.get("final")),
+        },
+        "stage_spec": _size_view(meta.get("stage_spec")),
+    }
+
+
 # Setup-card copy: zh is Lovart verbatim (product-locked). English is a faithful
 # translation of that meaning, not a claimed official Lovart English original.
 SOURCE_OPTIONS = (

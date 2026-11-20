@@ -1,0 +1,173 @@
+{
+  "kind": "nonexecuted_review_artifact",
+  "do_not_execute": true,
+  "does_not_authorize_new_source": true,
+  "does_not_change_runtime_fingerprint": true,
+  "method": "bot/llm_scope_activation.py _source_hash: sha256 of __init__.py plus api/**/*.py and bot/**/*.py, sorted, each relative path + NUL + bytes + NUL",
+  "python": {
+    "ci_workflow": "3.12",
+    "this_cloud_vm": "3.12.3",
+    "isolated_box_venv": "unknown",
+    "aiohttp_requirement": "requirements-test.txt aiohttp>=3.11.8; exact installed box version unknown"
+  },
+  "frozen_files": {
+    "bootstrap_controlled.py": "778b6eec40d46e31c855836180855136722540214ffba75b96ed7f7bc97282a8",
+    "wavespeed_price_guard.py": "565b321b4f2773d100be570642d0eb8a003f1fa68ed1e429921d36a5a3ce3526",
+    "bootstrap_quote_only_strict.py": "fab44c9a26114200fcc0b21f29e92db1dfce7c166e3da8684dd709847f2557ff",
+    "start_quote_only_strict.py": "8b57e33e5c194ffb39d6e092e71a6b2352e52e8b2e2b94156bcd585d42a8bc20"
+  },
+  "bindings": {
+    "v3_bootstrap_controlled": {
+      "git_sha": "c7c891955e6402bf566af47f5a2dc37925cff7df",
+      "source_sha256": "da5dbe0b30b5eaa2d31d550d3db6f56a6d1f26f6cd4e9a5666f4965e7abffdc4",
+      "llm_http": "enabled when URL is official deepseek chat/completions or /models"
+    },
+    "strict_derivative_accepted_for_80d1d1fe_quote_only": {
+      "git_sha": "80d1d1fe4af4a374808c1022c74278cf8b7f8d4a",
+      "source_sha256": "8826430a8895bd90fc2242e9844d124c650c3ccb0850b93c77a3a3230a7e2551",
+      "source_file_count": 92,
+      "matches_recomputed_fingerprint": true,
+      "llm_http": "denied (official=False, local=False)",
+      "qa": "independent pass of quote_detail+cache 1/0/1 at 2026-11-20T22:08:52+08:00 supersedes the index text 'independent acceptance pending'",
+      "validates": "quote-only boundary of 80d1d1fe, not d4a09666 and not a general startup permission"
+    },
+    "candidate_1cc1a279_logical_d4a09666": {
+      "git_sha": "d4a096667bcf4dd7e3f27070f9dba403256d4ad2",
+      "source_sha256": "530967f0412acdac93b438cd7b0965ee0767d408df068d596200b1af31a24931",
+      "source_file_count": 92,
+      "manifest_commit_does_not_change_source_hash": true,
+      "authorized_by_existing_records": false
+    }
+  },
+  "source_files_changed_80d1d1fe_to_d4a09666": [
+    "api/mcp_tools/canvas.py",
+    "api/multi_angle.py",
+    "bot/plan_quote.py"
+  ],
+  "source_files_added": [],
+  "source_files_removed": [],
+  "covered_file_manifest_d4a09666": [
+    "__init__.py",
+    "api/__init__.py",
+    "api/_common.py",
+    "api/ask_store.py",
+    "api/auto_models.py",
+    "api/banner_compose.py",
+    "api/bot.py",
+    "api/bot_asks.py",
+    "api/bot_complete.py",
+    "api/bot_docs.py",
+    "api/bot_media.py",
+    "api/bot_send.py",
+    "api/bot_turns.py",
+    "api/chat_store.py",
+    "api/db.py",
+    "api/gen_ledger.py",
+    "api/gif_image.py",
+    "api/llm_byo.py",
+    "api/llm_key.py",
+    "api/mcp.py",
+    "api/mcp_commands.py",
+    "api/mcp_tools/__init__.py",
+    "api/mcp_tools/_context.py",
+    "api/mcp_tools/banner.py",
+    "api/mcp_tools/bot_tools.py",
+    "api/mcp_tools/canvas.py",
+    "api/mcp_tools/media.py",
+    "api/mcp_tools/portrait.py",
+    "api/memory.py",
+    "api/models.py",
+    "api/multi_angle.py",
+    "api/multi_angle_crop.py",
+    "api/ocr.py",
+    "api/paid_guard.py",
+    "api/pdf.py",
+    "api/portrait_studio.py",
+    "api/product_packaging.py",
+    "api/project_import.py",
+    "api/project_store.py",
+    "api/projects.py",
+    "api/provider_admin.py",
+    "api/provider_catalog.py",
+    "api/providers.py",
+    "api/refprep.py",
+    "api/replicate_image.py",
+    "api/run_store_sqlite.py",
+    "api/settings.py",
+    "api/skill_param_guard.py",
+    "api/skill_size.py",
+    "api/svg_image.py",
+    "api/svg_preview.py",
+    "api/svg_raster.py",
+    "api/svg_worker.py",
+    "api/thumbs.py",
+    "api/tool_routing.py",
+    "api/userdata.py",
+    "api/wavespeed.py",
+    "bot/__init__.py",
+    "bot/_acp.py",
+    "bot/_acp_provider.py",
+    "bot/_cli_common.py",
+    "bot/agent_host.py",
+    "bot/agent_loop.py",
+    "bot/assistant_history.py",
+    "bot/bot_asks.py",
+    "bot/claude_code.py",
+    "bot/codex.py",
+    "bot/deepseek_harness.py",
+    "bot/deepseek_harness_runtime.py",
+    "bot/external_context.py",
+    "bot/guide.py",
+    "bot/hermes.py",
+    "bot/llm_activation_manifest.py",
+    "bot/llm_aux_context.py",
+    "bot/llm_input_envelope.py",
+    "bot/llm_scope_activation.py",
+    "bot/llm_scope_bind.py",
+    "bot/llm_usd_gate.py",
+    "bot/lms.py",
+    "bot/local_llm.py",
+    "bot/plan_quote.py",
+    "bot/providers.py",
+    "bot/qwen_code.py",
+    "bot/ratio_display.py",
+    "bot/reasoning_boost.py",
+    "bot/ref_orientation.py",
+    "bot/robustness.py",
+    "bot/run_budget.py",
+    "bot/run_store.py",
+    "bot/self_check.py",
+    "bot/shot_plan.py",
+    "bot/skill_output.py"
+  ],
+  "proposed_binding_diff_not_executed": {
+    "file": "bootstrap_quote_only_strict.py fields only",
+    "EXPECTED_SHA": {
+      "from": "80d1d1fe4af4a374808c1022c74278cf8b7f8d4a",
+      "to": "d4a096667bcf4dd7e3f27070f9dba403256d4ad2"
+    },
+    "SOURCE": {
+      "from": "8826430a8895bd90fc2242e9844d124c650c3ccb0850b93c77a3a3230a7e2551",
+      "to": "530967f0412acdac93b438cd7b0965ee0767d408df068d596200b1af31a24931"
+    },
+    "status": "NOT APPLIED. Existing QA acceptance does not authorize this rebind."
+  },
+  "product_price_body_on_d4a09666": {
+    "file": "api/wavespeed.py _quote",
+    "body": {"model_id": "<model>", "input": "gif_image.billable(priced), a dict"},
+    "matches_PRICE_BODY_KEYS": true,
+    "stale_guard_comment": "wavespeed_price_guard.py lines 118-119 say the product sends inputs plural. That comment describes an older tree. It is left unchanged in the frozen copy. On d4a09666 the official price POST uses singular input. Plural inputs remains the internal job field and the frontend pseudo-graph, and the guard still rejects it if it is placed in the price body."
+  },
+  "guard_contract": {
+    "allowed": [
+      "GET https://api.wavespeed.ai/api/v3/models with no body",
+      "POST https://api.wavespeed.ai/api/v3/model/price body keys exactly {model_id, input?}; input if present must be an object"
+    ],
+    "singular_input_exception": "inputs (plural) is denied as inputs_plural_not_official and the strict bootstrap raises PermissionError('controlled wavespeed purpose not allowed') without DNS",
+    "revocation": "One price request. end_price_request runs in the request finally after success, a transport exception, or cancellation of that request task. Quote-card Cancel is a separate product gap and is not required to call end_price_request."
+  },
+  "tests": {
+    "guard_offline": "tests/test_protection_v3_guard_offline.py covers allow and deny decisions. It does not execute the request wrapper.",
+    "price_request_lifecycle": "tools/protection_v3/wrapper.py plus tests/test_protection_v3_price_lifecycle.py. Not quote-card cancellation persistence."
+  }
+}

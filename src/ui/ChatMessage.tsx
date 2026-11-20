@@ -843,19 +843,36 @@ export function OverQuote({ b }: { b: BotBlock }) {
   )
 }
 
+/** Title, buttons, and the after-cancel suffix follow the active UI language.
+ * Chinese UI: 确认费用 / 取消 / 开始, and 已取消 after cancel.
+ * English UI: Confirm cost / Cancel / Start, and Canceled.
+ * The primary button is quote-card-only (开始 / Start), matching 确定开始吗？.
+ * jobs.confirmOk stays 继续生成 / Generate for the other cards. */
+function planQuoteChrome() {
+  return {
+    title: t('jobs.confirmTitle'),
+    ok: t('jobs.planQuoteStart'),
+    cancel: t('common.cancel'),
+    canceled: t('chatMessage.canceled'),
+    timedOut: t('chatMessage.timedOut'),
+  }
+}
+
 /** #235: the plan total uses the same cost-confirm card as a single job. No second card, no new styles. */
 function PlanQuote({ b }: { b: BotBlock }) {
   const [error, setError] = useState('')
   const askId = b.ask_id
   const pending = b.status === 'pending'
+  const chrome = planQuoteChrome()
   if (pending && askId) {
     const answer = quoteAnswer(askId)
     return (
       <>
         <ChatInlineConfirm
-          title={t('jobs.confirmTitle')}
+          title={chrome.title}
           desc={b.prompt ?? ''}
-          okLabel={t('jobs.confirmOk')}
+          okLabel={chrome.ok}
+          cancelLabel={chrome.cancel}
           lines={b.lines ?? []}
           totalLabel={b.total_label}
           total={b.total}
@@ -881,10 +898,14 @@ function PlanQuote({ b }: { b: BotBlock }) {
   }
   if (pending) return error ? <div className="ca-chat__hint">{error}</div> : null
   const started = b.status === 'answered' && (b.selected ?? []).includes('start')
+  const suffix = started ? chrome.ok : b.status === 'expired' ? chrome.timedOut : chrome.canceled
   return (
-    <div className="ca-chat__memo">
+    <div className="ca-chat__memo ca-chat__memo--quote" data-kind="plan_quote">
       <span className="ca-icon">{started ? Icons.check : Icons.close}</span>
-      {b.prompt} → {started ? t('jobs.confirmOk') : b.status === 'expired' ? t('chatMessage.timedOut') : t('chatMessage.canceled')}
+      <span className="ca-chat__memo-body">
+        {b.prompt}
+        <span className="ca-chat__memo-suffix"> → {suffix}</span>
+      </span>
     </div>
   )
 }
