@@ -633,7 +633,10 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
     # A blocked/refused step has units 0 (it makes no paid call), so it must not force one.
     unknown_price = any(ln.unpriced and ln.units > 0 for ln in lines)
     ask = _needs_ask(total, threshold, unknown_price)
-    if _forces_quote_card(prepared) and any(ln.units > 0 for ln in lines):
+    # A forced lineart quote must ask even when the line is a 0-unit param
+    # block. ask=False is what the dispatcher treats as "already started"
+    # (started_result is {"ok": true, "start": true} with no plan_quote ask).
+    if _forces_quote_card(prepared):
         ask = True
     if len(lines) == 1 and not ask and not lines[0].unpriced:
         # #904: a known 0-credit (or under-line) single call runs as before. A single refusal

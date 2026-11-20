@@ -36,7 +36,7 @@ FINAL_FINISH = (
 # camera come ONLY from the delivered cell crop. Directional/camera wording is rejected, never edited.
 CONTENT_MAX = 200
 _CONTENT_DIRECTION = re.compile(
-    r"\b(?:left|right|leftward|rightward|viewer'?s?|subject'?s|camera|lens|toward|towards|facing|faces|"
+    r"\b(?:left|right|leftward|rightward|viewer'?s?|subject'?s|camera|lens|toward|towards|facing|"
     r"mirror(?:ed)?|flip(?:ped)?|clockwise|counter-?clockwise|overhead|top-?down|bird'?s-?eye|eye-?level|"
     r"closer|nearer|farther|further|near[- ]side|far[- ]side)\b"
     r"|镜头|机位|左|右|观者|朝向|俯视|仰视|视角|近侧|远侧", re.I)
