@@ -6,6 +6,7 @@ an answered card. PRECHECK_ONLY never submits.
 """
 from __future__ import annotations
 
+import asyncio
 import copy
 import json
 import os
@@ -54,17 +55,33 @@ def test_quote_route_without_the_turn_chat_param_blocks_the_exact_plan():
     assert blocked.get("submitted") is False
 
 
-def test_inner_faces_is_a_surface_and_directions_still_fail():
-    ma.validate_content(SURFACE)
+@pytest.mark.parametrize("noun", [
+    SURFACE,
+    "inner faces of both earcups",
+    "earcup faces, cushion faces, headband lining",
+])
+def test_surface_noun_faces_passes_and_geometry_is_untouched(noun):
+    ma.validate_content(noun)
     raw = _plan()
+    raw["panels"][3]["content"] = noun
     plan = ma.validate_plan(raw)
     panel = next(p for p in plan["panels"] if p["id"] == "4")
-    assert panel["content"] == SURFACE
-    # geometry and description are not content. Camera wording there stays.
+    assert panel["content"] == noun
     assert plan["panels"][0]["geometry"] == raw["panels"][0]["geometry"]
-    assert "three-quarter" in plan["panels"][1]["description"]
-    assert "90-degree" in plan["panels"][2]["description"]
+    assert plan["panels"][1]["description"] == raw["panels"][1]["description"]
     assert "top-down" in plan["panels"][6]["description"]
+
+
+@pytest.mark.parametrize("verb", [
+    "earcup faces forward",
+    "product faces front",
+    "headphone faces upward",
+    "earcup faces the camera",
+    "headphone faces left",
+])
+def test_faces_as_a_direction_verb_is_rejected(verb):
+    with pytest.raises(ValueError, match="direction"):
+        ma.validate_content(verb)
     for bad in ("left earcup", "facing the camera", "camera above the headband"):
         with pytest.raises(ValueError, match="direction"):
             ma.validate_content(bad)
@@ -79,27 +96,59 @@ def test_redirect_is_not_rewritten_into_the_generic_unsubmitted_error():
     assert explain_unsubmitted("generate_image", raw, "zh") is None
 
 
-@pytest.mark.asyncio
-async def test_forced_quote_asks_when_pricing_marks_zero_units():
-    async def pricer(_name, _args):
-        return 0.01
+def _preview_step():
+    return [{"text": "preview", "tool": "generate_image", "model": "mock/edit",
+             "arguments": {"skill": ma.SKILL, "multi_angle_stage": "preview", "prompt": "lineart", "count": 1}}]
 
+
+@pytest.mark.asyncio
+async def test_param_block_and_unpriced_are_not_a_start_card():
     async def models_for(_feature):
         return [("mock/edit", 0.01)]
 
-    def router(_tool, _args, position=0):
+    async def priced(_name, _args):
+        return 0.01
+
+    async def missing(_name, _args):
+        return None, "unpriced"
+
+    def blocked_router(_tool, _args, position=0):
         return "", {"param_blocked": {"error": "blocked", "submitted": False}}
 
-    steps = [{"text": "preview", "tool": "generate_image", "model": "mock/edit",
-              "arguments": {"skill": ma.SKILL, "multi_angle_stage": "preview", "prompt": "lineart", "count": 1}}]
-    quote = await build_quote(steps, "zh", threshold=1.0, pricer=pricer, models_for=models_for, router=router)
-    assert quote is not None and quote.ask is True
+    def priced_router(_tool, _args, position=0):
+        return "mock/edit", {"count": 1}
+
+    blocked = await build_quote(_preview_step(), "zh", threshold=1.0, pricer=priced,
+                                models_for=models_for, router=blocked_router)
+    assert blocked is not None and blocked.acquired is False and blocked.ask is False
+    assert blocked.units == 0
+    unpriced = await build_quote(_preview_step(), "zh", threshold=1.0, pricer=missing,
+                                 models_for=models_for, router=priced_router)
+    assert unpriced is not None and unpriced.acquired is False and unpriced.ask is False
+    assert unpriced.lines[0].unpriced is True
+
+
+@pytest.mark.asyncio
+async def test_priced_zero_is_a_real_quote_and_asks():
+    async def pricer(_name, _args):
+        return 0.0
+
+    async def models_for(_feature):
+        return [("mock/edit", 0.0)]
+
+    def router(_tool, _args, position=0):
+        return "mock/edit", {"count": 1}
+
+    quote = await build_quote(_preview_step(), "zh", threshold=1.0, pricer=pricer,
+                              models_for=models_for, router=router)
+    assert quote is not None and quote.acquired is True and quote.ask is True
+    assert quote.units == 1 and quote.total == 0.0
     spec = quote.ask_spec()
-    assert spec["kind"] == "plan_quote"
     assert {o["id"] for o in spec["options"]} == {"start", "cancel"}
 
 
-async def _turn(monkeypatch, script, *, answer, precheck=False, bind_chat=True):
+async def _turn(monkeypatch, script, *, answer, precheck=False, bind_chat=True,
+                price_answer=0.01, missing_chat=False, setup_card=True):
     chat = chat_store.create_chat(user="default", project="mock-quote", provider="local-llm")
     cid = chat["id"]
     chat_store.create_message(chat_id=cid, role="user", blocks=[
@@ -108,9 +157,10 @@ async def _turn(monkeypatch, script, *, answer, precheck=False, bind_chat=True):
     token = BOT_CHAT_ID.set(cid)
     spec = bot_asks.validate_spec({"prompt": "setup"})
     BOT_CHAT_ID.reset(token)
-    block = {"type": "ask", "ask_id": "setup", "status": "answered", **spec, "answers": {
-        ma.SOURCE: {"selected": ["single_front"]}, ma.ASPECT: {"selected": ["1:1"]}}}
-    chat_store.create_message(chat_id=cid, role="assistant", blocks=[block])
+    if setup_card:
+        block = {"type": "ask", "ask_id": "setup", "status": "answered", **spec, "answers": {
+            ma.SOURCE: {"selected": ["single_front"]}, ma.ASPECT: {"selected": ["1:1"]}}}
+        chat_store.create_message(chat_id=cid, role="assistant", blocks=[block])
     assistant = chat_store.create_message(chat_id=cid, role="assistant", blocks=[], status="running")
     handle = TurnHandle()
     state = bot_turns._TurnState(handle, cid, assistant["id"])
@@ -139,17 +189,42 @@ async def _turn(monkeypatch, script, *, answer, precheck=False, bind_chat=True):
         sent.append((action, copy.deepcopy(args)))
         raise AssertionError("no image submit")
 
+    waited = {"turns": 0, "error": None}
+
+    def _cards():
+        rows = chat_store.list_messages(cid)
+        return [b for row in rows for b in row.get("blocks") or [] if b.get("kind") == "plan_quote"]
+
     def answer_broadcast(event, payload):
         if event != "turn_ask" or payload.get("kind") != "plan_quote":
             return
-        if answer == "expired":
-            bot_asks.resolve_ask(payload["ask_id"], "expired")
-            return
-        selected = ["start"] if answer == "start" else ["cancel"]
-        bot_asks.resolve_ask(payload["ask_id"], "answered", selected=selected)
+        ask_id = payload["ask_id"]
+
+        async def later():
+            try:
+                # The broadcast itself does not answer. The card stays pending
+                # across later event-loop turns, with no generate submit.
+                for _ in range(2):
+                    await asyncio.sleep(0)
+                    cards = _cards()
+                    if not (cards and cards[0]["status"] == "pending" and sent == []):
+                        raise AssertionError(f"card did not stay pending: {cards} sent={sent}")
+                    if "start" not in {o["id"] for o in cards[0].get("options") or []}:
+                        raise AssertionError(cards[0])
+                    waited["turns"] += 1
+                if answer == "expired":
+                    bot_asks.resolve_ask(ask_id, "expired")
+                else:
+                    selected = ["start"] if answer == "start" else ["cancel"]
+                    bot_asks.resolve_ask(ask_id, "answered", selected=selected)
+            except Exception as exc:
+                waited["error"] = exc
+                bot_asks.resolve_ask(ask_id, "expired")
+
+        asyncio.get_running_loop().create_task(later())
 
     async def price(*_a, **_k):
-        return 0.01
+        return price_answer
 
     async def models(_feature):
         return [("mock/edit", 0.01)]
@@ -183,7 +258,8 @@ async def _turn(monkeypatch, script, *, answer, precheck=False, bind_chat=True):
 
     try:
         result = await provider.send(TurnRequest(
-            chat_id=cid, user_text=f"Use the ComfyArt skill '{ma.SKILL}'. {DESC}",
+            chat_id="" if missing_chat else cid,
+            user_text=f"Use the ComfyArt skill '{ma.SKILL}'. {DESC}",
             goal_text=DESC, lang="zh", mcp_endpoint="http://mock-no-network/mcp", model="mock"),
             collect, handle)
     finally:
@@ -192,9 +268,11 @@ async def _turn(monkeypatch, script, *, answer, precheck=False, bind_chat=True):
         paid_guard.end_turn(cid)
         bot_turns.ACTIVE_TURNS.pop(cid, None)
         os.environ.pop("COMFYART_CONTROLLED_PRECHECK_ONLY", None)
+    if waited["error"] is not None:
+        raise waited["error"]
     stored = chat_store.list_messages(cid)
     quotes = [b for row in stored for b in row.get("blocks") or [] if b.get("kind") == "plan_quote"]
-    return result, events, sent, quotes
+    return result, events, sent, quotes, waited
 
 
 def _preview_args():
@@ -220,9 +298,10 @@ async def test_exact_persisted_call_waits_on_a_lineart_card_without_a_preset_cha
     else:
         args = _load(f"{which}.json")["input"]
         script = [calls(("generate_image", args)), reply("done")]
-    _result, events, sent, quotes = await _turn(
+    _result, events, sent, quotes, waited = await _turn(
         monkeypatch, script, answer="cancel", bind_chat=False)
     _assert_lineart_card(quotes)
+    assert waited["turns"] >= 2
     assert quotes[0]["status"] == "answered"
     assert sent == []
     if which == "quote_plan":
@@ -235,8 +314,9 @@ async def test_exact_persisted_call_waits_on_a_lineart_card_without_a_preset_cha
 async def test_unconfirmed_quote_never_starts_or_submits(monkeypatch, answer):
     steps = {"steps": [{"text": "线稿", "tool": "generate_image", "model": "mock/edit",
                         "arguments": _preview_args()}]}
-    result, events, sent, quotes = await _turn(
+    result, events, sent, quotes, waited = await _turn(
         monkeypatch, [calls(("quote_plan", steps)), reply("done")], answer=answer)
+    assert waited["turns"] >= 2
     assert quotes and quotes[0]["kind"] == "plan_quote"
     assert any("线稿预览" in (ln.get("text") or "") for ln in quotes[0].get("lines") or [])
     assert {o["id"] for o in quotes[0]["options"]} == {"start", "cancel"}
@@ -291,11 +371,44 @@ async def test_missing_turn_does_not_auto_start(monkeypatch):
 @pytest.mark.asyncio
 async def test_confirmed_preview_stays_precheck_and_does_not_submit(monkeypatch):
     args = _load("gen2.json")["input"]
-    _result, events, sent, quotes = await _turn(
+    _result, events, sent, quotes, waited = await _turn(
         monkeypatch, [calls(("generate_image", args)), reply("done")],
         answer="start", precheck=True, bind_chat=False)
     _assert_lineart_card(quotes)
+    assert waited["turns"] >= 2
     assert quotes[0]["status"] == "answered" and quotes[0]["selected"] == ["start"]
     assert sent == []
     texts = " ".join(e.text or "" for e in events if e.t == "tool_result")
     assert "controlled_precheck_only" in texts
+
+
+def _assert_not_ready(events, sent, quotes):
+    assert quotes == []
+    assert sent == []
+    texts = [e.text or "" for e in events if e.t == "tool_result"]
+    assert texts
+    for text in texts:
+        assert '"start": true' not in text
+        assert '"quote_ready": false' in text
+        assert "不能开始" in text
+
+
+@pytest.mark.asyncio
+async def test_missing_chat_does_not_offer_start(monkeypatch):
+    args = _load("gen2.json")["input"]
+    _result, events, sent, quotes, waited = await _turn(
+        monkeypatch, [calls(("generate_image", args)), reply("done")],
+        answer="start", missing_chat=True)
+    assert waited["turns"] == 0
+    _assert_not_ready(events, sent, quotes)
+
+
+@pytest.mark.asyncio
+async def test_unpriced_forced_quote_does_not_offer_start(monkeypatch):
+    steps = {"steps": [{"text": "线稿", "tool": "generate_image", "model": "mock/edit",
+                        "arguments": _preview_args()}]}
+    _result, events, sent, quotes, waited = await _turn(
+        monkeypatch, [calls(("quote_plan", steps)), reply("done")],
+        answer="start", price_answer=(None, "unpriced"))
+    assert waited["turns"] == 0
+    _assert_not_ready(events, sent, quotes)
