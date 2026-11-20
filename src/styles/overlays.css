@@ -140,7 +140,32 @@
   width: 100%;
 }
 .ca-chat-confirm__title { font-weight: 600; font-size: 14px; line-height: 20px; color: var(--ca-strong); }
-.ca-chat-confirm__desc { margin: 0; color: var(--ca-text); font: 400 13px/20px var(--ca-font); white-space: pre-line; }
+/* The trigger sentence (why this card is showing, including the credit estimate)
+   wraps in full. It is not a single-line ellipsis. */
+.ca-chat-confirm__desc {
+  margin: 0; color: var(--ca-text); font: 400 13px/20px var(--ca-font);
+  white-space: pre-line; overflow: visible; text-overflow: clip; overflow-wrap: anywhere;
+}
+/* .ca-keys__row is 30px and .ca-lib__name ellipsizes. This card's line must show
+   the whole row, with the size still at the start of the text (after the stage
+   label) rather than pushed to the end where a clip would hide it. The price
+   stays on the row and does not shrink away. */
+.ca-chat-confirm .ca-keys__row {
+  height: auto;
+  min-height: 30px;
+  align-items: flex-start;
+}
+.ca-chat-confirm .ca-keys__row .ca-lib__name {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+.ca-chat-confirm .ca-keys__row .ca-panel__val {
+  flex: none;
+  margin-left: 12px;
+  white-space: nowrap;
+}
 .ca-chat-confirm__status { margin: 0; color: var(--ca-muted); font: 400 12px/18px var(--ca-font); }
 .ca-chat-confirm__actions { gap: 8px; }
 .ca-chat-confirm .ca-panel__foot > button { height: 32px; padding: 0 14px; border-radius: 8px; font: inherit; cursor: pointer; }

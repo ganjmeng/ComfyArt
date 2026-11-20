@@ -843,19 +843,34 @@ export function OverQuote({ b }: { b: BotBlock }) {
   )
 }
 
+/** Title, buttons, and the after-cancel suffix follow the active UI language.
+ * Chinese UI: 确认费用 / 取消 / 继续生成, and 已取消 after cancel.
+ * English UI: Confirm cost / Cancel / Generate, and Canceled. Not a fixed English set. */
+function planQuoteChrome() {
+  return {
+    title: t('jobs.confirmTitle'),
+    ok: t('jobs.confirmOk'),
+    cancel: t('common.cancel'),
+    canceled: t('chatMessage.canceled'),
+    timedOut: t('chatMessage.timedOut'),
+  }
+}
+
 /** #235: the plan total uses the same cost-confirm card as a single job. No second card, no new styles. */
 function PlanQuote({ b }: { b: BotBlock }) {
   const [error, setError] = useState('')
   const askId = b.ask_id
   const pending = b.status === 'pending'
+  const chrome = planQuoteChrome()
   if (pending && askId) {
     const answer = quoteAnswer(askId)
     return (
       <>
         <ChatInlineConfirm
-          title={t('jobs.confirmTitle')}
+          title={chrome.title}
           desc={b.prompt ?? ''}
-          okLabel={t('jobs.confirmOk')}
+          okLabel={chrome.ok}
+          cancelLabel={chrome.cancel}
           lines={b.lines ?? []}
           totalLabel={b.total_label}
           total={b.total}
@@ -884,7 +899,7 @@ function PlanQuote({ b }: { b: BotBlock }) {
   return (
     <div className="ca-chat__memo">
       <span className="ca-icon">{started ? Icons.check : Icons.close}</span>
-      {b.prompt} → {started ? t('jobs.confirmOk') : b.status === 'expired' ? t('chatMessage.timedOut') : t('chatMessage.canceled')}
+      {b.prompt} → {started ? chrome.ok : b.status === 'expired' ? chrome.timedOut : chrome.canceled}
     </div>
   )
 }

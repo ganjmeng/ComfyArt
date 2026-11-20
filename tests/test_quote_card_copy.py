@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import copy
 import inspect
+import json
+from pathlib import Path
 
 import pytest
 
@@ -20,6 +22,8 @@ from ComfyArt.api.mcp_tools import canvas
 from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
 from ComfyArt.api.wavespeed import DEFAULT_CONFIRM_CREDITS
 from ComfyArt.bot.plan_quote import _stage_spec_text, build_quote
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 SKILL_STEP = {
@@ -158,6 +162,46 @@ async def test_multi_step_wording_splits_the_same_way():
         "and confirmation is required before it starts. Start?"
     )
     assert "confirm limit" not in en.prompt
+
+
+def test_quote_chrome_and_cancel_suffix_follow_the_ui_language():
+    """Title, buttons, and the after-cancel suffix use the active UI language.
+
+    Chinese interface: 确认费用 / 取消 / 继续生成, and 已取消 after cancel.
+    English interface: Confirm cost / Cancel / Generate, and Canceled.
+    """
+    zh = json.loads((ROOT / "src/locales/zh.json").read_text(encoding="utf-8"))
+    en = json.loads((ROOT / "src/locales/en.json").read_text(encoding="utf-8"))
+    assert zh["jobs.confirmTitle"] == "确认费用" and en["jobs.confirmTitle"] == "Confirm cost"
+    assert zh["common.cancel"] == "取消" and en["common.cancel"] == "Cancel"
+    assert zh["jobs.confirmOk"] == "继续生成" and en["jobs.confirmOk"] == "Generate"
+    assert zh["chatMessage.canceled"] == "已取消" and en["chatMessage.canceled"] == "Canceled"
+    chat = (ROOT / "src/ui/ChatMessage.tsx").read_text(encoding="utf-8")
+    chrome = chat.split("function planQuoteChrome()", 1)[1].split("function PlanQuote", 1)[0]
+    memo = chat.split("function PlanQuote", 1)[1].split("function Task", 1)[0]
+    for key in ("jobs.confirmTitle", "jobs.confirmOk", "common.cancel", "chatMessage.canceled"):
+        assert f"t('{key}')" in chrome
+    assert "Canceled" not in chrome and "Confirm cost" not in chrome and "Generate" not in chrome
+    assert "chrome.title" in memo and "chrome.ok" in memo and "chrome.cancel" in memo
+    assert "chrome.canceled" in memo
+    assert '"Canceled"' not in memo and "'Canceled'" not in memo
+
+
+def test_quote_card_reason_is_not_a_single_line_ellipsis():
+    """The trigger sentence and the quote line wrap. The shared library name
+    still ellipsizes; only this card opts out. The size stays in the line text."""
+    css = (ROOT / "src/styles/overlays.css").read_text(encoding="utf-8")
+    assert ".ca-lib__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }" in css
+    row = css.split(".ca-chat-confirm .ca-keys__row {", 1)[1].split("}", 1)[0]
+    name = css.split(".ca-chat-confirm .ca-keys__row .ca-lib__name {", 1)[1].split("}", 1)[0]
+    desc = css.split(".ca-chat-confirm__desc {", 1)[1].split("}", 1)[0]
+    price = css.split(".ca-chat-confirm .ca-keys__row .ca-panel__val {", 1)[1].split("}", 1)[0]
+    assert "height: auto" in row
+    assert "white-space: normal" in name and "text-overflow: clip" in name
+    assert "ellipsis" not in name and "nowrap" not in name
+    assert "white-space: pre-line" in desc and "text-overflow: clip" in desc
+    assert "ellipsis" not in desc
+    assert "white-space: nowrap" in price  # the credit amount itself stays intact
 
 
 async def test_ordinary_calls_keep_the_threshold_and_unpriced_keeps_its_sentence():
