@@ -72,7 +72,7 @@ async def test_submit_sends_loras_and_quote_equals_charge(lora_model):
     job = {"feature": "text_to_image", "model": T2I, "prompt": "ink cat", "width": 1024, "height": 1024,
            "loras": [{"name": HF_BLOB, "strength": 80}, {"name": CIVITAI, "strength": 100}]}
     est = await wavespeed.estimate(dict(job))
-    assert lora_model["quotes"][-1]["inputs"]["loras"] == [{"path": HF, "scale": 0.8}, {"path": CIVITAI, "scale": 1.0}]
+    assert lora_model["quotes"][-1]["input"]["loras"] == [{"path": HF, "scale": 0.8}, {"path": CIVITAI, "scale": 1.0}]
     await wavespeed.submit({**job, "confirmed": True})
     _, payload = lora_model["submits"][-1]
     assert payload["loras"] == [{"path": HF, "scale": 0.8}, {"path": CIVITAI, "scale": 1.0}]
