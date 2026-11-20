@@ -124,7 +124,7 @@ LLM_PROVIDERS = [
                     {"zh": "deepseek-flash 在非思考模式下 temperature 固定为 1.0，传入 0.2 会被忽略。", "en": "In non-thinking mode deepseek-flash fixes temperature at 1.0. A sent 0.2 is ignored."},
                     {"zh": "现有链路是整段 JSON，不开启 stream。官方流式是另一套 SSE，这里没有启用。", "en": "The current loop reads one JSON body and does not set stream. Official streaming is SSE and is not enabled here."},
                     {"zh": "工具调用按官方非思考示例保留 tools。本环境没有付费实测工具闭环。", "en": "tools are kept, matching the official non-thinking example. The tool loop was not live-tested here."},
-                    {"zh": "单次调用仍不是固定报价。2026-11-18 官方价格页的峰值价已做快照，但计费输入 token 上界未证明，校验门会在发 HTTP 前阻断。此页不探测。", "en": "A single call is still not a fixed quote. Peak list prices were snapshotted from the official pricing page on 2026-11-18, but billed input tokens have no proven bound, so the validation gate blocks before HTTP. This page does not probe."},
+                    {"zh": "单次调用仍不是固定报价。2026-11-18 官方价格页的峰值价已做快照。普通产品请求不登记测试账本；显式受控 runtime，或进程内已绑定的校验 scope，仍会在未证明计费输入时阻断 HTTP。此页不探测。", "en": "A single call is still not a fixed quote. Peak list prices were snapshotted from the official pricing page on 2026-11-18. Ordinary product requests do not open the test ledger. An explicit controlled runtime, or an in-process bound validation scope, still blocks unproven billed input before HTTP. This page does not probe."},
                 ],
             },
             {
