@@ -1,0 +1,308 @@
+{
+  "purpose": "True Lovart LEFT vs ours RIGHT for cells 1/2/3. Ours pixels are an exact interior extract of the archived review-board right panel. Full 2048 paid finals were not present in the archive.",
+  "code_sha": "660c402678626972e5214119da0b0d0bfda6edeb",
+  "route": "scripted tool-only, no LLM, not the default agent or UI",
+  "lovart_commit": "44b6ab3756a96f82ec85e31525a31c07728d690d",
+  "review_board_commit": "118f63d9d23ca7afeaffa4b9e8d736a43e1bf104",
+  "full_2048_finals_found": false,
+  "extraction": "Interior of the 1px red frame on the RIGHT panel only. Frame, caption, and left preview-cell crop excluded. No rescale, no pad, no product crop, no retouch, no color change. PNG re-encode is lossless RGB and was checked pixel-identical to the source box.",
+  "existing_boards_are_not_lovart_vs_ours": {
+    "side-by-side-cell{1,2,3}.png": "LEFT is our preview-cell crop, RIGHT is our paid final",
+    "contact-sheet-finals.png": "reference plus our three paid finals"
+  },
+  "archived_qa_verdict_unchanged": "verdict.json at the review-board commit still records overall HOLD for cells 1, 2, and 3. This pack does not rewrite that verdict.",
+  "cells": {
+    "1": {
+      "angle": "front full body",
+      "lovart": {
+        "commit": "44b6ab3756a96f82ec85e31525a31c07728d690d",
+        "path": "911/lovart-ai/20261116-multi-angle/01-正面全身-耳机正面全身白底图.png",
+        "sha256": "5a7d69bf38a202f3999da64035ee4d6659946ee8dda28e93be3d2054630858ae",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 3404566
+      },
+      "ours_source_board": {
+        "commit": "118f63d9d23ca7afeaffa4b9e8d736a43e1bf104",
+        "path": "911/wavespeed/20261118-660c4026-finals/side-by-side-cell1.png",
+        "sha256": "95fd655ae424dcf759c3b78edbec4c9e77c72f216b3654f42555a45061caf3b1",
+        "dimensions": [
+          1668,
+          1074
+        ],
+        "bytes": 1720965,
+        "what_it_shows": "LEFT our preview-cell crop; RIGHT our paid final. Not Lovart.",
+        "right_red_frame_inclusive": {
+          "x0": 623,
+          "y0": 39,
+          "x1": 1648,
+          "y1": 1064
+        },
+        "extracted_box_inclusive": {
+          "x0": 624,
+          "y0": 40,
+          "x1": 1647,
+          "y1": 1063
+        },
+        "extracted_box_pil_exclusive_end": [
+          624,
+          40,
+          1648,
+          1064
+        ]
+      },
+      "ours_extract": {
+        "path": "911/wavespeed/20261120-660c4026-lovart-ours-lr/ours-cell1-right-panel-extract.png",
+        "sha256": "328207d5fd6363488baac3c17742b5d9bc3927bbbc00e20ca8f3c33b7b65f0dc",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "bytes": 1318235,
+        "pixel_identical_to_source_box": true,
+        "full_2048_paid_final_present": false,
+        "archived_final_sha256_from_verdict_json_file_not_in_tree": "e2ed4235b0800bc562d9ee717fd9365162fd3eb54de4a0248898e8e87790513f",
+        "provider_task": "d4f382727c8548c6aba47bebb52cbb19",
+        "archived_final_claimed_dimensions": [
+          2048,
+          2048
+        ]
+      },
+      "composite": {
+        "path": "911/wavespeed/20261120-660c4026-lovart-ours-lr/lovart-ours-cell1.png",
+        "sha256": "f6e3f68131e45552ca229a054b218ae457269af66443331307a14a756d93b296",
+        "dimensions": [
+          3152,
+          2264
+        ],
+        "bytes": 4418259,
+        "lovart_paste_xy": [
+          24,
+          192
+        ],
+        "ours_paste_xy": [
+          2104,
+          192
+        ],
+        "panels_unscaled": true,
+        "labels_outside_image_rects": true,
+        "chrome_rgb": [
+          208,
+          208,
+          208
+        ]
+      }
+    },
+    "2": {
+      "angle": "three-quarter full body",
+      "lovart": {
+        "commit": "44b6ab3756a96f82ec85e31525a31c07728d690d",
+        "path": "911/lovart-ai/20261116-multi-angle/02-3-4全身-耳机3-4侧面全身白底图.png",
+        "sha256": "653898496cf82c2da0f894c88d3a7a0cb988e2fcbc4971cee5f3271c66f80567",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 3512696
+      },
+      "ours_source_board": {
+        "commit": "118f63d9d23ca7afeaffa4b9e8d736a43e1bf104",
+        "path": "911/wavespeed/20261118-660c4026-finals/side-by-side-cell2.png",
+        "sha256": "31390313a812908f864d56634b9f41d3b7eba4d6cbecd0acc7b6b200e18bae42",
+        "dimensions": [
+          1632,
+          1074
+        ],
+        "bytes": 1310963,
+        "what_it_shows": "LEFT our preview-cell crop; RIGHT our paid final. Not Lovart.",
+        "right_red_frame_inclusive": {
+          "x0": 587,
+          "y0": 39,
+          "x1": 1612,
+          "y1": 1064
+        },
+        "extracted_box_inclusive": {
+          "x0": 588,
+          "y0": 40,
+          "x1": 1611,
+          "y1": 1063
+        },
+        "extracted_box_pil_exclusive_end": [
+          588,
+          40,
+          1612,
+          1064
+        ]
+      },
+      "ours_extract": {
+        "path": "911/wavespeed/20261120-660c4026-lovart-ours-lr/ours-cell2-right-panel-extract.png",
+        "sha256": "e28bd995450066351dcfb687fefece2ebf28d1ef2d52e721c1a1a5cad733fab5",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "bytes": 938150,
+        "pixel_identical_to_source_box": true,
+        "full_2048_paid_final_present": false,
+        "archived_final_sha256_from_verdict_json_file_not_in_tree": "04de226c0936b665f649a70cc9677f15423d27706137382ef1c16088e972c18e",
+        "provider_task": "7214347eecf84628a8415ad21071bbb0",
+        "archived_final_claimed_dimensions": [
+          2048,
+          2048
+        ]
+      },
+      "composite": {
+        "path": "911/wavespeed/20261120-660c4026-lovart-ours-lr/lovart-ours-cell2.png",
+        "sha256": "632dc44bc20ffae2b3ac9de23a253b5171d084e44458ef824dab485cecb6aca7",
+        "dimensions": [
+          3152,
+          2264
+        ],
+        "bytes": 4038693,
+        "lovart_paste_xy": [
+          24,
+          192
+        ],
+        "ours_paste_xy": [
+          2104,
+          192
+        ],
+        "panels_unscaled": true,
+        "labels_outside_image_rects": true,
+        "chrome_rgb": [
+          208,
+          208,
+          208
+        ]
+      }
+    },
+    "3": {
+      "angle": "side profile full body",
+      "lovart": {
+        "commit": "44b6ab3756a96f82ec85e31525a31c07728d690d",
+        "path": "911/lovart-ai/20261116-multi-angle/03-侧面全身-耳机侧面轮廓全身白底图.png",
+        "sha256": "3240be2bcfb4bc167ec2727037ca1cc7e65ad9575c44436c6cd6f31cdc2ae48e",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 2818563
+      },
+      "ours_source_board": {
+        "commit": "118f63d9d23ca7afeaffa4b9e8d736a43e1bf104",
+        "path": "911/wavespeed/20261118-660c4026-finals/side-by-side-cell3.png",
+        "sha256": "43959fd8e2ce64484b7fea21727c73428c03ad419faf7a7314ad85ceeef54aa5",
+        "dimensions": [
+          1653,
+          1074
+        ],
+        "bytes": 750283,
+        "what_it_shows": "LEFT our preview-cell crop; RIGHT our paid final. Not Lovart.",
+        "right_red_frame_inclusive": {
+          "x0": 608,
+          "y0": 39,
+          "x1": 1633,
+          "y1": 1064
+        },
+        "extracted_box_inclusive": {
+          "x0": 609,
+          "y0": 40,
+          "x1": 1632,
+          "y1": 1063
+        },
+        "extracted_box_pil_exclusive_end": [
+          609,
+          40,
+          1633,
+          1064
+        ]
+      },
+      "ours_extract": {
+        "path": "911/wavespeed/20261120-660c4026-lovart-ours-lr/ours-cell3-right-panel-extract.png",
+        "sha256": "4c4132a85a25af955ce8d74f6cf47b05cd45b23ccb30c15d69dbb3dd64857b40",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "bytes": 512311,
+        "pixel_identical_to_source_box": true,
+        "full_2048_paid_final_present": false,
+        "archived_final_sha256_from_verdict_json_file_not_in_tree": "49bd246f0a6ac5d817cbea22581b5a2fb2ab5b866a692ad68b206e4fd7d26022",
+        "provider_task": "e488752a4a794e8d92f141836a6b284b",
+        "archived_final_claimed_dimensions": [
+          2048,
+          2048
+        ]
+      },
+      "composite": {
+        "path": "911/wavespeed/20261120-660c4026-lovart-ours-lr/lovart-ours-cell3.png",
+        "sha256": "af672df60beb01aeb6617cbcb23f10111642cd81195dae15ca6a1faad26a8463",
+        "dimensions": [
+          3152,
+          2264
+        ],
+        "bytes": 3003467,
+        "lovart_paste_xy": [
+          24,
+          192
+        ],
+        "ours_paste_xy": [
+          2104,
+          192
+        ],
+        "panels_unscaled": true,
+        "labels_outside_image_rects": true,
+        "chrome_rgb": [
+          208,
+          208,
+          208
+        ]
+      }
+    }
+  },
+  "related_files_not_relabeled": {
+    "preview_nine_grid": {
+      "path": "911/lovart-ai/20261116-multi-angle/耳机多角度构图线稿九宫格.png",
+      "commit": "44b6ab3756a96f82ec85e31525a31c07728d690d",
+      "sha256": "9aeef7c4172a0e0b99a5a871965bbe06d78425a6030764084c66301a7e6f80e3",
+      "bytes": 1560182,
+      "dimensions": [
+        1152,
+        2048
+      ]
+    },
+    "contact_sheet": {
+      "path": "911/wavespeed/20261118-660c4026-finals/contact-sheet-finals.png",
+      "commit": "118f63d9d23ca7afeaffa4b9e8d736a43e1bf104",
+      "sha256": "eb41dc9fa6f1d4305940d45aef86f75a93d5ae1198c3e17291538953c78bc3c3",
+      "bytes": 2374035,
+      "dimensions": [
+        3700,
+        960
+      ]
+    },
+    "case": {
+      "path": "911/wavespeed/20261118-660c4026-finals/CASE.md",
+      "commit": "118f63d9d23ca7afeaffa4b9e8d736a43e1bf104",
+      "sha256": "a31471ee6ddad84c035692d56f984abaeecce28a328530045d44983f62c7585f",
+      "bytes": 4509,
+      "dimensions": null
+    },
+    "verdict": {
+      "path": "911/wavespeed/20261118-660c4026-finals/verdict.json",
+      "commit": "118f63d9d23ca7afeaffa4b9e8d736a43e1bf104",
+      "sha256": "66959e403b28758809c4d4be5d189ce65672923fe69fb466ca40d74fd94f4854",
+      "bytes": 7786,
+      "dimensions": null
+    },
+    "measurements": {
+      "path": "911/wavespeed/20261118-660c4026-finals/measurements.json",
+      "commit": "118f63d9d23ca7afeaffa4b9e8d736a43e1bf104",
+      "sha256": "886df42a8c9c98812b53c56ccf4a5b52cbc9ea4b40afe346a6968e22eb1b36a8",
+      "bytes": 4735,
+      "dimensions": null
+    }
+  }
+}
