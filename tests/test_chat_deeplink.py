@@ -70,9 +70,14 @@ def test_chat_link_parser_and_stale_reads():
         cwd=ROOT, check=True, env={**os.environ, "OUT": str(out)},
     )
     proc = subprocess.run(["node", str(out)], cwd=ROOT, check=True, capture_output=True, text=True)
-    assert proc.stdout.strip() == "ok"
+    lines = [line for line in proc.stdout.splitlines() if line]
+    assert lines[-1] == "ok", proc.stdout
+    for case in ("ok cleanup-then-finish", "ok A-finishes-after-B", "ok no-chat", "ok url-A-to-B"):
+        assert case in lines, proc.stdout
     src = (ROOT / "src/bot.ts").read_text(encoding="utf-8")
-    assert "if (link.kind === 'open' && link.project === project) void openChat(link.chat)" in src
+    assert "settleBotInit(" in src
+    assert "initEpoch.cancel()" in src
+    assert "if (chat) void openChat(chat)" in src
     assert "openChat(chats" not in src and "chats[0]" not in src
     assert "void loadChats().then(() => openChat(chatIdAtom.get()))" in src
     assert "chatReads.invalidate()" in src

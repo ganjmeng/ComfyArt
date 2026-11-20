@@ -8,7 +8,7 @@ import { onComfyEvent, onReconnect } from './ws'
 import { lang, t } from './i18n'
 import { wsBodyError } from './wsErrors'
 import { handleScheduleTurnDone, isSchedulePending, noteScheduleNotify } from './schedulePending'
-import { ChatReadGate, chatReadPath, readChatLink } from './chatLink'
+import { ChatReadGate, InitEpoch, chatReadPath, readChatLink, settleBotInit } from './chatLink'
 
 export interface AskOption { id: string; label: string; description?: string; image_url?: string; recommended?: boolean }
 export interface AskQuestion {
@@ -167,6 +167,7 @@ export const providersStateAtom = atom<{ state: 'loading' | 'ready' | 'error'; e
 
 let project = ''
 const chatReads = new ChatReadGate()
+const initEpoch = new InitEpoch()
 
 export const chatLinkErrorAtom = atom<'denied' | null>('chat link error', null)
 
@@ -552,12 +553,20 @@ export async function refreshBot(opts?: { refresh?: boolean }) {
 
 export function startBot(projectId: string, isStale: () => boolean) {
   project = projectId
-  const link = readChatLink(new URL(location.href).searchParams)
+  const epoch = initEpoch.begin()
+  const captured = readChatLink(new URL(location.href).searchParams)
   void refreshBot().catch(() => {})  // #294: a failed first load is kept in providersStateAtom and shown on send
     .finally(() => {
-      if (isStale()) return
-      // No `chat` param: leave the empty composer. Do not pick a history row.
-      if (link.kind === 'open' && link.project === project) void openChat(link.chat)
+      // Re-read the URL. A cancelled epoch must not call openChat, which would mint a fresh read token.
+      const chat = settleBotInit({
+        epoch,
+        currentEpoch: initEpoch.current(),
+        stale: isStale(),
+        captured,
+        live: readChatLink(new URL(location.href).searchParams),
+        projectId: project,
+      })
+      if (chat) void openChat(chat)
     })
   const stops = [
     onComfyEvent('comfyart-bot', (e: { event: string }) => {
@@ -570,6 +579,7 @@ export function startBot(projectId: string, isStale: () => boolean) {
     }),
   ]
   return () => {
+    initEpoch.cancel()
     chatReads.invalidate()
     stops.forEach((stop) => stop())
   }
