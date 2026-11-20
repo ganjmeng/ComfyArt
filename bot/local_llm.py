@@ -2373,21 +2373,16 @@ class LocalLlmProvider(AgentProvider):
                 quote_error = f"[error] {type(e).__name__}: {e}"
                 decision = "error"
             else:
-                if quote is not None and forced_quote:
-                    # Pricing may have left ask False (zero units / under the
-                    # line). That is not a confirmation. The card still has to
-                    # be shown and answered.
-                    quote.ask = True
-                if quote is None and forced_quote:
-                    # build_quote returned None (empty steps or a single priced
-                    # line under the confirm line). Do not report start=true.
-                    decision = "error"
-                    quote_error = json.dumps({
-                        "ok": False, "start": False, "submitted": False,
-                        "redirect": "quote_card", "next_step": "quote_card",
-                        "quote_card": "线稿预览",
-                        "error": "线稿预览报价卡没有生成，不能开始，也没有提交。",
-                    }, ensure_ascii=False)
+                from .plan_quote import not_ready_payload
+                failed = bool(forced_quote and (quote is None or not quote.acquired))
+                if failed:
+                    # A blocked, unpriced, or missing quote is not a free Start.
+                    # Do not wait on a card and do not report start=true.
+                    decision = "not_ready"
+                    detail = ""
+                    if quote is not None:
+                        detail = next((ln.text for ln in quote.lines if ln.units <= 0 or ln.unpriced), "")
+                    quote_error = not_ready_payload(lang, detail)
                 elif quote is None:
                     decision = "passthrough"
                 elif not quote.ask:
@@ -2428,7 +2423,7 @@ class LocalLlmProvider(AgentProvider):
                 continue
             name = it["name"]
             if name == QUOTE_TOOL:
-                if decision == "error":
+                if decision in ("error", "not_ready"):
                     chunks[i] = await self._emit_result(
                         it, quote_error, emit=emit, done=done, lang=lang, is_error=True)
                 elif decision == "cancel":
@@ -2439,6 +2434,10 @@ class LocalLlmProvider(AgentProvider):
                     text = quote.started_result() if quote else json.dumps({"ok": True, "start": True})
                     chunks[i] = await self._emit_result(it, text, emit=emit, done=done, lang=lang)
                 continue
+            if name in PAID_TOOLS and decision == "not_ready":
+                chunks[i] = await self._emit_result(
+                    it, quote_error, emit=emit, done=done, lang=lang, is_error=True)
+                continue  # no card, no Start, no submit
             if name in PAID_TOOLS and decision == "cancel":
                 continue  # do not emit a paid row: the user stopped before anything ran
             if name in PAID_TOOLS and handle.stop_requested:
