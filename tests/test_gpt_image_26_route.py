@@ -47,7 +47,7 @@ class _Session:
     def post(self, url, json=None, **kwargs):
         _Session.posts.append((str(url), json))
         if str(url).endswith("/model/price"):
-            return _Body({"data": {"price": 0.05, "discounted_price": 0.05}})
+            return _Body({"code": 200, "message": "success", "data": {"price": 0.05, "discounted_price": 0.05}})
         return _Body({"data": {"id": "local-task", "status": "created"}})
 
     def get(self, *args, **kwargs):
@@ -94,8 +94,8 @@ def test_unset_and_auto_post_26_without_quality(local):
             assert body["images"] == ["https://cdn.test/still.png"]
         quote = _price(_Session.posts)[-1][1]
         assert quote["model_id"] == model
-        assert "quality" not in quote["inputs"]
-        assert "frame_count" not in quote["inputs"]
+        assert "quality" not in quote["input"]
+        assert "frame_count" not in quote["input"]
     _Session.posts = []
     asyncio.run(wavespeed.submit({"feature": "text_to_image", "model": "auto", "prompt": "auto cup"}))
     url, body = _gen(_Session.posts)[-1]
@@ -311,6 +311,6 @@ def test_picked_quality_confirm_tier_matches_payload(local, monkeypatch):
         asyncio.run(wavespeed.submit({"feature": "text_to_image", "model": T2I_25, "prompt": "x", "params": {"quality": "high"}}))
     assert err.value.model == T2I_25
     quoted = _price(_Session.posts)[-1][1]
-    assert quoted["model_id"] == T2I_25 and quoted["inputs"].get("quality") == "high"
+    assert quoted["model_id"] == T2I_25 and quoted["input"].get("quality") == "high"
     assert gif_image.documented_usd(T2I) == 0.05
     assert gif_image.documented_usd(T2I_25) == 0.024

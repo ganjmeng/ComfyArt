@@ -141,7 +141,7 @@ async def test_quote_equals_charge(catalog, tool, model):
     job = job_for(tool, model)
     est = await wavespeed.estimate(dict(job))
     assert est["source"] == "quote", est
-    quoted_inputs = catalog["quotes"][-1]["inputs"]
+    quoted_inputs = catalog["quotes"][-1]["input"]
     assert catalog["quotes"][-1]["model_id"] == model
     await wavespeed.submit(dict(job))
     sent_model, payload = catalog["submits"][-1]
@@ -188,7 +188,7 @@ async def test_other_tier_is_quoted_at_that_tier(catalog, tool, model):
     est = await wavespeed.estimate(dict(job))
     assert est["source"] == "quote", est
     assert catalog["quotes"][-1]["model_id"] == model
-    assert catalog["quotes"][-1]["inputs"].get("duration") == 10, catalog["quotes"][-1]
+    assert catalog["quotes"][-1]["input"].get("duration") == 10, catalog["quotes"][-1]
     await wavespeed.submit(dict(job))
     sent_model, payload = catalog["submits"][-1]
     assert sent_model == model
