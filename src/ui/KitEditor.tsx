@@ -2,9 +2,10 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { atom, useValue } from 'tldraw'
 
 import { uploadImage, viewUrl } from '../comfy'
+import { fontFamilyFromFilename } from '../fontName'
 import { t } from '../i18n'
 import { errorText } from '../jobs'
-import { COLOR_ROLES, KIND_LABELS, kitDisplayName, libraryAtom, saveLibrary, type FontFile, type LibraryItem } from '../library'
+import { COLOR_ROLES, KIND_LABELS, draftItem, kitDisplayName, libraryAtom, saveDraft, updateLibrary, type FontFile, type LibraryItem } from '../library'
 import { ask, parseJson } from '../llm'
 import { isPdf, uploadPdf } from '../pdf'
 import { newProject } from '../projects'
@@ -107,7 +108,6 @@ export function KitEditor({ onError, embedded }: { onError: (msg: string) => voi
   const id = useValue(kitEditAtom)
   const stored = useValue('kit item', () => libraryAtom.get().find((x) => x.id === id) ?? null, [id])
   const timer = useRef(0)
-  const pending = useRef<LibraryItem[] | null>(null)
   const [busy, setBusy] = useState(false)
   const [drag, setDrag] = useState(false)
   const [pick, setPick] = useState(false)
@@ -126,8 +126,7 @@ export function KitEditor({ onError, embedded }: { onError: (msg: string) => voi
 
   const flush = () => {
     clearTimeout(timer.current)
-    if (pending.current) void saveLibrary(pending.current).catch((e) => onError(errorText(e)))
-    pending.current = null
+    void saveDraft().catch((e) => onError(errorText(e)))
   }
   useEffect(() => flush, [id])
 
@@ -137,9 +136,7 @@ export function KitEditor({ onError, embedded }: { onError: (msg: string) => voi
   const item = stored
   const brand = item.kind === 'brand'
   const update = (fn: (x: LibraryItem) => LibraryItem) => {
-    const next = libraryAtom.get().map((x) => (x.id === item.id ? fn(x) : x))
-    libraryAtom.set(next)
-    pending.current = next
+    draftItem(fn(libraryAtom.get().find((x) => x.id === item.id) ?? item))
     clearTimeout(timer.current)
     timer.current = window.setTimeout(flush, SAVE_DELAY)
   }
@@ -188,7 +185,7 @@ export function KitEditor({ onError, embedded }: { onError: (msg: string) => voi
     }
   }
   const addFontFiles = async (list: File[]) => {
-    const added: FontFile[] = await Promise.all(list.map(async (f) => ({ family: f.name.replace(/\.(ttf|otf|woff2?)$/i, ''), src: viewUrl(await uploadImage(f, f.name)) })))
+    const added: FontFile[] = await Promise.all(list.map(async (f) => ({ family: fontFamilyFromFilename(f.name), src: viewUrl(await uploadImage(f, f.name)) })))
     update((x) => ({ ...x, fontFiles: [...(x.fontFiles ?? []), ...added], fonts: [...new Set([...x.fonts, ...added.map((a) => a.family)])] }))
   }
   const removeFont = (family: string) => update((x) => ({ ...x, fonts: x.fonts.filter((f) => f !== family), fontFiles: (x.fontFiles ?? []).filter((f) => f.family !== family) }))
@@ -197,7 +194,7 @@ export function KitEditor({ onError, embedded }: { onError: (msg: string) => voi
     title: t('libraryPanel.deleteItem', KIND_LABELS[item.kind]),
     desc: t('libraryPanel.itemWillBeRemoved', item.name || t('kitEditor.untitled', KIND_LABELS[item.kind])),
     ok: t('common.delete'),
-    run: () => { clearTimeout(timer.current); pending.current = null; kitEditAtom.set(null); void saveLibrary(libraryAtom.get().filter((x) => x.id !== item.id)).catch(fail) },
+    run: () => { clearTimeout(timer.current); draftItem(null); kitEditAtom.set(null); void updateLibrary((list) => list.filter((x) => x.id !== item.id)).catch(fail) },
   })
   const picked = (input: HTMLInputElement, use: (list: File[]) => void) => { use(Array.from(input.files ?? [])); input.value = '' }
 
