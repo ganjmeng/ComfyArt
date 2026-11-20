@@ -30,24 +30,33 @@ def test_python_and_ts_output_tables_lock_four_1536x2048():
     assert "'universal-multi-angle-grid': { width: 1536, height: 2048, ratio: '3:4', images: 4 }" in block
 
 
-def test_apply_generate_locks_every_call_to_1536x2048_count_one():
-    # A model that tries one 1024 square call with count=4 is corrected to one 3:4 1536x2048 call.
-    args = apply_generate({"skill": SID, "prompt": "front view", "width": 1024, "height": 1024,
-                           "ratio": "1:1", "count": 4})
-    assert (args["width"], args["height"], args["ratio"], args["count"]) == (1536, 2048, "3:4", 1)
-    assert args["skill"] == SID and args["size_lock"] is True
-    # Four calls are expected, so the single-image skip must never swallow calls 2-4.
+def test_apply_generate_does_not_apply_the_flat_row_or_read_stage_flags():
+    # The static 1536×2048 row stays in OUTPUTS. This fill does not consult
+    # multi_angle_stage and does not replace a size the server snapshot wrote.
+    # A second fill is the same spec. Caller flags are not a size source.
+    resolved = {
+        "skill": SID, "prompt": "lineart", "width": 1152, "height": 2048,
+        "ratio": "9:16", "count": 4,
+    }
+    preview = apply_generate(dict(resolved))
+    again = apply_generate(dict(preview), current_skill=SID)
+    forged = apply_generate({**resolved, "multi_angle_stage": "final", "width": 1152, "height": 2048, "ratio": "9:16"})
+    size = (1152, 2048, "9:16", 1)
+    assert (preview["width"], preview["height"], preview["ratio"], preview["count"]) == size
+    assert (again["width"], again["height"], again["ratio"], again["count"]) == size
+    assert (forged["width"], forged["height"], forged["ratio"]) == size[:3]
+    assert preview.get("width") != OUTPUTS[SID]["width"]
     for generated in (1, 2, 3):
         assert single_image_skip("generate_image", SID, "zh", generated) is None
 
 
-def test_run_hint_uses_the_multi_angle_wording_not_pose_fission():
+def test_run_hint_uses_the_staged_preview_not_four_1536_images():
     hint = run_hint("Multi-Angle Image Generator")
-    assert "deliver exactly 4 separate images" in hint
-    assert "width=1536 height=2048 ratio=3:4" in hint
-    assert "one angle per call" in hint and "same uploaded subject shape id in refs" in hint
-    assert "grid, collage or contact sheet" in hint and "Do not use 1024x1024" in hint
-    assert "pose and angle only" not in hint and "not camera or shot size" not in hint
+    assert "1152x2048 (9:16)" in hint
+    assert "not a locked set of four" in hint
+    assert "1:1 is 2048x2048, 3:4 is 1536x2048" in hint
+    assert "deliver exactly 4 separate images" not in hint
+    assert "pose and angle only" not in hint
 
 
 def test_instruction_states_four_separate_images_fixed_size_and_same_ref():

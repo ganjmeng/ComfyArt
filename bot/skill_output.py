@@ -578,6 +578,10 @@ def accepted_image_counts(name: object, preset_id: object = "") -> tuple[int, in
     sid = resolve(name)
     if not sid:
         return None
+    if sid == "universal-multi-angle-grid":
+        # Staged delivery: the count is the answered composition card, not the
+        # static four-image row.
+        return None
     if sid in PRESET_PLAN_SKILLS:
         n = int(plan_for(sid, preset_id)["images"])
         return n, n
@@ -804,6 +808,14 @@ def apply_generate(args: dict | None, current_skill: str = "", user_text: str | 
         if cur_raw:
             # #982: a custom/undeclared skill run also gets the floor.
             return fill_unpinned_fallback(args, cur_raw)
+        return args
+    if sid == "universal-multi-angle-grid":
+        # The flat 1536×2048 row is not this skill's spec. prepare() already
+        # wrote the server snapshot, and validate_provider_size refuses a later
+        # rewrite. Do not apply the row, and do not copy a drifted size back.
+        # Caller width, height and multi_angle_stage are not read here.
+        args["skill"] = sid
+        args["count"] = 1
         return args
     row = OUTPUTS[sid]
     if not named:
@@ -1046,6 +1058,24 @@ def _run_hint_declared(name: object, user_text: str = "", ref_image: bytes | Non
     sid = resolve(name)
     if not sid:
         return ""
+    if sid == "universal-multi-angle-grid":
+        return (
+            "Multi-angle staged delivery: use ask_user once for BOTH source and final aspect on one card, "
+            "even when images are already attached (recommended 1:1, not a forced default; Skip and Submit). "
+            "After that answer, do not ask for another upload. Use attached references regardless of the source "
+            "answer; if none are attached, continue from the description. After the setup card, do not call generate_image until the existing "
+            "quote/approval card is confirmed. Then generate_image skill='universal-multi-angle-grid', multi_angle_stage='preview', count=1, at 1152x2048 (9:16). "
+            "The aspect chosen on the question card does not change this preview; it stays 1152x2048 9:16 unless the user explicitly specifies a preview size. "
+            "The selected final aspect applies to finals only: "
+            "ONE numbered nine-panel lineart preview. "
+            "Call wait_generation. Only after it is delivered, "
+            "use ask_user for composition multi-select (panel IDs 1..9), then WAIT for the answer. "
+            "For EACH selected ID call generate_image once with multi_angle_stage='final', composition_id=that ID, "
+            "count=1, then wait_generation. The number of finals equals the number of selected compositions, "
+            "not a locked set of four. Each final uses the ratio chosen on the question card "
+            "(1:1 is 2048x2048, 3:4 is 1536x2048). Keep reference, original description and chosen final aspect. "
+            "No final before the composition answer. No fixed output count; no repeated paid calls on resume."
+        )
     row = OUTPUTS[sid]
     if sid in TYPE_OUTPUTS_982:
         requested = requested_ratio_994(user_text)
@@ -1127,15 +1157,6 @@ def _run_hint_declared(name: object, user_text: str = "", ref_image: bytes | Non
             f"Call generate_image {int(row['images'])} times, one useful frame per call "
             "(hero, side/detail, ...), with a different prompt each time; pass skill={sid!r} and every "
             "uploaded ref on every call." + refs
-        )
-    if sid == "universal-multi-angle-grid":
-        # #974: this skill's own wording, not pose-fission's. Four separate angle images, same reference each call.
-        return (
-            f"Output lock: deliver exactly {int(row['images'])} separate images, each {size}, count=1. "
-            f"Call generate_image {int(row['images'])} times, one angle per call (front, 3/4, strict 90° side profile, "
-            "detail/macro), with a different prompt each time. Pass the same uploaded subject shape id in refs "
-            "(ref_modes content) on every call. Never merge the angles into one grid, collage or contact sheet. "
-            "Do not use 1024x1024."
         )
     return (
         f"Output lock: each generate_image uses skill={sid!r}, {size}, count=1, and a different prompt "

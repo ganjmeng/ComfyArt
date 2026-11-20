@@ -382,6 +382,136 @@ async def test_confirmed_preview_stays_precheck_and_does_not_submit(monkeypatch)
     assert "controlled_precheck_only" in texts
 
 
+def _rows(text=DESC):
+    return [{"id": "start", "role": "user", "blocks": [
+        {"type": "skill", "name": ma.SKILL}, {"type": "text", "text": text},
+        {"type": "image", "url": REF}]}]
+
+
+def _quote_matches_submit(monkeypatch, rows, tool, expected):
+    """The server snapshot is the size for the quote and for the submit fill.
+
+    Tool width, height, ratio and multi_angle_stage are on `tool` and must not
+    win. A second fill stays on that snapshot. A real mismatch is refused and
+    is not repaired by writing the snapshot back over the drifted args.
+    """
+    from ComfyArt.api.mcp_tools.canvas import quote_route
+    from ComfyArt.bot.skill_output import apply_generate
+    monkeypatch.setattr(chat_store, "list_messages", lambda chat: copy.deepcopy(rows))
+    token = BOT_CHAT_ID.set("chat-ma")
+    try:
+        prepared, blocked = ma.prepare(dict(tool))
+        assert blocked is None
+        spec = prepared["_multi_angle"]["stage_spec"]
+        assert (spec["width"], spec["height"], spec["ratio"]) == expected
+        assert prepared["_multi_angle"]["setup_snapshot"]["preview"]["width"] == spec["width"] or prepared["_multi_angle"]["key"] != "preview"
+        submit_args = {k: v for k, v in prepared.items()
+                       if k not in ("_multi_angle", "multi_angle_stage", "composition_id", "composition_plan")}
+        filled = apply_generate(submit_args)
+        again = apply_generate(dict(filled))
+        for item in (filled, again):
+            assert (item["width"], item["height"], item["ratio"], item["count"]) == (*expected, 1)
+        routed = quote_route("generate_image", dict(tool))
+        assert routed
+        if routed[0] == "":
+            # Exact user pixels with no catalogue stop both the quote and the submit.
+            # The stop is the capability guard, not a different size.
+            blocked_quote = routed[1]["param_blocked"]
+            assert blocked_quote["submitted"] is False and "改写了规格" not in blocked_quote["error"]
+            assert ma.validate_provider_size(filled, prepared["_multi_angle"], "")["error"] == blocked_quote["error"]
+        else:
+            assert (routed[1]["width"], routed[1]["height"], routed[1]["ratio"]) == expected
+        drifted = dict(filled)
+        drifted.update(width=100, height=100, ratio="1:1")
+        refused = ma.validate_provider_size(drifted, prepared["_multi_angle"], "")
+        assert refused and refused["submitted"] is False and "改写了规格" in refused["error"]
+        assert (drifted["width"], drifted["height"]) == (100, 100)
+        return prepared["_multi_angle"]
+    finally:
+        BOT_CHAT_ID.reset(token)
+
+
+@pytest.mark.parametrize("aspect,final", [
+    ("1:1", (2048, 2048, "1:1")),
+    ("3:4", (1536, 2048, "3:4")),
+    ("16:9", (2048, 1152, "16:9")),
+])
+def test_default_preview_snapshot_is_1152_and_final_follows_the_card(monkeypatch, aspect, final):
+    from test_multi_angle_stages_911 import setup
+    rows = _rows()
+    monkeypatch.setattr(chat_store, "list_messages", lambda chat: copy.deepcopy(rows))
+    token = BOT_CHAT_ID.set("chat-ma")
+    try:
+        setup(rows, aspect, source="single_front")
+    finally:
+        BOT_CHAT_ID.reset(token)
+    tool = {
+        "skill": ma.SKILL, "composition_plan": _plan(), "multi_angle_stage": "final",
+        "width": 100, "height": 100, "ratio": "1:1", "count": 4,
+    }
+    meta = _quote_matches_submit(monkeypatch, rows, tool, (1152, 2048, "9:16"))
+    assert meta["key"] == "preview"
+    assert (meta["setup_snapshot"]["final"]["width"], meta["setup_snapshot"]["final"]["height"],
+            meta["setup_snapshot"]["final"]["ratio"]) == final
+    assert meta["setup_snapshot"]["preview"]["exact_pixels"] is False
+
+
+def test_explicit_preview_pixels_are_kept_and_do_not_become_1152(monkeypatch):
+    from test_multi_angle_stages_911 import setup
+    rows = _rows(DESC + "\npreview 960x1280")
+    monkeypatch.setattr(chat_store, "list_messages", lambda chat: copy.deepcopy(rows))
+    token = BOT_CHAT_ID.set("chat-ma")
+    try:
+        setup(rows, "1:1", source="single_front")
+    finally:
+        BOT_CHAT_ID.reset(token)
+    tool = {
+        "skill": ma.SKILL, "composition_plan": _plan(), "multi_angle_stage": "preview",
+        "width": 1152, "height": 2048, "ratio": "9:16", "count": 4,
+    }
+    meta = _quote_matches_submit(monkeypatch, rows, tool, (960, 1280, "3:4"))
+    assert meta["setup_snapshot"]["preview"]["exact_pixels"] is True
+    assert (meta["setup_snapshot"]["final"]["width"], meta["setup_snapshot"]["final"]["height"]) == (2048, 2048)
+
+
+def test_other_skills_still_use_their_output_row():
+    from ComfyArt.bot.skill_output import OUTPUTS, apply_generate
+    pose = apply_generate({
+        "skill": "pose-fission", "prompt": "pose", "width": 1152, "height": 2048,
+        "ratio": "9:16", "count": 4, "multi_angle_stage": "preview",
+    })
+    row = OUTPUTS["pose-fission"]
+    assert (pose["width"], pose["height"], pose["ratio"], pose["count"]) == (
+        row["width"], row["height"], row["ratio"], 1)
+    assert pose["size_lock"] is True
+    again = apply_generate(dict(pose))
+    assert (again["width"], again["height"], again["ratio"]) == (pose["width"], pose["height"], pose["ratio"])
+
+
+def test_integrated_preview_quote_uses_the_image_edit_default(monkeypatch):
+    """The skill row has no model id. The quote route's model is the image-edit default."""
+    import json
+    from pathlib import Path
+    from ComfyArt.api.mcp_tools.canvas import quote_route
+    curated = json.loads((Path(__file__).resolve().parents[1] / "api" / "curated_models.json").read_text())
+    expected = curated["features"]["image_edit"]["default"]
+    rows = [{"id": "start", "role": "user", "blocks": [
+        {"type": "skill", "name": ma.SKILL}, {"type": "text", "text": DESC},
+        {"type": "image", "url": REF}]}]
+    monkeypatch.setattr(chat_store, "list_messages", lambda chat: copy.deepcopy(rows))
+    token = BOT_CHAT_ID.set("chat-ma")
+    try:
+        from test_multi_angle_stages_911 import setup
+        setup(rows, "1:1", source="single_front")
+        gen2 = _load("gen2.json")["input"]
+        routed = quote_route("generate_image", dict(gen2))
+    finally:
+        BOT_CHAT_ID.reset(token)
+    assert routed and routed[0] == expected
+    assert "inputs" not in (routed[1] or {})
+    assert routed[0] != ""  # a param block would be an empty model id
+
+
 def _assert_not_ready(events, sent, quotes):
     assert quotes == []
     assert sent == []

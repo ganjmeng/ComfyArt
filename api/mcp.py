@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import uuid
 
 from aiohttp import web
@@ -53,6 +54,45 @@ def _tool_visible(name: str) -> bool:
     return name not in bot_tools.TOOLS or bool(BOT_CHAT_ID.get())
 
 
+def _controlled_precheck_only() -> bool:
+    """Set by the controlled launcher. generate_image may precheck, not submit."""
+    return os.environ.get("COMFYART_CONTROLLED_PRECHECK_ONLY") == "1"
+
+
+def _controlled_precheck_refusal(name: str) -> str | None:
+    """Refuse a generate_image that would leave precheck and spend.
+
+    A quote card or redirect is returned by the preflight itself and never
+    reaches this. The message is a policy denial: the agent loop stops on it.
+    """
+    if name != "generate_image" or not _controlled_precheck_only():
+        return None
+    return "PermissionError: controlled_precheck_only: 受控模式，生图要等出图步骤"
+
+
+def _multi_angle_preflight(name: str, arguments: dict, chat_id: str) -> tuple[dict, dict | None]:
+    """Resolve staged refs and the server size snapshot before paid accounting.
+
+    Tool width, height, ratio and multi_angle_stage do not authorize a stage.
+    prepare() rebuilds the snapshot from the answered card and the user text.
+    Other skills are unchanged. Replaying an existing holder must not consume
+    another paid generation unit.
+    """
+    if name != "generate_image":
+        return arguments, None
+    from . import multi_angle
+    prepared, result = multi_angle.prepare(arguments, chat_id)
+    if result is not None:
+        return prepared, result
+    meta = prepared.get("_multi_angle") if isinstance(prepared, dict) else None
+    if isinstance(meta, dict) and multi_angle.applies(prepared, chat_id):
+        blocked = multi_angle.require_confirmed_quote(meta, chat_id)
+        if blocked is not None:
+            return arguments, blocked
+    multi_angle.allow_selected_cap(prepared, chat_id)
+    return prepared, None
+
+
 def _payload_to_content(payload) -> list[dict]:
     images = payload.pop("_images", None) if isinstance(payload, dict) else None
     blocks = [{"type": "text", "text": json.dumps(payload, ensure_ascii=False, default=str)}]
@@ -70,6 +110,12 @@ def _wrap_paid_handler(name: str, original):
             chat_id = chat_id if chat_id.startswith(paid_guard.NOTURN_PREFIX) else paid_guard.noturn_key("anonymous")
             paid_guard.ensure_noturn(chat_id)
         external = bool(MCP_EXTERNAL.get())
+        arguments, staged_result = _multi_angle_preflight(name, arguments, chat_id)
+        if staged_result is not None:
+            return staged_result
+        held = _controlled_precheck_refusal(name)
+        if held:
+            raise PermissionError(held.removeprefix("PermissionError: "))
         refused = paid_guard.before_call(chat_id, name, arguments, external=external)
         if refused:
             raise paid_guard.PaidRefused(refused)
@@ -110,6 +156,12 @@ async def _tools_call(params: dict, *, external: bool = False) -> dict | None:
     chat_id = paid_guard.resolve_guard_chat_id()
     if chat_id.startswith(paid_guard.NOTURN_PREFIX):
         paid_guard.ensure_noturn(chat_id)
+    arguments, staged_result = _multi_angle_preflight(name, arguments, chat_id)
+    if staged_result is not None:
+        return {"content": _payload_to_content(staged_result), "isError": False}
+    held = _controlled_precheck_refusal(name)
+    if held:
+        return {"content": [{"type": "text", "text": held}], "isError": True}
     # #142/#238/#730: guard every tool call when we have a chat or no-turn bucket.
     # Paid handlers are also wrapped for direct calls; use _paid_inner here to avoid double-counting.
     refused = paid_guard.before_call(chat_id, name, arguments, external=external) if chat_id else None
