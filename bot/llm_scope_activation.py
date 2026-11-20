@@ -280,9 +280,13 @@ def _scope_matches(data, binding):
 # commit that added resolve_unknown_as_spent. Recording that SHA changes the
 # loaded file hash again. Provenance stores this git pair; the destination
 # source hash is this process tree, not a8c5c13c's tree.
+# The lineart quote review recorded b94d521a -> 867c4577. 867c4577 is that
+# logic commit, not this integration tree. The pair does not approve the
+# source hash of this process.
 REVIEWED_GIT_PAIRS = (
     ("571c7fb7184dc4e97c115429bd6859d445e98c21", "c3d3820e998985c678feea74a47ab4613946b761"),
     ("42413ac72626671a1790dbed87544f9f32ebaedf", "a8c5c13c8977e2473ed3b1e2d12cbe414f3addbc"),
+    ("b94d521ace9ecf9a71510cdc35cdb1b359b08b6f", "867c4577b522012217b1527c559f7f8745a84569"),
 )
 REVIEWED_FROM_GIT = REVIEWED_GIT_PAIRS[0][0]
 REVIEWED_PROTOCOL_GIT = REVIEWED_GIT_PAIRS[0][1]
