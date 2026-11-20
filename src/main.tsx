@@ -15,17 +15,21 @@ document.title = BRAND.pageTitle
 
 const params = new URL(location.href).searchParams
 const project = params.get('project')
+const chatParam = (params.get('chat') ?? '').trim()
 const root = createRoot(document.getElementById('root')!)
 const { NEW_PARAM, projectExists } = await import('./projects')
+const viewParam = params.get('view')
+const homeView = viewParam === 'projects' || viewParam === 'skills' || viewParam === 'assets' || viewParam === 'schedules' || viewParam === 'arti' ? viewParam : 'home'
 
-if (project && (params.has(NEW_PARAM) || await projectExists(project))) {
+if (chatParam && !project) {
+  const { HomeApp } = await import('./home/HomeApp')
+  root.render(<StrictMode><HomeApp view={homeView} chatLink="invalid" /></StrictMode>)
+} else if (project && (params.has(NEW_PARAM) || await projectExists(project))) {
   const { mountCanvasLoader } = await import('./loomiLoader')
   const loader = await mountCanvasLoader()
   const { App } = await import('./App')
   root.render(<StrictMode><App id={project} onCanvasReady={() => loader.ready()} /></StrictMode>)
 } else {
   const { HomeApp } = await import('./home/HomeApp')
-  const viewParam = params.get('view')
-  const homeView = viewParam === 'projects' || viewParam === 'skills' || viewParam === 'assets' || viewParam === 'schedules' || viewParam === 'arti' ? viewParam : 'home'
-  root.render(<StrictMode><HomeApp view={project ? { missing: project } : homeView} /></StrictMode>)
+  root.render(<StrictMode><HomeApp view={project ? { missing: project } : homeView} chatLink={project && chatParam ? 'denied' : undefined} /></StrictMode>)
 }

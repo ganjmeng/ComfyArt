@@ -239,9 +239,16 @@ async def bot_client():
 
 
 async def wait_bot_done(client, chat_id, timeout=5.0):
+    from ComfyArt.api import chat_store, project_store
+    chat = chat_store.get_chat(chat_id)
+    project = (chat or {}).get("project") or ""
+    user = (chat or {}).get("user") or "default"
+    # The chat read now requires a project this user can open. Test turns poll that read.
+    if project and project_store.get_snapshot(user, project) is None:
+        project_store.save_project(user, project, "{}", project, [])
     deadline = asyncio.get_event_loop().time() + timeout
     while asyncio.get_event_loop().time() < deadline:
-        data = await (await client.get(f"/comfyart/bot/chats/{chat_id}")).json()
+        data = await (await client.get(f"/comfyart/bot/chats/{chat_id}?project={project}")).json()
         msgs = data["messages"]
         if msgs and all(m["status"] != "streaming" for m in msgs):
             return data
