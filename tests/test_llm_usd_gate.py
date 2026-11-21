@@ -1338,26 +1338,30 @@ async def test_install_wrapper_uses_bound_two_dollar_scope_for_real_summary_retr
     assert state["accounted_nano"] == held
     assert not default_path.exists()
 
+    # Clearing the explicit scope returns this process to an ordinary product
+    # send. It must reach the fake transport and must not open the default ledger.
     clear_authorized_scope()
+    ordinary_body = {
+        "model": "deepseek-flash",
+        "messages": [{"role": "user", "content": "hi"}],
+        "temperature": 0.2,
+        "reasoning_effort": "low",
+        "thinking": {"type": "enabled"},
+    }
+    before_calls = len(calls)
     token = provider_admin._llm_lock.set(_route())
     try:
         provider_admin._llm_http = fake_http
-        with pytest.raises(LlmBudgetBlocked) as blocked:
-            await provider._llm_request(
-                None, URL,
-                {"model": "deepseek-flash", "messages": [{"role": "user", "content": "hi"}],
-                 "temperature": 0.2, "reasoning_effort": "low",
-                 "thinking": {"type": "enabled"}},
-                _emit, TurnHandle())
+        ordinary = await provider._llm_request(
+            None, URL, ordinary_body, _emit, TurnHandle())
     finally:
         provider_admin._llm_http = saved_http
         provider_admin._llm_lock.reset(token)
-    assert blocked.value.code == "over_budget"
+    assert len(calls) == before_calls + 1
+    assert calls[-1]["thinking"] == {"type": "enabled"}
+    assert ordinary["usage"]["completion_tokens"] == 1
     assert ledger_state(str(two_path))["accounted_nano"] == held
-    if default_path.exists():
-        unused = ledger_state(str(default_path))
-        assert unused["ceiling_nano"] == CEILING_NANO
-        assert unused["accounted_nano"] == 0
+    assert not default_path.exists()
 
 
 class _CrashAfter(Exception):

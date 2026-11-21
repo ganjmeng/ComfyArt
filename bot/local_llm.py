@@ -1561,7 +1561,7 @@ class LocalLlmProvider(AgentProvider):
         if frozen:
             headers = {k: v for k, v in headers.items() if k.lower() != "content-type"}
             headers["Content-Type"] = "application/json"
-        from .llm_scope_activation import no_auxiliary_redirects
+        from .llm_aux_context import no_auxiliary_redirects
         no_redirect = frozen or no_auxiliary_redirects()
         payload = {"data": json_body.encoded} if frozen else {"json": json_body}
         if no_redirect:
@@ -1578,7 +1578,7 @@ class LocalLlmProvider(AgentProvider):
 
     async def _request_auxiliary_json(self, purpose, session, method, url, *, headers,
                                       json_body=None, timeout=120):
-        from .llm_scope_activation import auxiliary_request
+        from .llm_aux_context import auxiliary_request
         with auxiliary_request(purpose, method, url, json_body):
             return await self._request_json(session, method, url, headers=headers,
                                             json_body=json_body, timeout=timeout)

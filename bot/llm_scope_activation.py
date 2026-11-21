@@ -4,7 +4,9 @@ Nothing calls activate_scope automatically. Runtime selection is read-only and
 requires an existing committed claim. The registry is shared by all workers in
 one canonical COMFYART_HOME (fallback: existing ComfyArt system-user directory).
 COMFYART_RUNTIME_ID is an explicit stable deployment/server name, NOT a PID or a
-shared hardcoded identity. No runtime ID means the installed path stays strict.
+shared hardcoded identity. No runtime ID means the installed product path does
+not import this module. A non-empty runtime ID without a committed binding
+fails closed and is not treated as an ordinary send.
 No credentials, network, new funds, recovery/reset API or anti-admin seal here.
 The shared registry namespace is deployment home, never runtime_id. An unchanged
 approved manifest cannot be remapped to a different home/runtime fingerprint.
@@ -14,8 +16,6 @@ files is outside these local consistency guarantees (not a global grant seal).
 from __future__ import annotations
 
 import contextlib
-from contextvars import ContextVar
-import fcntl
 import hashlib
 import json
 import os
@@ -30,41 +30,19 @@ from dataclasses import dataclass
 from . import llm_usd_gate as gate
 from . import llm_activation_manifest as manifests
 from . import llm_input_envelope as envelope
-
-_AUXILIARY = ContextVar("llm_designated_auxiliary", default=None)
-_AUX_NO_REDIRECT = ContextVar("llm_aux_no_redirect", default=False)
-
-
-@contextlib.contextmanager
-def auxiliary_request(purpose, method, url, body):
-    # Only explicit catalog/MCP helper call sites create this context. A model
-    # payload cannot select its own purpose by URL substring or JSON fields.
-    token = _AUXILIARY.set((purpose, method, str(url), _digest(body)))
-    try:
-        yield
-    finally:
-        _AUXILIARY.reset(token)
-
-
-@contextlib.contextmanager
-def auxiliary_no_redirects():
-    token = _AUX_NO_REDIRECT.set(True)
-    try:
-        yield
-    finally:
-        _AUX_NO_REDIRECT.reset(token)
-
-
-def no_auxiliary_redirects():
-    return _AUX_NO_REDIRECT.get()
-
-
-def auxiliary_designation():
-    return _AUXILIARY.get() is not None
+from .llm_aux_context import (
+    auxiliary_designation,
+    auxiliary_no_redirects,
+    auxiliary_request,
+    canonical_bytes,
+    canonical_digest,
+    current_auxiliary,
+    no_auxiliary_redirects,
+)
 
 
 def validate_auxiliary(binding, method, url, body):
-    designation = _AUXILIARY.get()
+    designation = current_auxiliary()
     if designation is None:
         _fail("activation_aux_invalid", "purpose")
     purpose, bound_method, endpoint, digest = designation
@@ -100,11 +78,23 @@ _REPO = Path(__file__).resolve().parents[1]
 
 
 def _canonical(value) -> bytes:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+    return canonical_bytes(value)
 
 
 def _digest(value) -> str:
-    return hashlib.sha256(_canonical(value)).hexdigest()
+    return canonical_digest(value)
+
+
+def _posix_fcntl():
+    """POSIX lock primitive. Missing fcntl fails closed and does not skip the lock."""
+    try:
+        import fcntl
+    except ImportError as exc:
+        try:
+            _fail("posix_lock_unavailable", "fcntl")
+        except gate.LlmBudgetBlocked as blocked:
+            raise blocked from exc
+    return fcntl
 
 
 def _fail(code, field):
@@ -222,6 +212,7 @@ def _expected(manifest):
 
 @contextlib.contextmanager
 def _registry_lock(home):
+    fcntl = _posix_fcntl()
     os.makedirs(home, exist_ok=True)
     path = os.path.join(home, _REGISTRY)
     with _REGISTRY_THREAD_LOCK:
