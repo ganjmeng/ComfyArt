@@ -443,18 +443,21 @@ def current_llm_project() -> str:
     return _llm_project.get()
 
 
-def user_notice(code: str, lang: str = "zh") -> str | None:
-    """Pinned chat copy. The technical gate sentence stays in logs, not the UI."""
+def user_notice(code: str, lang: str = "zh") -> str:
+    """Pinned chat copy. The technical gate sentence stays in logs, not the UI.
+
+    image_too_large, unbounded_multimodal (and the alias unreadable), and
+    over_budget each have their own sentence. Every other block code uses the
+    generic message-blocked sentence.
+    """
     en = lang == "en"
     if code == "image_too_large":
         return _IMAGE_TOO_LARGE_EN if en else _IMAGE_TOO_LARGE
-    if code == "unbounded_multimodal":
+    if code in {"unbounded_multimodal", "unreadable"}:
         return _IMAGE_UNREADABLE_EN if en else _IMAGE_UNREADABLE
     if code == "over_budget":
         return _OVER_BUDGET_EN if en else _OVER_BUDGET
-    if code == "unbounded_billed_input":
-        return _MESSAGE_BLOCKED_EN if en else _MESSAGE_BLOCKED
-    return None
+    return _MESSAGE_BLOCKED_EN if en else _MESSAGE_BLOCKED
 
 
 def _inline_image(url: str) -> tuple[int, int] | None:
@@ -516,12 +519,12 @@ def _measurable_image_urls(body: dict) -> list[str] | None:
 
 
 def payload_byte_bound(body: dict) -> Bound:
-    """Image tokens from the documented 1024 cap on the pixels we actually send.
+    """Worst-case input tokens for a planner image already limited to 1568px.
 
-    The planner copy is already limited to a 1568px long edge. A data URL whose
-    long edge is still above that is blocked, so a few-kilobyte 4000px PNG cannot
-    pass on its file size. Text tokens are the serialized bytes with those image
-    URLs removed. Remote URLs and file ids stay unproven.
+    Each inline image must be a decodable data URL whose long edge is at most
+    1568px. Its image-token component is the vision guide's 1024 cap, not the
+    file size. Text tokens are the serialized JSON with those data URLs removed.
+    Remote URLs, file ids, and undecodable bytes stay unproven.
     """
     from ..api.bot_media import PLANNER_LONG_EDGE
 
@@ -555,7 +558,7 @@ def payload_byte_bound(body: dict) -> Bound:
 
 def official_input_bound(body: dict, snapshot: dict, *, context_contract: bool = False,
                          frozen_images=None) -> Bound:
-    """Strict default denies unproven text input; image bodies use the payload byte bound.
+    """Strict default denies unproven text input; image bodies use 1024 tokens per planner image.
 
     Context mode validates full images/tools and reserves the documented whole
     window, not a tokenizer/character estimate or an absolute supplier bill cap.
@@ -891,8 +894,9 @@ def prepare(body: dict, route: dict, url: str, bound_fn: Optional[Callable[[dict
             return _fail("route_mismatch", "context-contract official route")
     else:
         structural = structural_block(body)
-        # Image parts are not rejected here. payload_byte_bound either proves a
-        # byte ceiling or still fail-closes. Text-only stays unbounded below.
+        # Image parts are not rejected here. payload_byte_bound either proves
+        # 1024 tokens per 1568px planner image plus the remaining text, or still
+        # fail-closes. Text-only stays unbounded below.
         if structural and structural != "unbounded_multimodal":
             return _fail(structural, _structural_detail(structural))
     cap, cap_code = apply_output_cap(body)

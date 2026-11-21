@@ -675,6 +675,158 @@ def test_tool_images_use_the_planner_jpeg_and_unreadable_ones_stay_blocked():
     assert "planner_image_url(" in inspect.getsource(local_llm.LocalLlmProvider._run_fallback_tool)
 
 
+def _png_ihdr(width: int, height: int) -> bytes:
+    """PNG whose header declares the size. No pixel buffer is allocated."""
+    import struct
+    import zlib
+
+    def chunk(tag: bytes, data: bytes) -> bytes:
+        return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
+
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IEND", b"")
+
+
+@pytest.mark.asyncio
+async def test_declared_bomb_png_is_image_too_large_before_http(tmp_path, caplog):
+    from ComfyArt.bot.llm_usd_gate import user_notice
+    from ComfyArt.bot.providers import TurnHandle, TurnRequest
+    sent = []
+    bomb = base64.b64encode(_png_ihdr(16320, 12240)).decode()
+
+    async def transport(session, method, url, *, headers, json_body=None, timeout=120):
+        if str(url).endswith("/chat/completions"):
+            sent.append(json_body)
+            return {"choices": [{"message": {"role": "assistant", "content": "no"}}]}
+        if (json_body or {}).get("method") == "tools/list":
+            return {"result": {"tools": []}}
+        return {"data": [{"id": "deepseek-flash", "context_length": 1000000}]}
+
+    provider = LocalLlmProvider(base_url=lambda: "https://api.deepseek.com")
+
+    async def _request_json(session, method, url, *, headers, json_body=None, timeout=120):
+        return await provider_admin.gated_llm_http(
+            session, method, url, headers=headers, json_body=json_body, timeout=timeout,
+            transport=transport, ledger_path=str(tmp_path / "bomb.json"), bound_fn=None)
+
+    provider._request_json = _request_json
+    provider._run_store = lambda: None
+    token = provider_admin._llm_lock.set(_route())
+    try:
+        zh = await provider.send(TurnRequest(
+            chat_id="bomb-zh", user_text="看这张图", lang="zh", model="deepseek-flash",
+            mcp_endpoint="http://mock-no-network/mcp", project_id="local",
+            attachments=[{"data": bomb, "media_type": "image/png"}]), _emit, TurnHandle())
+        en = await provider.send(TurnRequest(
+            chat_id="bomb-en", user_text="look", lang="en", model="deepseek-flash",
+            mcp_endpoint="http://mock-no-network/mcp", project_id="local",
+            attachments=[{"data": bomb, "media_type": "image/png"}]), _emit, TurnHandle())
+    finally:
+        provider_admin._llm_lock.reset(token)
+    assert zh.error == user_notice("image_too_large", "zh")
+    assert en.error == user_notice("image_too_large", "en")
+    assert "code=image_too_large" in caplog.text
+    assert "DecompressionBomb" not in zh.error and "DecompressionBomb" not in en.error
+    assert sent == []
+    assert not (tmp_path / "bomb.json").exists()
+
+
+@pytest.mark.asyncio
+async def test_tool_image_bomb_png_blocks_before_the_next_post(tmp_path, caplog, monkeypatch):
+    from ComfyArt.bot.llm_usd_gate import user_notice
+    from ComfyArt.bot.providers import TurnHandle, TurnRequest
+    monkeypatch.setenv("COMFYART_AGENT_BUDGET_LOOP", "0")
+    sent = []
+    bomb = base64.b64encode(_png_ihdr(16320, 12240)).decode()
+    posts = {"n": 0}
+
+    async def transport(session, method, url, *, headers, json_body=None, timeout=120):
+        if str(url).endswith("/chat/completions"):
+            sent.append(json_body)
+            posts["n"] += 1
+            return {"choices": [{"message": {
+                "role": "assistant", "content": "",
+                "tool_calls": [{"id": "call-bomb", "type": "function", "function": {
+                    "name": "get_canvas", "arguments": "{}"}}]}}]}
+        rpc = json_body or {}
+        if rpc.get("method") == "tools/list":
+            return {"result": {"tools": [{"name": "get_canvas", "description": "list", "inputSchema": {"type": "object"}}]}}
+        if rpc.get("method") == "tools/call":
+            return {"result": {"content": [
+                {"type": "text", "text": "ok"},
+                {"type": "image", "mimeType": "image/png", "data": bomb},
+            ]}}
+        return {"data": [{"id": "deepseek-flash", "context_length": 1000000}]}
+
+    provider = LocalLlmProvider(base_url=lambda: "https://api.deepseek.com")
+
+    async def _request_json(session, method, url, *, headers, json_body=None, timeout=120):
+        return await provider_admin.gated_llm_http(
+            session, method, url, headers=headers, json_body=json_body, timeout=timeout,
+            transport=transport, ledger_path=str(tmp_path / "tool-bomb.json"), bound_fn=None)
+
+    provider._request_json = _request_json
+    provider._run_store = lambda: None
+    provider._price_call = lambda *a, **k: _async_return(None)
+    provider._price_one = lambda *a, **k: _async_return(None)
+    token = provider_admin._llm_lock.set(_route())
+    try:
+        result = await provider.send(TurnRequest(
+            chat_id="tool-bomb", user_text="看画布", lang="zh", model="deepseek-flash",
+            mcp_endpoint="http://mock-no-network/mcp", project_id="local",
+            attachments=[{"data": _TINY_PNG, "media_type": "image/png"}]), _emit, TurnHandle())
+    finally:
+        provider_admin._llm_lock.reset(token)
+    assert result.error == user_notice("image_too_large", "zh")
+    assert "code=image_too_large" in caplog.text
+    assert "DecompressionBomb" not in result.error
+    assert len(sent) == 1
+
+
+def test_every_other_gate_code_uses_the_message_blocked_copy():
+    from ComfyArt.bot.llm_usd_gate import _BLOCK_TEXT, user_notice
+    pinned = {
+        "image_too_large": (
+            "参考图太大，暂时无法发送，本次未产生费用。请压缩或换一张图片再试。",
+            "This reference image is too large to send. You haven't been charged. Compress it or try a different image.",
+        ),
+        "unbounded_multimodal": (
+            "这张参考图无法直接读取，本次未产生费用。请下载后直接上传再试。",
+            "This reference image can't be read directly. You haven't been charged. Download it and upload it directly, then try again.",
+        ),
+        "unreadable": (
+            "这张参考图无法直接读取，本次未产生费用。请下载后直接上传再试。",
+            "This reference image can't be read directly. You haven't been charged. Download it and upload it directly, then try again.",
+        ),
+        "over_budget": (
+            "本项目用量已达上限，已暂停发送，未产生费用。新建项目可继续使用。",
+            "This project has reached its usage limit. Sending is paused and you haven't been charged. Start a new project to continue.",
+        ),
+    }
+    generic = (
+        "这条消息暂时无法发送，未产生费用，请稍后再试。",
+        "This message can't be sent right now. You haven't been charged. Please try again later.",
+    )
+    codes = set(_BLOCK_TEXT) | set(pinned) | {
+        "unbounded_billed_input", "unpriced", "unbounded_tools", "unpriced_tool_fee",
+        "unsupported_output_cap", "unsupported_stream", "unsupported_request_field",
+        "route_mismatch", "ledger_unreadable", "browser_tab_required",
+        "activation_binding_required", "frozen_transport_required", "resolve_refused",
+        "activation_route_mismatch", "invalid_input_profile", "conflicting_input_bound",
+        "controlled_scope_required", "scope_circuit_open", "scope_posts_exhausted",
+        "scope_inflight", "activation_registry_unreadable", "activation_binding_mismatch",
+        "migration_state_unreadable",
+    }
+    for code in sorted(codes):
+        zh, en = pinned.get(code, generic)
+        assert user_notice(code, "zh") == zh
+        assert user_notice(code, "en") == en
+        for copy in (zh, en):
+            assert "Blocked before HTTP" not in copy
+            assert "token" not in copy.lower()
+            assert "Decompression" not in copy and "PIL" not in copy
+
+
 async def _async_return(value):
     return value
 

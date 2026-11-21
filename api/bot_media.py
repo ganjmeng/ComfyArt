@@ -1,6 +1,7 @@
 import base64
 import io
 import math
+import warnings
 
 import av
 from PIL import Image, ImageDraw
@@ -61,19 +62,31 @@ def contact_sheet(frames: list[tuple[float, Image.Image]], size: int) -> Image.I
     return sheet
 
 
+class PlannerPixelOverflow(Exception):
+    """The file's declared pixel count is above what the planner copy may decode."""
+
+
 def planner_jpeg(data: bytes) -> dict:
     """Downscale a reference for the planning LLM. Does not touch the caller's bytes.
 
-    Long edge is at most PLANNER_LONG_EDGE. Smaller images are not enlarged.
-    Re-encoded as JPEG so the sent pixels, not the original file size, are what
-    the vision token cap applies to.
+    Long edge is at most PLANNER_LONG_EDGE (1568). Smaller images are not enlarged.
+    Re-encoded as JPEG so the sent pixels, not the file size, are what the vision
+    guide's 1024-token-per-image cap applies to. A decompression-bomb header raises
+    PlannerPixelOverflow instead of Pillow's error. Corrupt bytes still raise the
+    decoder's own error for the caller to treat as unreadable.
     """
-    with Image.open(io.BytesIO(data)) as im:
-        im = im.convert("RGB")
-        im.thumbnail((PLANNER_LONG_EDGE, PLANNER_LONG_EDGE))
-        width, height = im.size
-        buf = io.BytesIO()
-        im.save(buf, "JPEG", quality=PLANNER_JPEG_QUALITY)
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            with Image.open(io.BytesIO(data)) as im:
+                im.load()
+                im = im.convert("RGB")
+                im.thumbnail((PLANNER_LONG_EDGE, PLANNER_LONG_EDGE))
+                width, height = im.size
+                buf = io.BytesIO()
+                im.save(buf, "JPEG", quality=PLANNER_JPEG_QUALITY)
+    except (Image.DecompressionBombError, Image.DecompressionBombWarning):
+        raise PlannerPixelOverflow from None
     raw = buf.getvalue()
     return {"data": base64.b64encode(raw).decode("ascii"), "media_type": "image/jpeg",
             "width": width, "height": height, "jpeg_bytes": len(raw)}

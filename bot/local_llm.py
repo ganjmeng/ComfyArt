@@ -1384,23 +1384,31 @@ def fit_history(history: Optional[list[dict]], *, context_window: Optional[int] 
 
 
 def planner_image_url(url: str) -> str:
-    """Planner JPEG for an inline image. Undecodable bytes stay as the original URL.
+    """Planner JPEG for an inline image. The caller's bytes and files stay as stored.
 
-    The gate then refuses that URL before HTTP. This does not raise, and it does
-    not rewrite the caller's attachment or the file the preview/finals read.
+    A decompression bomb or an out-of-memory decode raises ``image_too_large`` before
+    HTTP. Corrupt or non-image bytes are returned unchanged so the gate refuses them
+    as unreadable. The sent copy, when one is produced, is a JPEG whose long edge is
+    at most 1568px, reserved at 1024 tokens per image.
     """
     import base64
     import binascii
 
-    from ..api.bot_media import planner_jpeg
+    from ..api.bot_media import PlannerPixelOverflow, planner_jpeg
 
     if type(url) is not str or not url.startswith("data:") or "," not in url:
         return url
-    header, payload = url.split(",", 1)
+    _header, payload = url.split(",", 1)
     try:
         raw = base64.b64decode(payload, validate=True)
         planned = planner_jpeg(raw)
-    except (binascii.Error, ValueError, OSError):
+    except PlannerPixelOverflow:
+        from .llm_usd_gate import LlmBudgetBlocked
+        raise LlmBudgetBlocked("image_too_large", "declared pixel count exceeds the planner decode limit")
+    except MemoryError:
+        from .llm_usd_gate import LlmBudgetBlocked
+        raise LlmBudgetBlocked("image_too_large", "image decode ran out of memory")
+    except (binascii.Error, ValueError, OSError, SyntaxError):
         return url
     return f"data:{planned['media_type']};base64,{planned['data']}"
 
