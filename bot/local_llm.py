@@ -1383,16 +1383,33 @@ def fit_history(history: Optional[list[dict]], *, context_window: Optional[int] 
     return out
 
 
-def _planner_image_part(attachment: dict) -> dict:
-    """Inline planner copy. The attachment dict and its original bytes stay as stored."""
+def planner_image_url(url: str) -> str:
+    """Planner JPEG for an inline image. Undecodable bytes stay as the original URL.
+
+    The gate then refuses that URL before HTTP. This does not raise, and it does
+    not rewrite the caller's attachment or the file the preview/finals read.
+    """
     import base64
+    import binascii
 
     from ..api.bot_media import planner_jpeg
 
-    raw = base64.b64decode(attachment["data"])
-    planned = planner_jpeg(raw)
-    return {"type": "image_url",
-            "image_url": {"url": f"data:{planned['media_type']};base64,{planned['data']}"}}
+    if type(url) is not str or not url.startswith("data:") or "," not in url:
+        return url
+    header, payload = url.split(",", 1)
+    try:
+        raw = base64.b64decode(payload, validate=True)
+        planned = planner_jpeg(raw)
+    except (binascii.Error, ValueError, OSError):
+        return url
+    return f"data:{planned['media_type']};base64,{planned['data']}"
+
+
+def _planner_image_part(attachment: dict) -> dict:
+    """Inline planner copy. The attachment dict and its original bytes stay as stored."""
+    media = attachment.get("media_type") or "image/jpeg"
+    url = planner_image_url(f"data:{media};base64,{attachment['data']}")
+    return {"type": "image_url", "image_url": {"url": url}}
 
 
 def _user_content(text: str, attachments: Optional[list[dict]]):
@@ -2169,7 +2186,7 @@ class LocalLlmProvider(AgentProvider):
         if images:
             out.append({"role": "user", "content": [
                 {"type": "text", "text": f"{_TOOL_IMAGES_PREFIX}{name}:"},
-                *({"type": "image_url", "image_url": {"url": u}} for u in images),
+                *({"type": "image_url", "image_url": {"url": planner_image_url(u)}} for u in images),
             ]})
         return out
 
@@ -2474,7 +2491,7 @@ class LocalLlmProvider(AgentProvider):
         if images:
             messages.append({"role": "user", "content": [
                 {"type": "text", "text": f"Images returned by {base}:"},
-                *({"type": "image_url", "image_url": {"url": u}} for u in images),
+                *({"type": "image_url", "image_url": {"url": planner_image_url(u)}} for u in images),
             ]})
         return result_text
 
@@ -2597,6 +2614,8 @@ class LocalLlmProvider(AgentProvider):
             return TurnResult(
                 error="no Local LLM endpoint configured — set the endpoint "
                       "URL under Agent Settings")
+        from .llm_usd_gate import bind_llm_project, reset_llm_project
+        project_token = bind_llm_project(project or turn.chat_id or "local")
         try:
             async with aiohttp.ClientSession() as session:
                 handle.process = session
@@ -2731,6 +2750,7 @@ class LocalLlmProvider(AgentProvider):
             _log.exception("[ComfyArt/local-llm] turn failed")
             return TurnResult(error=str(e) or type(e).__name__)
         finally:
+            reset_llm_project(project_token)
             handle.process = None
 
     async def stop(self, handle: TurnHandle) -> None:

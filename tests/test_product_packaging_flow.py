@@ -566,8 +566,8 @@ LOCALE_EXTRAS = {
 # Canonical locale JSON minus the extras above. #1003 keeps jobs.sizeNotice as the #924
 # smaller sentence and does not add a larger or actual-size sentence.
 LOCALE_BASE_SHA256 = {
-    "src/locales/zh.json": "28ce3a2f187c782857c18725eeaa595948dac6a08f301ae192f34bfc495c1ea8",
-    "src/locales/en.json": "b168d7e487839350e43387202dcf26d7fbccc63e9b257fcd0d03a4fc4f8e8d65",
+    "src/locales/zh.json": "c42f08ae2811e9669d393efab7761cc32397b9b9222d8f5b39aad2ad13d16f0b",
+    "src/locales/en.json": "8254a69fc1a4b480cd4fcc0e260b5a9f389199cb4bcdcf742e2e673b78c41d01",
 }
 
 

@@ -96,26 +96,28 @@ last outstanding hold if outcome persistence fails, even after a visible replace
 a leftover journal blocks all later mutation and needs manual review. These
 local controls do not bound an undocumented supplier bill.
 
-Billed input tokens are not a proven upper bound from the token-usage page,
-the demo tokenizer, or the vision guide. Those pages give approximate ratios
-and say an image estimate (including the stated 1024) can vary, so 1024 is
-never applied as a billed guarantee. ``count_tokens`` is a character heuristic
-and is not a guarantee. A text-only body therefore still has no proven input
-bound and stays blocked.
+Billed text tokens are not a proven upper bound from the token-usage page or
+the demo tokenizer. Those pages give approximate character ratios and say a
+calculator estimate can vary slightly, so a text-only body stays blocked.
+``count_tokens`` is a character heuristic and is not a guarantee.
 
-A request that actually contains image parts is different. The bytes that
-will be serialized onto the socket are known before HTTP. Each billed input
-token covers at least one of those UTF-8 bytes, so the byte length of that
-JSON is an upper bound on input tokens. The count includes the image URL
-bytes and every other byte (system text, tool names, and schemas). Output is
-the pinned ``max_tokens``. A single call whose worst-case price exceeds
-$0.50 is blocked. On the default ledger, payload-byte calls also stop once
-the cumulative hold would pass $0.40. The explicit $2 scope is unchanged.
+A request that contains image parts is reserved differently. The planner copy
+is an inline JPEG whose long edge is at most 1568px. The vision guide states
+an upper bound of 1024 tokens per image after the server resizes toward about
+1300×1300; file bytes are not that bound. Input tokens are the remaining
+serialized text bytes plus 1024 per inline image. Output is the pinned
+``max_tokens``. A single call whose worst-case price exceeds $0.50 is blocked.
+On the default ledger, those planner-image holds stop at $0.40 per project id
+(a new project starts at zero; the total is the sum of that project's rows in
+this file and survives a restart). The $0.05 ceiling for other calls and the
+explicit $2 scope are unchanged. Remote URLs, file ids, and undecodable bytes
+stay unproven.
 """
 from __future__ import annotations
 
 import base64
 import binascii
+import contextvars
 import errno
 import fcntl
 import io
@@ -131,6 +133,9 @@ from typing import Any, Awaitable, Callable, Optional
 from urllib.parse import urlparse
 
 _log = logging.getLogger("comfyart.llm_usd_gate")
+# Project id for the $0.40 planner-image stop. Empty shares one bucket (tests).
+# Production send() sets the chat's project id for the whole turn.
+_llm_project: contextvars.ContextVar[str] = contextvars.ContextVar("comfyart_llm_project", default="")
 
 CEILING_NANO = 50_000_000  # $0.05 exactly. Default scope. No confirm path raises this.
 TWO_DOLLAR_CEILING_NANO = 2_000_000_000  # $2 exactly. Only for an explicitly opened new scope.
@@ -225,8 +230,8 @@ _BLOCK_TEXT = {
         " / Tool serialization has no official billed-token bound. Blocked before HTTP."
     ),
     "unbounded_multimodal": (
-        "图像计费 token 不能证明为上界，已在联网前阻断。"
-        " / Image billed tokens are not a proven upper bound. Blocked before HTTP."
+        "参考图不是可解码的本地图片，不能套用每图 1024 token 上限，已在联网前阻断。"
+        " / The reference is not a decodable local image, so the 1024-token cap does not apply. Blocked before HTTP."
     ),
     "image_too_large": (
         "规划用参考图在降采样后仍超过单次费用上限，已在联网前阻断。"
@@ -416,15 +421,39 @@ _IMAGE_UNREADABLE_EN = (
     "This reference image can't be read directly. You haven't been charged. "
     "Download it and upload it directly, then try again."
 )
+_OVER_BUDGET = "本项目用量已达上限，已暂停发送，未产生费用。新建项目可继续使用。"
+_OVER_BUDGET_EN = (
+    "This project has reached its usage limit. Sending is paused and you haven't been charged. "
+    "Start a new project to continue."
+)
+_MESSAGE_BLOCKED = "这条消息暂时无法发送，未产生费用，请稍后再试。"
+_MESSAGE_BLOCKED_EN = "This message can't be sent right now. You haven't been charged. Please try again later."
+
+
+def bind_llm_project(project_id: str) -> contextvars.Token:
+    """Pin the $0.40 planner stop to one project for the rest of this turn."""
+    return _llm_project.set(str(project_id or ""))
+
+
+def reset_llm_project(token: contextvars.Token) -> None:
+    _llm_project.reset(token)
+
+
+def current_llm_project() -> str:
+    return _llm_project.get()
 
 
 def user_notice(code: str, lang: str = "zh") -> str | None:
     """Pinned chat copy. The technical gate sentence stays in logs, not the UI."""
     en = lang == "en"
-    if code in {"image_too_large", "over_budget"}:
+    if code == "image_too_large":
         return _IMAGE_TOO_LARGE_EN if en else _IMAGE_TOO_LARGE
     if code == "unbounded_multimodal":
         return _IMAGE_UNREADABLE_EN if en else _IMAGE_UNREADABLE
+    if code == "over_budget":
+        return _OVER_BUDGET_EN if en else _OVER_BUDGET
+    if code == "unbounded_billed_input":
+        return _MESSAGE_BLOCKED_EN if en else _MESSAGE_BLOCKED
     return None
 
 
@@ -588,8 +617,8 @@ def _structural_detail(code: str) -> str:
         return f"tool schema tokens are not specified at {CHAT_URL}"
     if code == "unbounded_multimodal":
         return (
-            f"vision cap is an estimate that can vary ({VISION_URL}; {TOKEN_URL}). "
-            "1024 is not applied as a billed guarantee, and text overhead is still unproven"
+            f"inline planner images use the vision guide's 1024-token cap ({VISION_URL}); "
+            f"remote URLs, file ids, and undecodable bytes are not that cap ({TOKEN_URL})"
         )
     if code == "unpriced_tool_fee":
         return f"web search and fetch are per-use at {PRICING_URL}"
@@ -1237,6 +1266,28 @@ def _as_int(value: Any) -> Optional[int]:
     return value
 
 
+def _project_planner_hold(data: dict, project_id: str) -> int:
+    """Worst-case nano still booked for planner-image calls in one project.
+
+    Recomputed from the ledger rows on every reserve, so a process restart
+    sees the same total. Other call modes are not included.
+    """
+    total = 0
+    for row in data["reservations"].values():
+        if not isinstance(row, dict):
+            continue
+        evidence = row.get("input_evidence") if isinstance(row.get("input_evidence"), dict) else {}
+        if evidence.get("mode") != "planner_image_cap":
+            continue
+        if str(row.get("project_id") or "") != project_id:
+            continue
+        piece = _row_hold(row)
+        if piece is None:
+            raise LlmBudgetBlocked("ledger_unreadable", "project_hold")
+        total += piece
+    return total
+
+
 def _row_hold(row: dict) -> Optional[int]:
     status = row.get("status")
     if status == "reconciled":
@@ -1482,14 +1533,17 @@ def reserve_nano(path: str, *, nano: int, record: dict, runtime_binding=None) ->
                 return {"ok": False, "code": code, "scope_id": scope_id,
                         "accounted_nano": accounted, "ceiling_nano": ceiling}
         evidence = record.get("input_evidence") if isinstance(record.get("input_evidence"), dict) else {}
-        # Payload-byte calls on the default ledger use the $0.40 cumulative stop.
-        # The explicit $2 authorization keeps its own ceiling. A single call above
-        # $0.50 is refused even when the stop would still have room.
+        # Planner-image calls on the default ledger stop at $0.40 inside one
+        # project. A new project id starts at zero. The explicit $2 authorization
+        # keeps its own ceiling. One call above $0.50 is refused on its own.
         if evidence.get("mode") == "planner_image_cap" and data.get("authorization") != TWO_DOLLAR_AUTHORIZATION:
-            if nano > SKILL_CALL_CAP_NANO or accounted + nano > SKILL_CUMULATIVE_STOP_NANO:
+            project_id = str(record.get("project_id") or "")
+            project_held = _project_planner_hold(data, project_id)
+            if nano > SKILL_CALL_CAP_NANO or project_held + nano > SKILL_CUMULATIVE_STOP_NANO:
                 return {
                     "ok": False, "code": "over_budget", "scope_id": scope_id,
                     "accounted_nano": accounted, "ceiling_nano": ceiling, "need_nano": nano,
+                    "project_id": project_id, "project_held_nano": project_held,
                 }
         elif accounted + nano > ceiling:
             return {
@@ -1780,6 +1834,7 @@ async def dispatch(body: dict, *, route: dict, url: str, send: Callable[[], Awai
         "route": pre["route"],
         "snapshot": pre["snapshot"],
         "created_at": int(time.time()),
+        "project_id": current_llm_project(),
         **({"input_evidence": pre["input_evidence"], "body_sha256": pre["input_evidence"]["body_sha256"]}
            if context_contract else {}),
         **({"input_evidence": pre["input_evidence"]}
