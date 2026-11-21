@@ -1,0 +1,33 @@
+/* Loaded after tldraw.css. Size and error toasts sit at the canvas top-right,
+   16px below the top bar. The viewport covers the canvas and takes no clicks.
+   Only the card does. The card must not cover the composer, the send button,
+   or the bottom toolbar. Width follows the text, wraps, and does not truncate. */
+.tlui-toast__viewport {
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 16px 16px 0 0;
+  pointer-events: none;
+}
+.tlui-toast__viewport > * { pointer-events: none; }
+.tlui-toast__container {
+  align-self: flex-end;
+  pointer-events: auto;
+  width: max-content;
+  max-width: 360px;
+  min-width: 0;
+}
+.tlui-toast__main { max-width: none; min-width: 0; }
+.tlui-toast__title,
+.tlui-toast__description {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  overflow-wrap: break-word;
+}
+.tlui-toast__close {
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+}

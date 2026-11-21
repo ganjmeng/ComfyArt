@@ -66,7 +66,7 @@ async def test_default_builder_zero_send_preflight(tmp_path, monkeypatch, branch
     sent = []
 
     async def forbidden_transport(*args, **kwargs):
-        # The gate may now send a proven payload-byte request. This stand-in is
+        # The gate may now send a proven planner-image request. This stand-in is
         # not a socket; aiohttp.ClientSession._request stays forbidden above.
         sent.append(kwargs.get("json_body"))
         return {"choices": [{"message": {"role": "assistant", "content": "source card"}, "finish_reason": "stop"}],

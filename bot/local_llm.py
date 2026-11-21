@@ -1386,10 +1386,10 @@ def fit_history(history: Optional[list[dict]], *, context_window: Optional[int] 
 def planner_image_url(url: str) -> str:
     """Planner JPEG for an inline image. The caller's bytes and files stay as stored.
 
-    A decompression bomb or an out-of-memory decode raises ``image_too_large`` before
-    HTTP. Corrupt or non-image bytes are returned unchanged so the gate refuses them
-    as unreadable. The sent copy, when one is produced, is a JPEG whose long edge is
-    at most 1568px, reserved at 1024 tokens per image.
+    Declared size above 250MP, or a decode that runs out of memory, raises
+    ``image_too_large`` before HTTP. Corrupt or non-image bytes are returned
+    unchanged so the gate refuses them as unreadable. The sent copy is a JPEG
+    whose long edge is at most 1568px, reserved at 1024 tokens per image.
     """
     import base64
     import binascii

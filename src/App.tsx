@@ -3,6 +3,7 @@ import { getAssetUrlsByImport } from '@tldraw/assets/imports.vite'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { loadSnapshot, Tldraw, useValue, type Editor, type TLAssetStore, type TLComponents, type TLShape } from 'tldraw'
 import 'tldraw/tldraw.css'
+import './styles/toasts.css'
 
 import { isViewUrl, thumbSize, thumbUrl, uploadImage, viewUrl } from './comfy'
 import { svgRaster } from './vectorize'

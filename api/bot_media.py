@@ -1,6 +1,7 @@
 import base64
 import io
 import math
+import threading
 import warnings
 
 import av
@@ -14,6 +15,10 @@ _ATTACH_JPEG_QUALITY = 85
 # The stored upload and WaveSpeed refs are not passed through this.
 PLANNER_LONG_EDGE = 1568
 PLANNER_JPEG_QUALITY = 85
+# Declared pixels above this are refused before decode. Pillow's global
+# MAX_IMAGE_PIXELS is not changed outside the locked planner call.
+PLANNER_MAX_PIXELS = 250_000_000
+_planner_pixels_lock = threading.Lock()
 ATTACH_MAX_COUNT = 12
 SHEET_FRAMES = 4
 VIDEO_EXT = (".mp4", ".webm", ".mov", ".mkv")
@@ -66,30 +71,61 @@ class PlannerPixelOverflow(Exception):
     """The file's declared pixel count is above what the planner copy may decode."""
 
 
-def planner_jpeg(data: bytes) -> dict:
-    """Downscale a reference for the planning LLM. Does not touch the caller's bytes.
-
-    Long edge is at most PLANNER_LONG_EDGE (1568). Smaller images are not enlarged.
-    Re-encoded as JPEG so the sent pixels, not the file size, are what the vision
-    guide's 1024-token-per-image cap applies to. A decompression-bomb header raises
-    PlannerPixelOverflow instead of Pillow's error. Corrupt bytes still raise the
-    decoder's own error for the caller to treat as unreadable.
-    """
-    try:
-        with warnings.catch_warnings():
-            warnings.simplefilter("error", Image.DecompressionBombWarning)
-            with Image.open(io.BytesIO(data)) as im:
-                im.load()
-                im = im.convert("RGB")
-                im.thumbnail((PLANNER_LONG_EDGE, PLANNER_LONG_EDGE))
-                width, height = im.size
-                buf = io.BytesIO()
-                im.save(buf, "JPEG", quality=PLANNER_JPEG_QUALITY)
-    except (Image.DecompressionBombError, Image.DecompressionBombWarning):
-        raise PlannerPixelOverflow from None
+def _encode_planner(im: Image.Image) -> dict:
+    frame = im.convert("RGB")
+    frame.thumbnail((PLANNER_LONG_EDGE, PLANNER_LONG_EDGE))
+    width, height = frame.size
+    buf = io.BytesIO()
+    frame.save(buf, "JPEG", quality=PLANNER_JPEG_QUALITY)
     raw = buf.getvalue()
     return {"data": base64.b64encode(raw).decode("ascii"), "media_type": "image/jpeg",
             "width": width, "height": height, "jpeg_bytes": len(raw)}
+
+
+def planner_jpeg(data: bytes) -> dict:
+    """Downscale a reference for the planning LLM. Does not touch the caller's bytes.
+
+    Every format may be up to PLANNER_MAX_PIXELS (250MP). A larger declared size,
+    a Pillow bomb error past that cap, or a decode MemoryError raises
+    PlannerPixelOverflow. JPEG is drafted down before load. Other formats are
+    reduced before the 1568px thumbnail. Smaller images are not enlarged. The
+    result is JPEG quality 85 so the vision guide's 1024-token cap applies to
+    the sent pixels. Corrupt bytes still raise the decoder's own error.
+    Image.MAX_IMAGE_PIXELS is restored before this function returns.
+    """
+    with _planner_pixels_lock:
+        previous = Image.MAX_IMAGE_PIXELS
+        try:
+            # Own cap, only for this call. Pillow errors above twice this value;
+            # we refuse anything above the cap from the header before that.
+            Image.MAX_IMAGE_PIXELS = PLANNER_MAX_PIXELS
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", Image.DecompressionBombWarning)
+                with Image.open(io.BytesIO(data)) as im:
+                    width, height = im.size
+                    if width < 1 or height < 1 or width * height > PLANNER_MAX_PIXELS:
+                        raise PlannerPixelOverflow
+                    if (im.format or "").upper() == "JPEG":
+                        long_edge = max(width, height)
+                        if long_edge > PLANNER_LONG_EDGE:
+                            scale = PLANNER_LONG_EDGE / long_edge
+                            im.draft("RGB", (max(1, round(width * scale)), max(1, round(height * scale))))
+                        im.load()
+                        return _encode_planner(im)
+                    im.load()
+                    long_edge = max(im.size)
+                    if long_edge > PLANNER_LONG_EDGE * 2:
+                        factor = max(2, long_edge // (PLANNER_LONG_EDGE * 2))
+                        reduced = im.reduce(factor)
+                    else:
+                        reduced = im
+                    return _encode_planner(reduced)
+        except Image.DecompressionBombError:
+            raise PlannerPixelOverflow from None
+        except MemoryError:
+            raise PlannerPixelOverflow from None
+        finally:
+            Image.MAX_IMAGE_PIXELS = previous
 
 
 def jpeg(im: Image.Image, max_px: int = _ATTACH_MAX_PX) -> dict:

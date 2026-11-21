@@ -76,6 +76,9 @@ async def _dismiss(pg):
 
 async def _ready(pg):
     await pg.locator(".ca-composer__input").wait_for(timeout=30_000)
+    # The boot overlay covers the composer for about 1.2s. Hidden matches a
+    # removed node as well as [hidden].
+    await pg.locator(".lm-loader").wait_for(state="hidden", timeout=30_000)
     await _dismiss(pg)
     await pg.wait_for_timeout(800)
 

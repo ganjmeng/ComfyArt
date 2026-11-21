@@ -271,7 +271,7 @@ async def test_image_first_turn_passes_over_bound_blocks_and_text_is_unchanged(t
     """Default-route image turn: proven byte bound, image still sent, no real socket.
 
     A no-image body keeps the old unbounded_billed_input refusal. A payload whose
-    worst case exceeds $0.50 never reaches transport. A second payload-byte hold
+    worst case exceeds $0.50 never reaches transport. A second planner-image hold
     that would pass $0.40 is refused, and the first reservation stays.
     """
     calls = []
@@ -688,7 +688,12 @@ def _png_ihdr(width: int, height: int) -> bytes:
 
 
 @pytest.mark.asyncio
-async def test_declared_bomb_png_is_image_too_large_before_http(tmp_path, caplog):
+async def test_undecodable_header_under_250mp_is_unreadable(tmp_path, caplog):
+    """16320×12240 is about 200MP, under the 250MP cap, but this file has no pixels.
+
+    It cannot be decoded, so the copy is imageUnreadable and nothing is posted.
+    A declared size above 250MP is image_too_large; that case is separate.
+    """
     from ComfyArt.bot.llm_usd_gate import user_notice
     from ComfyArt.bot.providers import TurnHandle, TurnRequest
     sent = []
@@ -723,16 +728,62 @@ async def test_declared_bomb_png_is_image_too_large_before_http(tmp_path, caplog
             attachments=[{"data": bomb, "media_type": "image/png"}]), _emit, TurnHandle())
     finally:
         provider_admin._llm_lock.reset(token)
-    assert zh.error == user_notice("image_too_large", "zh")
-    assert en.error == user_notice("image_too_large", "en")
-    assert "code=image_too_large" in caplog.text
+    assert zh.error == user_notice("unbounded_multimodal", "zh")
+    assert en.error == user_notice("unbounded_multimodal", "en")
+    assert "code=unbounded_multimodal" in caplog.text
     assert "DecompressionBomb" not in zh.error and "DecompressionBomb" not in en.error
     assert sent == []
     assert not (tmp_path / "bomb.json").exists()
 
 
 @pytest.mark.asyncio
-async def test_tool_image_bomb_png_blocks_before_the_next_post(tmp_path, caplog, monkeypatch):
+async def test_declared_300mp_is_image_too_large_before_http(tmp_path, caplog):
+    from ComfyArt.bot.llm_usd_gate import user_notice
+    from ComfyArt.bot.providers import TurnHandle, TurnRequest
+    from PIL import Image as _Image
+    sent = []
+    before = _Image.MAX_IMAGE_PIXELS
+    bomb = base64.b64encode(_png_ihdr(20000, 15000)).decode()  # 300_000_000 px
+
+    async def transport(session, method, url, *, headers, json_body=None, timeout=120):
+        if str(url).endswith("/chat/completions"):
+            sent.append(json_body)
+            return {"choices": [{"message": {"role": "assistant", "content": "no"}}]}
+        if (json_body or {}).get("method") == "tools/list":
+            return {"result": {"tools": []}}
+        return {"data": [{"id": "deepseek-flash", "context_length": 1000000}]}
+
+    provider = LocalLlmProvider(base_url=lambda: "https://api.deepseek.com")
+
+    async def _request_json(session, method, url, *, headers, json_body=None, timeout=120):
+        return await provider_admin.gated_llm_http(
+            session, method, url, headers=headers, json_body=json_body, timeout=timeout,
+            transport=transport, ledger_path=str(tmp_path / "300.json"), bound_fn=None)
+
+    provider._request_json = _request_json
+    provider._run_store = lambda: None
+    token = provider_admin._llm_lock.set(_route())
+    try:
+        zh = await provider.send(TurnRequest(
+            chat_id="px300-zh", user_text="看这张图", lang="zh", model="deepseek-flash",
+            mcp_endpoint="http://mock-no-network/mcp", project_id="local",
+            attachments=[{"data": bomb, "media_type": "image/png"}]), _emit, TurnHandle())
+        en = await provider.send(TurnRequest(
+            chat_id="px300-en", user_text="look", lang="en", model="deepseek-flash",
+            mcp_endpoint="http://mock-no-network/mcp", project_id="local",
+            attachments=[{"data": bomb, "media_type": "image/png"}]), _emit, TurnHandle())
+    finally:
+        provider_admin._llm_lock.reset(token)
+    assert zh.error == user_notice("image_too_large", "zh")
+    assert en.error == user_notice("image_too_large", "en")
+    assert "code=image_too_large" in caplog.text
+    assert sent == []
+    assert _Image.MAX_IMAGE_PIXELS == before
+    assert not (tmp_path / "300.json").exists()
+
+
+@pytest.mark.asyncio
+async def test_tool_image_undecodable_header_blocks_before_the_next_post(tmp_path, caplog, monkeypatch):
     from ComfyArt.bot.llm_usd_gate import user_notice
     from ComfyArt.bot.providers import TurnHandle, TurnRequest
     monkeypatch.setenv("COMFYART_AGENT_BUDGET_LOOP", "0")
@@ -777,10 +828,58 @@ async def test_tool_image_bomb_png_blocks_before_the_next_post(tmp_path, caplog,
             attachments=[{"data": _TINY_PNG, "media_type": "image/png"}]), _emit, TurnHandle())
     finally:
         provider_admin._llm_lock.reset(token)
-    assert result.error == user_notice("image_too_large", "zh")
-    assert "code=image_too_large" in caplog.text
+    assert result.error == user_notice("unbounded_multimodal", "zh")
+    assert "code=unbounded_multimodal" in caplog.text
     assert "DecompressionBomb" not in result.error
     assert len(sent) == 1
+
+
+def test_planner_jpegs_up_to_250mp_downscale_and_300mp_is_blocked():
+    """108MP and ~201MP JPEGs are sent as a <=1568 JPEG. 300MP is image_too_large."""
+    import io
+    from PIL import Image as _Image
+    from ComfyArt.bot.llm_usd_gate import LlmBudgetBlocked, official_input_bound, user_notice
+    from ComfyArt.bot.local_llm import planner_image_url
+
+    before = _Image.MAX_IMAGE_PIXELS
+    for size in ((12000, 9000), (16384, 12288)):
+        frame = _Image.new("RGB", size, (40, 80, 120))
+        blob = io.BytesIO()
+        frame.save(blob, format="JPEG", quality=20)
+        del frame
+        url = planner_image_url("data:image/jpeg;base64," + base64.b64encode(blob.getvalue()).decode())
+        assert url.startswith("data:image/jpeg;base64,")
+        with _Image.open(io.BytesIO(base64.b64decode(url.split(",", 1)[1]))) as sent:
+            assert max(sent.size) <= 1568
+        bound = official_input_bound(_image_turn(url), price_snapshot("deepseek-flash"))
+        assert bound.evidence()["mode"] == "planner_image_cap"
+    huge = "data:image/png;base64," + base64.b64encode(_png_ihdr(20000, 15000)).decode()
+    with pytest.raises(LlmBudgetBlocked) as blocked:
+        planner_image_url(huge)
+    assert blocked.value.code == "image_too_large"
+    assert user_notice("image_too_large", "zh").startswith("参考图太大")
+    corrupt = planner_image_url("data:image/png;base64,QUJD")
+    assert official_input_bound(_image_turn(corrupt), price_snapshot("deepseek-flash")).code == "unbounded_multimodal"
+    assert user_notice("unbounded_multimodal", "en").startswith("This reference image can't be read directly")
+    assert _Image.MAX_IMAGE_PIXELS == before
+
+
+def test_memory_error_during_decode_is_image_too_large(monkeypatch):
+    from PIL import Image as _Image
+    from ComfyArt.bot.llm_usd_gate import LlmBudgetBlocked
+    from ComfyArt.bot.local_llm import planner_image_url
+
+    before = _Image.MAX_IMAGE_PIXELS
+
+    def boom(self, *args, **kwargs):
+        raise MemoryError("decode")
+
+    monkeypatch.setattr(_Image.Image, "load", boom)
+    url = "data:image/png;base64," + _TINY_PNG
+    with pytest.raises(LlmBudgetBlocked) as blocked:
+        planner_image_url(url)
+    assert blocked.value.code == "image_too_large"
+    assert _Image.MAX_IMAGE_PIXELS == before
 
 
 def test_every_other_gate_code_uses_the_message_blocked_copy():

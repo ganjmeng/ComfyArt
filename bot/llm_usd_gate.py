@@ -139,7 +139,7 @@ _llm_project: contextvars.ContextVar[str] = contextvars.ContextVar("comfyart_llm
 
 CEILING_NANO = 50_000_000  # $0.05 exactly. Default scope. No confirm path raises this.
 TWO_DOLLAR_CEILING_NANO = 2_000_000_000  # $2 exactly. Only for an explicitly opened new scope.
-# Per-skill cap for a payload-byte reservation. One call above $0.50 is blocked.
+# Per-call cap for a planner-image reservation. One call above $0.50 is blocked.
 # Cumulative holds of those calls stop at $0.40. Neither number raises the $2 scope.
 SKILL_CALL_CAP_NANO = 500_000_000
 SKILL_CUMULATIVE_STOP_NANO = 400_000_000
@@ -518,7 +518,7 @@ def _measurable_image_urls(body: dict) -> list[str] | None:
     return urls
 
 
-def payload_byte_bound(body: dict) -> Bound:
+def planner_image_bound(body: dict) -> Bound:
     """Worst-case input tokens for a planner image already limited to 1568px.
 
     Each inline image must be a decodable data URL whose long edge is at most
@@ -580,7 +580,7 @@ def official_input_bound(body: dict, snapshot: dict, *, context_contract: bool =
     if structural and structural != "unbounded_multimodal":
         return Bound(False, 0, structural, _structural_detail(structural))
     if structural == "unbounded_multimodal" or _has_multimodal(body):
-        return payload_byte_bound(body)
+        return planner_image_bound(body)
     return Bound(False, 0, "unbounded_billed_input", _structural_detail("unbounded_billed_input"))
 
 
@@ -894,7 +894,7 @@ def prepare(body: dict, route: dict, url: str, bound_fn: Optional[Callable[[dict
             return _fail("route_mismatch", "context-contract official route")
     else:
         structural = structural_block(body)
-        # Image parts are not rejected here. payload_byte_bound either proves
+        # Image parts are not rejected here. planner_image_bound either proves
         # 1024 tokens per 1568px planner image plus the remaining text, or still
         # fail-closes. Text-only stays unbounded below.
         if structural and structural != "unbounded_multimodal":
