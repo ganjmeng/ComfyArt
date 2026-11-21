@@ -544,6 +544,8 @@ async def test_default_flow_reaches_unconfirmed_quote_inside_the_cap(tmp_path, m
     assert not result.error, (result.error, len(seen))
     assert quotes, "the unconfirmed quote card was not shown"
     blob = json.dumps(quotes[0], ensure_ascii=False)
+    line = (quotes[0].get("lines") or [{}])[0].get("text") or ""
+    assert line.startswith("线稿预览 · 1152×2048 · 9:16")
     assert "线稿预览" in blob and "1152" in blob and "2048" in blob
     assert quotes[0].get("status") != "answered"
     assert not submitted
@@ -832,6 +834,16 @@ async def test_tool_image_undecodable_header_blocks_before_the_next_post(tmp_pat
     assert "code=unbounded_multimodal" in caplog.text
     assert "DecompressionBomb" not in result.error
     assert len(sent) == 1
+
+
+def test_header_only_under_250mp_is_unreadable_before_the_long_edge_check():
+    """12000×9000 claims a long edge past 1568, but the file has no pixels to decode."""
+    from ComfyArt.bot.llm_usd_gate import official_input_bound, user_notice
+    raw = _png_ihdr(12000, 9000)
+    url = "data:image/png;base64," + base64.b64encode(raw).decode()
+    bound = official_input_bound(_image_turn(url), price_snapshot("deepseek-flash"))
+    assert bound.code == "unbounded_multimodal"
+    assert user_notice(bound.code, "zh").startswith("这张参考图无法直接读取")
 
 
 def test_planner_jpegs_up_to_250mp_downscale_and_300mp_is_blocked():

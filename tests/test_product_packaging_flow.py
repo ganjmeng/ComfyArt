@@ -556,11 +556,22 @@ H3_IMAGE_LOCALE = {
     "zh": "6 步出图，2K 下细节丰富，可带多张参考图",
     "en": "6-step generation with dense detail at 2K, takes several reference images",
 }
+QUOTE_LINE_LOCALE = {
+    "zh": {
+        "quote.lineartPreview": "线稿预览",
+        "quote.lineartPreviewSize": "线稿预览 · {0}×{1} · {2}",
+    },
+    "en": {
+        "quote.lineartPreview": "Line-art preview",
+        "quote.lineartPreviewSize": "Line-art preview · {0}×{1} · {2}",
+    },
+}
 LOCALE_EXTRAS = {
     lang: {"bot.composeBannerText": BANNER_LOCALE[lang], **PORTRAIT_LOCALE[lang],
            "runStop.stillGenerating": RUN_STOP_LOCALE[lang],
            "wsErr.userRatioUnsupported": RATIO_REFUSAL_LOCALE_994[lang],
-           "models.minimaxH3Image": H3_IMAGE_LOCALE[lang]}
+           "models.minimaxH3Image": H3_IMAGE_LOCALE[lang],
+           **QUOTE_LINE_LOCALE[lang]}
     for lang in ("zh", "en")
 }
 # Canonical locale JSON minus the extras above. #1003 keeps jobs.sizeNotice as the #924

@@ -71,6 +71,10 @@ class PlannerPixelOverflow(Exception):
     """The file's declared pixel count is above what the planner copy may decode."""
 
 
+class ImageUnreadable(Exception):
+    """The chat attachment is not a local image file, or its pixels do not decode."""
+
+
 def _encode_planner(im: Image.Image) -> dict:
     frame = im.convert("RGB")
     frame.thumbnail((PLANNER_LONG_EDGE, PLANNER_LONG_EDGE))
@@ -137,8 +141,27 @@ def jpeg(im: Image.Image, max_px: int = _ATTACH_MAX_PX) -> dict:
 
 
 def render_attachment(url: str) -> dict:
-    path = view_path(url)
+    """Chat-send thumbnail. Uses the planner decode lock, not a bare Image.open.
+
+    JPEG is drafted down before load. Other formats decode, then thumbnail.
+    Declared size above 250MP, a decompression bomb, or MemoryError raises
+    PlannerPixelOverflow. A remote URL or bytes that do not decode raise
+    ImageUnreadable. Image.MAX_IMAGE_PIXELS is restored before return.
+    """
+    try:
+        path = view_path(url)
+    except ValueError as exc:
+        # A remote or non-file URL cannot be decoded. A missing local file
+        # stays the caller's existing not-found error.
+        if str(exc).startswith("not a ComfyUI file URL"):
+            raise ImageUnreadable(str(exc)) from exc
+        raise
     if path.lower().endswith(VIDEO_EXT):
         return jpeg(contact_sheet(video_frames(path, SHEET_FRAMES)[0], _ATTACH_MAX_PX))
-    with Image.open(path) as im:
-        return jpeg(im)
+    with open(path, "rb") as handle:
+        data = handle.read()
+    try:
+        planned = planner_jpeg(data)
+    except (OSError, SyntaxError, ValueError) as exc:
+        raise ImageUnreadable(str(exc)) from exc
+    return {"data": planned["data"], "media_type": planned["media_type"]}

@@ -478,12 +478,31 @@ def _inline_image(url: str) -> tuple[int, int] | None:
     if not raw:
         return None
     try:
+        import warnings
+
         from PIL import Image
-        with Image.open(io.BytesIO(raw)) as img:
-            width, height = img.size
+
+        from ..api.bot_media import PLANNER_MAX_PIXELS, _planner_pixels_lock
+
+        with _planner_pixels_lock:
+            previous = Image.MAX_IMAGE_PIXELS
+            try:
+                Image.MAX_IMAGE_PIXELS = PLANNER_MAX_PIXELS
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", Image.DecompressionBombWarning)
+                    with Image.open(io.BytesIO(raw)) as img:
+                        width, height = img.size
+                        if width < 1 or height < 1:
+                            return None
+                        # A declared size past the cap is too large. Under the cap,
+                        # pixels that do not decode are unreadable, not too large:
+                        # returning None happens before the long-edge check.
+                        if width * height > PLANNER_MAX_PIXELS:
+                            return int(width), int(height)
+                        img.load()
+            finally:
+                Image.MAX_IMAGE_PIXELS = previous
     except Exception:
-        return None
-    if width < 1 or height < 1:
         return None
     return int(width), int(height)
 

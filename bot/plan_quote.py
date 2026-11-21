@@ -567,6 +567,19 @@ def _forces_quote_card(prepared: list[dict]) -> bool:
     return False
 
 
+def _pixel(value: object) -> Optional[int]:
+    """Positive integer pixel edge from a pending call arg. Bool is not a size."""
+    if isinstance(value, bool) or value is None:
+        return None
+    if isinstance(value, int) and value > 0:
+        return value
+    if isinstance(value, float) and value.is_integer() and value > 0:
+        return int(value)
+    if isinstance(value, str) and value.isdigit() and int(value) > 0:
+        return int(value)
+    return None
+
+
 def _needs_ask(total: float, threshold: float, unknown_price: bool) -> bool:
     """#904: a known 0-credit plan does not ask; an unknown price always does.
 
@@ -622,10 +635,16 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
             preview_name = quote_step_label(step.get("arguments") or {}, lang)
             if preview_name:
                 name = preview_name
-                # The card and the stored quote line show the prepared pixels, not only
-                # the unexecuted generate_image args (which may say 9:16 alone).
-                if priced.width and priced.height and priced.ratio:
-                    name = f"{preview_name} · {priced.width}×{priced.height} · {priced.ratio}"
+                # quote_step_label is non-empty only for stage=preview. The size
+                # is the pending call: the routed payload, else the tool args.
+                width, height, ratio = _pixel(priced.width), _pixel(priced.height), str(priced.ratio or "")
+                if not (width and height and ratio):
+                    raw = step.get("arguments") or {}
+                    width, height = _pixel(raw.get("width")), _pixel(raw.get("height"))
+                    ratio = str(raw.get("ratio") or "")
+                if width and height and ratio:
+                    from ..api.multi_angle import preview_size_line
+                    name = preview_size_line(lang, width, height, ratio)
             if isinstance(priced.quoted_plan, dict) and quoted_plan is None:
                 quoted_plan = priced.quoted_plan
         label = model_label(show) if show else AUTO_LABEL[lang]

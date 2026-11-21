@@ -3,7 +3,7 @@ from typing import Optional
 
 from . import chat_store
 from .bot_docs import DOC_ERRORS, document_line, read_document
-from .bot_media import ATTACH_MAX_COUNT, MEDIA_ERRORS, SHEET_FRAMES, render_attachment
+from .bot_media import ATTACH_MAX_COUNT, MEDIA_ERRORS, SHEET_FRAMES, ImageUnreadable, PlannerPixelOverflow, render_attachment
 from .bot_turns import (ACTIVE_TURNS, QUEUED, begin_turn, broadcast,
                         format_ref_lines)
 
@@ -68,6 +68,8 @@ async def prepare_attachments(refs: list[dict], kits: list[dict], docs: list[dic
     for r in visual_refs(refs)[:ATTACH_MAX_COUNT]:
         try:
             attachments.append(await asyncio.to_thread(render_attachment, r["src"]))
+        except (ImageUnreadable, PlannerPixelOverflow):
+            raise
         except MEDIA_ERRORS as e:
             raise ValueError(f"could not read {r['src']} ({e})") from e
     doc_lines = []
@@ -83,7 +85,7 @@ async def prepare_attachments(refs: list[dict], kits: list[dict], docs: list[dic
     for src in [src for k in kits for src in k["images"]][:max(0, ATTACH_MAX_COUNT - len(attachments))]:
         try:
             attachments.append(await asyncio.to_thread(render_attachment, src))
-        except MEDIA_ERRORS:
+        except (ImageUnreadable, PlannerPixelOverflow, *MEDIA_ERRORS):
             skipped.append(src)
     # #422: same Attached-lines (shape id) that history replay emits via format_ref_lines
     lines = format_ref_lines(refs, sheet_frames=SHEET_FRAMES)

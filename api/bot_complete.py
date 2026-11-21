@@ -4,7 +4,7 @@ from aiohttp import web
 
 from ..bot import BotEvent, TurnHandle, TurnRequest, get_provider, list_providers
 from ._common import error, json_body, routes
-from .bot_media import ATTACH_MAX_COUNT, MEDIA_ERRORS, render_attachment
+from .bot_media import ATTACH_MAX_COUNT, MEDIA_ERRORS, ImageUnreadable, PlannerPixelOverflow, render_attachment
 from .bot_turns import provider_model
 from .settings import bot_disabled, bot_enabled, get_setting
 
@@ -34,8 +34,16 @@ async def bot_complete(request: web.Request) -> web.Response:
         return error("no agent is available; set one up in Agent settings", 400)
     if images and not provider.capabilities().attachments:
         return error(f"{provider.label} cannot read images; pick another default agent in Agent settings", 400)
+    notice_lang = str(body.get("lang") or "")
+    notice_lang = notice_lang if notice_lang in ("zh", "en") else "zh"
     try:
         attachments = [await asyncio.to_thread(render_attachment, str(u)) for u in images[:ATTACH_MAX_COUNT]]
+    except PlannerPixelOverflow:
+        from ..bot.llm_usd_gate import user_notice
+        return error(user_notice("image_too_large", notice_lang), 400)
+    except ImageUnreadable:
+        from ..bot.llm_usd_gate import user_notice
+        return error(user_notice("unreadable", notice_lang), 400)
     except MEDIA_ERRORS as e:
         return error(str(e), 400)
     parts: list[str] = []
@@ -72,8 +80,16 @@ async def llm_complete(request: web.Request) -> web.Response:
     base = str(get_setting("bot-local-llm-url") or "").strip().rstrip("/")
     if not base:
         return error("no LLM endpoint configured; set the OpenAI-compatible endpoint URL in Agent settings", 400)
+    notice_lang = str(body.get("lang") or "")
+    notice_lang = notice_lang if notice_lang in ("zh", "en") else "zh"
     try:
         attachments = [await asyncio.to_thread(render_attachment, str(u)) for u in images[:ATTACH_MAX_COUNT]]
+    except PlannerPixelOverflow:
+        from ..bot.llm_usd_gate import user_notice
+        return error(user_notice("image_too_large", notice_lang), 400)
+    except ImageUnreadable:
+        from ..bot.llm_usd_gate import user_notice
+        return error(user_notice("unreadable", notice_lang), 400)
     except MEDIA_ERRORS as e:
         return error(str(e), 400)
     headers = {"Content-Type": "application/json"}

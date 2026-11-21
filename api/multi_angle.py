@@ -202,7 +202,31 @@ def quote_step_label(args: dict, lang: str = "zh", chat_id: str = "") -> str:
         stage = "preview"
     if stage != "preview":
         return ""
-    return "线稿预览" if lang == "zh" else "Lineart preview"
+    return _quote_copy(lang, "quote.lineartPreview")
+
+
+def preview_size_line(lang: str, width: int, height: int, ratio: str) -> str:
+    """Card-face line for the pending preview call. Values come from that call."""
+    return _quote_copy(lang, "quote.lineartPreviewSize", int(width), int(height), ratio)
+
+
+def _quote_copy(lang: str, key: str, *args: object) -> str:
+    """Locale string for the quote card. Same JSON the UI bundles."""
+    import json
+    from pathlib import Path
+
+    lang = "zh" if lang == "zh" else "en"
+    cache = getattr(_quote_copy, "_cache", None)
+    if cache is None:
+        cache = {}
+        setattr(_quote_copy, "_cache", cache)
+    if lang not in cache:
+        path = Path(__file__).resolve().parents[1] / "src" / "locales" / f"{lang}.json"
+        cache[lang] = json.loads(path.read_text(encoding="utf-8"))
+    text = str(cache[lang][key])
+    for index, value in enumerate(args):
+        text = text.replace("{" + str(index) + "}", str(value))
+    return text
 
 
 # Setup-card copy: zh is Lovart verbatim (product-locked). English is a faithful

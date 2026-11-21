@@ -318,10 +318,13 @@ async def test_quote_line_leads_with_lineart_preview_label(run, monkeypatch):
     setup(rows, "3:4")
     args = {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview"}
     assert _step_label("generate_image", args, "zh") == "线稿预览"
-    assert _step_label("generate_image", args, "en") == "Lineart preview"
+    assert _step_label("generate_image", args, "en") == "Line-art preview"
     # A generic generate in this skill chat is still labelled as the forced preview.
     assert _step_label("generate_image", {"prompt": "生成图像"}, "zh") == "线稿预览"
-    monkeypatch.setattr(canvas, "select_model", lambda *a, **k: {"model": "mock", "auto": True})
+    monkeypatch.setattr(canvas, "select_model", lambda *a, **k: {
+        "model": "google/nano-banana-pro/edit", "auto": True, "category": "image_edit",
+        "reason": {"zh": "自动", "en": "Auto"},
+    })
 
     async def pricer(name, inputs):
         return 0.1035
@@ -338,9 +341,40 @@ async def test_quote_line_leads_with_lineart_preview_label(run, monkeypatch):
         "zh", threshold=0, pricer=pricer, models_for=models_for, router=router,
     )
     assert quote is not None and quote.lines
-    assert quote.lines[0].text.startswith("线稿预览")
-    assert "1152×2048" in quote.lines[0].text and "9:16" in quote.lines[0].text
+    assert quote.lines[0].text.startswith("线稿预览 · 1152×2048 · 9:16")
+    assert "Nano Banana Pro" in quote.lines[0].text
+    assert "积分" in quote.lines[0].price
     assert not quote.lines[0].text.startswith("生成图像")
+
+
+@pytest.mark.asyncio
+async def test_quote_line_english_uses_the_pending_preview_size(run, monkeypatch):
+    rows, _ = run
+    setup(rows, "1:1")
+    monkeypatch.setattr(canvas, "select_model", lambda *a, **k: {
+        "model": "google/nano-banana-pro/edit", "auto": True, "category": "image_edit",
+        "reason": {"zh": "自动", "en": "Auto"},
+    })
+
+    async def pricer(name, inputs):
+        return 0.14
+
+    async def models_for(feature):
+        return [("google/nano-banana-pro/edit", 0.14)]
+
+    def router(tool, arguments, position=0):
+        return canvas.quote_route(tool, arguments, catalog={}, position=position)
+
+    quote = await build_quote(
+        [{"text": "generate", "tool": "generate_image", "model": "google/nano-banana-pro/edit",
+          "arguments": {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
+                        "multi_angle_stage": "preview"}}],
+        "en", threshold=0, pricer=pricer, models_for=models_for, router=router,
+    )
+    assert quote is not None
+    assert quote.lines[0].text.startswith("Line-art preview · 1152×2048 · 9:16")
+    assert "Nano Banana Pro" in quote.lines[0].text
+    assert "credit" in quote.lines[0].price
     stored = quote.ask_spec()
     assert stored["lines"][0]["text"] == quote.lines[0].text
     assert stored["composition_plan"]["panels"][1]["content"]

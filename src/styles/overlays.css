@@ -143,6 +143,8 @@
 .ca-chat-confirm__desc { margin: 0; color: var(--ca-text); font: 400 13px/20px var(--ca-font); white-space: pre-line; }
 .ca-chat-confirm__status { margin: 0; color: var(--ca-muted); font: 400 12px/18px var(--ca-font); }
 .ca-chat-confirm__actions { gap: 8px; }
+.ca-chat-confirm .ca-keys__row { height: auto; min-height: 30px; align-items: flex-start; gap: 8px; padding: 4px 0; }
+.ca-chat-confirm .ca-lib__name { white-space: normal; overflow: visible; text-overflow: unset; overflow-wrap: anywhere; }
 .ca-chat-confirm .ca-panel__foot > button { height: 32px; padding: 0 14px; border-radius: 8px; font: inherit; cursor: pointer; }
 .ca-ask__title { font-weight: 500; white-space: pre-line; }
 .ca-ask .ca-panel__foot > button { height: 32px; padding: 0 14px; border-radius: 8px; font: inherit; cursor: pointer; }
