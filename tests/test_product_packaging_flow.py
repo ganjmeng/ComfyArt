@@ -530,6 +530,7 @@ def test_portrait_studio_and_self_check_match_pinned_sha256(path):
 # - youtube-channel-banner: bot.composeBannerText
 # - portrait-studio redo/follow-up (#927): bot.portraitStudioPlan / Done / Redo
 # - #943: runStop.stillGenerating
+# - #936: models.minimaxH3Image (picker copy; the row itself is model_display.json)
 BANNER_LOCALE = {"zh": "排版横幅文字", "en": "Set banner text"}
 PORTRAIT_LOCALE = {
     "zh": {
@@ -551,10 +552,15 @@ RATIO_REFUSAL_LOCALE_994 = {
     "zh": "该模型不支持你指定的比例；未提交、未扣费。请明确选择它支持的比例或另一个模型，不会自动改回默认值。",
     "en": "Requested ratio is not supported by this model. Nothing submitted; no charge. Choose a supported ratio or a different model explicitly; the default was not substituted.",
 }
+H3_IMAGE_LOCALE = {
+    "zh": "6 步出图，2K 下细节丰富，可带多张参考图",
+    "en": "6-step generation with dense detail at 2K, takes several reference images",
+}
 LOCALE_EXTRAS = {
     lang: {"bot.composeBannerText": BANNER_LOCALE[lang], **PORTRAIT_LOCALE[lang],
            "runStop.stillGenerating": RUN_STOP_LOCALE[lang],
-           "wsErr.userRatioUnsupported": RATIO_REFUSAL_LOCALE_994[lang]}
+           "wsErr.userRatioUnsupported": RATIO_REFUSAL_LOCALE_994[lang],
+           "models.minimaxH3Image": H3_IMAGE_LOCALE[lang]}
     for lang in ("zh", "en")
 }
 # sha256 of the canonical JSON of main e8c4a855's locale files (minus the extras above).
