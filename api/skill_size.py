@@ -113,15 +113,37 @@ def reconcile_ratio(requested: tuple[int, int], provider_pixels: tuple[int, int]
     return out
 
 
-# Same copy as the page's jobs.sizeNotice / jobs.sizeNoticeUnread. The image is delivered, so this is
-# info: no "failed" wording and no hint to run it again. One message for any tolerated-fail size.
+# #924 user-visible copy when the file is smaller. A larger file (including a same-ratio
+# 1440×2560 against 1152×2048) must not be called 低于 / smaller. Mixed edges state the
+# actual size only. Same sentences as jobs.sizeNotice / sizeNoticeLarger / sizeNoticeActual.
+_SMALLER = ("出图尺寸低于预期（实际 {w}×{h}），已按原图交付。",
+            "Output is smaller than expected ({w}×{h}). Delivered as generated.")
+_LARGER = ("出图尺寸高于预期（实际 {w}×{h}），已按原图交付。",
+           "Output is larger than expected ({w}×{h}). Delivered as generated.")
+_ACTUAL = ("实际出图 {w}×{h}，已按原图交付。",
+           "Delivered as generated ({w}×{h}).")
+
+
+def _size_relation(requested: tuple[int, int] | None, provider: tuple[int, int]) -> str:
+    """'smaller' when every edge is at most the request and one is shorter; 'larger' when every edge grew."""
+    if requested is None:
+        return "other"
+    rw, rh = int(requested[0]), int(requested[1])
+    gw, gh = int(provider[0]), int(provider[1])
+    if gw <= rw and gh <= rh and (gw < rw or gh < rh):
+        return "smaller"
+    if gw >= rw and gh >= rh and (gw > rw or gh > rh):
+        return "larger"
+    return "other"
+
+
 def size_notice(requested: tuple[int, int] | None, provider: tuple[int, int] | None, mode: str = "") -> dict:
     """Neutral zh/en note for a charged image that did not pass the size check but is delivered."""
     if provider is None:
         return {"kind": "unread", "zh": "出图尺寸未能核对，已按原图交付。", "en": "Output size could not be checked. Delivered as generated."}
     w, h = int(provider[0]), int(provider[1])
-    return {"kind": "size", "zh": f"出图尺寸低于预期（实际 {w}×{h}），已按原图交付。",
-            "en": f"Output is smaller than expected ({w}×{h}). Delivered as generated."}
+    zh, en = {"smaller": _SMALLER, "larger": _LARGER, "other": _ACTUAL}[_size_relation(requested, (w, h))]
+    return {"kind": "size", "zh": zh.format(w=w, h=h), "en": en.format(w=w, h=h)}
 
 
 def file_pixels(data: bytes) -> tuple[int, int] | None:

@@ -292,6 +292,18 @@ function markJobPhase(editor: Editor, holderId: TLShapeId, phase: 'querying' | '
   editor.updateShape({ id: holderId, type: holder.type, meta: { ...holder.meta, job: { ...cur, phase } as any } })
 }
 
+function sizeNoticeCopy(sized: { want: { width: number; height: number }; got: { width: number; height: number } | null }): string {
+  if (!sized.got) return t('jobs.sizeNoticeUnread')
+  const gw = sized.got.width
+  const gh = sized.got.height
+  const rw = sized.want.width
+  const rh = sized.want.height
+  const smaller = gw <= rw && gh <= rh && (gw < rw || gh < rh)
+  const larger = gw >= rw && gh >= rh && (gw > rw || gh > rh)
+  const key = smaller ? 'jobs.sizeNotice' : larger ? 'jobs.sizeNoticeLarger' : 'jobs.sizeNoticeActual'
+  return t(key, String(gw), String(gh))
+}
+
 async function finish(editor: Editor, holderId: TLShapeId, job: Job, onError: ErrorSink) {
   if (!job.id) return
   if (active.has(job.id)) return
@@ -318,7 +330,7 @@ async function finish(editor: Editor, holderId: TLShapeId, job: Job, onError: Er
     const sized = lockedDeliveryNotice(holder.meta, media)
     await (placers[job.placer ?? ''] ?? defaultPlacer)(editor, holder, media, job, onError)
     // Neutral copy in the UI language only; the image is delivered, so this is info, not a failure.
-    const notice = !sized ? '' : sized.got ? t('jobs.sizeNotice', String(sized.got.width), String(sized.got.height)) : t('jobs.sizeNoticeUnread')
+    const notice = sized ? sizeNoticeCopy(sized) : ''
     if (sized) {
       console.warn('[size-lock] charged job %s delivered despite size check (%s): want %o got %o', job.id, sized.mode, sized.want, sized.got)
     }

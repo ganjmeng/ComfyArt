@@ -538,7 +538,8 @@ def test_audit_file_reads_bytes_then_reconciles():
     assert bad["provider_output"] == {"width": 2048, "height": 682}
     assert bad["delivered"] == bad["provider_output"]
     assert "2048×682" in bad["error"] and "已按原图交付" in bad["error"]
-    assert bad["error"] == "出图尺寸与请求规格不符（实际 2048×682），已按原图交付。 / Output size does not match the requested specification (2048×682). Delivered as generated."
+    assert bad["error"] == "出图尺寸高于预期（实际 2048×682），已按原图交付。 / Output is larger than expected (2048×682). Delivered as generated."
+    assert "低于" not in bad["error"] and "smaller" not in bad["error"]
     dead = audit_file(b"NOTPNG", (1584, 396))
     assert dead["read_error"] is True and dead["provider_output"] is None and dead["delivered"] is None
     assert dead["error"] == "出图尺寸未能核对，已按原图交付。 / Output size could not be checked. Delivered as generated."

@@ -38,8 +38,8 @@ FIXTURE = json.loads((ROOT / "tests/fixtures/wavespeed_catalog_subset.json").rea
 SB_EDIT = "openai/gpt-image-2.6-sunburst/edit"
 SB_T2I = "openai/gpt-image-2.6-sunburst/text-to-image"
 COPY = {
-    "zh": "出图尺寸与请求规格不符（实际 {w}×{h}），已按原图交付。",
-    "en": "Output size does not match the requested specification ({w}×{h}). Delivered as generated.",
+    "zh": "出图尺寸低于预期（实际 {w}×{h}），已按原图交付。",
+    "en": "Output is smaller than expected ({w}×{h}). Delivered as generated.",
 }
 # Must never reach the agent or the page for a delivered image.
 BANNED = ("0 张成功", "0 succeeded", "重跑", "再发起", "重新生成", "rerun", "re-run", "run it again", "try again",

@@ -57,7 +57,8 @@ export function ratioLockOk(want: { width: number; height: number }, got: { widt
 }
 
 /** 'size' = ratio off > 1% or long side short (or exact pixels differ); 'unread' = no readable pixels.
- *  One user message for 'size' (jobs.sizeNotice, actual W×H); jobs.sizeNoticeUnread otherwise. */
+ *  Smaller files use jobs.sizeNotice (#924). A larger file must not use that sentence.
+ *  jobs.sizeNoticeUnread when the pixels cannot be read. */
 export type SizeNoticeKind = 'size' | 'unread'
 export interface SizeDeliveryNotice { kind: SizeNoticeKind; want: { width: number; height: number }; got: { width: number; height: number } | null; mode: 'ratio' | 'exact' }
 
