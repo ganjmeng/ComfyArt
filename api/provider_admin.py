@@ -451,8 +451,11 @@ def llm_route(active: dict | None = None) -> dict | None:
 
 
 def adapt_llm_body(body: dict | None, url: str) -> dict | None:
-    """Official DeepSeek defaults thinking on. The agent does not echo reasoning_content, so disable it.
+    """Official DeepSeek defaults thinking on when the field is omitted.
 
+    Ordinary agent turns still set an explicit disabled value so they keep the
+    documented non-thinking cap. A body that already enables thinking is left
+    unchanged. Assistant history echoes canonical reasoning_content when present.
     Streaming stays off: the agent reads one JSON body. This is not a drop-in conversion.
     """
     lock = _llm_lock.get()
@@ -1473,6 +1476,77 @@ async def rehearse_llm(request: web.Request) -> web.Response:
     })
 
 
+async def gated_llm_http(session, method, url, *, headers, json_body=None, timeout=120,
+                         transport, ledger_path: str | None = None, bound_fn=None,
+                         context_contract: bool = False, frozen_images=None, activation_runtime=None):
+    """Adapt the official body, then reserve a worst-case USD hold before the real send.
+
+    ``transport`` is the unwrapped HTTP function. Non-chat and non-official calls go
+    straight through. A blocked official chat completion never calls ``transport``.
+    """
+    from ..bot.llm_usd_gate import dispatch, route_requires_gate
+
+    body = adapt_llm_body(json_body, url)
+    if context_contract:
+        import copy
+        body = copy.deepcopy(body)
+    route = _llm_lock.get()
+    if not route_requires_gate(method, url, route):
+        if context_contract:
+            from ..bot.llm_usd_gate import LlmBudgetBlocked
+            raise LlmBudgetBlocked("route_mismatch", "context profile requires official gated POST")
+        return await transport(session, method, url, headers=headers, json_body=body, timeout=timeout)
+
+    async def send():
+        return await transport(session, method, url, headers=headers, json_body=body, timeout=timeout)
+
+    async def send_frozen(encoded):
+        from ..bot.llm_input_envelope import FrozenJsonBody
+        return await transport(session, method, url, headers=headers,
+                               json_body=FrozenJsonBody(encoded), timeout=timeout)
+
+    return await dispatch(body, route=route, url=str(url), send=send,
+                          ledger_path=ledger_path, bound_fn=bound_fn,
+                          context_contract=context_contract, frozen_images=frozen_images, activation_runtime=activation_runtime,
+                          send_frozen=send_frozen if context_contract else None)
+
+
+async def installed_llm_http(session, method, url, *, headers, json_body=None, timeout=120, transport):
+    """Real installed wrapper: explicit persisted activation or unchanged strict default.
+
+    Lookup is read-only (apart from stable lock files). Never opens a scope,
+    activates a manifest, reads a provider secret, or falls back to another
+    ledger after a configured binding fails validation.
+    """
+    from ..bot.llm_scope_activation import (
+        configured_runtime, active_binding, auxiliary_designation,
+        validate_auxiliary, auxiliary_no_redirects,
+    )
+    from ..bot.llm_usd_gate import route_requires_gate
+    runtime = configured_runtime(app_path())
+    route = _llm_lock.get()
+    binding = None
+    if runtime is not None:
+        # Explicit helper-created purpose, never URL substring/body guessing.
+        # The designation binds configured endpoint, method and immutable body.
+        auxiliary = auxiliary_designation()
+        binding = active_binding(runtime, route=route, url=None if auxiliary else str(url))
+        if binding is not None and auxiliary:
+            validate_auxiliary(binding, method, url, json_body)
+            with auxiliary_no_redirects():
+                return await transport(session, method, url, headers=headers,
+                                       json_body=json_body, timeout=timeout)
+        if binding is not None and not route_requires_gate(method, url, route):
+            from ..bot.llm_usd_gate import LlmBudgetBlocked
+            raise LlmBudgetBlocked("activation_route_mismatch", "physical_method/target")
+    return await gated_llm_http(
+        session, method, url, headers=headers, json_body=json_body, timeout=timeout,
+        transport=transport,
+        ledger_path=binding["manifest"]["canonical_absolute_ledger_path"] if binding else None,
+        context_contract=binding is not None,
+        activation_runtime=runtime if binding else None)
+
+
 def install() -> None:
     global _image_orig, _estimate_orig, _quote_orig, _poll_orig, _llm_http, _llm_orig_send
     if getattr(install, "done", False):
@@ -1528,8 +1602,9 @@ def install() -> None:
         _llm_orig_send = provider.send
 
         async def _request_json(session, method, url, *, headers, json_body=None, timeout=120):
-            body = adapt_llm_body(json_body, url)
-            return await _llm_http(session, method, url, headers=headers, json_body=body, timeout=timeout)
+            return await installed_llm_http(
+                session, method, url, headers=headers, json_body=json_body, timeout=timeout,
+                transport=_llm_http)
 
         from ..bot.providers import ProviderStatus
         from dataclasses import replace

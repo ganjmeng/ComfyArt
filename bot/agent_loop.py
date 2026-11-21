@@ -22,6 +22,7 @@ from . import self_check as sc_mod
 from .guide import PAID_TOOLS
 from .plan_quote import canon_key
 from . import reasoning_boost
+from .assistant_history import assistant_history_message as _assistant_history_message
 from .run_budget import ui_credits
 from .providers import BotEvent, TurnResult
 from .run_budget import (
@@ -877,6 +878,10 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
             if plan_stop == "stopped" or handle.stop_requested:
                 return await finish(Stop(StopReason.USER_STOP, step=ctx.budget.used.steps))
         while True:
+            if handle.model_blocked or getattr(provider, "_model_blocked", ""):
+                reason = handle.model_blocked or provider._model_blocked
+                return await finish(Stop(StopReason.ERROR, "browser_tab", step=ctx.budget.used.steps,
+                                         detail=reason), extra_error=reason)
             if handle.stop_requested:
                 return await finish(Stop(StopReason.USER_STOP, step=ctx.budget.used.steps))
             if ctx.budget.used.steps >= ctx.budget.limits.hard_steps:
@@ -972,7 +977,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                     if not ctx.selfcheck_nudged:
                         ctx.selfcheck_nudged = True
                         lk = "zh" if ctx.lang == "zh" else "en"
-                        messages.append({"role": "assistant", "content": content or ""})
+                        messages.append(_assistant_history_message(message, content or ""))
                         messages.append({"role": "user", "content": _SELF_CHECK_NUDGE[lk].format(
                             exp=check.goal.count, kind=sc_mod._KIND_LABEL[lk][check.goal.kind],
                             placed=check.placed, miss=check.missing)})
@@ -984,7 +989,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                 ctx.budget.end_step()
                 return await finish(Stop(StopReason.DONE, step=ctx.budget.used.steps))
 
-            messages.append({"role": "assistant", "content": content or None, "tool_calls": tool_calls})
+            messages.append(_assistant_history_message(message, content, tool_calls))
             n_before = len(messages)
             b_before = len(ctx.blocks)
             has_wait = _tool_calls_wait(tool_calls)
@@ -1033,6 +1038,15 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                     for a in sorted(artifact_ids(o.result)):
                         if a not in ctx.artifacts:
                             ctx.artifacts.append(a)
+            from ..api.mcp_commands import mandatory_browser_stop
+            blocked = next((mandatory_browser_stop(o.result) for o in obs if mandatory_browser_stop(o.result)), "")
+            if blocked:
+                # The tool result is already known. Stop before the next reserve,
+                # without waiting for an external poller to notice the error.
+                handle.model_blocked = blocked
+                provider._model_blocked = blocked
+                return await finish(Stop(StopReason.ERROR, "browser_tab", step=ctx.budget.used.steps,
+                                         detail=blocked), extra_error=blocked)
             fatal = next((o for o in obs if o.failed and NON_RETRYABLE_MARK in o.result), None)
             if fatal is not None:  # #705: never let the model retry a call the tool says cannot succeed
                 _log.warning("[ComfyArt/agent] run %s non-retryable %s error, stopping", ctx.run_id, fatal.tool)

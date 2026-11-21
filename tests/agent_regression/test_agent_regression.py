@@ -28,7 +28,7 @@ def _params():
             yield pytest.param(c, lang, id=f"{c.id}-{lang}", marks=marks)
 
 
-async def _run(case: Case, lang: str, monkeypatch, caplog, capfd) -> dict:
+async def _run(case: Case, lang: str, monkeypatch, caplog, capfd, *, live_tab: bool = True) -> dict:
     from aiohttp import web
     from aiohttp.test_utils import TestClient, TestServer
     from server import PromptServer
@@ -62,7 +62,8 @@ async def _run(case: Case, lang: str, monkeypatch, caplog, capfd) -> dict:
     # Official DeepSeek is the no-section default (90073499). Pin WaveSpeed/existing so the mock URL wins.
     write_admin_llm_passthrough()
     page = FakePage(ws_url=base + "/mockws", decline=case.decline, shapes=[*map(_copy, case.shapes_initial)],
-                    selection=list(case.selection), brand_kit=case.brand_kit)
+                    selection=list(case.selection), brand_kit=case.brand_kit,
+                    project="p231" if live_tab else "")
     monkeypatch.setattr(canvas, "submit_command", page)
     # #418: the mock WaveSpeed has no price API, so every quote would be 'unpriced' (which, by rule, always
     # asks) and nobody answers the card in this harness. Pin a known low price (1 credit, under the
@@ -94,6 +95,7 @@ async def _run(case: Case, lang: str, monkeypatch, caplog, capfd) -> dict:
                 # long (120/300-step) cases need more than 30 s on a loaded box (was the 15-hardcap-en flake)
                 messages = (await wait_bot_done(client, chat["id"], timeout=180 if case.limit >= 120 else 30))["messages"]
     finally:
+        page.detach_live_tab()
         await client.close()
     out, err = capfd.readouterr()
     assistants = [m for m in messages if m["role"] == "assistant"]
@@ -328,6 +330,15 @@ async def test_agent_regression(case, lang, monkeypatch, caplog, capfd):
         raise
     finally:
         RESULTS[f"{case.id}-{lang}"] = row
+
+
+async def test_no_live_tab_blocks_before_any_model_post(monkeypatch, caplog, capfd):
+    case = next(c for c in CASES if c.id == "01")
+    r = await _run(case, "zh", monkeypatch, caplog, capfd, live_tab=False)
+    assert r["tools"] == []
+    assert r["llm"].requests == []
+    assert r["ws"].submits == []
+    assert any("is not open in any browser tab" in text and "p231" in text for text in r["notices"])
 
 
 @pytest.fixture(scope="module", autouse=True)

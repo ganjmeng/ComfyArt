@@ -3,7 +3,7 @@ import { atom, useValue, type Editor } from 'tldraw'
 
 import { kitsAtom } from '../agent'
 import { placeAsset } from '../assets'
-import { KIND_LABELS, kitDisplayName, libraryAtom, saveLibrary, type LibraryItem, type LibraryKind } from '../library'
+import { KIND_LABELS, kitDisplayName, libraryAtom, updateLibrary, type LibraryItem, type LibraryKind } from '../library'
 import { newProject } from '../projects'
 import { AssetGrid } from './AssetPicker'
 import { confirmAtom } from './Confirm'
@@ -17,14 +17,13 @@ type Tab = 'files' | LibraryKind
 export const libraryTabAtom = atom<Tab>('library tab', 'files')
 const TABS: [Tab, string][] = [['files', t('libraryPanel.files')], ['brand', t('library.brandKit')], ['character', t('library.character')], ['product', t('library.product')], ['custom', t('common.custom')]]
 
-function LibCard({ item, save, on }: { item: LibraryItem; save: (list: LibraryItem[]) => void; on?: boolean }) {
+function LibCard({ item, save, on }: { item: LibraryItem; save: (fn: (list: LibraryItem[]) => LibraryItem[]) => void; on?: boolean }) {
   const [menu, setMenu] = useState(false)
   const kits = useValue(kitsAtom)
   const brand = item.kind === 'brand'
   const cover = item.cover ?? item.logos?.[0] ?? item.images[0]
   const name = kitDisplayName(item)
   const act = (fn: () => void) => () => { setMenu(false); fn() }
-  const all = () => libraryAtom.get()
   return (
     <div className="ca-lib__card" data-on={on || undefined} onClick={() => kitEditAtom.set(item.id)}>
       <div className="ca-lib__row">
@@ -36,12 +35,12 @@ function LibCard({ item, save, on }: { item: LibraryItem; save: (list: LibraryIt
               <button type="button" className="ca-menu__item" disabled={kits.some((k) => k.id === item.id)} onClick={act(() => kitsAtom.set([...kitsAtom.get(), item]))}>{t('libraryPanel.addToChat')}</button>
               {brand && <button type="button" className="ca-menu__item" onClick={act(() => newProject({ kit: item.id }))}>{t('libraryPanel.designWithThisKitNew')}</button>}
               {brand && (
-                <button type="button" className="ca-menu__item" onClick={act(() => save(all().map((x) => (x.kind === 'brand' ? { ...x, isDefault: x.id === item.id ? !item.isDefault : false } : x))))}>
+                <button type="button" className="ca-menu__item" onClick={act(() => save((list) => list.map((x) => (x.kind === 'brand' ? { ...x, isDefault: x.id === item.id ? !item.isDefault : false } : x))))}>
                   <span className="ca-menu__grow">{t('libraryPanel.setAsDefaultForNew')}</span>{item.isDefault && <span className="ca-icon">{Icons.check}</span>}
                 </button>
               )}
-              <button type="button" className="ca-menu__item" onClick={act(() => save([...all(), { ...item, id: uuid().slice(0, 8), name: t('libraryPanel.copy', name), isDefault: false }]))}>{t('common.duplicate')}</button>
-              <button type="button" className="ca-menu__item ca-menu__item--danger" onClick={act(() => confirmAtom.set({ danger: true, title: t('libraryPanel.deleteItem', KIND_LABELS[item.kind]), desc: t('libraryPanel.itemWillBeRemoved', name), ok: t('common.delete'), run: () => save(all().filter((x) => x.id !== item.id)) }))}>{t('common.delete')}</button>
+              <button type="button" className="ca-menu__item" onClick={act(() => save((list) => [...list, { ...item, id: uuid().slice(0, 8), name: t('libraryPanel.copy', name), isDefault: false }]))}>{t('common.duplicate')}</button>
+              <button type="button" className="ca-menu__item ca-menu__item--danger" onClick={act(() => confirmAtom.set({ danger: true, title: t('libraryPanel.deleteItem', KIND_LABELS[item.kind]), desc: t('libraryPanel.itemWillBeRemoved', name), ok: t('common.delete'), run: () => save((list) => list.filter((x) => x.id !== item.id)) }))}>{t('common.delete')}</button>
             </div>
           </Popover>
         </span>
@@ -55,8 +54,9 @@ function LibCard({ item, save, on }: { item: LibraryItem; save: (list: LibraryIt
 /** #539: shared 新建 action (canvas list, Assets list, Assets empty state). Real data only — never auto-called. */
 export function createLibraryItem(kind: LibraryKind, onError: (msg: string) => void) {
   const id = uuid().slice(0, 8)
-  void saveLibrary([...libraryAtom.get(), { id, kind, name: '', description: '', images: [], colors: [], fonts: [] }]).catch((e) => onError(String(e)))
-  kitEditAtom.set(id)
+  void updateLibrary((list) => [...list, { id, kind, name: '', description: '', images: [], colors: [], fonts: [] }])
+    .then(() => kitEditAtom.set(id))
+    .catch((e) => onError(String(e)))
 }
 
 /** #539: active kit tab as the Assets page sees it (canvas default 'files' → brand). */
@@ -69,7 +69,7 @@ export function LibraryPanel({ editor, onError, kitsOnly }: { editor?: Editor; o
   const setTab = (t: Tab) => libraryTabAtom.set(t)
   const library = useValue(libraryAtom)
   const items = library.filter((i) => i.kind === tab)
-  const save = (list: LibraryItem[]) => saveLibrary(list).catch((e) => onError(String(e)))
+  const save = (fn: (list: LibraryItem[]) => LibraryItem[]) => void updateLibrary(fn).catch((e) => onError(String(e)))
   const create = (kind: LibraryKind) => createLibraryItem(kind, onError)
   const selected = useValue(kitEditAtom)
 

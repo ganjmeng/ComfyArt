@@ -15,6 +15,7 @@ import {
   type TLResizeInfo,
   type TLShape,
 } from 'tldraw'
+import { cssFamily } from '../fontName'
 import { docFromText, hasMarks, plainOf, RichInput, RichView } from '../richText'
 import { t } from '../i18n'
 
@@ -48,7 +49,7 @@ const versions = createShapePropsMigrationIds(TEXT, { AddDecoration: 1, AddRich:
 
 export function textStyle(p: TextShape['props']): React.CSSProperties {
   return {
-    fontFamily: p.font,
+    fontFamily: cssFamily(p.font),
     fontWeight: p.weight,
     fontSize: p.size,
     color: readableTextColor(p.color),

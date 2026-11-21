@@ -105,8 +105,23 @@ async def _local(monkeypatch, steps, user_text=S8_TEXT, lang="", typed=None):
     handle = TurnHandle()
     paid_guard.begin_turn(chat_id, text=typed if typed is not None else user_text, provider_text=user_text,
                           lang=lang, on_stop=paid_guard.stop_later(provider, handle))
-    result = await provider.send(TurnRequest(chat_id=chat_id, user_text=user_text, lang=lang,
-                                             mcp_endpoint="http://x/mcp", model="m1"), emit, handle)
+    # Same live-tab table the product checks. The sentinel project "local" is not a
+    # canvas project; this replay uses the chat project the HTTP path would.
+    from server import PromptServer
+
+    from ComfyArt.api import mcp_commands
+
+    project = "p231"
+    tab = "s8-replay-tab"
+    PromptServer.instance.sockets[tab] = object()
+    mcp_commands._pages[tab] = project
+    try:
+        result = await provider.send(TurnRequest(chat_id=chat_id, user_text=user_text, lang=lang,
+                                                 mcp_endpoint="http://x/mcp", model="m1",
+                                                 project_id=project), emit, handle)
+    finally:
+        PromptServer.instance.sockets.pop(tab, None)
+        mcp_commands._pages.pop(tab, None)
     stop = paid_guard.end_turn(chat_id)
     return (stop or result.error or ""), events, llm
 

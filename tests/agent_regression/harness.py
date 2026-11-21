@@ -93,7 +93,8 @@ KINDS = {"generate_image": "image", "edit_image": "image", "generate_video": "vi
 
 class FakePage:
     def __init__(self, *, ws_url: str, decline: bool = False, shapes: Optional[list[Shape]] = None,
-                 selection: Optional[list[str]] = None, brand_kit: Optional[dict] = None) -> None:
+                 selection: Optional[list[str]] = None, brand_kit: Optional[dict] = None,
+                 project: str = "") -> None:
         self.ws_url = ws_url
         self.decline = decline
         self.shapes: dict[str, Shape] = {s.id: s for s in shapes or []}
@@ -105,6 +106,37 @@ class FakePage:
         self.confirms = 0
         self.payloads: list[dict] = []       # what went to (mock) WaveSpeed, per submit
         self.edits: list[dict] = []          # edit_image: snapshot of the input shape + the output id
+        self._tab_client = ""
+        if project:
+            self.attach_live_tab(project)
+
+    def attach_live_tab(self, project: str) -> str:
+        """Register this page in the same live-tab table require_project_tab reads.
+
+        A page counts only while its client id is both in the page map and in
+        PromptServer.instance.sockets. This does not change product code.
+        """
+        from server import PromptServer
+
+        from ComfyArt.api import mcp_commands
+
+        self.detach_live_tab()
+        client = f"fakepage:{project}:{id(self)}"
+        PromptServer.instance.sockets[client] = object()
+        mcp_commands._pages[client] = project
+        self._tab_client = client
+        return client
+
+    def detach_live_tab(self) -> None:
+        if not self._tab_client:
+            return
+        from server import PromptServer
+
+        from ComfyArt.api import mcp_commands
+
+        PromptServer.instance.sockets.pop(self._tab_client, None)
+        mcp_commands._pages.pop(self._tab_client, None)
+        self._tab_client = ""
 
     def _new(self, kind: str, **kw) -> Shape:
         self.n += 1
