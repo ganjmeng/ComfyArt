@@ -1106,6 +1106,7 @@
   "modelPrefs.theAgentPicksAutomaticallyFrom": "The Agent picks automatically from all installed models",
   "modelPrefs.video": "Video",
   "models.mossImageFullCaption": "Works best from a long, detailed scene description",
+  "models.minimaxH3Image": "6-step generation with dense detail at 2K, takes several reference images",
   "multiToolbar.align": "Align",
   "multiToolbar.alignBottom": "Align Bottom",
   "multiToolbar.alignHorizontalCenters": "Align Horizontal Centers",

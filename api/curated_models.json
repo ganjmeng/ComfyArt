@@ -29,7 +29,8 @@
       "wavespeed-ai/flux-dev-lora",
       "wavespeed-ai/qwen-image/text-to-image-lora",
       "openai/gpt-image-2.6-flare/text-to-image",
-      "openai/gpt-image-2.6-sunburst/text-to-image"]},
+      "openai/gpt-image-2.6-sunburst/text-to-image",
+      "minimax/h3-image/text-to-image"]},
     "image_edit": {"needs": ["prompt"], "default": "openai/gpt-image-2.6-flare/edit", "models": [
       "openai/gpt-image-2/edit",
       "google/nano-banana-2.1/edit",
@@ -52,7 +53,8 @@
       "ideogram-ai/ideogram-v4.5/edit",
       "wavespeed-ai/qwen-image/edit-lora",
       "openai/gpt-image-2.6-flare/edit",
-      "openai/gpt-image-2.6-sunburst/edit"]},
+      "openai/gpt-image-2.6-sunburst/edit",
+      "minimax/h3-image/edit"]},
     "text_to_video": {"needs": ["prompt"], "models": [
       "bytedance/seedance-2.0/text-to-video",
       "kwaivgi/kling-v3.0-std/text-to-video",

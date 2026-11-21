@@ -1,7 +1,7 @@
 import { useValue } from 'tldraw'
 
 import { VIDEO_RATIOS } from '../genOptions'
-import { agentModels, AUTO_IMAGE, AUTO_VIDEO, modelOf, modelPrefsAtom, saveDirectSettings, type DirectSettings } from '../models'
+import { adjustForModel, agentModels, AUTO_IMAGE, AUTO_VIDEO, modelOf, modelPrefsAtom, saveDirectSettings, type DirectSettings } from '../models'
 import { GENERATOR_DEFAULTS, type GeneratorShape } from '../shapes/GeneratorShape'
 import { ModelPill, SettingsPill } from './GenSettings'
 
@@ -21,7 +21,7 @@ export function DirectPills({ video, within = '.ca-composer', spacer = true, onE
     <>
       {/* #268: only + and mode sit left; model and settings group right, next to voice/send */}
       {spacer && <div className="ca-composer__pillspacer" />}
-      <ModelPill video={video} model={model} onPick={(_f, id) => update({ workflow: id })} onAuto={(on) => update({ workflow: on ? (video ? AUTO_VIDEO : AUTO_IMAGE) : agentModels(video)[0].id })} align="end" within={within} side={side} />
+      <ModelPill video={video} model={model} onPick={(_f, id) => update({ workflow: id, ...adjustForModel(p, modelOf(id), video) })} onAuto={(on) => update({ workflow: on ? (video ? AUTO_VIDEO : AUTO_IMAGE) : agentModels(video)[0].id })} align="end" within={within} side={side} />
       <SettingsPill p={p} video={video} quality={!!model.steps} tiers={model.qualities} update={update} align="end" within={within} side={side} />
     </>
   )

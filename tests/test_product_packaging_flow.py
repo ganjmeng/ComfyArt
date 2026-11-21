@@ -506,8 +506,8 @@ def test_self_check_still_reports_a_failed_set(lang, goal, warn):
 PINNED_SHA256 = {
     "api/auto_models.json": "9ef106b6133d427f04347d0c31c31931e641e1cd47d2a86c0d0769cde48c5d7b",
     "api/skill_size.py": "43c130b1aa05cd6736d28564e743feaa41e0ce26e61ea2ad0960ada01203c3df",
-    "api/curated_models.json": "fb5c6a1acd2782cb3d7da42837bef92bd4485fe90abd84dd272de1170f9fe04b",
-    "api/wavespeed_models.json": "8be944b91aeaf2f4fc24fb5099e36664d2136004dc828737c95ff7943a7363fb",
+    "api/curated_models.json": "53c77b0a449f86b8b2aa9b48044678dddaf5aa3cdad40486f0c981386b8d2dce",
+    "api/wavespeed_models.json": "3f70cc34de378fd675a2afffb7b7c15b533c67db424e1ae25b6ba3356dd082d1",
     "bot/skill_output.py": "d53c3d6c722232ce0bf5665788de893ab44227dee435faef64e9b27af163bbe8",  # #905 size-notice; #974 multi-angle; #978 template block; #979 template plans; #982 typed defaults; #996 logo/taobao/poster increment; #994 explicit user ratio precedence
     "api/portrait_studio.py": "61257848a9e23d13c066d01c103c565d6804e58c926d3905c6ed8b0890569224",
     "bot/self_check.py": "1a9b4f7eda7e915adf83df42ff31ccf3c27e83253d9636ba5c85aead447993b6",
@@ -530,6 +530,7 @@ def test_portrait_studio_and_self_check_match_pinned_sha256(path):
 # - youtube-channel-banner: bot.composeBannerText
 # - portrait-studio redo/follow-up (#927): bot.portraitStudioPlan / Done / Redo
 # - #943: runStop.stillGenerating
+# - #936: models.minimaxH3Image (picker copy; the row itself is model_display.json)
 BANNER_LOCALE = {"zh": "排版横幅文字", "en": "Set banner text"}
 PORTRAIT_LOCALE = {
     "zh": {
@@ -551,10 +552,15 @@ RATIO_REFUSAL_LOCALE_994 = {
     "zh": "该模型不支持你指定的比例；未提交、未扣费。请明确选择它支持的比例或另一个模型，不会自动改回默认值。",
     "en": "Requested ratio is not supported by this model. Nothing submitted; no charge. Choose a supported ratio or a different model explicitly; the default was not substituted.",
 }
+H3_IMAGE_LOCALE = {
+    "zh": "6 步出图，2K 下细节丰富，可带多张参考图",
+    "en": "6-step generation with dense detail at 2K, takes several reference images",
+}
 LOCALE_EXTRAS = {
     lang: {"bot.composeBannerText": BANNER_LOCALE[lang], **PORTRAIT_LOCALE[lang],
            "runStop.stillGenerating": RUN_STOP_LOCALE[lang],
-           "wsErr.userRatioUnsupported": RATIO_REFUSAL_LOCALE_994[lang]}
+           "wsErr.userRatioUnsupported": RATIO_REFUSAL_LOCALE_994[lang],
+           "models.minimaxH3Image": H3_IMAGE_LOCALE[lang]}
     for lang in ("zh", "en")
 }
 # sha256 of the canonical JSON of main e8c4a855's locale files (minus the extras above).
