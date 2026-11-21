@@ -563,10 +563,11 @@ LOCALE_EXTRAS = {
            "models.minimaxH3Image": H3_IMAGE_LOCALE[lang]}
     for lang in ("zh", "en")
 }
-# sha256 of the canonical JSON of main e8c4a855's locale files (minus the extras above).
+# Canonical locale JSON minus the extras above. #1003 changes jobs.sizeNotice to the
+# #924 smaller sentence and adds the larger/actual sentences, so this is no longer main's hash.
 LOCALE_BASE_SHA256 = {
-    "src/locales/zh.json": "abd077aa5fa1265a096c05f887d72cc9f1bb3bc604b34d6c833e1004a3011cd3",
-    "src/locales/en.json": "60c67ddfc1f094f5693935aff41a9ad6fd830b67118f696f7a4099efe64cbb0c",
+    "src/locales/zh.json": "987c1698b8f4f8e4365c4f3f10a6e25473196ae9a75eb61db155821edbfbcffc",
+    "src/locales/en.json": "77995e3ec0acfcda3bd4b7907edf3e93d93ebed66df7759c1eb2754fe5017600",
 }
 
 
