@@ -187,8 +187,8 @@ def test_the_typed_table_covers_every_unpinned_missing_skill():
     ids = _builtin_ids()
     declared = set(OUTPUTS)
     assert len(ids) == 49
-    assert len(declared) == 43
-    assert [sid for sid in ids if sid not in declared] == PINNED_MISSING
+    assert len(declared) == 42  # #911 multi-angle is interactive, not a static delivery row
+    assert [sid for sid in ids if sid not in declared and sid != "universal-multi-angle-grid"] == PINNED_MISSING
     assert TYPED == set(declared) - {  # 8 existing + 2 (logo/character) + 33 typed
         "before-after", "universal-multi-angle-grid", "pose-fission", "game-art",
         "linkedin-banner", "clothing-swap", "brand-identity-director",

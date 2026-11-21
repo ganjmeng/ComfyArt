@@ -546,9 +546,12 @@ function QuestionBlock({ q, st, onChange }: { q: AskQuestion; st: QState; onChan
   const multi = (q.max_selections ?? 1) > 1
   const allowOther = !!q.allow_other
   const textOnly = !options.length && allowOther
-  // #763: D is always the inline `Other (type your answer)...` row on choice cards
+  // #763: on choice cards the last row is the inline Other field when allow_other
+  // is true. #1003: if allow_other is false, do not render that row (do not show a
+  // disabled D); custom ratio or pixels go in Additional notes.
   const recommended = new Set([...(q.defaults ?? []), ...options.filter((o) => o.recommended).map((o) => o.id)])
   const otherLetter = LETTERS[options.length] ?? 'A'
+  const showOtherRow = allowOther
 
   const toggle = (id: string) => {
     // Product lock: pick A–D keeps other text; only moves soft-select (do NOT clear other)
@@ -611,7 +614,7 @@ function QuestionBlock({ q, st, onChange }: { q: AskQuestion; st: QState; onChan
                 {recommended.has(o.id) && <span className="ca-q__rec">{t('chatMessage.recommended')}</span>}
               </button>
             ))}
-            {(
+            {showOtherRow && (
               <div className="ca-q__opt" data-other="" data-text="" data-on={otherOn || undefined} data-off={!allowOther || undefined}>
                 <span className="ca-q__letter">{otherLetter}</span>
                 <input

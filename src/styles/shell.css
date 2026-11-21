@@ -884,6 +884,66 @@ span.arti-mascot { cursor: default; pointer-events: none; }
 }
 .ca-chat__dock .ca-q__submit .ca-q__key { margin-left: 0; width: 14px; font: 400 14px/14px var(--ca-font); opacity: 1; }
 .ca-chat__dock .ca-q__submit:disabled { background: var(--ca-field); color: var(--ca-muted); }
+/* Dark theme: the #940 dock chrome keeps light-theme hex values, which made
+   unselected option labels and question titles (#191919) invisible on the dark
+   card. Use theme tokens here only; light-theme numeric locks stay unchanged. */
+:root[data-theme="dark"] .ca-chat__dock .ca-q,
+.ca-root[data-theme="dark"] .ca-chat__dock .ca-q {
+  border-color: var(--ca-border);
+}
+:root[data-theme="dark"] .ca-chat__dock .ca-q__body,
+.ca-root[data-theme="dark"] .ca-chat__dock .ca-q__body {
+  scrollbar-color: var(--ca-scroll-thumb) transparent;
+}
+:root[data-theme="dark"] .ca-chat__dock .ca-q__body::-webkit-scrollbar-thumb,
+.ca-root[data-theme="dark"] .ca-chat__dock .ca-q__body::-webkit-scrollbar-thumb {
+  background: var(--ca-scroll-thumb);
+}
+:root[data-theme="dark"] .ca-chat__dock .ca-q__head,
+:root[data-theme="dark"] .ca-chat__dock .ca-q__label,
+:root[data-theme="dark"] .ca-chat__dock .ca-q__label .ca-icon,
+:root[data-theme="dark"] .ca-chat__dock .ca-q__page,
+:root[data-theme="dark"] .ca-chat__dock .ca-q__chev,
+.ca-root[data-theme="dark"] .ca-chat__dock .ca-q__head,
+.ca-root[data-theme="dark"] .ca-chat__dock .ca-q__label,
+.ca-root[data-theme="dark"] .ca-chat__dock .ca-q__label .ca-icon,
+.ca-root[data-theme="dark"] .ca-chat__dock .ca-q__page,
+.ca-root[data-theme="dark"] .ca-chat__dock .ca-q__chev {
+  color: var(--ca-text-2);
+}
+:root[data-theme="dark"] .ca-chat__dock .ca-q__chev:disabled,
+.ca-root[data-theme="dark"] .ca-chat__dock .ca-q__chev:disabled {
+  color: var(--ca-muted);
+}
+:root[data-theme="dark"] .ca-chat__dock .ca-q__prompt,
+:root[data-theme="dark"] .ca-chat__dock .ca-q__text,
+:root[data-theme="dark"] .ca-chat__dock .ca-q__desc,
+.ca-root[data-theme="dark"] .ca-chat__dock .ca-q__prompt,
+.ca-root[data-theme="dark"] .ca-chat__dock .ca-q__text,
+.ca-root[data-theme="dark"] .ca-chat__dock .ca-q__desc {
+  color: var(--ca-text);
+}
+:root[data-theme="dark"] .ca-chat__dock .ca-q__letter,
+.ca-root[data-theme="dark"] .ca-chat__dock .ca-q__letter {
+  background: var(--ca-letter);
+  color: var(--ca-letter-fg);
+}
+:root[data-theme="dark"] .ca-chat__dock .ca-q__opt[data-on] .ca-q__letter,
+.ca-root[data-theme="dark"] .ca-chat__dock .ca-q__opt[data-on] .ca-q__letter {
+  background: var(--ca-letter-on);
+  color: var(--ca-letter-on-fg);
+}
+:root[data-theme="dark"] .ca-chat__dock .ca-q__opt[data-on],
+.ca-root[data-theme="dark"] .ca-chat__dock .ca-q__opt[data-on] {
+  background: var(--ca-opt-on);
+}
+:root[data-theme="dark"] .ca-chat__dock .ca-q__skip,
+.ca-root[data-theme="dark"] .ca-chat__dock .ca-q__skip {
+  border-color: var(--ca-border);
+  background: var(--ca-float);
+  color: var(--ca-text);
+}
+
 .ca-at-menu__group > .ca-menu__item { width: 100%; box-sizing: border-box; }
 .ca-at-menu__thumb.ca-at-menu__thumb--icon { background: transparent; color: var(--ca-text); }
 .ca-at-menu__row > .ca-menu__grow { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

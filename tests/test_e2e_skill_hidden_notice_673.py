@@ -17,6 +17,8 @@ pw = pytest.importorskip("playwright.async_api")
 ROOT = Path(__file__).resolve().parent.parent
 pytestmark = pytest.mark.skipif(not any((ROOT / "dist").glob("*")), reason="needs built dist/")
 SHOTS = os.environ.get("HIDE673_SHOTS")
+FAIL_DIR = Path(os.environ.get("HIDE673_FAIL_DIR", "/tmp/e2e-673-failures"))
+ATTACH_TIMEOUT_MS = 15000
 NOTICE = '[data-testid="skill-hidden-notice"]'
 LOC = {lg: json.loads((ROOT / f"src/locales/{lg}.json").read_text()) for lg in ("zh", "en")}
 PAID = ("wavespeed", "kie", "/send", "/log", "/comfyart/generate", "/prompt")
@@ -30,7 +32,9 @@ def fake_agent(fake_provider):
 
 async def _open(p, url, lang, theme):
     browser = await p.chromium.launch()
-    pg = await (await browser.new_context(viewport={"width": 1440, "height": 900})).new_page()
+    ctx = await browser.new_context(viewport={"width": 1440, "height": 900})
+    await ctx.tracing.start(screenshots=True, snapshots=True)
+    pg = await ctx.new_page()
     await pg.add_init_script(f"localStorage.setItem('comfyart.lang','{lang}');localStorage.setItem('comfyart.theme','{theme}')")
     await pg.goto(url)
     await pg.locator(".ca-composer__input").wait_for()
@@ -56,11 +60,22 @@ def _posts(reqs):
 async def test_deep_link_to_yingzao_attaches_after_812_unhide(app_url, mock_ws, fake_agent, lang, theme):  # noqa: F811
     async with pw.async_playwright() as p:
         browser, pg = await _open(p, app_url + f"?project=p673link{lang}&new=1&skill=yingzao&mode=agent", lang, theme)
-        # #812: listed again — no hidden notice; chip may show name
-        assert await pg.locator(NOTICE).count() == 0
+        # #812: listed again — no hidden notice; chip may show name.
+        # The deep link attaches asynchronously (project load/save, then loadSkills), so wait for the
+        # chip with a bounded timeout instead of reading the composer once; on timeout keep evidence first.
         name = LOC[lang].get("skills.yingzao")
         if name:
-            assert name in await pg.locator(".ca-composer").inner_text()
+            try:
+                await pw.expect(pg.locator(".ca-composer")).to_contain_text(name, timeout=ATTACH_TIMEOUT_MS)
+            except AssertionError:
+                FAIL_DIR.mkdir(parents=True, exist_ok=True)
+                stem = FAIL_DIR / f"yingzao-link-{lang}-{theme}"
+                await pg.screenshot(path=f"{stem}.png", full_page=True)
+                await pg.context.tracing.stop(path=f"{stem}.trace.zip")
+                Path(f"{stem}.state.txt").write_text(f"url={pg.url}\ncomposer={await pg.locator('.ca-composer').inner_text()!r}\n")
+                await browser.close()
+                raise
+        assert await pg.locator(NOTICE).count() == 0
         await _shot(pg, f"yingzao-link-listed-{lang}-{theme}")
         await browser.close()
 
