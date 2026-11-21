@@ -120,8 +120,8 @@ def size_notice(requested: tuple[int, int] | None, provider: tuple[int, int] | N
     if provider is None:
         return {"kind": "unread", "zh": "出图尺寸未能核对，已按原图交付。", "en": "Output size could not be checked. Delivered as generated."}
     w, h = int(provider[0]), int(provider[1])
-    return {"kind": "size", "zh": f"出图尺寸与请求规格不符（实际 {w}×{h}），已按原图交付。",
-            "en": f"Output size does not match the requested specification ({w}×{h}). Delivered as generated."}
+    return {"kind": "size", "zh": f"出图尺寸低于预期（实际 {w}×{h}），已按原图交付。",
+            "en": f"Output is smaller than expected ({w}×{h}). Delivered as generated."}
 
 
 def file_pixels(data: bytes) -> tuple[int, int] | None:

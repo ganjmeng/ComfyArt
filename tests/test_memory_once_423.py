@@ -224,6 +224,7 @@ def test_locales_only_add_memory_retrieved_430():
         "jobs.sizeNotice", "jobs.sizeNoticeUnread",
         "bot.composeBannerText",  # #925
         "runStop.stillGenerating",  # #943
+        "models.minimaxH3Image",  # #936 picker copy, not memory copy
     }
     for p, v in (("src/locales/zh.json", "记忆已读取"), ("src/locales/en.json", "Memory retrieved")):
         cur = json.loads(_src(p))
@@ -244,6 +245,8 @@ def test_locales_only_add_memory_retrieved_430():
         digest = hashlib.sha256(_canonical_json(cur)).hexdigest()
         assert digest == LOCALE_NORMALIZED_SHA256[p], (p, digest)
     zh, en = json.loads(_src("src/locales/zh.json")), json.loads(_src("src/locales/en.json"))
+    assert zh["models.minimaxH3Image"] == "6 步出图，2K 下细节丰富，可带多张参考图"
+    assert en["models.minimaxH3Image"] == "6-step generation with dense detail at 2K, takes several reference images"
     assert zh["chatMessage.memoryUpdated"] == "记忆已更新" and en["chatMessage.memoryUpdated"] == "Memory updated"
     assert zh["chatMessage.memoryUpdating"] == "记忆更新中" and en["chatMessage.memoryUpdating"] == "Updating memory"
 

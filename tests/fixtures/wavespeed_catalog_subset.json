@@ -4014,6 +4014,114 @@
 "model_id": "midjourney/text-to-image",
 "name": "midjourney/text-to-image"
 },
+"minimax/h3-image/edit": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"1:1",
+"1:2",
+"2:1",
+"1:3",
+"3:1",
+"2:3",
+"3:2",
+"3:4",
+"4:3",
+"4:5",
+"5:4",
+"9:16",
+"16:9",
+"9:21",
+"21:9"
+]
+},
+"output_format": {
+"enum": [
+"png",
+"jpeg",
+"webp"
+],
+"default": "png"
+},
+"prompt": {},
+"resolution": {
+"enum": [
+"1k",
+"2k",
+"4k"
+],
+"default": "1k"
+},
+"images": {
+"maxItems": 16
+}
+}
+}
+}
+]
+},
+"base_price": 0.038,
+"description": "MiniMax H3 Image Edit edits and combines 1 to 16 reference images from a text instruction. Output 1k and 2k are $0.03; each input image adds $0.008.",
+"model_id": "minimax/h3-image/edit",
+"name": "minimax/h3-image/edit"
+},
+"minimax/h3-image/text-to-image": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"1:1",
+"1:2",
+"2:1",
+"1:3",
+"3:1",
+"2:3",
+"3:2",
+"3:4",
+"4:3",
+"4:5",
+"5:4",
+"9:16",
+"16:9",
+"9:21",
+"21:9"
+],
+"default": "1:1"
+},
+"output_format": {
+"enum": [
+"png",
+"jpeg",
+"webp"
+],
+"default": "png"
+},
+"prompt": {},
+"resolution": {
+"enum": [
+"1k",
+"2k",
+"4k"
+],
+"default": "1k"
+}
+}
+}
+}
+]
+},
+"base_price": 0.03,
+"description": "MiniMax H3 Image Text-to-Image generates images from text prompts at 1k, 2k, or 4k. 1k and 2k are the same price.",
+"model_id": "minimax/h3-image/text-to-image",
+"name": "minimax/h3-image/text-to-image"
+},
 "minimax/hailuo-02/i2v-standard": {
 "api_schema": {
 "api_schemas": [

@@ -67,6 +67,8 @@ WaveSpeed 是唯一的生成服务。在 [wavespeed.ai](https://wavespeed.ai) �
 | `caption` | `wavespeed-ai/image-captioner` |
 | `ocr` | `wavespeed-ai/paddle-ocr` |
 
+MiniMax H3 Image 在图像模型列表里，id 是 `minimax/h3-image/text-to-image`（参考图：`minimax/h3-image/edit`，最多 16 张）。这是 WaveSpeed 模型，不是本地权重。
+
 ## Agent
 
 Agent 面板在后端运行一个真正会调用工具的 Agent，移植自 [ComfyTV](https://github.com/jtydhr88/ComfyTV) 的 bot。默认关闭：在「Agent 设置」里打开 MCP 和 Agent 即可。图像、视频模式不依赖它。每个对话可以单独选择 Agent：

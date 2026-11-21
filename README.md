@@ -69,6 +69,8 @@ Each feature has a default model and a curated list in `api/wavespeed_models.jso
 | `caption` | `wavespeed-ai/image-captioner` |
 | `ocr` | `wavespeed-ai/paddle-ocr` |
 
+MiniMax H3 Image is in the image picker as `minimax/h3-image/text-to-image` (references: `minimax/h3-image/edit`, up to 16). It is a WaveSpeed model, not a local weight.
+
 ## Agent
 
 The Agent panel runs a real tool-using agent on the backend, ported from [ComfyTV](https://github.com/jtydhr88/ComfyTV)'s bot. It is off by default: turn on MCP and the Agent in Agent Settings. Image and video modes work without it. Pick the agent per chat:

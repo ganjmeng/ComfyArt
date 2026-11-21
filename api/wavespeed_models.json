@@ -53,6 +53,10 @@
     },
     {
      "id": "recraft-ai/recraft-v4.1/text-to-image"
+    },
+    {
+     "id": "minimax/h3-image/text-to-image",
+     "local": "MiniMax H3 Image"
     }
    ]
   },
@@ -86,6 +90,10 @@
     },
     {
      "id": "ideogram-ai/ideogram-v4.5/edit"
+    },
+    {
+     "id": "minimax/h3-image/edit",
+     "local": "MiniMax H3 Image"
     }
    ]
   },

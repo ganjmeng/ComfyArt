@@ -338,6 +338,12 @@
    "Hailuo 02, dependable"
   ],
   [
+   "h3-image",
+   "MiniMax H3 Image",
+   "6 步出图，2K 下细节丰富，可带多张参考图",
+   "6-step generation with dense detail at 2K, takes several reference images"
+  ],
+  [
    "minimax-h3",
    "MiniMax-H3",
    "最便宜的视频档，适合试稿",
@@ -404,6 +410,7 @@
    "Qwen-Image 3.0 Pro",
    "Midjourney",
    "Krea 2 Turbo",
+   "MiniMax H3 Image",
    "Ideogram 4",
    "Ideogram",
    "Ideogram P-Image",
