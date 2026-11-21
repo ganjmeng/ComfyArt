@@ -32,17 +32,41 @@ export function brandFonts(): string[] {
   return [...new Set(libraryAtom.get().filter((x) => x.kind === 'brand').flatMap((x) => [...(x.fontFiles ?? []).map((f) => f.family), ...x.fonts]))]
 }
 
+const channel = typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel('comfyart-library')
+let draft: LibraryItem | null = null
+
+function show(list: LibraryItem[]) {
+  const item = draft
+  const next = item ? list.map((x) => (x.id === item.id ? item : x)) : list
+  libraryAtom.set(next)
+  registerFonts(next)
+  return next
+}
+
 export async function loadLibrary(): Promise<LibraryItem[]> {
-  const list = await readUserJson<LibraryItem[]>(FILE, [])
-  libraryAtom.set(list)
-  registerFonts(list)
+  return show(await readUserJson<LibraryItem[]>(FILE, []))
+}
+
+/** Read the saved library, then apply `fn`, so one tab cannot write a stale list over another tab's save. */
+export async function updateLibrary(fn: (list: LibraryItem[]) => LibraryItem[]) {
+  const list = fn(await readUserJson<LibraryItem[]>(FILE, []))
+  show(list)
+  await writeUserJson(FILE, list)
+  channel?.postMessage('changed')
   return list
 }
 
-export async function saveLibrary(list: LibraryItem[]) {
-  libraryAtom.set(list)
-  registerFonts(list)
-  await writeUserJson(FILE, list)
+if (channel) channel.onmessage = () => void loadLibrary()
+
+export function draftItem(item: LibraryItem | null) {
+  draft = item
+  show(libraryAtom.get())
+}
+
+export function saveDraft() {
+  const item = draft
+  draft = null
+  return item ? updateLibrary((list) => list.map((x) => (x.id === item.id ? item : x))) : Promise.resolve()
 }
 
 export function itemImages(item: LibraryItem): string[] {
