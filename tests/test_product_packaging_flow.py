@@ -9,8 +9,8 @@ Question 1's product noun and the options of questions 1 and 2 are written from 
 locks everything else.
 
 $0: no WaveSpeed call. submit_command and the run approval are mocked. Pins and the untouched
-files are locked by literal sha256 values (no historical git objects, so a depth-1 clone works).
-bot/skill_output.py stays byte-locked; the staged multi-angle fill is the current lock.
+files are locked by literal sha256 values (no historical git objects, so a depth-1 clone works);
+bot/skill_output.py is pinned to the #905 revision.
 """
 from __future__ import annotations
 
@@ -505,10 +505,10 @@ def test_self_check_still_reports_a_failed_set(lang, goal, warn):
 # computed once from those same pinned bytes. A one-byte edit still fails.
 PINNED_SHA256 = {
     "api/auto_models.json": "9ef106b6133d427f04347d0c31c31931e641e1cd47d2a86c0d0769cde48c5d7b",
-    "api/skill_size.py": "43c130b1aa05cd6736d28564e743feaa41e0ce26e61ea2ad0960ada01203c3df",
+    "api/skill_size.py": "d7f052db320b1993b0f2a7c3e2248f627fe4b8c504774755967b3f06730ad746",
     "api/curated_models.json": "fb5c6a1acd2782cb3d7da42837bef92bd4485fe90abd84dd272de1170f9fe04b",
     "api/wavespeed_models.json": "8be944b91aeaf2f4fc24fb5099e36664d2136004dc828737c95ff7943a7363fb",
-    "bot/skill_output.py": "f11494b62daeb0dc76139b3ec0eba0a9a39e3156d27a494230790320cffe8766",  # #905 size-notice; #974 multi-angle; #978 template block; #979 template plans; #982 typed defaults; #996 logo/taobao/poster increment; #994 explicit user ratio precedence; staged multi-angle fill leaves the server snapshot
+    "bot/skill_output.py": "d5cd2a21d575b83d230a83fadddc2885579da7037bc953342ee185f5807899f7",  # #1003 multi-angle hint: planner gives panels[].content, frozen plans pass panel_content on finals; 9:16 preview default hint, first-quote preview guard and unrelated locks preserved
     "api/portrait_studio.py": "61257848a9e23d13c066d01c103c565d6804e58c926d3905c6ed8b0890569224",
     "bot/self_check.py": "1a9b4f7eda7e915adf83df42ff31ccf3c27e83253d9636ba5c85aead447993b6",
 }
@@ -559,8 +559,8 @@ LOCALE_EXTRAS = {
 }
 # sha256 of the canonical JSON of main e8c4a855's locale files (minus the extras above).
 LOCALE_BASE_SHA256 = {
-    "src/locales/zh.json": "4a96ca4d146ccb8c8a336c643ebd9e1d830ebee5d843d5f5719062209472755a",
-    "src/locales/en.json": "887b52a29e5a337c54d2ca86e650971eea7e78a7acb71cafd78ac984eca4369e",
+    "src/locales/zh.json": "abd077aa5fa1265a096c05f887d72cc9f1bb3bc604b34d6c833e1004a3011cd3",
+    "src/locales/en.json": "60c67ddfc1f094f5693935aff41a9ad6fd830b67118f696f7a4099efe64cbb0c",
 }
 
 

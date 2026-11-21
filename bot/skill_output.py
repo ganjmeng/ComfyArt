@@ -303,12 +303,6 @@ OUTPUTS: dict[str, dict] = {
         "width": 1536, "height": 2048, "ratio": "3:4", "images": 4,
         "names": ("pose-fission", "电商同场景角色姿势裂变", "Same-Scene Pose Fission"),
     },
-    # #974: product ruling (#911 comment 6872065790) — four SEPARATE 3:4 1536x2048 images,
-    # one per angle, never one grid; every call carries the same uploaded reference.
-    "universal-multi-angle-grid": {
-        "width": 1536, "height": 2048, "ratio": "3:4", "images": 4,
-        "names": ("universal-multi-angle-grid", "多角度图像生成器", "Multi-Angle Image Generator"),
-    },
     "game-art": {
         "width": 1024, "height": 1824, "ratio": "9:16", "images": 1,
         "names": ("game-art", "游戏美术与运营视觉设计", "Game Art & Ops Visuals"),
@@ -379,6 +373,10 @@ for _provisional_sid, _provisional_note in PROVISIONAL_982.items():
     OUTPUTS[_provisional_sid]["provisional"] = _provisional_note
 
 _BY_NAME = {n.casefold(): sid for sid, row in OUTPUTS.items() for n in row["names"]}
+# #911: staged/interactive delivery has no fixed output row or total count.
+MULTI_ANGLE = "universal-multi-angle-grid"
+_BY_NAME.update({name.casefold(): MULTI_ANGLE for name in
+                 (MULTI_ANGLE, "多角度图像生成器", "Multi-Angle Image Generator")})
 _DETOUR = frozenset({"list_models", "expand_image", "create_frame"})
 
 
@@ -578,13 +576,11 @@ def accepted_image_counts(name: object, preset_id: object = "") -> tuple[int, in
     sid = resolve(name)
     if not sid:
         return None
-    if sid == "universal-multi-angle-grid":
-        # Staged delivery: the count is the answered composition card, not the
-        # static four-image row.
-        return None
     if sid in PRESET_PLAN_SKILLS:
         n = int(plan_for(sid, preset_id)["images"])
         return n, n
+    if sid == MULTI_ANGLE:
+        return None  # count depends on the answered composition card
     row = OUTPUTS[sid]
     lo = int(row.get("images_min", row["images"]))
     hi = int(row.get("images_max", row["images"]))
@@ -809,11 +805,8 @@ def apply_generate(args: dict | None, current_skill: str = "", user_text: str | 
             # #982: a custom/undeclared skill run also gets the floor.
             return fill_unpinned_fallback(args, cur_raw)
         return args
-    if sid == "universal-multi-angle-grid":
-        # The flat 1536×2048 row is not this skill's spec. prepare() already
-        # wrote the server snapshot, and validate_provider_size refuses a later
-        # rewrite. Do not apply the row, and do not copy a drifted size back.
-        # Caller width, height and multi_angle_stage are not read here.
+    if sid == MULTI_ANGLE:
+        # The relay stage guard owns pixels and selection, not the old static table.
         args["skill"] = sid
         args["count"] = 1
         return args
@@ -1058,22 +1051,23 @@ def _run_hint_declared(name: object, user_text: str = "", ref_image: bytes | Non
     sid = resolve(name)
     if not sid:
         return ""
-    if sid == "universal-multi-angle-grid":
+    if sid == MULTI_ANGLE:
         return (
-            "Multi-angle staged delivery: use ask_user once for BOTH source and final aspect on one card, "
-            "even when images are already attached (recommended 1:1, not a forced default; Skip and Submit). "
-            "After that answer, do not ask for another upload. Use attached references regardless of the source "
-            "answer; if none are attached, continue from the description. After the setup card, do not call generate_image until the existing "
-            "quote/approval card is confirmed. Then generate_image skill='universal-multi-angle-grid', multi_angle_stage='preview', count=1, at 1152x2048 (9:16). "
-            "The aspect chosen on the question card does not change this preview; it stays 1152x2048 9:16 unless the user explicitly specifies a preview size. "
-            "The selected final aspect applies to finals only: "
-            "ONE numbered nine-panel lineart preview. "
-            "Call wait_generation. Only after it is delivered, "
+            "Multi-angle staged delivery: use ask_user once for a single card with source and final aspect "
+            "(recommended 1:1, not a forced default; Skip and Submit). If a reference is already attached, "
+            "reuse it and do not ask the source question again (one image = single front hero; more than one = "
+            "multi-angle product photos). After the setup card, do not call generate_image until the existing "
+            "quote/approval card is confirmed. Then generate_image skill='universal-multi-angle-grid', multi_angle_stage='preview', count=1, using the independent preview default 1152x2048 (9:16) unless the user explicitly specifies a preview size; the selected final aspect applies to finals only: "
+            "ONE numbered nine-panel lineart preview. REQUIRED composition_plan={subject, purpose, subject_geometry, appearance, panels:[{id,name,description,geometry,appearance,content} x9]}: "
+            "inspect the real subject/reference and intended use, then plan nine distinct appropriate compositions (not a universal view list). "
+            "Geometry fields contain only subject shape and each camera/framing: specify camera position relative to the subject, viewing direction, subject pose, visible surfaces and occluded surfaces consistently for every panel. For an overhead panel, place the camera directly above the subject looking vertically down, not in front looking at a tilted subject; specify which front-facing/interior surfaces are hidden from this camera. Check all nine panels and shared geometry for conflicting camera or visibility instructions before freezing the plan. Do not make an interior close-up requirement global. Appearance fields retain material/color/finish for finals only. Never copy names, purpose or raw user wording into preview geometry. Submitted legacy mixed plans are archive/query only, never migrate or pay again; unsubmitted legacy plans require a new structured plan. This plan is persisted before preview dispatch and frozen; preview labels, selection card and each final use the same mapping. "
+            "Respect explicit preview specifications separately from final specifications. Call wait_generation. Only after it is delivered, "
             "use ask_user for composition multi-select (panel IDs 1..9), then WAIT for the answer. "
-            "For EACH selected ID call generate_image once with multi_angle_stage='final', composition_id=that ID, "
-            "count=1, then wait_generation. The number of finals equals the number of selected compositions, "
-            "not a locked set of four. Each final uses the ratio chosen on the question card "
-            "(1:1 is 2048x2048, 3:4 is 1536x2048). Keep reference, original description and chosen final aspect. "
+            "For EACH selected ID call generate_image with multi_angle_stage='final', composition_id=that ID, "
+            "count=1, then wait_generation. Keep reference, original description and chosen final aspect. "
+            "Give every panel a short content (max 200 characters) naming only the structures that composition shows, e.g. 'earcup depth, yokes, headband curve'; "
+            "never left/right, camera, facing or other direction words in content (rejected; a final takes orientation only from its cropped preview cell). "
+            "For a final whose frozen plan has no content for that panel, pass the same kind of short note as panel_content on that final call. "
             "No final before the composition answer. No fixed output count; no repeated paid calls on resume."
         )
     row = OUTPUTS[sid]

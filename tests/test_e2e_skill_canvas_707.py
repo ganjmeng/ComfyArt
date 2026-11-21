@@ -319,7 +319,7 @@ async def _case(page, mock_ws, skill, width, height, ratio, rgb, match: bool):
         assert placed and placed["natural"] == [wrong[0], wrong[1]], (skill, placed)
         assert placed["asset"] == [wrong[0], wrong[1]], (skill, placed)
         assert await page.locator(".ca-gen-card__error").count() == 0
-        expected = f"出图尺寸低于预期（实际 {wrong[0]}×{wrong[1]}），已按原图交付。"
+        expected = f"出图尺寸与请求规格不符（实际 {wrong[0]}×{wrong[1]}），已按原图交付。"
         await _until(lambda: _toast(page, expected), 10)
         # #905: with the notice toast showing, the generator panel input and send button stay clickable.
         assert await page.get_by_role("button", name="关闭").count() > 0

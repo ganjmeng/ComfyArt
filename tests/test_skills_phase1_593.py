@@ -78,7 +78,11 @@ def test_new6_production_instructions_and_presets():
         instr = re.search(r"instructions: '((?:\\'|[^'])*)'", e)
         assert instr, sid
         steps = instr.group(1)
-        assert "\\n1)" in steps and "\\n5)" in steps, sid
+        if sid == "universal-multi-angle-grid":
+            # #1003: this skill is a 4-step setup → lineart preview → compositions → finals flow.
+            assert "\\n1)" in steps and "\\n4)" in steps and "\\n5)" not in steps, sid
+        else:
+            assert "\\n1)" in steps and "\\n5)" in steps, sid
         assert "Template:" not in steps, sid  # keep Template:/Style: in preset prompts only
         assert "demo" not in steps.lower() and "Lovart" not in steps and "lovart" not in steps
 
@@ -106,7 +110,11 @@ def test_website_chip_still_lit():
 def test_multi_angle_upload_additional_parity_691():
     # #691/#687: right pane exactly Upload then Additional; prompt defaults live in instructions, notes feed the ask
     e = _entries()["universal-multi-angle-grid"]
-    assert "inputs: MULTI_ANGLE_INPUTS }" in e and "presets:" not in e and "pure 90° side profile" in e
+    assert "inputs: MULTI_ANGLE_INPUTS }" in e and "presets:" not in e
+    # #1003: angle copy is planned per subject; the old universal shot list is gone.
+    assert "pure 90° side profile" not in e and "neutral seamless" not in e
     assert "angleBrief" not in e and "subjectImage" not in e and "VISUAL" not in e
-    assert "Additional notes" in e and "neutral seamless" in e
+    assert "Additional notes" in e
+    inputs_def = SKILLS_TS.split("const MULTI_ANGLE_INPUTS", 1)[1].split("\n", 1)[0]
+    assert "Upload file" in inputs_def and "Additional notes" in inputs_def
     assert "ex594(" not in e  # #751 HOLD: example media = wash-748.json (1:1), no hand list

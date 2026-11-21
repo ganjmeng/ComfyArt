@@ -94,8 +94,8 @@ def test_qa4_long_side_shorter_than_target_rejected():
     assert ratio_error((1536, 2048), (768, 1024)) == 0  # ratio is perfect, long side is not
     assert out["match"] is False
     assert out["delivered"] == {"width": 768, "height": 1024}
-    assert out["notice"] == {"kind": "size", "zh": "出图尺寸低于预期（实际 768×1024），已按原图交付。",
-                             "en": "Output is smaller than expected (768×1024). Delivered as generated."}
+    assert out["notice"] == {"kind": "size", "zh": "出图尺寸与请求规格不符（实际 768×1024），已按原图交付。",
+                             "en": "Output size does not match the requested specification (768×1024). Delivered as generated."}
     assert ratio_ok((2048, 1536), (1024, 768)) is False
 
 
@@ -162,8 +162,8 @@ async def test_qa5_rejected_but_charged_is_delivered_logged_and_noticed(ws, sunb
     assert _saved(out) == body
     assert out["size_check"]["match"] is False and out["size_check"]["mode"] == "ratio"
     notice = out["size_notice"]
-    assert notice["zh"] == "出图尺寸低于预期（实际 768×1024），已按原图交付。"
-    assert notice["en"] == "Output is smaller than expected (768×1024). Delivered as generated."
+    assert notice["zh"] == "出图尺寸与请求规格不符（实际 768×1024），已按原图交付。"
+    assert notice["en"] == "Output size does not match the requested specification (768×1024). Delivered as generated."
     _assert_neutral(notice["zh"], notice["en"])
     _assert_neutral(size_reject((1536, 2048), (768, 1024)), audit_file(body, (1536, 2048), RATIO_MODE)["error"] or "")
     assert any("P1 size check failed for charged task" in r.getMessage() and task in r.getMessage() for r in caplog.records)
@@ -216,11 +216,11 @@ def test_size_notice_is_bilingual():
     n = size_notice((1536, 2048), (768, 1024), RATIO_MODE)
     assert set(n) == {"kind", "zh", "en"}
     # one message for any tolerated-fail size (ratio off > 1% or long side short); exact mode reuses the same two sentences
-    assert size_notice((1000, 1000), (10101, 10000), RATIO_MODE)["zh"] == "出图尺寸低于预期（实际 10101×10000），已按原图交付。"
+    assert size_notice((1000, 1000), (10101, 10000), RATIO_MODE)["zh"] == "出图尺寸与请求规格不符（实际 10101×10000），已按原图交付。"
     exact = size_notice((1024, 1280), (2048, 682))
     unread = size_notice((1024, 1280), None)
-    assert exact["zh"] == "出图尺寸低于预期（实际 2048×682），已按原图交付。"
-    assert exact["en"] == "Output is smaller than expected (2048×682). Delivered as generated."
+    assert exact["zh"] == "出图尺寸与请求规格不符（实际 2048×682），已按原图交付。"
+    assert exact["en"] == "Output size does not match the requested specification (2048×682). Delivered as generated."
     assert unread["zh"] == "出图尺寸未能核对，已按原图交付。"
     assert unread["en"] == "Output size could not be checked. Delivered as generated."
     assert size_reject((1024, 1280), (2048, 682)) == f"{exact['zh']} / {exact['en']}"
@@ -334,6 +334,6 @@ def test_page_ratio_check_and_delivery_notice():
     assert "resultsAtom" in toasts and "reportInfo(r.notice)" in toasts
     zh = json.loads((ROOT / "src/locales/zh.json").read_text(encoding="utf-8"))
     en = json.loads((ROOT / "src/locales/en.json").read_text(encoding="utf-8"))
-    assert zh["jobs.sizeNotice"] == "出图尺寸低于预期（实际 {0}×{1}），已按原图交付。"
-    assert en["jobs.sizeNotice"] == "Output is smaller than expected ({0}×{1}). Delivered as generated."
+    assert zh["jobs.sizeNotice"] == "出图尺寸与请求规格不符（实际 {0}×{1}），已按原图交付。"
+    assert en["jobs.sizeNotice"] == "Output size does not match the requested specification ({0}×{1}). Delivered as generated."
     assert "已按原图交付" in zh["jobs.sizeNoticeUnread"] and "Delivered as generated" in en["jobs.sizeNoticeUnread"]

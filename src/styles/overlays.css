@@ -240,7 +240,7 @@
 .ca-q__opt[data-on] .ca-q__letter {
   color: var(--ca-letter-on-fg); background: var(--ca-letter-on);
 }
-.ca-q__text { flex: 1; min-width: 0; font-size: 13px; line-height: 18px; }
+.ca-q__text { flex: 1; min-width: 0; font-size: 13px; line-height: 18px; color: var(--ca-text); overflow-wrap: anywhere; }
 .ca-q__copy { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .ca-q__desc { display: block; font: 400 13px/18px var(--ca-font); color: var(--ca-text); white-space: pre-wrap; overflow-wrap: anywhere; }
 .ca-q__thumb {
