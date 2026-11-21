@@ -31,8 +31,8 @@ PORTRAIT_SHOTS_708_CONST_SHA256 = "97edb7c18215e4a283b86633908872f3b3c4146d9bb74
 CLOTHING_SWAP_TAIL_SHA256 = "f3036b3d1ebcb3320bcee7d76c961014b38cbb443783ae53485261625c0627fe"
 AUTO_MODELS_SHA256 = "9ef106b6133d427f04347d0c31c31931e641e1cd47d2a86c0d0769cde48c5d7b"
 OTHER_SKILL_ENTRIES_SHA256 = "f088dd000ad53f7802bec2675b815cb40d0343da3127c413fadc12b40895488a"
-# #911: staged multi-angle instruction replaces superseded #974 fixed four-image contract.
-UNCHANGED_SKILL_ENTRIES_SHA256 = "1cd0db263a3b9e248ef6eca6e100c1d65b0bb1d4250b0c976a05e8304a58440e"  # unrelated skill entries remain snapshot-locked
+# #1003: multi-angle skill read is the nine-grid 1152×2048 / 9:16 contract, not four 3:4 images.
+UNCHANGED_SKILL_ENTRIES_SHA256 = "70cda9427b58abbae1f043c55222edb02f77caf9db63ada874c81dcee0bcbf4a"  # unrelated skill entries remain snapshot-locked
 SHARED_CONST_SHA256 = {
     "NEARMISS_INPUTS": "4fe64962178b3c0404f163a02b5a0cdfff1c072d1be399e9f6acbbf597730722",
     "EFFECT_INPUTS": "bbca63995ca34766f0f0ac21ae1baf8cf66df417c9ddaa3f584a128c619eacb6",

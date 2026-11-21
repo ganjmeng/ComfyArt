@@ -54,8 +54,12 @@ def validate_content(value: object, label: str = "panel_content") -> str:
     return text
 
 
-def validate_plan(value: object) -> dict:
-    """A subject-aware plan is supplied by the agent after inspecting input, never a fixed view list."""
+def validate_plan(value: object, *, require_content: bool = False) -> dict:
+    """A subject-aware plan is supplied by the agent after inspecting input, never a fixed view list.
+
+    New preview plans require panels[].content. A frozen plan that predates that field stays
+    readable so a final can still pass panel_content. Prompt prose is never parsed into a plan.
+    """
     if not isinstance(value, dict):
         raise ValueError("Provide composition_plan with subject, purpose, subject_geometry, appearance and nine panels with separate geometry/appearance before preview submission.")
     out = {}
@@ -86,9 +90,18 @@ def validate_plan(value: object) -> dict:
             raise ValueError("Each panel requires separate appearance text (empty if unspecified); geometry is camera/framing/structures only.")
         item["appearance"] = appearance.strip()
         content = panel.get("content")
+        if require_content and (not isinstance(content, str) or not content.strip()):
+            raise ValueError(
+                f"composition_plan panel {item['id']} content is required: a short direction-free note "
+                f"(max {CONTENT_MAX} characters) of the structures that composition shows. "
+                "English prompt prose is not a composition_plan and cannot substitute. Nothing submitted.")
         if content is not None:
-            # #1003: optional short content note for finals (what the cell shows), never camera/direction.
+            # #1003: short content note for finals (what the cell shows), never camera/direction.
             item_content = validate_content(content, f"composition_plan panel {item['id']} content")
+            if require_content and not item_content:
+                raise ValueError(
+                    f"composition_plan panel {item['id']} content is required: a short direction-free note "
+                    f"(max {CONTENT_MAX} characters). Nothing submitted.")
             if item_content:
                 item["content"] = item_content  # absent key keeps legacy/frozen plans byte-identical
         clean.append(item)
@@ -154,6 +167,27 @@ def applies(args: dict, chat_id: str = "") -> bool:
     current = resolve(current) or current
     named = resolve(args.get("skill")) or canonical_skill(str(args.get("skill") or ""))
     return named == SKILL or current == SKILL
+
+
+def remember_quoted_plan(plan: dict, chat_id: str = "") -> None:
+    """Store a validated preview plan on the setup card before the quote is confirmed.
+
+    This does not reserve a paid submission. Until the preview is reserved, a later
+    unsubmitted replan may replace it. Prompt prose is never written here.
+    """
+    chat_id = chat_id or _chat_id()
+    _, root = _root(chat_id)
+    if root is None:
+        return
+    ledger = copy.deepcopy(root.get(LEDGER) or {})
+    if ledger.get("preview"):
+        return
+    clean = validate_plan(plan, require_content=True)
+    if ledger.get("composition_plan") == clean:
+        return
+    expected = copy.deepcopy(ledger)
+    ledger["composition_plan"] = clean
+    _save(chat_id, ledger, expected)
 
 
 def quote_step_label(args: dict, lang: str = "zh", chat_id: str = "") -> str:
@@ -576,7 +610,12 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
     try:
         # Once dispatched, model-supplied replacements cannot renumber/reinterpret
         # the visible preview or its composition card on continuation.
-        plan = validate_plan(ledger.get("composition_plan") if ledger.get("preview") else args.get("composition_plan"))
+        frozen_preview = bool(ledger.get("preview"))
+        # A new preview must carry nine panels[].content. Once a preview is reserved the
+        # frozen plan is the authority, including a legacy plan that has no content field.
+        plan = validate_plan(
+            ledger.get("composition_plan") if frozen_preview else args.get("composition_plan"),
+            require_content=not frozen_preview)
         if stage == "final" and not ledger.get("composition_plan"):
             raise ValueError("Missing persisted composition plan; reconcile the preview, do not submit paid finals.")
     except ValueError as e:

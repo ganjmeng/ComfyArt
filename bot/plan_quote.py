@@ -340,10 +340,12 @@ class Quote:
     # #968: the total the card shows is the sum of the per-line rounded credits, so line and total
     # can never disagree. `total` above stays the exact USD sum used by the confirm threshold.
     total_credits: int = 0
+    # Validated multi-angle preview plan, stored with the pending quote. Prompt prose is not this.
+    composition_plan: Optional[dict] = None
 
     def ask_spec(self) -> dict:
         lang = _lang(self.lang)
-        return {
+        spec = {
             "prompt": self.prompt,
             "options": [
                 {"id": "start", "label": START_LABEL[lang]},
@@ -357,6 +359,9 @@ class Quote:
             "total_label": self.total_label,
             "total": self.total_text,
         }
+        if self.composition_plan:
+            spec["composition_plan"] = self.composition_plan
+        return spec
 
     def started_result(self) -> str:
         """No prices: the card already showed them, and an under-threshold start shows none."""
@@ -477,6 +482,10 @@ class _StepPrice:
     units: int
     source: str = SOURCE_QUOTE
     reason: str = ""
+    width: Optional[int] = None
+    height: Optional[int] = None
+    ratio: str = ""
+    quoted_plan: Optional[dict] = None
 
 
 async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
@@ -494,12 +503,20 @@ async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
     feature = feature_of_step(tool, args)
     routed = _route(router, tool, args, position) if router is not None and not step.get("svg_blocked") else None
     choice = None
+    quoted_plan = None
+    stage_width = stage_height = None
+    stage_ratio = ""
     if routed and isinstance(routed, tuple) and (routed[1] or {}).get("param_blocked"):
         # #956 / #957: do not price a silent text-to-image fallback when required params are missing.
         return _StepPrice(None, True, "", None, routed[1]["param_blocked"], 0, SOURCE_UNPRICED, "param_blocked")
     if routed and routed[0]:
         model = routed[0]
         payload = dict(routed[1] or {})
+        # Display-only. Never send the plan object to the pricer.
+        quoted_plan = payload.pop("_quoted_plan", None)
+        if isinstance(payload.get("width"), int) and isinstance(payload.get("height"), int):
+            stage_width, stage_height = payload["width"], payload["height"]
+        stage_ratio = str(payload.get("ratio") or "")
         # #953: the routed choice carries the quote-card source (skill / Auto / user-named).
         maybe = payload.pop("_model_choice", None)
         if isinstance(maybe, dict):
@@ -529,9 +546,11 @@ async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
         source = SOURCE_ESTIMATE if amount is not None else SOURCE_UNPRICED
         reason = "dearest_model"
     if amount is None:
-        return _StepPrice(None, True, show, choice, None, units, SOURCE_UNPRICED, reason)
+        return _StepPrice(None, True, show, choice, None, units, SOURCE_UNPRICED, reason,
+                          stage_width, stage_height, stage_ratio, quoted_plan if isinstance(quoted_plan, dict) else None)
     return _StepPrice(round(float(amount) * units, 6),
-                      approx or source == SOURCE_ESTIMATE, show, choice, None, units, source, reason)
+                      approx or source == SOURCE_ESTIMATE, show, choice, None, units, source, reason,
+                      stage_width, stage_height, stage_ratio, quoted_plan if isinstance(quoted_plan, dict) else None)
 
 
 def _forces_quote_card(prepared: list[dict]) -> bool:
@@ -574,6 +593,7 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
     if not prepared:
         return None
     lines: list[Line] = []
+    quoted_plan = None
     positions = _plan_positions(prepared)
     for step, position in zip(prepared, positions):
         if step.get("svg_blocked"):
@@ -602,6 +622,12 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
             preview_name = quote_step_label(step.get("arguments") or {}, lang)
             if preview_name:
                 name = preview_name
+                # The card and the stored quote line show the prepared pixels, not only
+                # the unexecuted generate_image args (which may say 9:16 alone).
+                if priced.width and priced.height and priced.ratio:
+                    name = f"{preview_name} · {priced.width}×{priced.height} · {priced.ratio}"
+            if isinstance(priced.quoted_plan, dict) and quoted_plan is None:
+                quoted_plan = priced.quoted_plan
         label = model_label(show) if show else AUTO_LABEL[lang]
         choice = routed_choice or _quote_choice(step, router)
         routed_id = str((choice or {}).get("edit_model") or (choice or {}).get("model") or "")
@@ -666,10 +692,14 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         question = "确定开始吗？" if lang == "zh" else "Start?"
         gap = "" if lang == "zh" else " "  # en: "…lower. Start?", never "…lower.Start?"
         prompt = prompt.replace(question, f"{LIST_PRICE_EXPLAIN[lang]}{gap}{question}")
+    if quoted_plan is not None:
+        from ..api.multi_angle import remember_quoted_plan
+        remember_quoted_plan(quoted_plan)
     return Quote(
         lines=lines, total=total, n=len(lines), ask=ask, lang=lang,
         prompt=prompt,
         total_label=TOTAL_LABEL[lang], total_text=total_text,
         keys=[ln.key for ln in lines], cancel_text=CANCEL_TEXT[lang],
         units=sum(ln.units for ln in lines), total_credits=total_credits,
+        composition_plan=quoted_plan,
     )

@@ -182,7 +182,12 @@ CONTENT = {"1": "both earcups and the padded headband fully visible",
 def test_final_time_panel_content_is_injected_without_mutating_frozen_plan(run):
     rows, _ = run
     deliver(rows)
-    frozen = copy.deepcopy(ma._root("chat-ma")[1][ma.LEDGER]["composition_plan"])
+    # Legacy frozen plans may predate panels[].content. A final may still pass panel_content.
+    # list_messages returns a copy, so edit the stored setup row itself.
+    stored = next(b for r in rows if r["id"] == "setup-msg" for b in r["blocks"] if b.get(ma.LEDGER))
+    for panel in stored[ma.LEDGER]["composition_plan"]["panels"]:
+        panel.pop("content", None)
+    frozen = copy.deepcopy(stored[ma.LEDGER]["composition_plan"])
     choose(rows, ("1", "2", "3"))
     for panel, text in CONTENT.items():
         final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": panel, "panel_content": text})
@@ -211,12 +216,17 @@ def test_directional_or_invalid_content_is_rejected_not_edited(run, text):
 
 def test_plan_content_field_is_optional_frozen_and_injected(run):
     rows, _ = run
+    legacy = copy.deepcopy(HEADPHONES_PLAN)
+    for panel in legacy["panels"]:
+        panel.pop("content", None)
+    assert "content" not in ma.validate_plan(legacy)["panels"][0]  # already-frozen plans stay readable
+    omitted = copy.deepcopy(HEADPHONES_PLAN)
+    omitted["panels"][4]["content"] = ""
+    assert "content" not in ma.validate_plan(omitted)["panels"][4]  # blank content is not stored
     plan = copy.deepcopy(HEADPHONES_PLAN)
-    for panel in plan["panels"]:
-        panel["content"] = CONTENT.get(panel["id"], "")
-    assert "content" not in ma.validate_plan(HEADPHONES_PLAN)["panels"][0]  # legacy plans unchanged
-    clean = ma.validate_plan(plan)
-    assert clean["panels"][1]["content"] == CONTENT["2"] and "content" not in clean["panels"][4]
+    plan["panels"][1]["content"] = CONTENT["2"]
+    clean = ma.validate_plan(plan, require_content=True)
+    assert clean["panels"][1]["content"] == CONTENT["2"] and all(p.get("content") for p in clean["panels"])
     deliver(rows, plan=plan)
     choose(rows, ("2",))
     final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": "2"})
@@ -243,7 +253,7 @@ def test_preview_prompt_is_byte_identical_to_f99887e9_and_ignores_content(run):
     assert args["refs"] == [REF] and args["ref_modes"] == ["content"]
     plan = copy.deepcopy(HEADPHONES_PLAN)
     for panel in plan["panels"]:
-        panel["content"] = CONTENT.get(panel["id"], "")
+        panel["content"] = CONTENT.get(panel["id"], f"panel {panel['id']} visible structures")
     with_content, blocked = ma.prepare({"composition_plan": plan, "skill": ma.SKILL, "multi_angle_stage": "preview"})
     assert blocked is None and with_content["prompt"] == args["prompt"]
 
@@ -259,8 +269,11 @@ def test_agent_hint_and_schema_ask_planner_for_direction_free_content():
     assert "never left/right, camera, facing or other direction words in content" in hint
     assert "pass the same kind of short note as panel_content on that final call" in hint
     props = canvas.SPECS["generate_image"]["inputSchema"]["properties"]
-    panel = props["composition_plan"]["properties"]["panels"]["items"]["properties"]
+    panel_schema = props["composition_plan"]["properties"]["panels"]["items"]
+    panel = panel_schema["properties"]
     assert "Give every panel one" in panel["content"]["description"]
+    assert "content" in panel_schema["required"]
+    assert "prompt string cannot replace" in panel["content"]["description"]
     assert "Never left/right, camera, facing or direction words" in props["panel_content"]["description"]
 
 

@@ -50,9 +50,30 @@ def test_run_hint_uses_numbered_preview_then_answered_selected_finals():
 def test_instruction_describes_stages_reference_retention_and_no_old_lock():
     text = _instr(SID)
     assert "nine-panel lineart preview" in text
+    assert "nine-grid at 1152×2048 / 9:16" in text
+    assert "panels:[{id,name,description,geometry,appearance,content} x9]" in text
+    assert "English prompt prose is not a composition_plan" in text
     assert 'multi_angle_stage="preview"' in text and 'multi_angle_stage="final"' in text
     assert "Do not generate final images before that answer" in text
     assert "Preserve reference, user description and selected final aspect" in text
     assert "Reuse an attached reference" in text
     assert "If none is uploaded, use the subject described in the Additional notes or ask for one" in text
     assert "exactly four" not in text and "1536×2048" not in text
+    assert "Then generate selected finals only" in text
+
+
+def test_built_skill_read_is_nine_grid_not_four_3x4_images():
+    """skill action=read returns the bundled instructions. A stale dist must not ship the old copy."""
+    blobs = "".join(p.read_text(encoding="utf-8") for p in (ROOT / "dist/assets").glob("*.js"))
+    match = re.search(
+        r"id:`universal-multi-angle-grid`,name:[^,]+,instructions:`(.*?)`,category:",
+        blobs,
+        re.S,
+    )
+    assert match, "shipped bundle has no universal-multi-angle-grid instructions"
+    text = match.group(1)
+    assert "exactly four separate images" not in text
+    assert "exactly four" not in text and "1536×2048" not in text
+    assert "nine-grid at 1152×2048 / 9:16" in text
+    assert "composition_plan" in text and "content" in text
+    assert "selected finals" in text

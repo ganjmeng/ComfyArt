@@ -13,7 +13,8 @@ from test_multi_angle_stages_911 import run, setup, choose, confirm_quote  # noq
 
 def subject_plan(subject, purpose, details):
     return {"subject": subject, "purpose": purpose, "subject_geometry": subject, "appearance": "", "panels": [
-        {"id": str(i), "name": detail, "description": f"{subject}: {detail}; intended use: {purpose}", "geometry": f"{subject}: {detail}", "appearance": ""}
+        {"id": str(i), "name": detail, "description": f"{subject}: {detail}; intended use: {purpose}",
+         "geometry": f"{subject}: {detail}", "appearance": "", "content": f"visible structures {i}"}
         for i, detail in enumerate(details, 1)
     ]}
 

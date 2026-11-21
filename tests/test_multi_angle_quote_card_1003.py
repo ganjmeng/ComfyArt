@@ -4,6 +4,7 @@ No paid WaveSpeed/DeepSeek calls and no live preview instance.
 """
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
@@ -206,6 +207,17 @@ def test_aspect_card_hides_other_row_when_disallowed():
     assert 'data-other=""' in block
 
 
+def test_built_bundle_does_not_render_other_when_disallowed():
+    """Shipped App JS must gate the Other row. Source-only checks miss a stale dist."""
+    apps = sorted((ROOT / "dist/assets").glob("App-*.js"))
+    assert len(apps) == 1, [p.name for p in apps]
+    js = apps[0].read_text(encoding="utf-8")
+    assert re.search(
+        r"&&\(0,[A-Za-z0-9_$]+\.jsxs?\)\(`div`,\{className:`ca-q__opt`,\"data-other\":",
+        js,
+    ), "built bundle still renders the D Other row when allow_other is false"
+
+
 @pytest.mark.parametrize("aspect,expected", [
     ("1:1", (1152, 2048, "9:16")),
     ("3:4", (1152, 2048, "9:16")),
@@ -313,4 +325,39 @@ async def test_quote_line_leads_with_lineart_preview_label(run, monkeypatch):
     )
     assert quote is not None and quote.lines
     assert quote.lines[0].text.startswith("线稿预览")
+    assert "1152×2048" in quote.lines[0].text and "9:16" in quote.lines[0].text
     assert not quote.lines[0].text.startswith("生成图像")
+    stored = quote.ask_spec()
+    assert stored["lines"][0]["text"] == quote.lines[0].text
+    assert stored["composition_plan"]["panels"][1]["content"]
+    assert len(stored["composition_plan"]["panels"]) == 9
+    assert all(len(p["content"]) <= 200 for p in stored["composition_plan"]["panels"])
+    ledger = ma._root("chat-ma")[1][ma.LEDGER]
+    assert ledger["composition_plan"] == stored["composition_plan"]
+    assert "preview" not in ledger  # stored before any paid reservation
+
+
+def test_new_plan_requires_direction_free_content_and_prompt_cannot_substitute(run):
+    import copy
+    rows, _ = run
+    setup(rows, "3:4")
+    prose = "camera facing the subject's left, overhead top-down, three-quarter view toward the right"
+    _, blocked = ma.prepare({"skill": ma.SKILL, "prompt": prose, "ratio": "9:16", "multi_angle_stage": "preview"})
+    assert blocked is not None and blocked["submitted"] is False
+    assert "composition_plan" in blocked["error"]
+    assert (ma._root("chat-ma")[1].get(ma.LEDGER) or {}).get("composition_plan") is None
+
+    missing = copy.deepcopy(HEADPHONES_PLAN)
+    for panel in missing["panels"]:
+        panel.pop("content", None)
+    _, blocked = ma.prepare({"composition_plan": missing, "skill": ma.SKILL, "prompt": prose})
+    assert blocked is not None and "content is required" in blocked["error"]
+    assert (ma._root("chat-ma")[1].get(ma.LEDGER) or {}).get("composition_plan") is None
+
+    aimed = copy.deepcopy(HEADPHONES_PLAN)
+    aimed["panels"][0]["content"] = "earcup closer to the camera"
+    _, blocked = ma.prepare({"composition_plan": aimed, "skill": ma.SKILL, "prompt": prose})
+    assert blocked is not None and blocked["submitted"] is False
+    assert "camera" in blocked["error"]
+    with pytest.raises(ValueError, match="camera"):
+        ma.validate_plan(aimed, require_content=True)

@@ -5,17 +5,27 @@ HEADPHONES_PLAN = {
     "subject_geometry": "over-ear headphones with oval earcups, headband and yokes",
     "appearance": "gray reference material, pure white seamless background",
     "panels": [
-        {"id": str(i), "name": name, "description": description, "geometry": description, "appearance": ""}
-        for i, (name, description) in enumerate([
-            ("正面全景", "front full headphones, earcups and headband symmetrically visible"),
-            ("四分之三全景", "three-quarter full headphones showing earcup depth and curved headband"),
-            ("90°侧面", "strict 90-degree side profile showing the earcup shell silhouette"),
-            ("耳罩内衬", "inside earcup cushion detail and lining texture"),
-            ("外壳细节", "outer earcup shell and surface finish close-up"),
-            ("后侧轮廓", "rear three-quarter headphones showing yoke and headband joins"),
-            ("顶部结构", "top-down view of headband arc and cup spacing"),
-            ("连接处", "close-up of headband adjustment joint without inventing controls"),
-            ("低角度展示", "low product angle emphasizing earcup volume and headband curve"),
+        {"id": str(i), "name": name, "description": description, "geometry": description,
+         "appearance": "", "content": content}
+        for i, (name, description, content) in enumerate([
+            ("正面全景", "front full headphones, earcups and headband symmetrically visible",
+             "both earcups and the padded headband"),
+            ("四分之三全景", "three-quarter full headphones showing earcup depth and curved headband",
+             "earcup depth, yokes, headband curve"),
+            ("90°侧面", "strict 90-degree side profile showing the earcup shell silhouette",
+             "earcup shell and headband edge"),
+            ("耳罩内衬", "inside earcup cushion detail and lining texture",
+             "cushion and lining"),
+            ("外壳细节", "outer earcup shell and surface finish close-up",
+             "outer shell surface"),
+            ("后侧轮廓", "rear three-quarter headphones showing yoke and headband joins",
+             "yoke and headband joins"),
+            ("顶部结构", "top-down view of headband arc and cup spacing",
+             "headband arc and cup spacing"),
+            ("连接处", "close-up of headband adjustment joint without inventing controls",
+             "adjustment joint"),
+            ("低角度展示", "low product angle emphasizing earcup volume and headband curve",
+             "earcup volume and headband curve"),
         ], 1)
     ],
 }

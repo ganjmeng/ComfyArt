@@ -659,6 +659,7 @@ def quote_route(action: str, args: dict, user_text: str | None = None, catalog: 
         return None
     clean = dict(args)
     multi_meta = None
+    quoted_plan = None
     if action == "generate_image":
         # #956 / #957: same validation as the tool; quotes use validated actual params.
         from ..bot_turns import resolve_loose_refs
@@ -679,6 +680,7 @@ def quote_route(action: str, args: dict, user_text: str | None = None, catalog: 
         clean.pop("multi_angle_stage", None)
         clean.pop("composition_id", None)
         clean.pop("composition_plan", None)
+        quoted_plan = (multi_meta or {}).get("composition_plan") if isinstance(multi_meta, dict) else None
     if unregistered_model(action, clean):
         clean = {k: v for k, v in clean.items() if k not in ("model", "auto_model")}
     # Use the live/cached WaveSpeed catalog so exact-size skills (before-after, …)
@@ -731,6 +733,9 @@ def quote_route(action: str, args: dict, user_text: str | None = None, catalog: 
             inputs["images"] = [f"ref-{i + 1}" for i in range(len(refs))]
     # #953: display-only payload for the quote card; plan_quote pops this before pricing.
     inputs["_model_choice"] = {k: v for k, v in choice.items() if k != "_exact_args"}
+    # Display/persistence only. plan_quote pops this before pricing. Not a provider field.
+    if quoted_plan:
+        inputs["_quoted_plan"] = quoted_plan
     return model, inputs
 
 
@@ -838,7 +843,7 @@ SPECS: dict[str, dict] = {
                                "description": "multi-angle only: preview lineart, then final after composition answer"},
          "composition_id": {"type": "string", "description": "multi-angle final: one answered panel number 1..9"},
          "panel_content": {"type": "string", "description": "multi-angle final only, optional: a short note (max 200 characters) of WHAT that composition shows, e.g. 'earcup depth, yokes, headband curve'. Never left/right, camera, facing or direction words (rejected); orientation comes only from the delivered preview cell. Use only when the frozen plan has no content for this panel."},
-         "composition_plan": {"type": "object", "description": "Multi-angle preview REQUIRED: inspect the actual reference/description and purpose; design nine appropriate compositions, not generic full-body views for every subject. Separate subject_geometry and panels[].geometry (geometry/camera/framing ONLY, no appearance or copied raw brief) from appearance. Keep original subject/purpose/name/description for cards/finals. Persisted before submission and frozen. Submitted legacy mixed plans are archive/query only; no migration or resubmission. Omit on final/resume.",
+         "composition_plan": {"type": "object", "description": "Multi-angle preview REQUIRED: inspect the actual reference/description and purpose; design nine appropriate compositions, not generic full-body views for every subject. Separate subject_geometry and panels[].geometry (geometry/camera/framing ONLY, no appearance or copied raw brief) from appearance. Keep original subject/purpose/name/description for cards/finals. Every panel content is required (max 200 characters, structures only, no left/right, camera or direction words). English prompt prose is not this object and must not substitute for it. Persisted before the first quote and frozen. Submitted legacy mixed plans are archive/query only; no migration or resubmission. Omit on final/resume.",
                               "properties": {"subject": {"type": "string"}, "purpose": {"type": "string"},
                                              "subject_geometry": {"type": "string", "description": "Subject shape/visible structures only; no color, material, finish, lighting or original brief."},
                                              "appearance": {"type": "string", "description": "Material/color/finish/background requirements for finals only; empty if unspecified."},
@@ -848,8 +853,8 @@ SPECS: dict[str, dict] = {
                                                             "name": {"type": "string"}, "description": {"type": "string"},
                                                             "geometry": {"type": "string", "description": "This panel camera direction, framing, geometry and visible structures ONLY; no appearance or copied raw brief."},
                                                             "appearance": {"type": "string", "description": "Final-only appearance requirements, empty if unspecified."},
-                                                            "content": {"type": "string", "description": "Give every panel one (max 200 characters): only the structures this composition shows, for finals (e.g. 'earcup depth, yokes, headband curve'); no left/right, camera or direction words (rejected). Not used by the preview."}},
-                                                                  "required": ["id", "name", "description", "geometry", "appearance"]}}},
+                                                            "content": {"type": "string", "description": "Required on every new plan. Give every panel one (max 200 characters): only the structures this composition shows, for finals (e.g. 'earcup depth, yokes, headband curve'); no left/right, camera or direction words (rejected). Not used by the preview. A prompt string cannot replace this field."}},
+                                                                  "required": ["id", "name", "description", "geometry", "appearance", "content"]}}},
                               "required": ["subject", "purpose", "subject_geometry", "appearance", "panels"]},
          "shot": {"type": "string", "enum": ["closeup", "half", "three_quarter", "full"],
                   "description": "portrait-studio only: the shot size of this one image"},
