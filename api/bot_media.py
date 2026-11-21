@@ -9,6 +9,10 @@ from ._common import view_path
 
 _ATTACH_MAX_PX = 1024
 _ATTACH_JPEG_QUALITY = 85
+# Planner copy only. EL long edge 1568; product floor is that this maximum stay ≥ 768.
+# The stored upload and WaveSpeed refs are not passed through this.
+PLANNER_LONG_EDGE = 1568
+PLANNER_JPEG_QUALITY = 85
 ATTACH_MAX_COUNT = 12
 SHEET_FRAMES = 4
 VIDEO_EXT = (".mp4", ".webm", ".mov", ".mkv")
@@ -55,6 +59,24 @@ def contact_sheet(frames: list[tuple[float, Image.Image]], size: int) -> Image.I
         draw.rectangle((x, y, x + 52, y + 16), fill="black")
         draw.text((x + 4, y + 2), f"{at:.1f}s", fill="white")
     return sheet
+
+
+def planner_jpeg(data: bytes) -> dict:
+    """Downscale a reference for the planning LLM. Does not touch the caller's bytes.
+
+    Long edge is at most PLANNER_LONG_EDGE. Smaller images are not enlarged.
+    Re-encoded as JPEG so the sent pixels, not the original file size, are what
+    the vision token cap applies to.
+    """
+    with Image.open(io.BytesIO(data)) as im:
+        im = im.convert("RGB")
+        im.thumbnail((PLANNER_LONG_EDGE, PLANNER_LONG_EDGE))
+        width, height = im.size
+        buf = io.BytesIO()
+        im.save(buf, "JPEG", quality=PLANNER_JPEG_QUALITY)
+    raw = buf.getvalue()
+    return {"data": base64.b64encode(raw).decode("ascii"), "media_type": "image/jpeg",
+            "width": width, "height": height, "jpeg_bytes": len(raw)}
 
 
 def jpeg(im: Image.Image, max_px: int = _ATTACH_MAX_PX) -> dict:

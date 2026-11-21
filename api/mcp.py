@@ -61,6 +61,21 @@ def _payload_to_content(payload) -> list[dict]:
     return blocks
 
 
+def _multi_angle_preflight(name: str, arguments: dict, chat_id: str) -> tuple[dict, dict | None]:
+    """#1002 / Refs #911: resolve staged refs/replays before paid unit accounting.
+
+    Other skills' missing-parameter and paid guards are not changed. In particular,
+    replaying an existing holder must not consume another paid generation unit.
+    """
+    if name != "generate_image":
+        return arguments, None
+    from . import multi_angle
+    prepared, result = multi_angle.prepare(arguments, chat_id)
+    if result is None:
+        multi_angle.allow_selected_cap(prepared, chat_id)
+    return prepared, result
+
+
 def _wrap_paid_handler(name: str, original):
     """#730: direct handler() calls still hit before_call/after_call (no bot turn / no _tools_call)."""
 
@@ -70,6 +85,9 @@ def _wrap_paid_handler(name: str, original):
             chat_id = chat_id if chat_id.startswith(paid_guard.NOTURN_PREFIX) else paid_guard.noturn_key("anonymous")
             paid_guard.ensure_noturn(chat_id)
         external = bool(MCP_EXTERNAL.get())
+        arguments, staged_result = _multi_angle_preflight(name, arguments, chat_id)
+        if staged_result is not None:
+            return staged_result
         refused = paid_guard.before_call(chat_id, name, arguments, external=external)
         if refused:
             raise paid_guard.PaidRefused(refused)
@@ -111,6 +129,9 @@ async def _tools_call(params: dict, *, external: bool = False) -> dict | None:
     if chat_id.startswith(paid_guard.NOTURN_PREFIX):
         paid_guard.ensure_noturn(chat_id)
     # #142/#238/#730: guard every tool call when we have a chat or no-turn bucket.
+    arguments, staged_result = _multi_angle_preflight(name, arguments, chat_id)
+    if staged_result is not None:
+        return {"content": _payload_to_content(staged_result), "isError": False}
     # Paid handlers are also wrapped for direct calls; use _paid_inner here to avoid double-counting.
     refused = paid_guard.before_call(chat_id, name, arguments, external=external) if chat_id else None
     if refused:

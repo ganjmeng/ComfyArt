@@ -303,12 +303,6 @@ OUTPUTS: dict[str, dict] = {
         "width": 1536, "height": 2048, "ratio": "3:4", "images": 4,
         "names": ("pose-fission", "电商同场景角色姿势裂变", "Same-Scene Pose Fission"),
     },
-    # #974: product ruling (#911 comment 6872065790) — four SEPARATE 3:4 1536x2048 images,
-    # one per angle, never one grid; every call carries the same uploaded reference.
-    "universal-multi-angle-grid": {
-        "width": 1536, "height": 2048, "ratio": "3:4", "images": 4,
-        "names": ("universal-multi-angle-grid", "多角度图像生成器", "Multi-Angle Image Generator"),
-    },
     "game-art": {
         "width": 1024, "height": 1824, "ratio": "9:16", "images": 1,
         "names": ("game-art", "游戏美术与运营视觉设计", "Game Art & Ops Visuals"),
@@ -379,6 +373,10 @@ for _provisional_sid, _provisional_note in PROVISIONAL_982.items():
     OUTPUTS[_provisional_sid]["provisional"] = _provisional_note
 
 _BY_NAME = {n.casefold(): sid for sid, row in OUTPUTS.items() for n in row["names"]}
+# #911: staged/interactive delivery has no fixed output row or total count.
+MULTI_ANGLE = "universal-multi-angle-grid"
+_BY_NAME.update({name.casefold(): MULTI_ANGLE for name in
+                 (MULTI_ANGLE, "多角度图像生成器", "Multi-Angle Image Generator")})
 _DETOUR = frozenset({"list_models", "expand_image", "create_frame"})
 
 
@@ -581,6 +579,8 @@ def accepted_image_counts(name: object, preset_id: object = "") -> tuple[int, in
     if sid in PRESET_PLAN_SKILLS:
         n = int(plan_for(sid, preset_id)["images"])
         return n, n
+    if sid == MULTI_ANGLE:
+        return None  # count depends on the answered composition card
     row = OUTPUTS[sid]
     lo = int(row.get("images_min", row["images"]))
     hi = int(row.get("images_max", row["images"]))
@@ -804,6 +804,11 @@ def apply_generate(args: dict | None, current_skill: str = "", user_text: str | 
         if cur_raw:
             # #982: a custom/undeclared skill run also gets the floor.
             return fill_unpinned_fallback(args, cur_raw)
+        return args
+    if sid == MULTI_ANGLE:
+        # The relay stage guard owns pixels and selection, not the old static table.
+        args["skill"] = sid
+        args["count"] = 1
         return args
     row = OUTPUTS[sid]
     if not named:
@@ -1046,6 +1051,26 @@ def _run_hint_declared(name: object, user_text: str = "", ref_image: bytes | Non
     sid = resolve(name)
     if not sid:
         return ""
+    if sid == MULTI_ANGLE:
+        return (
+            "Multi-angle staged delivery: use ask_user once for a single card with source and final aspect "
+            "(recommended 1:1, not a forced default; Skip and Submit). If a reference is already attached, "
+            "reuse that same file through the lineart preview and the selected finals; do not ask for it again. "
+            "Still ask the source classification on that card; do not skip it, preselect it, or treat the attachment as the answer. "
+            "After the setup card, do not call generate_image until the existing "
+            "quote/approval card is confirmed. Then generate_image skill='universal-multi-angle-grid', multi_angle_stage='preview', count=1, using the independent preview default 1152x2048 (9:16) unless the user explicitly specifies a preview size; the selected final aspect applies to finals only: "
+            "ONE numbered nine-panel lineart preview. REQUIRED composition_plan={subject, purpose, subject_geometry, appearance, panels:[{id,name,description,geometry,appearance,content} x9]}: "
+            "inspect the real subject/reference and intended use, then plan nine distinct appropriate compositions (not a universal view list). "
+            "Geometry fields contain only subject shape and each camera/framing: specify camera position relative to the subject, viewing direction, subject pose, visible surfaces and occluded surfaces consistently for every panel. For an overhead panel, place the camera directly above the subject looking vertically down, not in front looking at a tilted subject; specify which front-facing/interior surfaces are hidden from this camera. Check all nine panels and shared geometry for conflicting camera or visibility instructions before freezing the plan. Do not make an interior close-up requirement global. Appearance fields retain material/color/finish for finals only. Never copy names, purpose or raw user wording into preview geometry. Submitted legacy mixed plans are archive/query only, never migrate or pay again; unsubmitted legacy plans require a new structured plan. This plan is persisted before preview dispatch and frozen; preview labels, selection card and each final use the same mapping. "
+            "Respect explicit preview specifications separately from final specifications. Call wait_generation. Only after it is delivered, "
+            "use ask_user for composition multi-select (panel IDs 1..9), then WAIT for the answer. "
+            "For EACH selected ID call generate_image with multi_angle_stage='final', composition_id=that ID, "
+            "count=1, then wait_generation. Keep reference, original description and chosen final aspect. "
+            "Give every panel a short content (max 200 characters) naming only the structures that composition shows, e.g. 'earcup depth, yokes, headband curve'; "
+            "never left/right, camera, facing or other direction words in content (rejected; a final takes orientation only from its cropped preview cell). "
+            "For a final whose frozen plan has no content for that panel, pass the same kind of short note as panel_content on that final call. "
+            "No final before the composition answer. No fixed output count; no repeated paid calls on resume."
+        )
     row = OUTPUTS[sid]
     if sid in TYPE_OUTPUTS_982:
         requested = requested_ratio_994(user_text)
@@ -1127,15 +1152,6 @@ def _run_hint_declared(name: object, user_text: str = "", ref_image: bytes | Non
             f"Call generate_image {int(row['images'])} times, one useful frame per call "
             "(hero, side/detail, ...), with a different prompt each time; pass skill={sid!r} and every "
             "uploaded ref on every call." + refs
-        )
-    if sid == "universal-multi-angle-grid":
-        # #974: this skill's own wording, not pose-fission's. Four separate angle images, same reference each call.
-        return (
-            f"Output lock: deliver exactly {int(row['images'])} separate images, each {size}, count=1. "
-            f"Call generate_image {int(row['images'])} times, one angle per call (front, 3/4, strict 90° side profile, "
-            "detail/macro), with a different prompt each time. Pass the same uploaded subject shape id in refs "
-            "(ref_modes content) on every call. Never merge the angles into one grid, collage or contact sheet. "
-            "Do not use 1024x1024."
         )
     return (
         f"Output lock: each generate_image uses skill={sid!r}, {size}, count=1, and a different prompt "

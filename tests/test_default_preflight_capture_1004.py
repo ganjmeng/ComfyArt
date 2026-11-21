@@ -63,8 +63,16 @@ async def test_default_builder_zero_send_preflight(tmp_path, monkeypatch, branch
         fake_tools.append(name)
         return json.dumps({"memory_ids": ["synthetic-memory-id"], "added": "synthetic warm colors"}), []
     monkeypatch.setattr(p, "_mcp_call_tool", fake_mcp)
+    sent = []
+
     async def forbidden_transport(*args, **kwargs):
-        pytest.fail("Blocked preflight must never invoke physical transport")
+        # The gate may now send a proven payload-byte request. This stand-in is
+        # not a socket; aiohttp.ClientSession._request stays forbidden above.
+        sent.append(kwargs.get("json_body"))
+        return {"choices": [{"message": {"role": "assistant", "content": "source card"}, "finish_reason": "stop"}],
+                "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2,
+                          "prompt_cache_hit_tokens": 0, "prompt_cache_miss_tokens": 1,
+                          "prompt_tokens_details": {"cached_tokens": 0}}}
     async def request(session, method, url, *, headers, json_body=None, timeout=120):
         if str(url).endswith("/models"):
             # Synthetic endpoint catalog; default fallback resolver remains real.
@@ -101,10 +109,14 @@ async def test_default_builder_zero_send_preflight(tmp_path, monkeypatch, branch
             history=[], attachments=[{"media_type": "image/png", "data": PNG}]), emit, TurnHandle())
     finally:
         provider_admin._llm_lock.reset(token)
-    assert len(captured) == 1 and result.error
+    assert len(captured) == 1 and not result.error
     item = captured[0]
-    assert item["preflight"]["ok"] is False and item["preflight"]["code"] == "unbounded_multimodal"
-    assert not (tmp_path / "never-created.json").exists()
+    assert item["preflight"]["ok"] is True and item["preflight"]["code"] == "ready"
+    assert item["preflight"]["input_evidence"]["mode"] == "planner_image_cap"
+    assert item["preflight"]["input_evidence"]["image_tokens"] == 1024
+    assert item["preflight"]["input_tokens"] == item["preflight"]["text_bytes"] + 1024
+    assert item["preflight"]["reserved_nano"] <= gate.SKILL_CALL_CAP_NANO
+    assert len(sent) == 1
     body = item["payload"]
     names = [t["function"]["name"] for t in body["tools"]]
     expected_names = [t["name"] for t in catalog if t["name"] in p._host.core_tools]
@@ -112,7 +124,11 @@ async def test_default_builder_zero_send_preflight(tmp_path, monkeypatch, branch
     assert {"ask_user", "get_canvas", "memory"} <= set(names)
     image_parts = [part for message in body["messages"] if isinstance(message.get("content"), list)
                    for part in message["content"] if part.get("type") == "image_url"]
-    assert image_parts and image_parts[0]["image_url"]["url"] == "data:image/png;base64," + PNG
+    sent_url = image_parts[0]["image_url"]["url"]
+    assert sent_url.startswith("data:image/jpeg;base64,")
+    sent_raw = base64.b64decode(sent_url.split(",", 1)[1])
+    with Image.open(io.BytesIO(sent_raw)) as sent_im:
+        assert max(sent_im.size) <= 1568
     assert body["tool_choice"] == "auto" and body["temperature"] == 0.2
     assert body["thinking"] == {"type": "enabled" if branch == "post_memory_thinking" else "disabled"}
     assert item["mode_default_if_output_stage_reached"] == (65536 if scripts else 8192)

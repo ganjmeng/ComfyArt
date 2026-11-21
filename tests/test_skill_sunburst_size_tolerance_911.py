@@ -173,17 +173,16 @@ async def test_qa5_rejected_but_charged_is_delivered_logged_and_noticed(ws, sunb
 
 
 async def test_qa5_main_bug_exact_lock_on_sunburst_no_longer_drops_the_image(ws, sunburst_catalog):
-    """The exact main 88cbd358 request (no ratio mode): 1664×2224 vs 1536×2048 is now delivered with a notice."""
+    """Exact pixels still differ, but 1664×2224 vs 1536×2048 passes the #924 ratio rule, so there is no notice."""
     body = _png(1664, 2224)
     _task, _payload, out = await _locked(ws, SB_EDIT, "image_edit", body, mode=None,
                                          images=["https://cdn.test/person.png", "https://cdn.test/garment.png"])
     assert out["generation_succeeded"] is True
     assert _saved(out) == body
     assert out["size_check"] == {"match": False, "mode": "exact"}
-    assert "1664×2224" in out["size_notice"]["zh"] and "1664×2224" in out["size_notice"]["en"]
-    _assert_neutral(out["size_notice"]["zh"], out["size_notice"]["en"],
-                    size_reject((1536, 2048), (1664, 2224)),
-                    audit_file(body, (1536, 2048))["error"] or "")
+    assert "size_notice" not in out
+    assert size_reject((1536, 2048), (1664, 2224)) == ""
+    assert audit_file(body, (1536, 2048))["notice"] is None
 
 
 async def test_qa5_exact_skill_mismatch_and_unreadable_also_delivered(ws, sunburst_catalog):
@@ -214,17 +213,21 @@ async def test_ratio_mode_flag_ignored_for_non_sunburst_model(ws, sunburst_catal
 
 def test_size_notice_is_bilingual():
     n = size_notice((1536, 2048), (768, 1024), RATIO_MODE)
-    assert set(n) == {"kind", "zh", "en"}
-    # one message for any tolerated-fail size (ratio off > 1% or long side short); exact mode reuses the same two sentences
-    assert size_notice((1000, 1000), (10101, 10000), RATIO_MODE)["zh"] == "出图尺寸低于预期（实际 10101×10000），已按原图交付。"
+    assert n and set(n) == {"kind", "zh", "en"}
+    # Ratio off > 1% and a short long side both use the one #924 sentence, even when the file is larger
+    # or the edges are mixed. Same ratio with a long side that is not shorter is a pass: no notice.
+    bigger = size_notice((1000, 1000), (10101, 10000), RATIO_MODE)
+    assert bigger and bigger["zh"] == "出图尺寸低于预期（实际 10101×10000），已按原图交付。"
     exact = size_notice((1024, 1280), (2048, 682))
     unread = size_notice((1024, 1280), None)
-    assert exact["zh"] == "出图尺寸低于预期（实际 2048×682），已按原图交付。"
+    assert exact and exact["zh"] == "出图尺寸低于预期（实际 2048×682），已按原图交付。"
     assert exact["en"] == "Output is smaller than expected (2048×682). Delivered as generated."
-    assert unread["zh"] == "出图尺寸未能核对，已按原图交付。"
+    assert size_notice((1152, 2048), (1440, 2560)) is None
+    assert unread and unread["zh"] == "出图尺寸未能核对，已按原图交付。"
     assert unread["en"] == "Output size could not be checked. Delivered as generated."
     assert size_reject((1024, 1280), (2048, 682)) == f"{exact['zh']} / {exact['en']}"
     assert size_reject((1024, 1280), None) == f"{unread['zh']} / {unread['en']}"
+    assert size_reject((1152, 2048), (1440, 2560)) == ""
     _assert_neutral(n["zh"], n["en"], exact["zh"], exact["en"], unread["zh"], unread["en"],
                     size_reject((1024, 1280), (2048, 682)), size_reject((1024, 1280), None))
 
@@ -319,6 +322,7 @@ def test_page_ratio_check_and_delivery_notice():
     assert got["short"]["got"] == {"width": 768, "height": 1024}
     assert got["ratioOff"]["kind"] == "size"
     assert got["exactMismatch"]["mode"] == "exact" and got["exactMismatch"]["kind"] == "size"
+    assert got["sameRatioLarger"] is None
     assert got["unread"]["got"] is None and got["unread"]["kind"] == "unread"
     assert got["noLock"] is None
     jobs = (ROOT / "src/jobs.ts").read_text(encoding="utf-8")
@@ -336,4 +340,8 @@ def test_page_ratio_check_and_delivery_notice():
     en = json.loads((ROOT / "src/locales/en.json").read_text(encoding="utf-8"))
     assert zh["jobs.sizeNotice"] == "出图尺寸低于预期（实际 {0}×{1}），已按原图交付。"
     assert en["jobs.sizeNotice"] == "Output is smaller than expected ({0}×{1}). Delivered as generated."
+    assert "jobs.sizeNoticeLarger" not in zh and "jobs.sizeNoticeActual" not in zh
+    assert "jobs.sizeNoticeLarger" not in en and "jobs.sizeNoticeActual" not in en
+    assert "不符" not in zh["jobs.sizeNotice"] and "does not match" not in en["jobs.sizeNotice"]
+    assert "高于预期" not in json.dumps(zh, ensure_ascii=False) and "实际出图" not in json.dumps(zh, ensure_ascii=False)
     assert "已按原图交付" in zh["jobs.sizeNoticeUnread"] and "Delivered as generated" in en["jobs.sizeNoticeUnread"]

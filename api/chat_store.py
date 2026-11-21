@@ -127,3 +127,18 @@ def update_message(chat_id: str, message_id: str, **fields) -> Optional[dict]:
                 setattr(row, k, _column(k, v))
         s.commit()
         return _message(row)
+
+
+def compare_message_blocks(chat_id: str, message_id: str, expected: list[dict], blocks: list[dict]) -> bool:
+    """#1002 (Refs #911): atomically persist a staged paid reservation, or fail closed.
+
+    No other caller's message blocks may be overwritten between read and submit.
+    This is additive; existing message/skill behavior is unchanged.
+    """
+    with db.session() as s:
+        result = s.execute(update(Message).where(
+            Message.id == message_id, Message.chat_id == chat_id,
+            Message.blocks == _column("blocks", expected),
+        ).values(blocks=_column("blocks", blocks)))
+        s.commit()
+        return result.rowcount == 1

@@ -1,15 +1,15 @@
-"""#974 — multi-angle default delivery is product-locked: four separate 3:4 1536x2048 images,
-one angle per generate_image call, the same uploaded reference on every call.
+"""#974 assertions superseded by #911 actual Lovart run (2026-11-16).
 
-No provider call. The TS/Python output tables, the skill instruction, the appended run hint and
-the per-call size fill are checked here; the Full App mock e2e checks the four real calls and canvas.
+Keep the original four contract-test categories, now checking removal of the
+false fixed 4 x 3:4 lock. Executable stage/order/mock relay coverage lives in
+ test_multi_angle_stages_911.py. No paid API or browser.
 """
 from __future__ import annotations
 
 import re
 from pathlib import Path
 
-from ComfyArt.bot.skill_output import OUTPUTS, apply_generate, run_hint, single_image_skip
+from ComfyArt.bot.skill_output import OUTPUTS, accepted_image_counts, apply_generate, resolve, run_hint, single_image_skip
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = (ROOT / "src/skills.ts").read_text(encoding="utf-8")
@@ -22,40 +22,60 @@ def _instr(sid: str) -> str:
     return m.group(1)
 
 
-def test_python_and_ts_output_tables_lock_four_1536x2048():
-    row = OUTPUTS[SID]
-    assert (row["width"], row["height"], row["ratio"], row["images"]) == (1536, 2048, "3:4", 4)
-    assert SID in row["names"] and "多角度图像生成器" in row["names"] and "Multi-Angle Image Generator" in row["names"]
+def test_python_and_ts_output_tables_no_longer_lock_four_1536x2048():
+    assert SID not in OUTPUTS  # count/size belong to answered stages, not a flat row
+    assert all(resolve(name) == SID for name in (SID, "多角度图像生成器", "Multi-Angle Image Generator"))
     block = re.search(r"export const SKILL_OUTPUT[\s\S]*?\n\}", SKILLS).group(0)
-    assert "'universal-multi-angle-grid': { width: 1536, height: 2048, ratio: '3:4', images: 4 }" in block
+    assert f"'{SID}':" not in block
+    assert accepted_image_counts(SID) is None
 
 
-def test_apply_generate_locks_every_call_to_1536x2048_count_one():
-    # A model that tries one 1024 square call with count=4 is corrected to one 3:4 1536x2048 call.
-    args = apply_generate({"skill": SID, "prompt": "front view", "width": 1024, "height": 1024,
-                           "ratio": "1:1", "count": 4})
-    assert (args["width"], args["height"], args["ratio"], args["count"]) == (1536, 2048, "3:4", 1)
-    assert args["skill"] == SID and args["size_lock"] is True
-    # Four calls are expected, so the single-image skip must never swallow calls 2-4.
-    for generated in (1, 2, 3):
+def test_apply_generate_defers_stage_pixels_but_keeps_one_per_call():
+    args = apply_generate({"skill": SID, "ratio": "1:1", "count": 4, "multi_angle_stage": "final", "composition_id": "2"})
+    assert args["count"] == 1 and args["ratio"] == "1:1"
+    assert args["multi_angle_stage"] == "final" and args["composition_id"] == "2"
+    assert "width" not in args and "height" not in args
+    for generated in range(1, 10):
         assert single_image_skip("generate_image", SID, "zh", generated) is None
 
 
-def test_run_hint_uses_the_multi_angle_wording_not_pose_fission():
+def test_run_hint_uses_numbered_preview_then_answered_selected_finals():
     hint = run_hint("Multi-Angle Image Generator")
-    assert "deliver exactly 4 separate images" in hint
-    assert "width=1536 height=2048 ratio=3:4" in hint
-    assert "one angle per call" in hint and "same uploaded subject shape id in refs" in hint
-    assert "grid, collage or contact sheet" in hint and "Do not use 1024x1024" in hint
-    assert "pose and angle only" not in hint and "not camera or shot size" not in hint
+    assert "ONE numbered nine-panel lineart preview" in hint
+    assert "ask_user" in hint and "composition_id" in hint and "WAIT for the answer" in hint
+    assert "No fixed output count" in hint and "chosen final aspect" in hint
+    assert "exactly 4" not in hint and "Never merge the angles" not in hint
 
 
-def test_instruction_states_four_separate_images_fixed_size_and_same_ref():
+def test_instruction_describes_stages_reference_retention_and_no_old_lock():
     text = _instr(SID)
-    assert "exactly four separate images" in text
-    assert "3:4 / 1536×2048" in text and "never one grid, collage or contact sheet" in text
-    assert "generate_image exactly four times" in text and "count=1 each" in text
-    assert "same uploaded subject shape id in refs" in text
-    # #693 fallback path stays written down: no upload -> Additional subject or ask, never invent.
-    assert "if none is uploaded, use the subject described in the Additional notes or ask for one" in text
-    assert "pose and angle only" not in text and "not camera or shot size" not in text
+    assert "nine-panel lineart preview" in text
+    assert "nine-grid at 1152×2048 / 9:16" in text
+    assert "panels:[{id,name,description,geometry,appearance,content} x9]" in text
+    assert "English prompt prose is not a composition_plan" in text
+    assert 'multi_angle_stage="preview"' in text and 'multi_angle_stage="final"' in text
+    assert "Do not generate final images before that answer" in text
+    assert "Preserve reference, user description and selected final aspect" in text
+    assert "Reuse an attached reference" in text
+    assert "Still ask the source classification even when a reference is already attached" in text
+    assert "If none is uploaded, use the subject described in the Additional notes or ask for one" in text
+    assert "exactly four" not in text and "1536×2048" not in text
+    assert "Then generate selected finals only" in text
+
+
+def test_built_skill_read_is_nine_grid_not_four_3x4_images():
+    """skill action=read returns the bundled instructions. A stale dist must not ship the old copy."""
+    blobs = "".join(p.read_text(encoding="utf-8") for p in (ROOT / "dist/assets").glob("*.js"))
+    match = re.search(
+        r"id:`universal-multi-angle-grid`,name:[^,]+,instructions:`(.*?)`,category:",
+        blobs,
+        re.S,
+    )
+    assert match, "shipped bundle has no universal-multi-angle-grid instructions"
+    text = match.group(1)
+    assert "exactly four separate images" not in text
+    assert "exactly four" not in text and "1536×2048" not in text
+    assert "nine-grid at 1152×2048 / 9:16" in text
+    assert "composition_plan" in text and "content" in text
+    assert "selected finals" in text
+    assert "Still ask the source classification even when a reference is already attached" in text
