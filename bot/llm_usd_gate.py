@@ -96,16 +96,21 @@ last outstanding hold if outcome persistence fails, even after a visible replace
 a leftover journal blocks all later mutation and needs manual review. These
 local controls do not bound an undocumented supplier bill.
 
-Billed input tokens are not a proven upper bound. The token-usage page gives
-approximate character ratios and says the actual number is the usage the model
-returns. The demo tokenizer zip is not a published ceiling on prompt tokens
-after the server chat template, tool schemas, or images. Vision states 1024
-tokens as an image cap, and the token-usage page says an image estimate can
-vary slightly from billed usage. Tool schemas have no official token formula.
-``count_tokens`` in ``local_llm`` is a character heuristic, not a guarantee.
-Any of those gaps blocks the HTTP call. A functional reservation path still
-exists for a caller that supplies a separate proven bound for a text-only body.
-The current direct route does not have that bound, so it stays blocked.
+Billed input tokens are not a proven upper bound from the token-usage page,
+the demo tokenizer, or the vision guide. Those pages give approximate ratios
+and say an image estimate (including the stated 1024) can vary, so 1024 is
+never applied as a billed guarantee. ``count_tokens`` is a character heuristic
+and is not a guarantee. A text-only body therefore still has no proven input
+bound and stays blocked.
+
+A request that actually contains image parts is different. The bytes that
+will be serialized onto the socket are known before HTTP. Each billed input
+token covers at least one of those UTF-8 bytes, so the byte length of that
+JSON is an upper bound on input tokens. The count includes the image URL
+bytes and every other byte (system text, tool names, and schemas). Output is
+the pinned ``max_tokens``. A single call whose worst-case price exceeds
+$0.50 is blocked. On the default ledger, payload-byte calls also stop once
+the cumulative hold would pass $0.40. The explicit $2 scope is unchanged.
 """
 from __future__ import annotations
 
@@ -125,6 +130,10 @@ _log = logging.getLogger("comfyart.llm_usd_gate")
 
 CEILING_NANO = 50_000_000  # $0.05 exactly. Default scope. No confirm path raises this.
 TWO_DOLLAR_CEILING_NANO = 2_000_000_000  # $2 exactly. Only for an explicitly opened new scope.
+# Per-skill cap for a payload-byte reservation. One call above $0.50 is blocked.
+# Cumulative holds of those calls stop at $0.40. Neither number raises the $2 scope.
+SKILL_CALL_CAP_NANO = 500_000_000
+SKILL_CUMULATIVE_STOP_NANO = 400_000_000
 AUTHORIZED_CEILINGS_NANO = frozenset({CEILING_NANO, TWO_DOLLAR_CEILING_NANO})
 DEFAULT_AUTHORIZATION = "default-0.05"
 TWO_DOLLAR_AUTHORIZATION = "explicit-2.00"
@@ -323,6 +332,28 @@ def worst_case_nano(snapshot: dict, input_tokens: int, max_output_tokens: int) -
             + max_output_tokens * snapshot["output_peak_nano"])
 
 
+class PayloadByteBound(Bound):
+    """Input tokens = UTF-8 bytes of the JSON that will be sent. Not the 1024 vision estimate."""
+
+    __slots__ = ("image_bytes", "text_bytes", "body_bytes")
+
+    def __init__(self, body_bytes: int, image_bytes: int, text_bytes: int) -> None:
+        super().__init__(True, body_bytes, "", "payload-bytes")
+        self.body_bytes = body_bytes
+        self.image_bytes = image_bytes
+        self.text_bytes = text_bytes
+
+    def evidence(self) -> dict:
+        return {
+            "mode": "payload_bytes",
+            "input_tokens": self.tokens,
+            "body_bytes": self.body_bytes,
+            "image_bytes": self.image_bytes,
+            "text_bytes": self.text_bytes,
+            "token_rule": "one input token per serialized UTF-8 byte; 1024 is not a cap",
+        }
+
+
 class BoundEvidence(Bound):
     """Explicit, non-strict context-contract interpretation; never live activation."""
     __slots__ = ("envelope",)
@@ -333,13 +364,96 @@ class BoundEvidence(Bound):
         self.envelope = envelope
 
 
+def serialized_payload(body: dict) -> bytes | None:
+    """Exact JSON bytes aiohttp sends for a dict body (default separators, ASCII escapes)."""
+    try:
+        return json.dumps(body, allow_nan=False, separators=(", ", ": ")).encode("utf-8")
+    except (TypeError, ValueError, UnicodeError):
+        return None
+
+
+def _json_string_bytes(value: str) -> bytes | None:
+    """The characters of ``value`` as they appear inside a JSON string, without the quotes."""
+    try:
+        dumped = json.dumps(value, ensure_ascii=True, allow_nan=False)
+    except (TypeError, ValueError, UnicodeError):
+        return None
+    if len(dumped) < 2 or dumped[0] != '"' or dumped[-1] != '"':
+        return None
+    return dumped[1:-1].encode("ascii")
+
+
+def _measurable_image_urls(body: dict) -> list[str] | None:
+    """Image URL strings, or None when a multimodal part cannot be measured as a string URL."""
+    urls: list[str] = []
+    for msg in body.get("messages") or []:
+        if not isinstance(msg, dict):
+            return None
+        content = msg.get("content")
+        if isinstance(content, dict):
+            return None
+        if not isinstance(content, list):
+            continue
+        for part in content:
+            if not isinstance(part, dict):
+                return None
+            multimodal = (part.get("type") in ("image_url", "image", "input_image", "file")
+                          or "image_url" in part or "file_id" in part or "file_data" in part)
+            if not multimodal:
+                if part.get("type") not in (None, "text"):
+                    return None
+                continue
+            image = part.get("image_url")
+            if part.get("type") != "image_url" or not isinstance(image, dict):
+                return None
+            url = image.get("url")
+            if type(url) is not str or not url:
+                return None
+            urls.append(url)
+    return urls
+
+
+def payload_byte_bound(body: dict) -> Bound:
+    """Upper bound for a body that contains image parts.
+
+    Input tokens equal the UTF-8 length of the serialized JSON. That length
+    counts every image-URL byte and every other byte (system, tools, schemas).
+    The vision guide's 1024 is not used. A part that is not a string URL stays
+    unproven and blocks.
+    """
+    urls = _measurable_image_urls(body)
+    if not urls:
+        return Bound(False, 0, "unbounded_multimodal", _structural_detail("unbounded_multimodal"))
+    encoded = serialized_payload(body)
+    if encoded is None:
+        return Bound(False, 0, "unbounded_multimodal", _structural_detail("unbounded_multimodal"))
+    cursor = 0
+    image_bytes = 0
+    for url in urls:
+        piece = _json_string_bytes(url)
+        if not piece:
+            return Bound(False, 0, "unbounded_multimodal", _structural_detail("unbounded_multimodal"))
+        found = encoded.find(piece, cursor)
+        if found < 0:
+            return Bound(False, 0, "unbounded_multimodal", _structural_detail("unbounded_multimodal"))
+        image_bytes += len(piece)
+        cursor = found + len(piece)
+    text_bytes = len(encoded) - image_bytes
+    if text_bytes < 0:
+        return Bound(False, 0, "unbounded_multimodal", _structural_detail("unbounded_multimodal"))
+    return PayloadByteBound(len(encoded), image_bytes, text_bytes)
+
+
 def official_input_bound(body: dict, snapshot: dict, *, context_contract: bool = False,
                          frozen_images=None) -> Bound:
-    """Strict default denies unproven input; explicit context mode is non-strict.
+    """Strict default denies unproven text input; image bodies use the payload byte bound.
 
     Context mode validates full images/tools and reserves the documented whole
     window, not a tokenizer/character estimate or an absolute supplier bill cap.
     It is unactivated by default and cannot upgrade or open scope authority.
+    A text-only body, with or without ordinary tool schemas, stays blocked:
+    character ratios are not a billed-token ceiling. Image parts stay in the
+    body and are bounded by the serialized bytes, not by the 1024 estimate.
     """
     if context_contract:
         from .llm_input_envelope import EnvelopeInvalid, validate_envelope
@@ -350,8 +464,10 @@ def official_input_bound(body: dict, snapshot: dict, *, context_contract: bool =
         except EnvelopeInvalid as exc:
             return Bound(False, 0, exc.code, exc.field)
     structural = structural_block(body)
-    if structural:
+    if structural and structural != "unbounded_multimodal":
         return Bound(False, 0, structural, _structural_detail(structural))
+    if structural == "unbounded_multimodal" or _has_multimodal(body):
+        return payload_byte_bound(body)
     return Bound(False, 0, "unbounded_billed_input", _structural_detail("unbounded_billed_input"))
 
 
@@ -665,7 +781,9 @@ def prepare(body: dict, route: dict, url: str, bound_fn: Optional[Callable[[dict
             return _fail("route_mismatch", "context-contract official route")
     else:
         structural = structural_block(body)
-        if structural:
+        # Image parts are not rejected here. payload_byte_bound either proves a
+        # byte ceiling or still fail-closes. Text-only stays unbounded below.
+        if structural and structural != "unbounded_multimodal":
             return _fail(structural, _structural_detail(structural))
     cap, cap_code = apply_output_cap(body)
     if cap is None:
@@ -679,6 +797,8 @@ def prepare(body: dict, route: dict, url: str, bound_fn: Optional[Callable[[dict
     nano = worst_case_nano(snapshot, bound.tokens, cap)
     if type(nano) is not int or nano <= 0:
         return _fail("unbounded_billed_input", "non_positive_reservation")
+    if isinstance(bound, PayloadByteBound) and not context_contract and nano > SKILL_CALL_CAP_NANO:
+        return _fail("over_budget", "per-skill worst case exceeds $0.50")
     return {
         "ok": True,
         "code": "ready",
@@ -689,6 +809,9 @@ def prepare(body: dict, route: dict, url: str, bound_fn: Optional[Callable[[dict
         "reserved_nano": nano,
         **({"input_evidence": bound.envelope.evidence(), "body_bytes": bound.envelope.frozen.encoded}
            if isinstance(bound, BoundEvidence) else {}),
+        **({"input_evidence": bound.evidence(), "image_bytes": bound.image_bytes,
+            "text_bytes": bound.text_bytes, "body_bytes": bound.body_bytes}
+           if isinstance(bound, PayloadByteBound) else {}),
         "route": {
             "provider": str(route.get("provider") or ""),
             "model": model,
@@ -1277,7 +1400,17 @@ def reserve_nano(path: str, *, nano: int, record: dict, runtime_binding=None) ->
             if code:
                 return {"ok": False, "code": code, "scope_id": scope_id,
                         "accounted_nano": accounted, "ceiling_nano": ceiling}
-        if accounted + nano > ceiling:
+        evidence = record.get("input_evidence") if isinstance(record.get("input_evidence"), dict) else {}
+        # Payload-byte calls on the default ledger use the $0.40 cumulative stop.
+        # The explicit $2 authorization keeps its own ceiling. A single call above
+        # $0.50 is refused even when the stop would still have room.
+        if evidence.get("mode") == "payload_bytes" and data.get("authorization") != TWO_DOLLAR_AUTHORIZATION:
+            if nano > SKILL_CALL_CAP_NANO or accounted + nano > SKILL_CUMULATIVE_STOP_NANO:
+                return {
+                    "ok": False, "code": "over_budget", "scope_id": scope_id,
+                    "accounted_nano": accounted, "ceiling_nano": ceiling, "need_nano": nano,
+                }
+        elif accounted + nano > ceiling:
             return {
                 "ok": False, "code": "over_budget", "scope_id": scope_id,
                 "accounted_nano": accounted, "ceiling_nano": ceiling, "need_nano": nano,
@@ -1560,6 +1693,9 @@ async def dispatch(body: dict, *, route: dict, url: str, send: Callable[[], Awai
         "created_at": int(time.time()),
         **({"input_evidence": pre["input_evidence"], "body_sha256": pre["input_evidence"]["body_sha256"]}
            if context_contract else {}),
+        **({"input_evidence": pre["input_evidence"]}
+           if (not context_contract and isinstance(pre.get("input_evidence"), dict)
+               and pre["input_evidence"].get("mode") == "payload_bytes") else {}),
     }
     if activation_runtime is not None:
         from .llm_scope_activation import reserve_for_runtime

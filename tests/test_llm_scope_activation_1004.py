@@ -39,13 +39,33 @@ async def installed_post(session, payload):
     return await provider_admin.installed_llm_http(session, "POST", URL, headers={}, json_body=payload, transport=p._request_json)
 
 
-async def test_installed_default_denies_without_activation_no_ledger_created(activated_candidate):
+async def test_installed_default_image_uses_byte_bound_and_does_not_touch_the_activated_ledger(activated_candidate):
+    """No manifest is not a deny for a measurable image. The $2 candidate ledger stays untouched."""
     c, expected, runtime = activated_candidate
-    session = FakeSocketSession(expected.canonical_absolute_ledger_path)
     before = Path(expected.canonical_absolute_ledger_path).read_bytes()
-    with pytest.raises(gate.LlmBudgetBlocked):
-        await installed_post(session, body())
-    assert not session.requests
+    sent = []
+
+    class Done:
+        status = 200
+        headers = {}
+        async def __aenter__(self):
+            return self
+        async def __aexit__(self, *args):
+            return None
+        async def text(self):
+            return json.dumps({"choices": [{"message": {"role": "assistant", "content": "ok"}, "finish_reason": "stop"}]})
+
+    class Session:
+        def request(self, method, url, **kwargs):
+            sent.append((method, url, kwargs))
+            return Done()
+
+    await installed_post(Session(), body())
+    assert len(sent) == 1
+    payload = sent[0][2]["json"]
+    urls = [part["image_url"]["url"] for msg in payload["messages"] if isinstance(msg.get("content"), list)
+            for part in msg["content"] if isinstance(part, dict) and part.get("type") == "image_url"]
+    assert urls and urls[0].startswith("data:image/png;base64,")
     assert Path(expected.canonical_absolute_ledger_path).read_bytes() == before
     assert not Path(runtime.home, activation._REGISTRY).exists()
 

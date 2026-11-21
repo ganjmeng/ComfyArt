@@ -29,6 +29,8 @@ from ComfyArt.bot.llm_usd_gate import (
     ORDINARY_OUTPUT_DEFAULT,
     PRICES,
     SUMMARY_OUTPUT_DEFAULT,
+    SKILL_CALL_CAP_NANO,
+    SKILL_CUMULATIVE_STOP_NANO,
     TOKEN_URL,
     TWO_DOLLAR_AUTHORIZATION,
     TWO_DOLLAR_CEILING_NANO,
@@ -213,10 +215,149 @@ def test_production_bound_rejects_text_tools_and_images_without_the_heuristic(mo
         {"type": "image_url", "image_url": {"url": "data:image/png;base64,aaaa"}},
     ]}]
     assert structural_block(image) == "unbounded_multimodal"
-    assert VISION_URL in official_input_bound(image, snap).detail
+    proven = official_input_bound(image, snap)
+    encoded = json.dumps(image, allow_nan=False, separators=(", ", ": ")).encode()
+    assert proven.ok is True and proven.tokens == len(encoded)
+    assert proven.image_bytes + proven.text_bytes == proven.tokens
+    assert proven.tokens != 1024
+    unproven = _text()
+    unproven["messages"] = [{"role": "user", "content": [
+        {"type": "text", "text": "look"},
+        {"type": "file", "file_id": "not-a-measured-url"},
+    ]}]
+    blocked = official_input_bound(unproven, snap)
+    assert blocked.ok is False and blocked.code == "unbounded_multimodal"
+    assert VISION_URL in blocked.detail
     web = _text()
     web["tools"] = [{"type": "function", "function": {"name": "deepseek_web_search", "parameters": {}}}]
     assert structural_block(web) == "unpriced_tool_fee"
+
+
+def _image_turn(url: str, *, system: str = "plan the product", tools: bool = True) -> dict:
+    body = {
+        "model": "deepseek-flash",
+        "temperature": 0.2,
+        "thinking": {"type": "disabled"},
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": [
+                {"type": "text", "text": "参考图已附上，请写九宫格方案"},
+                {"type": "image_url", "image_url": {"url": url}},
+            ]},
+        ],
+    }
+    if tools:
+        body["tools"] = [{
+            "type": "function",
+            "function": {
+                "name": "ask_user",
+                "description": "ask",
+                "parameters": {"type": "object", "properties": {"prompt": {"type": "string"}}},
+            },
+        }]
+        body["tool_choice"] = "auto"
+    return body
+
+
+async def test_image_first_turn_passes_over_bound_blocks_and_text_is_unchanged(tmp_path):
+    """Default-route image turn: proven byte bound, image still sent, no real socket.
+
+    A no-image body keeps the old unbounded_billed_input refusal. A payload whose
+    worst case exceeds $0.50 never reaches transport. A second payload-byte hold
+    that would pass $0.40 is refused, and the first reservation stays.
+    """
+    calls = []
+
+    async def transport(session, method, url, *, headers, json_body=None, timeout=120):
+        calls.append(json_body)
+        return _usage(1, 1)
+
+    path = tmp_path / "skill.json"
+    route = _route()
+    url = "https://api.deepseek.com/chat/completions"
+    small = _image_turn("data:image/png;base64,aaaa")
+    token = provider_admin._llm_lock.set(route)
+    try:
+        await provider_admin.gated_llm_http(
+            None, "POST", url, headers={}, json_body=small,
+            transport=transport, ledger_path=str(path))
+    finally:
+        provider_admin._llm_lock.reset(token)
+    assert len(calls) == 1
+    sent = calls[0]
+    urls = [part["image_url"]["url"] for msg in sent["messages"] if isinstance(msg.get("content"), list)
+            for part in msg["content"] if part.get("type") == "image_url"]
+    assert urls == ["data:image/png;base64,aaaa"]
+    pre = prepare(dict(small), route, url)
+    assert pre["ok"] is True
+    assert pre["input_evidence"]["mode"] == "payload_bytes"
+    assert pre["image_bytes"] + pre["text_bytes"] == pre["body_bytes"] == pre["input_tokens"]
+    assert pre["image_bytes"] >= len(urls[0])
+    assert pre["input_tokens"] != 1024
+    assert pre["reserved_nano"] <= SKILL_CALL_CAP_NANO
+    assert pre["reserved_nano"] <= SKILL_CUMULATIVE_STOP_NANO
+    plain = _text()
+    plain["tools"] = small["tools"]
+    plain["tool_choice"] = "auto"
+    plain["messages"] = [
+        {"role": "system", "content": "plan the product"},
+        {"role": "user", "content": "参考图已附上，请写九宫格方案"},
+    ]
+    same = official_input_bound(plain, price_snapshot("deepseek-flash"))
+    assert same.ok is False and same.code == "unbounded_billed_input"
+    assert "not a guarantee" in same.detail
+    before = len(calls)
+    token = provider_admin._llm_lock.set(route)
+    try:
+        with pytest.raises(LlmBudgetBlocked) as text_blocked:
+            await provider_admin.gated_llm_http(
+                None, "POST", url, headers={}, json_body=plain,
+                transport=transport, ledger_path=str(path))
+    finally:
+        provider_admin._llm_lock.reset(token)
+    assert text_blocked.value.code == "unbounded_billed_input"
+    assert len(calls) == before
+
+    huge = _image_turn("data:image/png;base64," + ("A" * 1_700_000))
+    token = provider_admin._llm_lock.set(route)
+    try:
+        with pytest.raises(LlmBudgetBlocked) as over:
+            await provider_admin.gated_llm_http(
+                None, "POST", url, headers={}, json_body=huge,
+                transport=transport, ledger_path=str(tmp_path / "over.json"))
+    finally:
+        provider_admin._llm_lock.reset(token)
+    assert over.value.code == "over_budget"
+    assert len(calls) == before
+    assert not (tmp_path / "over.json").exists()
+
+    # About $0.25 each, so the second call would pass the $0.40 cumulative stop.
+    medium = _image_turn("data:image/png;base64," + ("B" * 800_000))
+    first = prepare(dict(medium), route, url)
+    assert first["ok"] is True
+    assert SKILL_CUMULATIVE_STOP_NANO // 2 < first["reserved_nano"] <= SKILL_CUMULATIVE_STOP_NANO
+    held_calls = []
+
+    async def retain_transport(session, method, url, *, headers, json_body=None, timeout=120):
+        held_calls.append(json_body)
+        return {"choices": [{"message": {"role": "assistant", "content": "ok"}}]}
+
+    token = provider_admin._llm_lock.set(route)
+    try:
+        await provider_admin.gated_llm_http(
+            None, "POST", url, headers={}, json_body=medium,
+            transport=retain_transport, ledger_path=str(tmp_path / "cum.json"))
+        held = ledger_state(str(tmp_path / "cum.json"))["accounted_nano"]
+        with pytest.raises(LlmBudgetBlocked) as second:
+            await provider_admin.gated_llm_http(
+                None, "POST", url, headers={}, json_body=medium,
+                transport=retain_transport, ledger_path=str(tmp_path / "cum.json"))
+    finally:
+        provider_admin._llm_lock.reset(token)
+    assert second.value.code == "over_budget"
+    assert ledger_state(str(tmp_path / "cum.json"))["accounted_nano"] == held
+    assert len(held_calls) == 1
+    assert len(calls) == before
 
 
 # ---------------------------------------------------------------- blocks
