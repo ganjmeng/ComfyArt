@@ -1055,8 +1055,9 @@ def _run_hint_declared(name: object, user_text: str = "", ref_image: bytes | Non
         return (
             "Multi-angle staged delivery: use ask_user once for a single card with source and final aspect "
             "(recommended 1:1, not a forced default; Skip and Submit). If a reference is already attached, "
-            "reuse it and do not ask the source question again (one image = single front hero; more than one = "
-            "multi-angle product photos). After the setup card, do not call generate_image until the existing "
+            "reuse that same file through the lineart preview and the selected finals; do not ask for it again. "
+            "Still ask the source classification on that card; do not skip it, preselect it, or treat the attachment as the answer. "
+            "After the setup card, do not call generate_image until the existing "
             "quote/approval card is confirmed. Then generate_image skill='universal-multi-angle-grid', multi_angle_stage='preview', count=1, using the independent preview default 1152x2048 (9:16) unless the user explicitly specifies a preview size; the selected final aspect applies to finals only: "
             "ONE numbered nine-panel lineart preview. REQUIRED composition_plan={subject, purpose, subject_geometry, appearance, panels:[{id,name,description,geometry,appearance,content} x9]}: "
             "inspect the real subject/reference and intended use, then plan nine distinct appropriate compositions (not a universal view list). "

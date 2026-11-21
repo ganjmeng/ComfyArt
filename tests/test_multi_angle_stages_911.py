@@ -104,12 +104,13 @@ def preview(rows, *, aspect="1:1"):
 
 def test_setup_card_uses_existing_pager_without_preselect_or_reupload(run):
     rows, _ = run
-    # The fixture already has a reference attached, so source is omitted.
+    # An attached reference does not hide or preselect the source classification.
     card = bot_asks.validate_spec({"prompt": "setup"})
-    assert [q["id"] for q in card["questions"]] == [ma.ASPECT]
+    assert [q["id"] for q in card["questions"]] == [ma.SOURCE, ma.ASPECT]
     assert card["page_count"] == 1 and card["allow_skip"] is True
     assert all(not q.get("defaults") for q in card["questions"])
-    assert [o["id"] for o in card["questions"][0]["options"]] == list(ma.CARD_ASPECTS)
+    assert [o["id"] for o in card["questions"][1]["options"]] == list(ma.CARD_ASPECTS)
+    assert card["questions"][1]["allow_other"] is False
     assert not any("upload" in q["id"] for q in card["questions"])
     setup(rows, status="pending")
     with pytest.raises(ValueError, match="existing"):
@@ -372,8 +373,8 @@ def test_expired_cards_can_be_reasked_without_repeating_paid_preview(run, expire
     rows, _ = run
     setup(rows, status=expired)
     spec = bot_asks.validate_spec({"prompt": "retry unanswered setup"})
-    assert spec["questions"][0]["id"] == ma.ASPECT
-    assert ma.SOURCE not in [q["id"] for q in spec["questions"]]
+    assert [q["id"] for q in spec["questions"]] == [ma.SOURCE, ma.ASPECT]
+    assert all(not q.get("defaults") for q in spec["questions"])
     # A fresh setup is the current root, not the earlier expired one.
     rows.append({"id": "new-setup", "role": "assistant", "blocks": [{
         "type": "ask", "ask_id": "new-setup", "status": "answered", **spec,

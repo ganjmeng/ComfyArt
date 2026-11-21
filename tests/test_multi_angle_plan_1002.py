@@ -589,6 +589,41 @@ def test_final_prompt_has_no_generic_matte_gray_and_carries_finish_lighting_1003
     assert ma.FINAL_FINISH not in preview["prompt"]
 
 
+def freeze_legacy_plan(plan):
+    """Store a content-less plan as an already-delivered preview.
+
+    A new preview of that same plan stays rejected. Finals read the frozen plan
+    and may still pass panel_content.
+    """
+    clean = ma.validate_plan(plan)
+    assert all("content" not in panel for panel in clean["panels"])
+    _, blocked = ma.prepare({"skill": ma.SKILL, "composition_plan": plan, "multi_angle_stage": "preview"})
+    assert blocked is not None and "content is required" in blocked["error"]
+    meta = prepare(HEADPHONES_PLAN)["_multi_angle"]
+    meta["composition_plan"] = clean
+    deliver(meta)
+    return clean
+
+
+def test_committed_frozen_plan_without_content_still_builds_finals(run):
+    from pathlib import Path
+    plan = json.loads((Path(__file__).parent / "fixtures/multi-angle-frozen-5cf1a349.json").read_text())
+    rows, _ = run
+    setup(rows)
+    freeze_legacy_plan(plan)
+    choose(rows, ("1", "2", "3"))
+    for number in ("1", "2", "3"):
+        final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": number})
+        assert blocked is None, blocked
+        prompt = final["prompt"].lower()
+        assert "matte gray" not in prompt
+        for word in ("viewer's right", "viewer's left", "subject's left", "subject's right"):
+            assert word not in prompt
+    again, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": "1",
+                                 "panel_content": "earcups and padded headband"})
+    assert blocked is None and again["prompt"].endswith("\nPanel content: earcups and padded headband")
+
+
 def test_real_5cf1a349_frozen_plan_final_prompt_has_no_matte_gray_or_plan_left_right_1003(run):
     from pathlib import Path
     path = Path("/workspace/qa1003-5cf1a349-paid-preview/structured-plan.json")
@@ -597,8 +632,7 @@ def test_real_5cf1a349_frozen_plan_final_prompt_has_no_matte_gray_or_plan_left_r
     plan = json.loads(path.read_text())
     rows, _ = run
     setup(rows)
-    preview = prepare(plan)
-    deliver(preview["_multi_angle"])
+    freeze_legacy_plan(plan)
     choose(rows, ("1", "2", "3"))
     for number in ("1", "2", "3"):
         final, blocked = ma.prepare({"skill": ma.SKILL, "composition_id": number})

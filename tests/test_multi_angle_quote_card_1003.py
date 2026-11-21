@@ -42,7 +42,7 @@ def test_setup_card_is_one_page_two_questions_with_skip_and_lovart_zh_copy(run, 
     assert [o["id"] for o in source["options"]] == ["multiple", "single_front", "no_photo"]
     assert [o["label"] for o in source["options"]] == ZH_SOURCE_OPTS
     assert source["allow_other"] is True
-    assert source["placeholder"] == "直接说明"
+    assert source["placeholder"] == "其他情况"
     assert "/" not in source["placeholder"]
     assert aspect["prompt"] == ZH_ASPECT
     assert [o["id"] for o in aspect["options"]] == list(ma.CARD_ASPECTS)
@@ -64,7 +64,7 @@ def test_setup_card_english_is_faithful_not_claimed_official_lovart(run, monkeyp
         "Upload only 1 front hero image",
         "No real product photos yet, start with a product concept",
     ]
-    assert source["placeholder"] == "Describe the other situation"
+    assert source["placeholder"] == "Other situation"
     assert aspect["prompt"] == "Which aspect should the detail-page hero use?"
     assert [o["label"] for o in aspect["options"]] == [
         "1:1 square (recommended)",
@@ -74,33 +74,47 @@ def test_setup_card_english_is_faithful_not_claimed_official_lovart(run, monkeyp
     assert aspect["allow_other"] is False
 
 
-def test_attached_reference_skips_source_question_and_infers_single_front(run, monkeypatch):
+def test_attached_reference_still_asks_source_and_keeps_the_file(run, monkeypatch):
+    """A pre-attached file does not skip, answer, or preselect the source classification."""
     rows, _ = run
     monkeypatch.setattr(bot_asks, "card_lang", lambda: "zh")
     card = bot_asks.validate_spec({"prompt": "setup"})
-    assert [q["id"] for q in card["questions"]] == [ma.ASPECT]
-    assert card["questions"][0]["prompt"] == ZH_ASPECT
-    setup(rows, "3:4")
+    assert [q["id"] for q in card["questions"]] == [ma.SOURCE, ma.ASPECT]
+    source, aspect = card["questions"]
+    assert source["prompt"] == ZH_SOURCE
+    assert [o["label"] for o in source["options"]] == ZH_SOURCE_OPTS
+    assert source["allow_other"] is True and source["placeholder"] == "其他情况"
+    assert aspect["allow_other"] is False
+    assert all(not q.get("defaults") and not q.get("selected") for q in card["questions"])
+    assert "上传" not in source["prompt"] or source["prompt"] == ZH_SOURCE
+    unanswered = {"type": "ask", "ask_id": "setup", "status": "answered", **card,
+                  "answers": {ma.ASPECT: {"selected": ["3:4"]}}}
+    rows.append({"id": "setup-msg", "role": "assistant", "blocks": [unanswered]})
+    _, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
+                             "multi_angle_stage": "preview"})
+    assert blocked is not None and "来源" in blocked["error"]
+    rows.pop()
+    setup(rows, "3:4", source="single_front")
     args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
                                 "multi_angle_stage": "preview"})
     assert blocked is None
     assert args["_multi_angle"]["source"] == "single_front"
     assert args["refs"] == [REF]
+    assert "请再上传" not in args["prompt"] and "upload another" not in args["prompt"].lower()
     assert args["ratio"] == "9:16"
     assert (args["width"], args["height"]) == (1152, 2048)
     assert args["_multi_angle"]["setup_snapshot"]["final"]["ratio"] == "3:4"
 
 
-def test_multiple_attached_references_infer_multi_angle_source(run, monkeypatch):
+def test_multiple_attached_references_stay_on_the_answered_source(run, monkeypatch):
     rows, _ = run
     rows[0]["blocks"].append({"type": "image", "url": REF + "-side"})
     monkeypatch.setattr(bot_asks, "card_lang", lambda: "zh")
     card = bot_asks.validate_spec({"prompt": "setup"})
-    assert [q["id"] for q in card["questions"]] == [ma.ASPECT]
-    card = bot_asks.validate_spec({"prompt": "setup"})
+    assert [q["id"] for q in card["questions"]] == [ma.SOURCE, ma.ASPECT]
     rows.append({"id": "setup-msg", "role": "assistant", "blocks": [{
         "type": "ask", "ask_id": "setup", "status": "answered", **card,
-        "answers": {ma.ASPECT: {"selected": ["4:3"]}}}]})
+        "answers": {ma.SOURCE: {"selected": ["multiple"]}, ma.ASPECT: {"selected": ["4:3"]}}}]})
     args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
                                 "multi_angle_stage": "preview"})
     assert blocked is None

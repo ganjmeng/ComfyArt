@@ -57,6 +57,7 @@ def test_instruction_describes_stages_reference_retention_and_no_old_lock():
     assert "Do not generate final images before that answer" in text
     assert "Preserve reference, user description and selected final aspect" in text
     assert "Reuse an attached reference" in text
+    assert "Still ask the source classification even when a reference is already attached" in text
     assert "If none is uploaded, use the subject described in the Additional notes or ask for one" in text
     assert "exactly four" not in text and "1536×2048" not in text
     assert "Then generate selected finals only" in text
@@ -77,3 +78,4 @@ def test_built_skill_read_is_nine_grid_not_four_3x4_images():
     assert "nine-grid at 1152×2048 / 9:16" in text
     assert "composition_plan" in text and "content" in text
     assert "selected finals" in text
+    assert "Still ask the source classification even when a reference is already attached" in text

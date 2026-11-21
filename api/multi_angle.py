@@ -232,15 +232,6 @@ def _question(qid: str, prompt: str, options: list[dict], *, multi: bool = False
             "placeholder": placeholder, "page": page, "defaults": []}
 
 
-def _attached_refs(chat_id: str = "") -> list[str]:
-    from .skill_param_guard import context_from_chat
-    return list(context_from_chat(chat_id or _chat_id()).uploads)
-
-
-def _infer_source(refs: list[str]) -> str:
-    return "multiple" if len(refs) > 1 else "single_front"
-
-
 def _selected_ids(block: dict) -> set[str]:
     ids = {str(s) for s in (block.get("selected") or [])}
     for answer in (block.get("answers") or {}).values():
@@ -295,17 +286,16 @@ def normalize_card(args: dict) -> dict:
     chat_id = _chat_id()
     _, root = _root(chat_id)
     if root is None or (root.get("status") in {"expired", "cancelled"} and not root.get(LEDGER)):
-        refs = _attached_refs(chat_id)
+        # An already attached file is not a source answer and is not requested again.
+        # The source question stays a classification (A/B/C plus D 其他情况), unselected.
         aspect = _question(ASPECT, "详情页主画幅用哪个？" if zh else "Which aspect should the detail-page hero use?", [
             {"id": key, "label": z if zh else e} for key, z, e in ASPECT_OPTIONS],
             allow_other=False)
-        questions = [aspect]
-        if not refs:
-            questions.insert(0, _question(
-                SOURCE, "产品参考图怎么提供？" if zh else "How should product reference images be provided?",
-                [{"id": key, "label": z if zh else e} for key, z, e in SOURCE_OPTIONS],
-                placeholder="直接说明" if zh else "Describe the other situation"))
-        return {"questions": questions, "page_count": 1, "allow_skip": True}
+        source = _question(
+            SOURCE, "产品参考图怎么提供？" if zh else "How should product reference images be provided?",
+            [{"id": key, "label": z if zh else e} for key, z, e in SOURCE_OPTIONS],
+            placeholder="其他情况" if zh else "Other situation")
+        return {"questions": [source, aspect], "page_count": 1, "allow_skip": True}
     if root.get("status") != "answered":
         raise ValueError("Answer the existing multi-angle source/aspect card; do not create another.")
     ledger = root.get(LEDGER) or {}
@@ -534,11 +524,8 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
     aspect_selected = (aspect_answer.get("selected") or [""])[0]
     aspect_other = str(aspect_answer.get("other_text") or "").strip()
     if source not in SOURCE_IDS or (source == "other" and not source_other):
-        refs = _attached_refs(chat_id) or list(args.get("refs") or [])
-        if refs and source not in SOURCE_IDS:
-            source = _infer_source(refs)
-        else:
-            return args, _blocked("请回答来源或填写其他情况 / Answer source or describe the other scenario.")
+        # Attached files do not answer or preselect this question.
+        return args, _blocked("请回答来源或填写其他情况 / Answer source or describe the other scenario.")
     ledger = root.get(LEDGER) or {}
     if ledger.get("preview"):
         try:
