@@ -292,16 +292,9 @@ function markJobPhase(editor: Editor, holderId: TLShapeId, phase: 'querying' | '
   editor.updateShape({ id: holderId, type: holder.type, meta: { ...holder.meta, job: { ...cur, phase } as any } })
 }
 
-function sizeNoticeCopy(sized: { want: { width: number; height: number }; got: { width: number; height: number } | null }): string {
+function sizeNoticeCopy(sized: { got: { width: number; height: number } | null }): string {
   if (!sized.got) return t('jobs.sizeNoticeUnread')
-  const gw = sized.got.width
-  const gh = sized.got.height
-  const rw = sized.want.width
-  const rh = sized.want.height
-  const smaller = gw <= rw && gh <= rh && (gw < rw || gh < rh)
-  const larger = gw >= rw && gh >= rh && (gw > rw || gh > rh)
-  const key = smaller ? 'jobs.sizeNotice' : larger ? 'jobs.sizeNoticeLarger' : 'jobs.sizeNoticeActual'
-  return t(key, String(gw), String(gh))
+  return t('jobs.sizeNotice', String(sized.got.width), String(sized.got.height))
 }
 
 async function finish(editor: Editor, holderId: TLShapeId, job: Job, onError: ErrorSink) {

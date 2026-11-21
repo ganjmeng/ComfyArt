@@ -113,36 +113,33 @@ def reconcile_ratio(requested: tuple[int, int], provider_pixels: tuple[int, int]
     return out
 
 
-# #924 user-visible copy when the file is smaller. A larger file (including a same-ratio
-# 1440×2560 against 1152×2048) must not be called 低于 / smaller. Mixed edges state the
-# actual size only. Same sentences as jobs.sizeNotice / sizeNoticeLarger / sizeNoticeActual.
-_SMALLER = ("出图尺寸低于预期（实际 {w}×{h}），已按原图交付。",
-            "Output is smaller than expected ({w}×{h}). Delivered as generated.")
-_LARGER = ("出图尺寸高于预期（实际 {w}×{h}），已按原图交付。",
-           "Output is larger than expected ({w}×{h}). Delivered as generated.")
-_ACTUAL = ("实际出图 {w}×{h}，已按原图交付。",
-           "Delivered as generated ({w}×{h}).")
+# #924 user-visible copy. Two sentences only:
+# - unread pixels: 出图尺寸未能核对
+# - truly smaller, or the ratio / long-side check fails (including mixed edges): 出图尺寸低于预期
+# Same ratio with a long side that is not shorter (1440×2560 against 1152×2048) is a pass:
+# no notice, and no third sentence.
+_BELOW = ("出图尺寸低于预期（实际 {w}×{h}），已按原图交付。",
+          "Output is smaller than expected ({w}×{h}). Delivered as generated.")
+_UNREAD = ("出图尺寸未能核对，已按原图交付。",
+           "Output size could not be checked. Delivered as generated.")
 
 
-def _size_relation(requested: tuple[int, int] | None, provider: tuple[int, int]) -> str:
-    """'smaller' when every edge is at most the request and one is shorter; 'larger' when every edge grew."""
-    if requested is None:
-        return "other"
-    rw, rh = int(requested[0]), int(requested[1])
-    gw, gh = int(provider[0]), int(provider[1])
-    if gw <= rw and gh <= rh and (gw < rw or gh < rh):
-        return "smaller"
-    if gw >= rw and gh >= rh and (gw > rw or gh > rh):
-        return "larger"
-    return "other"
+def size_notice(requested: tuple[int, int] | None, provider: tuple[int, int] | None, mode: str = "") -> dict | None:
+    """#924 note for a charged file, or None when the ratio rule passes.
 
-
-def size_notice(requested: tuple[int, int] | None, provider: tuple[int, int] | None, mode: str = "") -> dict:
-    """Neutral zh/en note for a charged image that did not pass the size check but is delivered."""
+    ``mode`` is unused: exact pixel equality is recorded by ``reconcile``, but the
+    user-visible sentence follows the ratio rule. A same-ratio file whose long side
+    is not shorter returns None.
+    """
+    del mode
     if provider is None:
-        return {"kind": "unread", "zh": "出图尺寸未能核对，已按原图交付。", "en": "Output size could not be checked. Delivered as generated."}
-    w, h = int(provider[0]), int(provider[1])
-    zh, en = {"smaller": _SMALLER, "larger": _LARGER, "other": _ACTUAL}[_size_relation(requested, (w, h))]
+        zh, en = _UNREAD
+        return {"kind": "unread", "zh": zh, "en": en}
+    got = (int(provider[0]), int(provider[1]))
+    if requested is not None and ratio_ok((int(requested[0]), int(requested[1])), got):
+        return None
+    w, h = got
+    zh, en = _BELOW
     return {"kind": "size", "zh": zh.format(w=w, h=h), "en": en.format(w=w, h=h)}
 
 
@@ -163,8 +160,10 @@ def file_pixels(data: bytes) -> tuple[int, int] | None:
 
 
 def size_reject(requested: tuple[int, int], provider: tuple[int, int] | None) -> str:
-    """Same two #924 notice sentences (zh / en). The charged image is delivered, so this is not a failure."""
+    """The #924 notice as ``zh / en``, or '' when the ratio rule passes and there is no notice."""
     n = size_notice(requested, provider)
+    if not n:
+        return ""
     return f"{n['zh']} / {n['en']}"
 
 
@@ -176,8 +175,10 @@ def audit_file(data: bytes, requested: tuple[int, int], mode: str = "") -> dict:
     got = file_pixels(data)
     out = reconcile_ratio(requested, got) if mode == RATIO_MODE else reconcile(requested, got)
     out["read_error"] = got is None
-    out["error"] = None if out["match"] else size_reject(requested, got)
-    out["notice"] = None if out["match"] else size_notice(requested, got, mode)
+    # Exact pixels can differ while the #924 ratio rule still passes. That is not a user notice.
+    notice = None if out["match"] else size_notice(requested, got, mode)
+    out["notice"] = notice
+    out["error"] = None if notice is None else f"{notice['zh']} / {notice['en']}"
     return out
 
 

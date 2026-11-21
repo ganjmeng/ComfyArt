@@ -896,8 +896,6 @@
   "jobs.queryingStatus": "Checking task status",
   "jobs.resultPendingShort": "Result unconfirmed",
   "jobs.sizeNotice": "Output is smaller than expected ({0}×{1}). Delivered as generated.",
-  "jobs.sizeNoticeLarger": "Output is larger than expected ({0}×{1}). Delivered as generated.",
-  "jobs.sizeNoticeActual": "Delivered as generated ({0}×{1}).",
   "jobs.sizeNoticeUnread": "Output size could not be checked. Delivered as generated.",
   "jobs.resultPendingHint": "Couldn't confirm the result yet. Do not submit again",
   "jobs.lost": "The generation disappeared from the ComfyUI queue (the server may have restarted)",

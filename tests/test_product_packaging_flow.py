@@ -505,7 +505,7 @@ def test_self_check_still_reports_a_failed_set(lang, goal, warn):
 # computed once from those same pinned bytes. A one-byte edit still fails.
 PINNED_SHA256 = {
     "api/auto_models.json": "9ef106b6133d427f04347d0c31c31931e641e1cd47d2a86c0d0769cde48c5d7b",
-    "api/skill_size.py": "1cf33ff652100bab7a3a32db23fd7b3f34c9347f798e1df60f8a9f3dbbe8419a",
+    "api/skill_size.py": "ec90c1098ad359dc017c4c470ab5ee0f16e12f5baff9924da2376a8b1153e312",
     "api/curated_models.json": "53c77b0a449f86b8b2aa9b48044678dddaf5aa3cdad40486f0c981386b8d2dce",
     "api/wavespeed_models.json": "3f70cc34de378fd675a2afffb7b7c15b533c67db424e1ae25b6ba3356dd082d1",
     "bot/skill_output.py": "02d74b0260d4e494bbc922f79a373014eff98748245364fdfb56028636597569",  # #1003 source question stays when a reference is attached; content, 9:16 preview, and unrelated locks preserved
@@ -563,11 +563,11 @@ LOCALE_EXTRAS = {
            "models.minimaxH3Image": H3_IMAGE_LOCALE[lang]}
     for lang in ("zh", "en")
 }
-# Canonical locale JSON minus the extras above. #1003 changes jobs.sizeNotice to the
-# #924 smaller sentence and adds the larger/actual sentences, so this is no longer main's hash.
+# Canonical locale JSON minus the extras above. #1003 keeps jobs.sizeNotice as the #924
+# smaller sentence and does not add a larger or actual-size sentence.
 LOCALE_BASE_SHA256 = {
-    "src/locales/zh.json": "987c1698b8f4f8e4365c4f3f10a6e25473196ae9a75eb61db155821edbfbcffc",
-    "src/locales/en.json": "77995e3ec0acfcda3bd4b7907edf3e93d93ebed66df7759c1eb2754fe5017600",
+    "src/locales/zh.json": "4a96ca4d146ccb8c8a336c643ebd9e1d830ebee5d843d5f5719062209472755a",
+    "src/locales/en.json": "887b52a29e5a337c54d2ca86e650971eea7e78a7acb71cafd78ac984eca4369e",
 }
 
 

@@ -137,7 +137,7 @@ async def test_header_only_auto_label_running_pending_and_no_output(app_url, moc
             }"""
         )
         before = len(mock_ws["submits"])
-        want = "实际出图 2048×682，已按原图交付。"
+        want = "出图尺寸低于预期（实际 2048×682），已按原图交付。"
         await page.locator(".ca-gen__send").click()
         delivered = False
         for _ in range(300):

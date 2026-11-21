@@ -529,7 +529,7 @@ def test_shot_never_reaches_the_request_for_other_skills(relay, skill):
 # pinned bytes. A one-byte edit still fails.
 PINNED_SHA256 = {
     "api/auto_models.json": "9ef106b6133d427f04347d0c31c31931e641e1cd47d2a86c0d0769cde48c5d7b",
-    "api/skill_size.py": "1cf33ff652100bab7a3a32db23fd7b3f34c9347f798e1df60f8a9f3dbbe8419a",
+    "api/skill_size.py": "ec90c1098ad359dc017c4c470ab5ee0f16e12f5baff9924da2376a8b1153e312",
     "api/curated_models.json": "53c77b0a449f86b8b2aa9b48044678dddaf5aa3cdad40486f0c981386b8d2dce",
     "api/wavespeed_models.json": "3f70cc34de378fd675a2afffb7b7c15b533c67db424e1ae25b6ba3356dd082d1",
 }

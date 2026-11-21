@@ -212,9 +212,8 @@ def test_explicit_preview_pixels_keep_exact_audit_even_when_larger_file_has_same
     assert preview["_multi_angle"]["stage_spec"]["exact_pixels"]
     assert "size_lock_mode" not in preview
     assert not skill_size.reconcile((1152, 2048), (1440, 2560))["match"]
-    note = skill_size.size_notice((1152, 2048), (1440, 2560))
-    assert "smaller" not in note["en"] and "低于" not in note["zh"]
-    assert "1440×2560" in note["en"] and "1440×2560" in note["zh"]
+    assert skill_size.ratio_ok((1152, 2048), (1440, 2560))
+    assert skill_size.size_notice((1152, 2048), (1440, 2560)) is None
 
 
 @pytest.mark.asyncio

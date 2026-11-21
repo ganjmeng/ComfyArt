@@ -56,9 +56,9 @@ export function ratioLockOk(want: { width: number; height: number }, got: { widt
   return Math.max(got.width, got.height) >= Math.max(want.width, want.height)
 }
 
-/** 'size' = ratio off > 1% or long side short (or exact pixels differ); 'unread' = no readable pixels.
- *  Smaller files use jobs.sizeNotice (#924). A larger file must not use that sentence.
- *  jobs.sizeNoticeUnread when the pixels cannot be read. */
+/** 'size' = the #924 ratio or long-side check failed (truly smaller, wrong ratio, or mixed edges);
+ *  'unread' = no readable pixels. Same ratio with a long side that is not shorter is a pass:
+ *  no notice, including 1440×2560 against 1152×2048. The size sentence is always jobs.sizeNotice. */
 export type SizeNoticeKind = 'size' | 'unread'
 export interface SizeDeliveryNotice { kind: SizeNoticeKind; want: { width: number; height: number }; got: { width: number; height: number } | null; mode: 'ratio' | 'exact' }
 
@@ -73,7 +73,9 @@ export function lockedDeliveryNotice(meta: { sizeLockModel?: unknown; pixelSize?
   const items = media.length ? media : [{ w: 0, h: 0 }]
   for (const item of items) {
     const got = item.w > 0 && item.h > 0 ? { width: item.w, height: item.h } : null
-    const ok = mode === 'ratio' ? ratioLockOk(want, got) : lockedFileError(want.width > 0 ? want : { width: 0, height: 0 }, got) === null
+    // #924: a same-ratio file whose long side is not shorter passes with no notice, even when
+    // the exact pixels differ. A failed ratio or long-side check still produces a size notice.
+    const ok = ratioLockOk(want, got)
     if (!ok) return { kind: got ? 'size' : 'unread', want, got, mode }
   }
   return null

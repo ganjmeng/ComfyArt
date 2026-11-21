@@ -13,6 +13,7 @@ const out = {
   short: lockedDeliveryNotice(meta(1536, 2048), [{ w: 768, h: 1024 }]),
   ratioOff: lockedDeliveryNotice(meta(1536, 2048), [{ w: 2048, h: 2048 }]),
   exactMismatch: lockedDeliveryNotice({ sizeLockModel: 'wavespeed-ai/qwen-image-2.0/text-to-image', pixelSize: [1584, 396] }, [{ w: 2048, h: 682 }]),
+  sameRatioLarger: lockedDeliveryNotice({ sizeLockModel: 'wavespeed-ai/qwen-image-2.0/text-to-image', pixelSize: [1152, 2048] }, [{ w: 1440, h: 2560 }]),
   unread: lockedDeliveryNotice(meta(1536, 2048), [{ w: 0, h: 0 }]),
   noLock: lockedDeliveryNotice({ pixelSize: [1536, 2048] }, [{ w: 768, h: 1024 }]),
 }

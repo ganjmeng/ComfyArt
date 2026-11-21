@@ -377,9 +377,8 @@ async def test_explicit_user_pixels_survive_skill_pin_and_quote_with_exact_audit
     exact = audit_file(data, (pinned["width"], pinned["height"]), pinned.get("size_lock_mode", ""))
     assert exact["match"] is False
     assert exact["provider_output"] == {"width": 1440, "height": 2560}
-    note = size_notice((1152, 2048), (1440, 2560), pinned.get("size_lock_mode", ""))
-    assert "smaller" not in note["en"] and "低于" not in note["zh"]
-    assert "1440×2560" in note["en"] and "1440×2560" in note["zh"]
+    assert exact["notice"] is None and exact["error"] is None
+    assert size_notice((1152, 2048), (1440, 2560), pinned.get("size_lock_mode", "")) is None
     # Contrast only: the same file would pass ratio audit, which must not be used here.
     assert audit_file(data, (1152, 2048), RATIO_MODE)["match"] is True
 
