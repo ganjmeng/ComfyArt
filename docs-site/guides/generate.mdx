@@ -69,9 +69,11 @@ Recommended image models (the first is the default):
 
 The first model is a good general default; the [Models and costs](/guides/models) page lists each model's price.
 
+**MiniMax H3 Image** is also in the picker (`minimax/h3-image/text-to-image`). It is the WaveSpeed model for the upstream MiniMax H3 Image checkpoint: 6-step generation with dense detail at 2K, and it accepts several reference images. References run on `minimax/h3-image/edit` (up to 16). Picking the text-to-image row moves a 1K card to 2K. Public prices: 1K and 2K are $0.03 per image, 4K is $0.09. An edit adds $0.008 per input image on top of that output price (one reference at 1K or 2K is $0.038).
+
 ## References
 
-Click **Reference image** to attach references, up to the limit of the selected model. Each extra reference can change the price, and the estimate next to **Send** already counts them. The menu offers:
+Click **Reference image** to attach references, up to the limit of the selected model. MiniMax H3 Image edit takes up to 16, the same cap upstream documents for Qwen Image 2.1 and MiniMax H3 Image. Each extra reference can change the price, and the estimate next to **Send** already counts them. The menu offers:
 
 - **Upload image** from your computer.
 - **Choose from Assets**: files you uploaded or generated before.

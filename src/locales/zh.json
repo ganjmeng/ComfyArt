@@ -1106,6 +1106,7 @@
   "modelPrefs.theAgentPicksAutomaticallyFrom": "Agent 会从全部已安装模型中自动选择",
   "modelPrefs.video": "视频",
   "models.mossImageFullCaption": "适合用长段、细致的场景描述出图",
+  "models.minimaxH3Image": "6 步出图，2K 下细节丰富，可带多张参考图",
   "multiToolbar.align": "对齐",
   "multiToolbar.alignBottom": "底对齐",
   "multiToolbar.alignHorizontalCenters": "水平居中",

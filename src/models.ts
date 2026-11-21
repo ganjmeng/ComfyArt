@@ -55,6 +55,9 @@ const defaultFirst = (feature: string, list: ModelDef[]) => { const d = defaultO
 
 export const AUTO_IMAGE = 'auto'
 export const AUTO_VIDEO = 'auto:video'
+/** #936 (upstream 1167e454): official WaveSpeed MiniMax H3 Image. Text-to-image and edit are separate picker rows. */
+export const MINIMAX_H3_IMAGE = 'minimax/h3-image/text-to-image'
+export const MINIMAX_H3_IMAGE_EDIT = 'minimax/h3-image/edit'
 const autoDef = (video: boolean): ModelDef => ({ id: video ? AUTO_VIDEO : AUTO_IMAGE, label: t('common.auto'), desc: t('genPanel.autoDesc'), files: [], cloud: true, lora: null, auto: true, ...(video ? { video: true } : { refs: 'qwen' as const, control: 'wavespeed' }) })
 export const isAuto = (workflow: string) => workflow === AUTO_IMAGE || workflow === AUTO_VIDEO
 
@@ -178,6 +181,8 @@ export function adjustForModel(p: GenProps, model: ModelDef | undefined, video: 
   }
   const q = fit(p.quality, model.qualities, d.quality)
   if (q !== undefined) out.quality = q
+  // Upstream samples this model at 2048. WaveSpeed prices 1k and 2k the same, so a 1K card moves to 2K.
+  if (!video && (model.id === MINIMAX_H3_IMAGE || model.id === MINIMAX_H3_IMAGE_EDIT) && p.resolution === '1K') out.resolution = '2K'
   return out
 }
 
