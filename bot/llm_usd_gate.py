@@ -114,11 +114,15 @@ the cumulative hold would pass $0.40. The explicit $2 scope is unchanged.
 """
 from __future__ import annotations
 
+import base64
+import binascii
 import errno
 import fcntl
+import io
 import json
 import logging
 import os
+import re
 import threading
 import time
 import uuid
@@ -223,6 +227,10 @@ _BLOCK_TEXT = {
     "unbounded_multimodal": (
         "图像计费 token 不能证明为上界，已在联网前阻断。"
         " / Image billed tokens are not a proven upper bound. Blocked before HTTP."
+    ),
+    "image_too_large": (
+        "规划用参考图在降采样后仍超过单次费用上限，已在联网前阻断。"
+        " / The planner image still exceeds the per-call cap after downscaling. Blocked before HTTP."
     ),
     "unbounded_billed_input": (
         "计费输入 token 没有可证明的上界。字符计数不是保证。已在联网前阻断。"
@@ -333,24 +341,27 @@ def worst_case_nano(snapshot: dict, input_tokens: int, max_output_tokens: int) -
 
 
 class PayloadByteBound(Bound):
-    """Input tokens = UTF-8 bytes of the JSON that will be sent. Not the 1024 vision estimate."""
+    """Text bytes plus the documented 1024-token cap on each planner image."""
 
-    __slots__ = ("image_bytes", "text_bytes", "body_bytes")
+    __slots__ = ("image_bytes", "text_bytes", "body_bytes", "image_tokens")
 
-    def __init__(self, body_bytes: int, image_bytes: int, text_bytes: int) -> None:
-        super().__init__(True, body_bytes, "", "payload-bytes")
-        self.body_bytes = body_bytes
+    def __init__(self, tokens: int, image_bytes: int, text_bytes: int, image_tokens: int) -> None:
+        super().__init__(True, tokens, "", "planner-image-cap")
+        self.body_bytes = text_bytes + image_bytes
         self.image_bytes = image_bytes
         self.text_bytes = text_bytes
+        self.image_tokens = image_tokens
 
     def evidence(self) -> dict:
         return {
-            "mode": "payload_bytes",
+            "mode": "planner_image_cap",
             "input_tokens": self.tokens,
             "body_bytes": self.body_bytes,
             "image_bytes": self.image_bytes,
+            "image_tokens": self.image_tokens,
             "text_bytes": self.text_bytes,
-            "token_rule": "one input token per serialized UTF-8 byte; 1024 is not a cap",
+            "token_rule": "text utf-8 bytes plus 1024 per planner image (vision guide upper bound)",
+            "image_token_cap": IMAGE_TOKEN_CAP,
         }
 
 
@@ -383,8 +394,70 @@ def _json_string_bytes(value: str) -> bytes | None:
     return dumped[1:-1].encode("ascii")
 
 
+# Vision guide: "there is an upper bound of 1024 tokens per image" after the
+# server resizes toward ~1300×1300. The token-usage page says a calculator
+# estimate can vary slightly, so this reservation uses that stated upper bound,
+# not a point estimate and not the file's byte length.
+IMAGE_TOKEN_CAP = 1024
+_DATA_IMAGE_URL = re.compile(
+    r"data:image/(?:jpeg|png|gif|webp);base64,([A-Za-z0-9+/]*={0,2})\Z"
+)
+_IMAGE_TOO_LARGE = (
+    "参考图太大，暂时无法发送，本次未产生费用。请压缩或换一张图片再试。"
+)
+_IMAGE_UNREADABLE = (
+    "这张参考图无法直接读取，本次未产生费用。请下载后直接上传再试。"
+)
+_IMAGE_TOO_LARGE_EN = (
+    "This reference image is too large to send. You haven't been charged. "
+    "Compress it or try a different image."
+)
+_IMAGE_UNREADABLE_EN = (
+    "This reference image can't be read directly. You haven't been charged. "
+    "Download it and upload it directly, then try again."
+)
+
+
+def user_notice(code: str, lang: str = "zh") -> str | None:
+    """Pinned chat copy. The technical gate sentence stays in logs, not the UI."""
+    en = lang == "en"
+    if code in {"image_too_large", "over_budget"}:
+        return _IMAGE_TOO_LARGE_EN if en else _IMAGE_TOO_LARGE
+    if code == "unbounded_multimodal":
+        return _IMAGE_UNREADABLE_EN if en else _IMAGE_UNREADABLE
+    return None
+
+
+def _inline_image(url: str) -> tuple[int, int] | None:
+    """Pixel size of an inline data URL, or None when it is not a measurable local image.
+
+    Remote http(s) links, file ids, and undecodable bytes are not a pixel bound:
+    a short URL can still bill a full-resolution image.
+    """
+    if type(url) is not str:
+        return None
+    match = _DATA_IMAGE_URL.fullmatch(url)
+    if match is None:
+        return None
+    try:
+        raw = base64.b64decode(match.group(1), validate=True)
+    except (ValueError, binascii.Error):
+        return None
+    if not raw:
+        return None
+    try:
+        from PIL import Image
+        with Image.open(io.BytesIO(raw)) as img:
+            width, height = img.size
+    except Exception:
+        return None
+    if width < 1 or height < 1:
+        return None
+    return int(width), int(height)
+
+
 def _measurable_image_urls(body: dict) -> list[str] | None:
-    """Image URL strings, or None when a multimodal part cannot be measured as a string URL."""
+    """Inline data URLs, or None when any image part is not one of those."""
     urls: list[str] = []
     for msg in body.get("messages") or []:
         if not isinstance(msg, dict):
@@ -407,20 +480,22 @@ def _measurable_image_urls(body: dict) -> list[str] | None:
             if part.get("type") != "image_url" or not isinstance(image, dict):
                 return None
             url = image.get("url")
-            if type(url) is not str or not url:
+            if _inline_image(url) is None:
                 return None
             urls.append(url)
     return urls
 
 
 def payload_byte_bound(body: dict) -> Bound:
-    """Upper bound for a body that contains image parts.
+    """Image tokens from the documented 1024 cap on the pixels we actually send.
 
-    Input tokens equal the UTF-8 length of the serialized JSON. That length
-    counts every image-URL byte and every other byte (system, tools, schemas).
-    The vision guide's 1024 is not used. A part that is not a string URL stays
-    unproven and blocks.
+    The planner copy is already limited to a 1568px long edge. A data URL whose
+    long edge is still above that is blocked, so a few-kilobyte 4000px PNG cannot
+    pass on its file size. Text tokens are the serialized bytes with those image
+    URLs removed. Remote URLs and file ids stay unproven.
     """
+    from ..api.bot_media import PLANNER_LONG_EDGE
+
     urls = _measurable_image_urls(body)
     if not urls:
         return Bound(False, 0, "unbounded_multimodal", _structural_detail("unbounded_multimodal"))
@@ -428,20 +503,25 @@ def payload_byte_bound(body: dict) -> Bound:
     if encoded is None:
         return Bound(False, 0, "unbounded_multimodal", _structural_detail("unbounded_multimodal"))
     cursor = 0
-    image_bytes = 0
+    image_url_bytes = 0
     for url in urls:
+        width, height = _inline_image(url)
+        if max(width, height) > PLANNER_LONG_EDGE:
+            return Bound(False, 0, "image_too_large",
+                         f"long edge {max(width, height)} exceeds planner maximum {PLANNER_LONG_EDGE}")
         piece = _json_string_bytes(url)
         if not piece:
             return Bound(False, 0, "unbounded_multimodal", _structural_detail("unbounded_multimodal"))
         found = encoded.find(piece, cursor)
         if found < 0:
             return Bound(False, 0, "unbounded_multimodal", _structural_detail("unbounded_multimodal"))
-        image_bytes += len(piece)
+        image_url_bytes += len(piece)
         cursor = found + len(piece)
-    text_bytes = len(encoded) - image_bytes
+    text_bytes = len(encoded) - image_url_bytes
     if text_bytes < 0:
         return Bound(False, 0, "unbounded_multimodal", _structural_detail("unbounded_multimodal"))
-    return PayloadByteBound(len(encoded), image_bytes, text_bytes)
+    image_tokens = IMAGE_TOKEN_CAP * len(urls)
+    return PayloadByteBound(text_bytes + image_tokens, image_url_bytes, text_bytes, image_tokens)
 
 
 def official_input_bound(body: dict, snapshot: dict, *, context_contract: bool = False,
@@ -453,7 +533,8 @@ def official_input_bound(body: dict, snapshot: dict, *, context_contract: bool =
     It is unactivated by default and cannot upgrade or open scope authority.
     A text-only body, with or without ordinary tool schemas, stays blocked:
     character ratios are not a billed-token ceiling. Image parts stay in the
-    body and are bounded by the serialized bytes, not by the 1024 estimate.
+    body. Their reservation is the vision guide's 1024-token upper bound per
+    planner image plus the remaining serialized text bytes, not the file size.
     """
     if context_contract:
         from .llm_input_envelope import EnvelopeInvalid, validate_envelope
@@ -798,7 +879,7 @@ def prepare(body: dict, route: dict, url: str, bound_fn: Optional[Callable[[dict
     if type(nano) is not int or nano <= 0:
         return _fail("unbounded_billed_input", "non_positive_reservation")
     if isinstance(bound, PayloadByteBound) and not context_contract and nano > SKILL_CALL_CAP_NANO:
-        return _fail("over_budget", "per-skill worst case exceeds $0.50")
+        return _fail("image_too_large", "per-skill worst case exceeds $0.50")
     return {
         "ok": True,
         "code": "ready",
@@ -1404,7 +1485,7 @@ def reserve_nano(path: str, *, nano: int, record: dict, runtime_binding=None) ->
         # Payload-byte calls on the default ledger use the $0.40 cumulative stop.
         # The explicit $2 authorization keeps its own ceiling. A single call above
         # $0.50 is refused even when the stop would still have room.
-        if evidence.get("mode") == "payload_bytes" and data.get("authorization") != TWO_DOLLAR_AUTHORIZATION:
+        if evidence.get("mode") == "planner_image_cap" and data.get("authorization") != TWO_DOLLAR_AUTHORIZATION:
             if nano > SKILL_CALL_CAP_NANO or accounted + nano > SKILL_CUMULATIVE_STOP_NANO:
                 return {
                     "ok": False, "code": "over_budget", "scope_id": scope_id,
@@ -1674,7 +1755,15 @@ async def dispatch(body: dict, *, route: dict, url: str, send: Callable[[], Awai
     """
     pre = prepare(body, route, url, bound_fn, context_contract=context_contract, frozen_images=frozen_images)
     if not pre["ok"]:
+        _log.warning("llm usd gate blocked code=%s detail=%s", pre["code"], pre["detail"])
         raise LlmBudgetBlocked(pre["code"], pre["detail"])
+    evidence = pre.get("input_evidence") if isinstance(pre.get("input_evidence"), dict) else {}
+    if evidence.get("mode") == "planner_image_cap":
+        _log.info(
+            "llm input bound tokens=%s image_tokens=%s text_bytes=%s max_output=%s reserved_nano=%s",
+            pre["input_tokens"], evidence.get("image_tokens"), evidence.get("text_bytes"),
+            pre["max_output_tokens"], pre["reserved_nano"],
+        )
     if context_contract and send_frozen is None:
         raise LlmBudgetBlocked("frozen_transport_required", "no immutable-byte transport")
     path = resolved_ledger_path(ledger_path)
@@ -1695,7 +1784,7 @@ async def dispatch(body: dict, *, route: dict, url: str, send: Callable[[], Awai
            if context_contract else {}),
         **({"input_evidence": pre["input_evidence"]}
            if (not context_contract and isinstance(pre.get("input_evidence"), dict)
-               and pre["input_evidence"].get("mode") == "payload_bytes") else {}),
+               and pre["input_evidence"].get("mode") == "planner_image_cap") else {}),
     }
     if activation_runtime is not None:
         from .llm_scope_activation import reserve_for_runtime

@@ -112,8 +112,9 @@ async def test_default_builder_zero_send_preflight(tmp_path, monkeypatch, branch
     assert len(captured) == 1 and not result.error
     item = captured[0]
     assert item["preflight"]["ok"] is True and item["preflight"]["code"] == "ready"
-    assert item["preflight"]["input_evidence"]["mode"] == "payload_bytes"
-    assert item["preflight"]["input_evidence"]["input_tokens"] == item["preflight"]["body_bytes"]
+    assert item["preflight"]["input_evidence"]["mode"] == "planner_image_cap"
+    assert item["preflight"]["input_evidence"]["image_tokens"] == 1024
+    assert item["preflight"]["input_tokens"] == item["preflight"]["text_bytes"] + 1024
     assert item["preflight"]["reserved_nano"] <= gate.SKILL_CALL_CAP_NANO
     assert len(sent) == 1
     body = item["payload"]
@@ -123,7 +124,11 @@ async def test_default_builder_zero_send_preflight(tmp_path, monkeypatch, branch
     assert {"ask_user", "get_canvas", "memory"} <= set(names)
     image_parts = [part for message in body["messages"] if isinstance(message.get("content"), list)
                    for part in message["content"] if part.get("type") == "image_url"]
-    assert image_parts and image_parts[0]["image_url"]["url"] == "data:image/png;base64," + PNG
+    sent_url = image_parts[0]["image_url"]["url"]
+    assert sent_url.startswith("data:image/jpeg;base64,")
+    sent_raw = base64.b64decode(sent_url.split(",", 1)[1])
+    with Image.open(io.BytesIO(sent_raw)) as sent_im:
+        assert max(sent_im.size) <= 1568
     assert body["tool_choice"] == "auto" and body["temperature"] == 0.2
     assert body["thinking"] == {"type": "enabled" if branch == "post_memory_thinking" else "disabled"}
     assert item["mode_default_if_output_stage_reached"] == (65536 if scripts else 8192)

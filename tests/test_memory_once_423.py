@@ -222,6 +222,7 @@ def test_locales_only_add_memory_retrieved_430():
         "botSettings.provider.openai", "botSettings.provider.ollama", "botSettings.provider.custom",
         # #911 P1: Sunburst size-tolerance info toast (not memory copy)
         "jobs.sizeNotice", "jobs.sizeNoticeUnread",
+        "llm.imageTooLarge", "llm.imageUnreadable",
         "bot.composeBannerText",  # #925
         "runStop.stillGenerating",  # #943
         "models.minimaxH3Image",  # #936 picker copy, not memory copy

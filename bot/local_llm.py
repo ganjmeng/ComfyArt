@@ -1383,13 +1383,20 @@ def fit_history(history: Optional[list[dict]], *, context_window: Optional[int] 
     return out
 
 
+def _planner_image_part(attachment: dict) -> dict:
+    """Inline planner copy. The attachment dict and its original bytes stay as stored."""
+    import base64
+
+    from ..api.bot_media import planner_jpeg
+
+    raw = base64.b64decode(attachment["data"])
+    planned = planner_jpeg(raw)
+    return {"type": "image_url",
+            "image_url": {"url": f"data:{planned['media_type']};base64,{planned['data']}"}}
+
+
 def _user_content(text: str, attachments: Optional[list[dict]]):
-    images = [
-        {"type": "image_url",
-         "image_url": {"url": f"data:{a.get('media_type') or 'image/jpeg'}"
-                              f";base64,{a['data']}"}}
-        for a in attachments or [] if a.get("data")
-    ]
+    images = [_planner_image_part(a) for a in attachments or [] if a.get("data")]
     if not images:
         return text
     return [{"type": "text", "text": text}, *images]
@@ -2572,6 +2579,8 @@ class LocalLlmProvider(AgentProvider):
 
     async def send(self, turn: TurnRequest, emit: EmitFn,
                    handle: TurnHandle) -> TurnResult:
+        lang = turn.lang if getattr(turn, "lang", "") in ("zh", "en") else "zh"
+        from .llm_usd_gate import LlmBudgetBlocked
         self._model_blocked = ""
         handle.model_blocked = ""
         project = str(getattr(turn, "project_id", "") or "")
@@ -2711,6 +2720,11 @@ class LocalLlmProvider(AgentProvider):
                                   usage=usage)
         except asyncio.CancelledError:
             raise
+        except LlmBudgetBlocked as e:
+            _log.warning("llm gate blocked before http code=%s detail=%s", e.code, e)
+            from .llm_usd_gate import user_notice
+            shown = user_notice(e.code, lang)
+            return TurnResult(error=shown or str(e))
         except Exception as e:
             if handle.stop_requested:
                 return TurnResult(aborted=True)

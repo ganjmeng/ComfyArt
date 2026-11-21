@@ -320,7 +320,8 @@ async def test_actual_default_builder_catalog_and_mcp_helpers_through_only_fake_
     for payload in wire:
         assert {t["function"]["name"] for t in payload["tools"]}==set(activation.default_tools())
         assert {"ask_user","get_canvas","memory","generate_image"} <= set(activation.default_tools())
-        assert payload["messages"][1]["content"][1]["image_url"]["url"].startswith("data:image/png;base64,")
+        sent_url = payload["messages"][1]["content"][1]["image_url"]["url"]
+        assert sent_url.startswith("data:image/jpeg;base64,")
     if thinking: assert wire[1]["thinking"]=={"type":"enabled"} and wire[1]["max_tokens"]==65536
     state=gate.ledger_state(rig.path)
     assert state["control_state"]["attempts_total"]==len(wire) and state["inflight"]==0

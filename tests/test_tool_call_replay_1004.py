@@ -325,7 +325,8 @@ def _assert_default_request(body):
     assert {tool["function"]["name"] for tool in body["tools"]} == set(CORE_MCP_TOOLS) | {local_llm.QUOTE_TOOL}
     assert body["thinking"] == {"type": "disabled"}
     assert body["max_tokens"] == 8192
-    assert body["messages"][1]["content"][1]["image_url"]["url"] == "data:image/png;base64," + PNG
+    sent_url = body["messages"][1]["content"][1]["image_url"]["url"]
+    assert sent_url.startswith("data:image/jpeg;base64,")
 
 
 async def test_default_continuation_replays_persisted_skill_read_then_asks(monkeypatch, tmp_path):
