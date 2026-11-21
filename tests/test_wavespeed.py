@@ -103,7 +103,9 @@ async def ws(monkeypatch, fresh_user_dir):
         p = state["prices"].get(body.get("model_id"))
         if p is None:
             return web.json_response({"code": 4005, "message": "model not found"}, status=400)
-        p = p(body.get("inputs") or {}) if callable(p) else p
+        # Official body field is singular `input`. `inputs` is not a pricing parameter.
+        spec = body.get("input") if isinstance(body.get("input"), dict) else {}
+        p = p(spec) if callable(p) else p
         return web.json_response({"code": 200, "message": "success", "data": {"model_id": body["model_id"], "unit_price": p, "price": p, "discounted_price": p, "discount_rate": 1, "currency": "USD"}})
 
     async def models(request):
@@ -974,7 +976,7 @@ async def test_estimate_uses_documented_price_endpoint_and_caches(ws):
     job = {"feature": "text_to_video", "prompt": "waves", "duration": 5, "resolution": "768p", "ratio": "16:9", "width": 9, "image": "x"}
     est = await wavespeed.estimate(job)
     assert est["price"] == pytest.approx(0.5) and est["source"] == "quote" and est["confirm"] is True and est["confirm_usd"] == 0.5
-    assert ws["quotes"][0] == {"model_id": model, "inputs": {"duration": 5, "resolution": "768p", "aspect_ratio": "16:9"}}
+    assert ws["quotes"][0] == {"model_id": model, "input": {"duration": 5, "resolution": "768p", "aspect_ratio": "16:9"}}
     await wavespeed.estimate(job)
     assert len(ws["quotes"]) == 1  # cached for 5 minutes
     wavespeed._quotes.update({k: (v[0], v[1] - 301) for k, v in wavespeed._quotes.items()})
@@ -1068,7 +1070,7 @@ async def test_quote_uses_rounded_duration_on_every_path(ws, monkeypatch):
     assert (await wavespeed.estimate(job))["price"] == pytest.approx(0.6)
     board = await wavespeed.estimate({**job, "scenes": [{"prompt": "a", "duration": 7}]})
     assert board["price"] == pytest.approx(0.6) and board["source"] == "quote"
-    assert all(q["inputs"]["duration"] in (5, 10) for q in ws["quotes"] if q["model_id"] == t2v)
+    assert all(q["input"]["duration"] in (5, 10) for q in ws["quotes"] if q["model_id"] == t2v)
     with pytest.raises(wavespeed.WaveSpeedError) as e:
         await wavespeed.submit(job)
     assert e.value.status == 409 and e.value.confirm == pytest.approx(0.6) and not ws["submits"]

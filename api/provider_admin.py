@@ -1511,33 +1511,62 @@ async def gated_llm_http(session, method, url, *, headers, json_body=None, timeo
                           send_frozen=send_frozen if context_contract else None)
 
 
-async def installed_llm_http(session, method, url, *, headers, json_body=None, timeout=120, transport):
-    """Real installed wrapper: explicit persisted activation or unchanged strict default.
+def _controlled_llm_profile_selected() -> bool:
+    """Explicit validation profile, not an ordinary product process.
 
-    Lookup is read-only (apart from stable lock files). Never opens a scope,
-    activates a manifest, reads a provider secret, or falls back to another
-    ledger after a configured binding fails validation.
+    Any non-empty ``COMFYART_RUNTIME_ID`` counts, including whitespace and other
+    malformed values. ``COMFYART_HOME`` alone does not. An in-process authorized
+    scope bind counts even when no runtime id is set.
     """
-    from ..bot.llm_scope_activation import (
-        configured_runtime, active_binding, auxiliary_designation,
-        validate_auxiliary, auxiliary_no_redirects,
-    )
-    from ..bot.llm_usd_gate import route_requires_gate
-    runtime = configured_runtime(app_path())
-    route = _llm_lock.get()
+    if os.environ.get("COMFYART_RUNTIME_ID", ""):
+        return True
+    from ..bot.llm_scope_bind import scope_is_bound
+    return scope_is_bound()
+
+
+async def installed_llm_http(session, method, url, *, headers, json_body=None, timeout=120, transport):
+    """Product install wrapper.
+
+    An ordinary process adapts the official body and calls transport. It does
+    not import runtime activation or the USD validation gate, and it does not
+    require a test ledger, manifest, or runtime id.
+
+    A selected controlled profile stays fail-closed. A runtime id without a
+    committed binding is rejected for every method, including custom routes,
+    and is not sent as an ordinary request. An in-process authorized scope
+    still enters the gate. Direct ``gated_llm_http`` / ``dispatch`` callers
+    are unchanged. Lookup never opens a scope, activates a manifest, reads a
+    provider secret, or falls back to another ledger after a configured
+    binding fails validation.
+    """
+    if not _controlled_llm_profile_selected():
+        body = adapt_llm_body(json_body, url)
+        return await transport(session, method, url, headers=headers, json_body=body, timeout=timeout)
+
     binding = None
-    if runtime is not None:
+    runtime = None
+    if os.environ.get("COMFYART_RUNTIME_ID", ""):
+        from ..bot.llm_scope_activation import (
+            configured_runtime, active_binding, auxiliary_designation,
+            validate_auxiliary, auxiliary_no_redirects,
+        )
+        from ..bot.llm_usd_gate import LlmBudgetBlocked, route_requires_gate
+        runtime = configured_runtime(app_path())
+        if runtime is None:
+            raise LlmBudgetBlocked("activation_required", "runtime_without_identity")
+        route = _llm_lock.get()
         # Explicit helper-created purpose, never URL substring/body guessing.
         # The designation binds configured endpoint, method and immutable body.
         auxiliary = auxiliary_designation()
         binding = active_binding(runtime, route=route, url=None if auxiliary else str(url))
-        if binding is not None and auxiliary:
+        if binding is None:
+            raise LlmBudgetBlocked("activation_required", "runtime_without_committed_binding")
+        if auxiliary:
             validate_auxiliary(binding, method, url, json_body)
             with auxiliary_no_redirects():
                 return await transport(session, method, url, headers=headers,
                                        json_body=json_body, timeout=timeout)
-        if binding is not None and not route_requires_gate(method, url, route):
-            from ..bot.llm_usd_gate import LlmBudgetBlocked
+        if not route_requires_gate(method, url, route):
             raise LlmBudgetBlocked("activation_route_mismatch", "physical_method/target")
     return await gated_llm_http(
         session, method, url, headers=headers, json_body=json_body, timeout=timeout,

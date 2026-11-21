@@ -1,0 +1,100 @@
+{
+  "type": "tool_use",
+  "name": "generate_image",
+  "input": {
+    "composition_plan": {
+      "appearance": "Matte dark charcoal grey plastic and soft-touch coated shells, slightly lighter grey fabric-look cushion padding, subtle satin sheen, no logos, pure white seamless background, soft even studio lighting with gentle contact shadow",
+      "panels": [
+        {
+          "appearance": "Matte dark grey shells, lighter grey cushion rims, pure white background",
+          "content": "headband arch, both earcup cushion rims, yoke sliders",
+          "description": "Straight-on front view of the headphone",
+          "geometry": "Camera directly in front of the headphone at earcup height, looking horizontally at the front; headband arch fully visible as a symmetric arc; both earcups seen edge-on with cushion rims facing inward; outer shells visible only as thin edges; nothing occluded",
+          "id": "1",
+          "name": "Front elevation"
+        },
+        {
+          "appearance": "Matte dark grey shells with satin highlight, lighter grey cushions, pure white background",
+          "content": "near earcup outer shell, yoke hinge, foreshortened headband arch",
+          "description": "Angled front view from one side",
+          "geometry": "Camera 45 degrees to the front-left of the headphone at earcup height, looking horizontally; near earcup outer shell dominant, far earcup partly hidden behind it; headband arch foreshortened; far cushion hidden",
+          "id": "2",
+          "name": "Three-quarter front"
+        },
+        {
+          "appearance": "Matte dark grey shell, satin sheen, pure white background",
+          "content": "earcup outer shell, hinge joint, headband C curve",
+          "description": "Pure side view of the headphone",
+          "geometry": "Camera exactly to one side at earcup height, looking horizontally perpendicular to the headphone; one earcup outer shell flat to camera, headband arch as a C shape, far earcup and far yoke completely hidden",
+          "id": "3",
+          "name": "Side profile"
+        },
+        {
+          "appearance": "Lighter grey cushion padding, matte dark grey inner cups, pure white background",
+          "content": "earcup inner surfaces, cushion padding, headband inner lining",
+          "description": "Back view showing the inner surfaces",
+          "geometry": "Camera directly behind the headphone at earcup height, looking horizontally; inner surfaces of both earcups and the inside of the headband visible; outer shells hidden",
+          "id": "4",
+          "name": "Rear view"
+        },
+        {
+          "appearance": "Matte dark grey crown and shell tops, pure white background",
+          "content": "headband crown band, earcup tops, yoke tops",
+          "description": "Overhead view looking straight down",
+          "geometry": "Camera directly above the headphone looking vertically down; headband crown seen as a narrow band across the frame, both earcup tops visible; earcup cushions and inner surfaces hidden from this camera",
+          "id": "5",
+          "name": "Top-down"
+        },
+        {
+          "appearance": "Matte dark grey undersides, soft shadow falloff, pure white background",
+          "content": "earcup undersides, lower headband edge, hinge bottoms",
+          "description": "View from below",
+          "geometry": "Camera below the headphone looking upward at the earcup undersides; earcup bottoms and the lower edge of the headband visible; top of the headband hidden",
+          "id": "6",
+          "name": "Low angle"
+        },
+        {
+          "appearance": "Matte dark grey shell, satin highlight, fine seam lines, pure white background",
+          "content": "earcup shell surface, yoke hinge, slider joint",
+          "description": "Close-up of one earcup shell and hinge",
+          "geometry": "Camera close to one earcup outer shell, slightly off-axis, looking at the shell; yoke hinge and slider joint fill the frame; rest of the headphone cropped out",
+          "id": "7",
+          "name": "Earcup detail"
+        },
+        {
+          "appearance": "Matte dark grey crown, lighter grey padding, pure white background",
+          "content": "headband crown padding, crown curve, slider ends",
+          "description": "Close-up of the headband crown",
+          "geometry": "Camera close to the headband crown from slightly above and in front, looking at the padded underside; earcups cropped out of frame",
+          "id": "8",
+          "name": "Headband detail"
+        },
+        {
+          "appearance": "Matte dark grey shells, lighter grey cushions, pure white background",
+          "content": "folded earcups, inward-rotated hinges, compact headband loop",
+          "description": "Headphone folded for storage",
+          "geometry": "Camera three-quarter above the folded headphone looking down at it; earcups rotated inward and lying flat, compact silhouette; inner surfaces partly visible, outer shells partly hidden",
+          "id": "9",
+          "name": "Folded flat"
+        }
+      ],
+      "purpose": "E-commerce product detail page imagery on a pure white seamless background",
+      "subject": "Over-ear wireless headphone, matte dark grey, padded headband with slider yokes and soft earcup cushions",
+      "subject_geometry": "Closed headband arch with a padded crown, two telescoping slider yokes at each end, two oval earcups with thick cushions and smooth outer shells, hinge joints where yokes meet earcups"
+    },
+    "count": 1,
+    "height": 2048,
+    "multi_angle_stage": "preview",
+    "prompt": "A single 3x3 numbered nine-panel lineart contact sheet (9:16, 1152x2048) of one over-ear wireless headphone product, drawn as clean thin black outline lineart on pure white, no shading, no color, no material rendering. Each cell is a separate composition of the same headphone, each cell labelled with a small number 1-9 in its top-left corner. Panel 1: straight-on front view, both earcups facing camera, headband arch fully visible, earcup outer shells and cushion rims seen edge-on. Panel 2: three-quarter front view from the left side, one earcup outer shell dominant, the other partly hidden behind it, headband arch foreshortened. Panel 3: pure side profile, one earcup outer shell flat to camera, headband arch as a C shape, the far earcup completely hidden. Panel 4: rear view, inner faces of both earcups and the inside of the headband visible, outer shells hidden. Panel 5: camera directly above looking vertically down, headband arch seen as a narrow band, both earcup tops visible, earcup cushions and inner faces hidden from this camera. Panel 6: low angle from below, earcup undersides and the bottom of the headband visible, top of the headband hidden. Panel 7: tight close-up of one earcup outer shell with the yoke hinge and slider joint, rest of the headphone cropped out of frame. Panel 8: close-up of the headband crown and its padded underside, earcups cropped out of frame. Panel 9: headphone folded flat for storage, earcups rotated inward, compact silhouette. Consistent proportions and identical product across all nine cells, thin uniform line weight, generous white margins, no text other than the panel numbers.",
+    "ratio": "9:16",
+    "ref_modes": [
+      "content"
+    ],
+    "refs": [
+      "shape:tAz9M7TnR_2Fz6VNRAiFJ"
+    ],
+    "skill": "universal-multi-angle-grid",
+    "width": 1152
+  },
+  "id": "call_00_APVhMIWJDXJEqCe1a5P38794"
+}

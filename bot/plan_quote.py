@@ -340,6 +340,9 @@ class Quote:
     # #968: the total the card shows is the sum of the per-line rounded credits, so line and total
     # can never disagree. `total` above stays the exact USD sum used by the confirm threshold.
     total_credits: int = 0
+    # A priced amount, including a real zero, with billable units. A param block, a missing
+    # catalog, or an unpriced line is not a quotation and must not offer Start.
+    acquired: bool = True
 
     def ask_spec(self) -> dict:
         lang = _lang(self.lang)
@@ -534,6 +537,52 @@ async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
                       approx or source == SOURCE_ESTIMATE, show, choice, None, units, source, reason)
 
 
+def _forces_quote_card(prepared: list[dict]) -> bool:
+    """This skill must always show the existing plan_quote card before a paid generate."""
+    from ..api.multi_angle import SKILL, applies
+    from .skill_output import resolve
+    for step in prepared:
+        if step.get("tool") != "generate_image":
+            continue
+        args = step.get("arguments") if isinstance(step.get("arguments"), dict) else {}
+        named = resolve(args.get("skill")) or str(args.get("skill") or "")
+        if named == SKILL or applies(args):
+            return True
+    return False
+
+
+def _line_acquired(ln: Line) -> bool:
+    """True when this line is a quotation we actually obtained.
+
+    A priced zero (source quote, units > 0) counts. A param block, a zero-unit
+    refusal, or an unpriced / missing-catalog line does not.
+    """
+    if ln.units <= 0 or ln.unpriced or ln.source == SOURCE_UNPRICED:
+        return False
+    if ln.reason in ("param_blocked", "svg_blocked"):
+        return False
+    return ln.source in (SOURCE_QUOTE, SOURCE_ESTIMATE)
+
+
+NOT_READY = {
+    "zh": "线稿预览报价还没有取得，不能开始，也没有提交。",
+    "en": "The lineart preview quote is not ready, so nothing can start and nothing was submitted.",
+}
+
+
+def not_ready_payload(lang: str, detail: str = "") -> str:
+    """Explicit blocked state. No Start option and no start=true."""
+    lang = _lang(lang)
+    error = NOT_READY[lang]
+    detail = str(detail or "").strip()
+    if detail:
+        error = f"{error} {detail}" if lang == "en" else f"{error}{detail}"
+    return json.dumps({
+        "ok": False, "start": False, "submitted": False,
+        "quote_ready": False, "error": error,
+    }, ensure_ascii=False)
+
+
 def _needs_ask(total: float, threshold: float, unknown_price: bool) -> bool:
     """#904: a known 0-credit plan does not ask; an unknown price always does.
 
@@ -583,6 +632,11 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         amount, approx, source, reason = priced.amount, priced.approx, priced.source, priced.reason
         unpriced = amount is None
         name = step["text"] or step["tool"]
+        if step["tool"] == "generate_image":
+            from ..api.multi_angle import quote_step_label
+            preview_name = quote_step_label(step.get("arguments") or {}, lang)
+            if preview_name:
+                name = preview_name
         label = model_label(show) if show else AUTO_LABEL[lang]
         choice = routed_choice or _quote_choice(step, router)
         routed_id = str((choice or {}).get("edit_model") or (choice or {}).get("model") or "")
@@ -614,6 +668,12 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
     # A blocked/refused step has units 0 (it makes no paid call), so it must not force one.
     unknown_price = any(ln.unpriced and ln.units > 0 for ln in lines)
     ask = _needs_ask(total, threshold, unknown_price)
+    acquired = all(_line_acquired(ln) for ln in lines)
+    # A forced lineart card waits only on a quotation that was actually acquired,
+    # including a priced zero. A param block or a missing price is not that quote
+    # and must not keep the unpriced "confirm to run" Start.
+    if _forces_quote_card(prepared):
+        ask = acquired
     if len(lines) == 1 and not ask and not lines[0].unpriced:
         # #904: a known 0-credit (or under-line) single call runs as before. A single refusal
         # line keeps the quote object it had before #904 (the line names the reason, #956).
@@ -651,4 +711,5 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         total_label=TOTAL_LABEL[lang], total_text=total_text,
         keys=[ln.key for ln in lines], cancel_text=CANCEL_TEXT[lang],
         units=sum(ln.units for ln in lines), total_credits=total_credits,
+        acquired=acquired,
     )

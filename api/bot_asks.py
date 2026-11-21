@@ -887,6 +887,8 @@ def validate_spec(args: dict) -> dict:
 
 
 def _validate_spec(args: dict) -> dict:
+    from .multi_angle import normalize_card as normalize_multi_angle_card
+    args = normalize_multi_angle_card(args)
     from .portrait_studio import normalize_card as normalize_portrait_studio_card
     args = normalize_portrait_studio_card(args)  # portrait-studio (reference run 7fc60c86)
     from .product_packaging import normalize_card as normalize_product_packaging_card
