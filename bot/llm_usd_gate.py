@@ -112,9 +112,22 @@ On the default ledger, those planner-image holds stop at $0.40 per project id
 this file and survives a restart). The $0.05 ceiling for other calls and the
 explicit $2 scope are unchanged. Remote URLs, file ids, and undecodable bytes
 stay unproven.
+
+A non-controlled send that fails after the hold is booked is closed in three
+ways. The hold is released at zero only for ``RequestNotWritten``, which
+``exchange_with_send_proof`` raises when aiohttp's own trace saw the request
+start and then no headers, no body chunk, and no redirect. A connector error
+by itself is not that proof: the client follows redirects, so the first
+server can already have the POST when a later hop raises ``ClientConnectorError``.
+That failure keeps the full reservation. An ``LlmHttpError`` whose body has
+usage that passes the existing usage check is settled at that actual amount.
+Timeouts, disconnects, cancellations, HTTP errors without that usage, and any
+other exception keep the full hold. A controlled scope is unchanged: the first
+failed outcome still keeps the full reservation and latches the breaker.
 """
 from __future__ import annotations
 
+import asyncio
 import base64
 import binascii
 import contextvars
@@ -1320,6 +1333,14 @@ def _row_hold(row: dict) -> Optional[int]:
         actual = _as_int(row.get("actual_nano"))
         reserved = _as_int(row.get("reserved_nano"))
         return actual if actual is not None and actual == reserved else None
+    if status == "released":
+        # Proof the request was not written. Any other shape is unreadable,
+        # not a silent zero, so a forged release cannot drop the hold.
+        actual = _as_int(row.get("actual_nano"))
+        reason = row.get("retain_reason")
+        if actual != 0 or type(reason) is not str or not reason.startswith("no_network:"):
+            return None
+        return 0
     if status in ("reserved", "retained"):
         reserved = _as_int(row.get("reserved_nano"))
         if "observed_nano" in row:
@@ -1715,6 +1736,181 @@ def settle(path: str, reservation_id: str, usage: Any) -> dict:
     return _mutate(path, change, create=False, preserve_on_failure=True)
 
 
+class RequestNotWritten(Exception):
+    """aiohttp started this call and its trace shows no bytes and no redirect.
+
+    ``cause`` is the original failure (refused connect, connect timeout, bad
+    URL, or TLS fingerprint) on that first hop. A bare ``ClientConnectorError``
+    is not this exception: the same class is raised when a later redirect hop
+    cannot connect, after an earlier server has already received the POST.
+    """
+
+    def __init__(self, cause: BaseException) -> None:
+        self.cause = cause
+        super().__init__(type(cause).__name__)
+
+
+class _SendWitness:
+    """Counts aiohttp trace events for one ``session.request``."""
+
+    __slots__ = ("started", "headers", "chunks", "redirects")
+
+    def __init__(self) -> None:
+        self.started = 0
+        self.headers = 0
+        self.chunks = 0
+        self.redirects = 0
+
+    def config(self):
+        import aiohttp
+
+        trace = aiohttp.TraceConfig()
+
+        async def started(_session, _context, _params) -> None:
+            self.started += 1
+
+        async def headers(_session, _context, _params) -> None:
+            self.headers += 1
+
+        async def chunks(_session, _context, _params) -> None:
+            self.chunks += 1
+
+        async def redirects(_session, _context, _params) -> None:
+            self.redirects += 1
+
+        trace.on_request_start.append(started)
+        trace.on_request_headers_sent.append(headers)
+        trace.on_request_chunk_sent.append(chunks)
+        trace.on_request_redirect.append(redirects)
+        return trace
+
+    def nothing_written(self) -> bool:
+        # ``started`` must be from aiohttp itself. A substitute session that
+        # never emits the trace cannot satisfy this.
+        return self.started > 0 and self.headers == 0 and self.chunks == 0 and self.redirects == 0
+
+
+def _prewrite_failure(exc: BaseException) -> bool:
+    """Failures that can occur before the first request bytes are written.
+
+    A later read timeout, cancel, or disconnect is excluded even when the
+    witness is empty. ``ConnectionTimeoutError`` is the connect-phase timeout;
+    other timeout classes stay unknown.
+    """
+    import aiohttp
+
+    if isinstance(exc, (asyncio.CancelledError, KeyboardInterrupt, SystemExit)):
+        return False
+    if isinstance(exc, aiohttp.ConnectionTimeoutError):
+        return True
+    if isinstance(exc, (asyncio.TimeoutError, aiohttp.ServerTimeoutError)):
+        return False
+    return isinstance(exc, (
+        aiohttp.ClientConnectorError,
+        aiohttp.InvalidURL,
+        aiohttp.ServerFingerprintMismatch,
+    ))
+
+
+def _request_not_written(exc: BaseException) -> bool:
+    """True only for the trace proof, not for an exception class by itself."""
+    return type(exc) is RequestNotWritten
+
+
+async def exchange_with_send_proof(method: str, url: str, *, headers, timeout, json_body=None, data=None):
+    """One HTTP exchange. Raises ``RequestNotWritten`` only when the trace is empty.
+
+    Redirects stay enabled. If the first server accepts the POST and the next
+    hop then fails to connect, the redirect (or the bytes already traced) keeps
+    the original exception, and the ledger retains the reservation.
+    """
+    import aiohttp
+
+    witness = _SendWitness()
+    limit = timeout if isinstance(timeout, aiohttp.ClientTimeout) else aiohttp.ClientTimeout(total=timeout)
+    payload = {"data": data} if data is not None else {"json": json_body}
+    async with aiohttp.ClientSession(
+        trace_configs=[witness.config()], headers=headers, timeout=limit,
+    ) as session:
+        try:
+            async with session.request(method, url, headers=headers, timeout=limit, **payload) as res:
+                return res.status, await res.text()
+        except BaseException as exc:
+            if witness.nothing_written() and _prewrite_failure(exc):
+                raise RequestNotWritten(exc) from exc
+            raise
+
+
+def _usage_from_http_error(exc: BaseException) -> Any:
+    """Usage object on an HTTP error body, or None when it is not there.
+
+    Only ``LlmHttpError`` carries the response we actually read. A timeout or
+    disconnect does not, and a lookalike attribute on another exception is
+    not treated as a bill.
+    """
+    from .local_llm import LlmHttpError
+
+    if not isinstance(exc, LlmHttpError) or type(exc.body) is not str or not exc.body.strip():
+        return None
+    try:
+        parsed = json.loads(exc.body)
+    except ValueError:
+        return None
+    if not isinstance(parsed, dict):
+        return None
+    usage = parsed.get("usage")
+    return usage if isinstance(usage, dict) else None
+
+
+def release(path: str, reservation_id: str, reason: str) -> dict:
+    """Return a hold to zero when ``reason`` records that no request was written.
+
+    Controlled scopes are refused and left unchanged: their failed outcome
+    still keeps the full reservation. A hold that is not entirely inside
+    ``accounted_nano`` is retained instead of driving the total negative.
+    """
+    if type(reason) is not str or not reason.startswith("no_network:"):
+        raise LlmBudgetBlocked("release_refused", "proof")
+
+    def change(data: dict) -> dict:
+        if _controlled(data):
+            return {"ok": False, "code": "controlled_no_release", "accounted_nano": data.get("accounted_nano")}
+        row = data["reservations"].get(reservation_id)
+        if not isinstance(row, dict) or row.get("status") != "reserved":
+            return {"ok": False, "code": "missing_reservation", "accounted_nano": data.get("accounted_nano")}
+        reserved = _as_int(row.get("reserved_nano"))
+        accounted = _as_int(data.get("accounted_nano"))
+        if reserved is None or accounted is None or accounted < reserved:
+            row["status"] = "retained"
+            row["retain_reason"] = "release_unproven"
+            _trip(data, "release_unproven", reservation_id)
+            return {"ok": True, "code": "retained", "accounted_nano": data["accounted_nano"], "reason": "release_unproven"}
+        row["status"] = "released"
+        row["actual_nano"] = 0
+        row["retain_reason"] = reason
+        data["accounted_nano"] = accounted - reserved
+        return {"ok": True, "code": "released", "actual_nano": 0, "accounted_nano": data["accounted_nano"]}
+
+    return _mutate(path, change, create=False, preserve_on_failure=True)
+
+
+def _close_failed_send(path: str, reservation_id: str, exc: BaseException, *, controlled: bool) -> None:
+    """Book a send that raised. Controlled scopes always keep the full hold."""
+    transport_reason = "transport:" + type(exc).__name__
+    if not controlled and _request_not_written(exc):
+        cause = type(getattr(exc, "cause", None)).__name__
+        closed = release(path, reservation_id, f"no_network:RequestNotWritten:{cause}")
+        if closed.get("code") in ("released", "retained"):
+            return
+    if not controlled:
+        usage = _usage_from_http_error(exc)
+        if usage is not None:
+            closed = settle(path, reservation_id, usage)
+            if closed.get("code") in ("reconciled", "retained"):
+                return
+    retain(path, reservation_id, transport_reason)
+
+
 def retain(path: str, reservation_id: str, reason: str, *, usage: Any = None) -> dict:
     def change(data: dict) -> dict:
         row = data["reservations"].get(reservation_id)
@@ -1882,7 +2078,7 @@ async def dispatch(body: dict, *, route: dict, url: str, send: Callable[[], Awai
         result = await send_frozen(pre["body_bytes"]) if context_contract else await send()
     except BaseException as exc:
         try:
-            retain(path, rid, "transport:" + type(exc).__name__)
+            _close_failed_send(path, rid, exc, controlled=controlled)
         except Exception:
             _log.exception("llm usd gate could not mark a failed send; reservation stays")
         if controlled and isinstance(exc, Exception):

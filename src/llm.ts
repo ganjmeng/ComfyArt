@@ -1,10 +1,24 @@
 import { atom } from 'tldraw'
 
 import { api, uploadImage, viewUrl } from './comfy'
+import { lang, t } from './i18n'
+import { currentProject } from './notices'
 import { wsBodyError } from './wsErrors'
 import { estimateCost } from './wavespeedKey'
-import { t } from './i18n'
 import { botEnabledAtom, settingsAtom } from './bot'
+import en from './locales/en.json'
+import zh from './locales/zh.json'
+
+const LLM_NOTICE_KEYS = ['llm.imageTooLarge', 'llm.imageUnreadable', 'llm.overBudget', 'llm.messageBlocked'] as const
+
+/** Gate blocks are the four approved sentences. Anything else stays on the existing error path. */
+export function approvedLlmNotice(text: string): string | null {
+  const msg = text.trim()
+  for (const key of LLM_NOTICE_KEYS) {
+    if (msg === zh[key] || msg === en[key]) return t(key)
+  }
+  return null
+}
 
 function firstObject(text: string): string {
   const start = text.indexOf('{')
@@ -36,9 +50,16 @@ export function parseJson(raw: string): Record<string, unknown> | null {
 }
 
 export async function ask(prompt: string, system: string, images: string[]): Promise<string> {
-  const res = await api('/comfyart/llm/complete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: prompt, system, images }) })
+  const res = await api('/comfyart/llm/complete', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: prompt, system, images, project: currentProject(), lang }),
+  })
   const body = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(wsBodyError(body, t('llm.agentCallFailed', res.status)))
+  if (!res.ok) {
+    const notice = approvedLlmNotice(typeof body.error === 'string' ? body.error : '')
+    throw new Error(notice ?? wsBodyError(body, t('llm.agentCallFailed', res.status)))
+  }
   return body.text as string
 }
 
