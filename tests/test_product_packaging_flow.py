@@ -10,7 +10,8 @@ locks everything else.
 
 $0: no WaveSpeed call. submit_command and the run approval are mocked. Pins and the untouched
 files are locked by literal sha256 values (no historical git objects, so a depth-1 clone works);
-bot/skill_output.py is pinned to the #905 revision.
+bot/skill_output.py is pinned to the #1019 revision (an empty brand preset is the
+default path; packaging's own plan is unchanged).
 """
 from __future__ import annotations
 
@@ -508,7 +509,7 @@ PINNED_SHA256 = {
     "api/skill_size.py": "ec90c1098ad359dc017c4c470ab5ee0f16e12f5baff9924da2376a8b1153e312",
     "api/curated_models.json": "53c77b0a449f86b8b2aa9b48044678dddaf5aa3cdad40486f0c981386b8d2dce",
     "api/wavespeed_models.json": "3f70cc34de378fd675a2afffb7b7c15b533c67db424e1ae25b6ba3356dd082d1",
-    "bot/skill_output.py": "02d74b0260d4e494bbc922f79a373014eff98748245364fdfb56028636597569",  # #1003 source question stays when a reference is attached; content, 9:16 preview, and unrelated locks preserved
+    "bot/skill_output.py": "697efdbb0acfb5909aae1e97d536483994b2bec31580bce18a83de38895f30e7",  # #1019 empty brand preset is the 8-image default path; #1003 source question and unrelated locks preserved
     "api/portrait_studio.py": "61257848a9e23d13c066d01c103c565d6804e58c926d3905c6ed8b0890569224",
     "bot/self_check.py": "1a9b4f7eda7e915adf83df42ff31ccf3c27e83253d9636ba5c85aead447993b6",
 }
