@@ -1601,6 +1601,14 @@ async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
     # #825: frame_count / frame_duration_ms are quoted on the confirm line but not sent to the price API.
     body = {"model_id": model, "inputs": gif_image.billable(priced)}
     ck = json.dumps(body, sort_keys=True)
+    # No key: do not call the price API and do not load the catalog. The published
+    # table is an estimate; anything else is unpriced, which still asks before submit.
+    if not has_key():
+        n = len(priced.get("images") or []) + (1 if priced.get("mask_image") else 0)
+        stub = gif_image.documented_usd(model, str(priced.get("quality") or "medium"), str(priced.get("resolution") or "1k"), n)
+        if stub is not None:
+            return _Quoted(float(stub), "estimate", "list_price")
+        return _Quoted(None, "unpriced")
     hit = _quotes.get(ck)
     if hit and time.time() - hit[1] < QUOTE_TTL:
         return _Quoted(hit[0], "quote", "cache")

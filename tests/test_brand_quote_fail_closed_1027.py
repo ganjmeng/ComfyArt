@@ -109,6 +109,22 @@ async def _run(monkeypatch, *, budget: bool, price: str, confirm: str, stage: st
 
 @pytest.mark.parametrize("stage", ["first", "final"])
 @pytest.mark.parametrize("budget", [True, False], ids=["agent_loop", "local_llm"])
+async def test_missing_key_still_asks_and_does_not_generate(monkeypatch, budget, stage):
+    """No WaveSpeed key. Quote construction must not raise and must not submit."""
+    monkeypatch.delenv("WAVESPEED_API_KEY", raising=False)
+    monkeypatch.setattr("ComfyArt.api.wavespeed._saved_key", lambda: "")
+    from ComfyArt.api import wavespeed
+    wavespeed._quotes.clear()
+    generated, events, _res = await _run(
+        monkeypatch, budget=budget, price="production", confirm="production", stage=stage)
+    assert generated == []
+    text = "\n".join(e.text for e in events if e.t == "delta" and e.text)
+    assert "WaveSpeed needs an API key" not in text
+    assert "没有人确认" in text or "未开始" in text
+
+
+@pytest.mark.parametrize("stage", ["first", "final"])
+@pytest.mark.parametrize("budget", [True, False], ids=["agent_loop", "local_llm"])
 async def test_quote_build_exception_does_not_generate(monkeypatch, budget, stage):
     async def boom(*_a, **_k):
         raise RuntimeError("quote build failed")
