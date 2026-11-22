@@ -127,8 +127,8 @@ _CARD1_ZH = [
         "id": _Q_MARK,
         "prompt": "Logo 的构成方向偏好？",
         "options": [
-            {"id": "A", "label": "图形符号（栖木 / 枝桠 / 停栖）+ 中英文字标"},
-            {"id": "B", "label": "纯文字标：栖木咖啡 + QIMU COFFEE，靠字体气质成立"},
+            {"id": "A", "label": "图形符号 + 中英文字标"},
+            {"id": "B", "label": "纯文字标，靠字体气质成立"},
             {"id": "C", "label": "圆形徽章 / 印章式，手作感更重"},
         ],
         "placeholder": "三个方向都出，我看完再挑…",
@@ -175,7 +175,7 @@ _CARD1_EN = [
         "id": _Q_MARK,
         "prompt": "Which logo construction do you prefer?",
         "options": [
-            {"id": "A", "label": "A symbol (perch / branch) plus a Chinese and English wordmark"},
+            {"id": "A", "label": "A symbol plus a Chinese and English wordmark"},
             {"id": "B", "label": "Wordmark only: the brand name, carried by the type"},
             {"id": "C", "label": "A round badge / seal, with more of a handmade feel"},
         ],
@@ -218,18 +218,18 @@ _CARD3_ZH = {
     "id": _CARD3,
     "prompt": "选定哪个 Logo 方向作为最终标识（logo_primary）？",
     "options": [
-        {"id": "A", "label": "方向 A 一笔枝桠停栖", "description": "最轻、最现代，缩放容忍度最高，杯印与头像都好使"},
-        {"id": "B", "label": "方向 B 木牌印章式", "description": "木刻肌理 + 厚字重，手作温度最强，适合门头与封贴"},
-        {"id": "C", "label": "方向 C 负形栖架", "description": "三重共读的负形，图形记忆点最强，小尺寸更耐测"},
+        {"id": "A", "label": "方向 A"},
+        {"id": "B", "label": "方向 B"},
+        {"id": "C", "label": "方向 C"},
     ],
 }
 _CARD3_EN = {
     "id": _CARD3,
     "prompt": "Which logo direction should be the final mark (logo_primary)?",
     "options": [
-        {"id": "A", "label": "Direction A, one-stroke branch perch", "description": "Lightest and most modern; holds up small, on a cup and as an avatar"},
-        {"id": "B", "label": "Direction B, wood-plaque seal", "description": "Carved texture and heavy type; warmest, suited to the storefront and seals"},
-        {"id": "C", "label": "Direction C, negative-space perch", "description": "A shared negative shape; the most memorable mark, and it holds at small sizes"},
+        {"id": "A", "label": "Direction A"},
+        {"id": "B", "label": "Direction B"},
+        {"id": "C", "label": "Direction C"},
     ],
 }
 
@@ -427,10 +427,13 @@ def unselect_recommended(spec: dict) -> dict:
 # --- run progress (one chat, across turns) -------------------------------------------------------
 
 _PROGRESS: dict[str, dict] = {}
+_HELD_WRAPUP: dict[str, str] = {}
+BRAND_PLANNED_IMAGES = 8
 
 
 def reset_for_tests() -> None:
     _PROGRESS.clear()
+    _HELD_WRAPUP.clear()
 
 
 def _chat() -> str:
@@ -685,6 +688,132 @@ def _advance(progress: dict) -> None:
         progress["phase"] = "done"
 
 
+def finals_placed() -> bool:
+    shapes = _progress().get("shapes") or {}
+    return all(slot in shapes for slot in FINAL_IDS)
+
+
+def should_hold_wrapup() -> bool:
+    """The delivery list stays hidden until the four deliverables are on the canvas."""
+    return str(_progress().get("phase") or "") == "finals" and not finals_placed()
+
+
+def hold_wrapup(text: str) -> None:
+    text = str(text or "").strip()
+    if text and should_hold_wrapup():
+        _HELD_WRAPUP[_chat()] = text
+
+
+def release_wrapup() -> str:
+    if not finals_placed():
+        return ""
+    return _HELD_WRAPUP.pop(_chat(), "")
+
+
+def ensure_run_budget(tracker, skill: str, preset: str) -> None:
+    """The default path is 3 asks + 8 images + a quote per stage + the closing turn.
+
+    The image cap is planned count + 2. Leaving planned at the page default of 4
+    stops the run at 6 images, before the four deliverables finish.
+    """
+    if str(skill or "") != SKILL or is_template(preset):
+        return
+    current = int(getattr(tracker, "planned_images", 0) or 0)
+    tracker.planned_images = max(current, BRAND_PLANNED_IMAGES)
+
+
+_QUOTE_NAME = {
+    "zh": {
+        "moodboard": "情绪板",
+        "logo_a": "Logo 方向 A",
+        "logo_b": "Logo 方向 B",
+        "logo_c": "Logo 方向 C",
+        "spec": "规范卡",
+        "cup": "外带杯与杯套",
+        "bag": "纸袋",
+        "storefront": "门店门头",
+    },
+    "en": {
+        "moodboard": "Moodboard",
+        "logo_a": "Logo direction A",
+        "logo_b": "Logo direction B",
+        "logo_c": "Logo direction C",
+        "spec": "Guideline card",
+        "cup": "Takeaway cup",
+        "bag": "Paper bag",
+        "storefront": "Storefront",
+    },
+}
+
+
+def quote_line(slot_id: str, lang: str) -> str:
+    """Quote-card row: material, exact pixels, ratio. No model name."""
+    slot = _BY_ID.get(str(slot_id or ""))
+    if not slot:
+        return ""
+    names = _QUOTE_NAME["en" if lang == "en" else "zh"]
+    name = names.get(slot["id"]) or slot["id"]
+    return f"{name} {slot['width']}×{slot['height']} {slot['ratio']}"
+
+
+def _remaining_slot_ids(phase: str) -> list[str]:
+    if phase == "moodboard":
+        ids = ("moodboard",)
+    elif phase == "logos":
+        ids = LOGO_IDS
+    elif phase == "finals":
+        ids = FINAL_IDS
+    else:
+        return []
+    progress = _progress()
+    inflight = progress.get("inflight") or []
+    shapes = progress.get("shapes") or {}
+    return [slot for slot in ids if slot not in shapes and slot not in inflight]
+
+
+def annotate_quote_steps(steps: list, paid_args: list | None = None) -> list:
+    """Stamp brand slots onto a quote the model wrote itself.
+
+    A quote_plan call often omits brand_slot. Without it the stage is not
+    recognized, a sub-$0.50 stage can skip the card, and every row reads as
+    the model name. Slots already on the generate calls win; otherwise the
+    current stage supplies them. Other skills are left untouched.
+    """
+    phase = str(_progress().get("phase") or "")
+    paid = [a for a in (paid_args or []) if isinstance(a, dict)]
+    known = [str(a.get("brand_slot")) for a in paid if str(a.get("brand_slot") or "") in _BY_ID]
+    brand_paid = any(a.get("skill") == SKILL or a.get("brand_slot") for a in paid)
+    if phase not in {"moodboard", "logos", "finals"} and not known and not brand_paid:
+        return list(steps or [])
+    queue = known or _remaining_slot_ids(phase)
+    cursor = 0
+    out = []
+    for step in steps or []:
+        if not isinstance(step, dict):
+            out.append(step)
+            continue
+        step = dict(step)
+        if step.get("tool") != "generate_image":
+            out.append(step)
+            continue
+        args = dict(step.get("arguments") or {})
+        skill = str(args.get("skill") or "")
+        if skill and skill != SKILL and not args.get("brand_slot"):
+            out.append(step)
+            continue
+        if not args.get("brand_slot") and cursor < len(queue):
+            slot = _BY_ID[queue[cursor]]
+            cursor += 1
+            args["brand_slot"] = slot["id"]
+            args.setdefault("width", slot["width"])
+            args.setdefault("height", slot["height"])
+            args.setdefault("ratio", slot["ratio"])
+            args["skill"] = SKILL
+        step["arguments"] = args
+        out.append(step)
+    return out
+
+
 def steps_are_brand_stage(steps: list) -> bool:
     slots = []
     for step in steps or []:
@@ -737,20 +866,20 @@ def brand_prompt(stage_credits: int, cum_credits: int, n: int, lang: str, *, und
 
 
 def flatten_opaque(data: bytes) -> bytes:
-    """Composite a transparent image onto white. Opaque files are returned unchanged."""
+    """Save an opaque RGB PNG. Any alpha channel is flattened onto white."""
     if not data:
         return data
     from PIL import Image
 
     try:
         with Image.open(io.BytesIO(data)) as img:
-            if img.mode in ("RGB", "L"):
+            # Any alpha channel becomes opaque RGB on white, including an
+            # all-255 alpha that would otherwise stay RGBA.
+            if img.mode in ("RGB", "L", "1"):
                 return data
             if img.mode == "P" and "transparency" not in img.info:
                 return data
             rgba = img.convert("RGBA")
-            if rgba.getextrema()[3] == (255, 255):
-                return data
             base = Image.new("RGB", rgba.size, (255, 255, 255))
             base.paste(rgba, mask=rgba.getchannel("A"))
     except Exception:
@@ -781,5 +910,7 @@ def default_hint() -> str:
         "do not quote all eight on one card. "
         "The closing message has three parts: a delivery list, an honest-limits paragraph that includes "
         "矢量替换 and 色值为屏幕估算 (vector replacement and screen-estimated color), and a next-step suggestion. "
+        "Send that closing only after wait_generation reports the four deliverables placed. "
+        "Do not put it in the same message as those generate_image calls. "
         "Never say the work is ready to produce (可直接投产)."
     )

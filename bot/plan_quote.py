@@ -663,6 +663,13 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         if label:
             parts.append(label)
         text = " · ".join(parts)
+        slot_id = str((step.get("arguments") or {}).get("brand_slot") or "")
+        if slot_id:
+            from ..api.brand_identity import quote_line
+            named = quote_line(slot_id, lang)
+            if named:
+                # Material, pixels, ratio. The model-name reason is not a line item.
+                text = named
         if step["tool"] == "generate_image" and _gif().requests_gif(step["arguments"]):
             text = f"{text} · {_gif().gif_quote_label(step['arguments'].get('frame_count'), step['arguments'].get('frame_duration_ms'))}"
         if step["tool"] == "generate_image" and _svg().requests_svg(step["arguments"]):

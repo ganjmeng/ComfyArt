@@ -18,6 +18,10 @@ def setup_function():
     brand.reset_for_tests()
 
 
+def teardown_function():
+    brand.reset_for_tests()
+
+
 def _card1():
     return validate_spec({"questions": [
         {"id": "bi_delivery", "prompt": "这次「基础品牌视觉系统」要交付哪些物料？", "options": [{"id": "A", "label": "x"}, {"id": "B", "label": "y"}]},
@@ -132,6 +136,133 @@ def test_closing_rules_are_in_the_skill_instructions():
     assert "可直接投产" in text and "Never say" in text
 
 
+def test_fallback_copy_does_not_name_one_brand():
+    spec = _card1()
+    blob = __import__("json").dumps(spec, ensure_ascii=False)
+    assert "栖木" not in blob and "QIMU" not in blob and "枝桠" not in blob
+    card3 = validate_spec({"questions": [{
+        "id": "bi_direction",
+        "prompt": "选定哪个 Logo 方向作为最终标识（logo_primary）？",
+        "options": [{"id": "A", "label": "x"}],
+    }]})
+    labels = [opt["label"] for opt in card3["questions"][0]["options"]]
+    assert labels == ["方向 A", "方向 B", "方向 C"]
+    assert all("description" not in opt for opt in card3["questions"][0]["options"])
+    assert "栖" not in __import__("json").dumps(card3, ensure_ascii=False)
+
+
+def test_other_skills_still_preselect_a_recommended_option():
+    """The badge-only change is brand card 3. Other cards still copy recommended into defaults."""
+    spec = validate_spec({
+        "prompt": "which direction?",
+        "options": [{"id": "a", "label": "A", "recommended": True}, {"id": "b", "label": "B"}],
+    })
+    assert spec["defaults"] == ["a"]
+    assert spec["options"][0]["recommended"] is True
+
+
+def test_default_path_image_budget_covers_eight_generates():
+    from ComfyArt.bot.run_budget import ProgressTracker, StepObservation
+    tracker = ProgressTracker()
+    brand.ensure_run_budget(tracker, brand.SKILL, "")
+    assert tracker.planned_images == 8 and tracker.gen_cap() == 10
+    template = ProgressTracker()
+    brand.ensure_run_budget(template, brand.SKILL, "geometric")
+    assert template.planned_images == 0
+    ask = [StepObservation("ask_user", "ask_user\x00{}", "{}", False)]
+    quote = [StepObservation("quote_plan", "quote_plan\x00{}", "{}", False)]
+    gen = [StepObservation("generate_image", "generate_image\x00{\"count\": 1}", "{}", False)]
+    for _ in range(3):
+        assert tracker.over_budget(ask) is False
+        assert tracker.over_budget(quote) is False
+    for _ in range(8):
+        assert tracker.over_budget(gen) is False
+    assert tracker.gen_calls == 8 and tracker.gen_calls < tracker.gen_cap()
+
+
+def test_wrapup_stays_hidden_until_the_four_deliverables_are_placed():
+    brand.record_card_answer(_card1(), {"bi_delivery": {"selected": ["A"]}, "bi_color": {"selected": ["A"]},
+                                         "bi_mark": {"selected": ["A"]}, "bi_source": {"selected": ["A"]}})
+    mood = apply_generate({"skill": brand.SKILL, "prompt": "board"}, brand.SKILL)
+    brand.record_submitted(mood, {"ids": ["h-mood"]})
+    brand.record_wait({"results": [{"id": "h-mood", "shapes": ["shape:mood"], "urls": ["/m.png"]}]})
+    brand.record_card_answer(validate_spec({
+        "questions": [{"id": "bi_moodboard", "prompt": "这张情绪板可以作为后续全套物料的视觉基准吗？",
+                       "options": [{"id": "A", "label": "就这版，通过"}, {"id": "B", "label": "重出"}]}],
+    }), {"bi_moodboard": {"selected": ["A"]}})
+    for slot in ("logo_a", "logo_b", "logo_c"):
+        logo = apply_generate({"skill": brand.SKILL, "prompt": slot}, brand.SKILL)
+        brand.record_submitted(logo, {"ids": [f"h-{slot}"]})
+        brand.record_wait({"results": [{"id": f"h-{slot}", "shapes": [f"shape:{slot}"], "urls": [f"/{slot}.png"]}]})
+    brand.record_card_answer(validate_spec({
+        "questions": [{"id": "bi_direction", "prompt": "选定哪个 Logo 方向作为最终标识（logo_primary）？",
+                       "options": [{"id": "A", "label": "方向 A"}, {"id": "B", "label": "方向 B"},
+                                   {"id": "C", "label": "方向 C"}]}],
+    }), {"bi_direction": {"selected": ["A"]}})
+    assert brand.should_hold_wrapup() is True
+    brand.hold_wrapup("本次交付清单：规范卡、外带杯、纸袋、门头。")
+    assert brand.release_wrapup() == ""
+    for name in ("spec", "cup", "bag", "store"):
+        final = apply_generate({"skill": brand.SKILL, "prompt": name}, brand.SKILL)
+        brand.record_submitted(final, {"ids": [f"h-{final['brand_slot']}"]})
+        brand.record_wait({"results": [{"id": f"h-{final['brand_slot']}", "shapes": [f"shape:{final['brand_slot']}"],
+                                        "urls": [f"/{final['brand_slot']}.png"]}]})
+    assert brand.finals_placed() is True
+    assert brand.release_wrapup().startswith("本次交付清单")
+
+
+def test_model_quote_tool_still_names_each_material_and_asks():
+    import asyncio
+    brand.record_card_answer(_card1(), {"bi_delivery": {"selected": ["A"]}, "bi_color": {"selected": ["A"]},
+                                         "bi_mark": {"selected": ["A"]}, "bi_source": {"selected": ["A"]}})
+    mood = apply_generate({"skill": brand.SKILL, "prompt": "board"}, brand.SKILL)
+    brand.record_submitted(mood, {"ids": ["h-mood"]})
+    brand.record_wait({"results": [{"id": "h-mood", "shapes": ["shape:mood"], "urls": ["/m.png"]}]})
+    brand.record_card_answer(validate_spec({
+        "questions": [{"id": "bi_moodboard", "prompt": "这张情绪板可以作为后续全套物料的视觉基准吗？",
+                       "options": [{"id": "A", "label": "就这版，通过"}, {"id": "B", "label": "重出"}]}],
+    }), {"bi_moodboard": {"selected": ["A"]}})
+    for slot in ("logo_a", "logo_b", "logo_c"):
+        logo = apply_generate({"skill": brand.SKILL, "prompt": slot}, brand.SKILL)
+        brand.record_submitted(logo, {"ids": [f"h-{slot}"]})
+        brand.record_wait({"results": [{"id": f"h-{slot}", "shapes": [f"shape:{slot}"], "urls": [f"/{slot}.png"]}]})
+    brand.record_card_answer(validate_spec({
+        "questions": [{"id": "bi_direction", "prompt": "选定哪个 Logo 方向作为最终标识（logo_primary）？",
+                       "options": [{"id": "A", "label": "方向 A"}, {"id": "B", "label": "方向 B"},
+                                   {"id": "C", "label": "方向 C"}]}],
+    }), {"bi_direction": {"selected": ["A"]}})
+    # The model's own quote_plan steps have no brand_slot.
+    raw = [{"tool": "generate_image", "text": "image", "model": "", "arguments": {"prompt": f"piece {i}"}}
+           for i in range(4)]
+    steps = brand.annotate_quote_steps(raw)
+    assert [s["arguments"]["brand_slot"] for s in steps] == ["spec", "cup", "bag", "storefront"]
+
+    async def pricer(model, inputs):
+        return 0.03, "quote", ""
+
+    async def models_for(feature):
+        return []
+
+    quote = asyncio.run(build_quote(steps, "zh", threshold=0.5, pricer=pricer, models_for=models_for))
+    assert quote is not None and quote.ask is True
+    assert [ln.text for ln in quote.lines] == [
+        "规范卡 1536×2048 3:4",
+        "外带杯与杯套 1536×2048 3:4",
+        "纸袋 1536×2048 3:4",
+        "门店门头 2048×1152 16:9",
+    ]
+    assert all("精确像素" not in ln.text and "Qwen" not in ln.text for ln in quote.lines)
+
+
+def test_opaque_rgba_is_flattened_even_when_alpha_is_full():
+    raw = io.BytesIO()
+    Image.new("RGBA", (4, 4), (10, 20, 30, 255)).save(raw, format="PNG")
+    flat = brand.flatten_opaque(raw.getvalue())
+    with Image.open(io.BytesIO(flat)) as img:
+        assert img.mode == "RGB"
+        assert img.getpixel((0, 0)) == (10, 20, 30)
+
+
 def test_stage_quote_is_separate_and_names_the_cumulative():
     import asyncio
     brand.record_card_answer(_card1(), {"bi_delivery": {"selected": ["A"]}, "bi_color": {"selected": ["A"]},
@@ -151,3 +282,5 @@ def test_stage_quote_is_separate_and_names_the_cumulative():
     assert "累计" in quote.prompt and "本阶段" in quote.prompt
     # One image at $0.03 is under the $0.50 gate and still shows a card.
     assert quote.total == 0.03
+    assert quote.lines[0].text == "情绪板 2048×1152 16:9"
+    assert "精确像素" not in quote.lines[0].text

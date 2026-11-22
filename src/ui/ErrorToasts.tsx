@@ -23,14 +23,29 @@ export function ErrorToasts() {
     toasts.addToast({ id: `error-${error.n}`, title, description: rest.join('\n') || undefined, severity: error.severity })
   }, [error, toasts])
   // #911 P1: jobs.ts puts the size notice on the job result; the UI shows the info toast.
+  // #1019: identical notices from one round of parallel images collapse to one toast.
+  const pending = useRef(new Map<string, string>())
   useEffect(() => {
+    let armed = false
     for (const [id, r] of Object.entries(results)) {
       if (!r?.notice) continue
       const key = `${id}:${r.notice}`
       if (seen.current.has(key)) continue
       seen.current.add(key)
-      reportInfo(r.notice)
+      if (!pending.current.has(r.notice)) pending.current.set(r.notice, id)
+      armed = true
     }
-  }, [results])
+    if (!armed) return
+    const handle = window.setTimeout(() => {
+      const live = new Set(toasts.toasts.get().map((item) => item.title))
+      for (const notice of pending.current.keys()) {
+        if (live.has(notice)) continue
+        const r = { notice }
+        reportInfo(r.notice)
+      }
+      pending.current.clear()
+    }, 250)
+    return () => window.clearTimeout(handle)
+  }, [results, toasts])
   return null
 }

@@ -2374,8 +2374,13 @@ class LocalLlmProvider(AgentProvider):
         if quote_item is not None or len(paid) >= 2 or (single and not gate.strict):
             steps = (quote_item["args"].get("steps") if quote_item is not None
                      else [self._implicit_step(it, lang) for it in paid])
+            if not isinstance(steps, list):
+                steps = []
+            from ..api.brand_identity import annotate_quote_steps
+            steps = annotate_quote_steps(
+                steps, [it["args"] for it in paid if it["name"] == "generate_image"])
             try:
-                quote = await self._quote_steps(steps if isinstance(steps, list) else [], lang)
+                quote = await self._quote_steps(steps, lang)
             except Exception as e:
                 _log.exception("[ComfyArt/local-llm] plan quote failed")
                 quote_error = f"[error] {type(e).__name__}: {e}"
@@ -2737,7 +2742,11 @@ class LocalLlmProvider(AgentProvider):
                     if reasoning.strip():
                         await emit(BotEvent(t="thinking", text=reasoning.strip()))
                     if content:
-                        await emit(BotEvent(t="delta", text=content))
+                        from ..api.brand_identity import hold_wrapup, should_hold_wrapup
+                        if should_hold_wrapup():
+                            hold_wrapup(content)
+                        else:
+                            await emit(BotEvent(t="delta", text=content))
                     if not tool_calls:
                         return TurnResult(usage=usage)
 
@@ -2747,6 +2756,10 @@ class LocalLlmProvider(AgentProvider):
                         tool_calls, session=session, turn=turn, emit=emit, handle=handle,
                         messages=messages, done=done, lang=lang, skill_cache=skill_cache,
                         loop=loop, gate=gate, usage=usage, llm_model=model)
+                    from ..api.brand_identity import release_wrapup
+                    released = release_wrapup()
+                    if released:
+                        await emit(BotEvent(t="delta", text=released))
                     if stopped is not None:
                         return stopped
                     from ..api.mcp_commands import mandatory_browser_stop
