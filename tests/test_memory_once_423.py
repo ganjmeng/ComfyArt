@@ -227,6 +227,9 @@ def test_locales_only_add_memory_retrieved_430():
         "bot.composeBannerText",  # #925
         "runStop.stillGenerating",  # #943
         "models.minimaxH3Image",  # #936 picker copy, not memory copy
+        # #1003: quote-card face for the pending line-art preview. The visible
+        # line is the size template with the call's width, height and ratio.
+        "quote.lineartPreview", "quote.lineartPreviewSize",
     }
     for p, v in (("src/locales/zh.json", "记忆已读取"), ("src/locales/en.json", "Memory retrieved")):
         cur = json.loads(_src(p))
@@ -249,6 +252,19 @@ def test_locales_only_add_memory_retrieved_430():
     zh, en = json.loads(_src("src/locales/zh.json")), json.loads(_src("src/locales/en.json"))
     assert zh["models.minimaxH3Image"] == "6 步出图，2K 下细节丰富，可带多张参考图"
     assert en["models.minimaxH3Image"] == "6-step generation with dense detail at 2K, takes several reference images"
+    assert zh["quote.lineartPreview"] == "线稿预览"
+    assert en["quote.lineartPreview"] == "Line-art preview"
+    assert zh["quote.lineartPreviewSize"] == "线稿预览 · {0}×{1} · {2}"
+    assert en["quote.lineartPreviewSize"] == "Line-art preview · {0}×{1} · {2}"
+    # Same substitution the quote card uses ({0} width, {1} height, {2} ratio).
+    for template, face in (
+        (zh["quote.lineartPreviewSize"], "线稿预览 · 1152×2048 · 9:16"),
+        (en["quote.lineartPreviewSize"], "Line-art preview · 1152×2048 · 9:16"),
+    ):
+        text = template
+        for index, value in enumerate((1152, 2048, "9:16")):
+            text = text.replace("{" + str(index) + "}", str(value))
+        assert text == face
     assert zh["chatMessage.memoryUpdated"] == "记忆已更新" and en["chatMessage.memoryUpdated"] == "Memory updated"
     assert zh["chatMessage.memoryUpdating"] == "记忆更新中" and en["chatMessage.memoryUpdating"] == "Updating memory"
 
