@@ -112,9 +112,21 @@ On the default ledger, those planner-image holds stop at $0.40 per project id
 this file and survives a restart). The $0.05 ceiling for other calls and the
 explicit $2 scope are unchanged. Remote URLs, file ids, and undecodable bytes
 stay unproven.
+
+A non-controlled send that fails after the hold is booked is closed in three
+ways. An exception aiohttp raises before ``ClientRequest.send`` (connector
+failure, invalid URL, TLS fingerprint mismatch, or connect timeout) is proof
+the request was not written, so the hold is released at zero. An
+``LlmHttpError`` whose body contains usage that passes the existing usage
+check is settled at that actual amount. Timeouts after connect, disconnects,
+cancellations, HTTP errors without that usage, and any other exception keep
+the full hold: a refund there would be an overspend route. A controlled scope
+is unchanged: the first failed outcome still keeps the full reservation and
+latches the breaker.
 """
 from __future__ import annotations
 
+import asyncio
 import base64
 import binascii
 import contextvars
@@ -1320,6 +1332,14 @@ def _row_hold(row: dict) -> Optional[int]:
         actual = _as_int(row.get("actual_nano"))
         reserved = _as_int(row.get("reserved_nano"))
         return actual if actual is not None and actual == reserved else None
+    if status == "released":
+        # Proof the request was not written. Any other shape is unreadable,
+        # not a silent zero, so a forged release cannot drop the hold.
+        actual = _as_int(row.get("actual_nano"))
+        reason = row.get("retain_reason")
+        if actual != 0 or type(reason) is not str or not reason.startswith("no_network:"):
+            return None
+        return 0
     if status in ("reserved", "retained"):
         reserved = _as_int(row.get("reserved_nano"))
         if "observed_nano" in row:
@@ -1715,6 +1735,98 @@ def settle(path: str, reservation_id: str, usage: Any) -> dict:
     return _mutate(path, change, create=False, preserve_on_failure=True)
 
 
+def _request_not_written(exc: BaseException) -> bool:
+    """True only when this aiohttp exception is raised before the request is written.
+
+    ``ConnectionTimeoutError`` is raised solely from ``connector.connect``
+    timing out, before ``ClientRequest.send``. A later read or total timeout
+    is a different class and stays ambiguous. Connector, URL, and TLS
+    fingerprint failures happen while the connection is still being acquired.
+    """
+    import aiohttp
+
+    if isinstance(exc, (asyncio.CancelledError, KeyboardInterrupt, SystemExit)):
+        return False
+    if isinstance(exc, aiohttp.ConnectionTimeoutError):
+        return True
+    if isinstance(exc, (asyncio.TimeoutError, aiohttp.ServerTimeoutError)):
+        return False
+    return isinstance(exc, (
+        aiohttp.ClientConnectorError,
+        aiohttp.InvalidURL,
+        aiohttp.ServerFingerprintMismatch,
+    ))
+
+
+def _usage_from_http_error(exc: BaseException) -> Any:
+    """Usage object on an HTTP error body, or None when it is not there.
+
+    Only ``LlmHttpError`` carries the response we actually read. A timeout or
+    disconnect does not, and a lookalike attribute on another exception is
+    not treated as a bill.
+    """
+    from .local_llm import LlmHttpError
+
+    if not isinstance(exc, LlmHttpError) or type(exc.body) is not str or not exc.body.strip():
+        return None
+    try:
+        parsed = json.loads(exc.body)
+    except ValueError:
+        return None
+    if not isinstance(parsed, dict):
+        return None
+    usage = parsed.get("usage")
+    return usage if isinstance(usage, dict) else None
+
+
+def release(path: str, reservation_id: str, reason: str) -> dict:
+    """Return a hold to zero when ``reason`` records that no request was written.
+
+    Controlled scopes are refused and left unchanged: their failed outcome
+    still keeps the full reservation. A hold that is not entirely inside
+    ``accounted_nano`` is retained instead of driving the total negative.
+    """
+    if type(reason) is not str or not reason.startswith("no_network:"):
+        raise LlmBudgetBlocked("release_refused", "proof")
+
+    def change(data: dict) -> dict:
+        if _controlled(data):
+            return {"ok": False, "code": "controlled_no_release", "accounted_nano": data.get("accounted_nano")}
+        row = data["reservations"].get(reservation_id)
+        if not isinstance(row, dict) or row.get("status") != "reserved":
+            return {"ok": False, "code": "missing_reservation", "accounted_nano": data.get("accounted_nano")}
+        reserved = _as_int(row.get("reserved_nano"))
+        accounted = _as_int(data.get("accounted_nano"))
+        if reserved is None or accounted is None or accounted < reserved:
+            row["status"] = "retained"
+            row["retain_reason"] = "release_unproven"
+            _trip(data, "release_unproven", reservation_id)
+            return {"ok": True, "code": "retained", "accounted_nano": data["accounted_nano"], "reason": "release_unproven"}
+        row["status"] = "released"
+        row["actual_nano"] = 0
+        row["retain_reason"] = reason
+        data["accounted_nano"] = accounted - reserved
+        return {"ok": True, "code": "released", "actual_nano": 0, "accounted_nano": data["accounted_nano"]}
+
+    return _mutate(path, change, create=False, preserve_on_failure=True)
+
+
+def _close_failed_send(path: str, reservation_id: str, exc: BaseException, *, controlled: bool) -> None:
+    """Book a send that raised. Controlled scopes always keep the full hold."""
+    transport_reason = "transport:" + type(exc).__name__
+    if not controlled and _request_not_written(exc):
+        closed = release(path, reservation_id, "no_network:" + type(exc).__name__)
+        if closed.get("code") in ("released", "retained"):
+            return
+    if not controlled:
+        usage = _usage_from_http_error(exc)
+        if usage is not None:
+            closed = settle(path, reservation_id, usage)
+            if closed.get("code") in ("reconciled", "retained"):
+                return
+    retain(path, reservation_id, transport_reason)
+
+
 def retain(path: str, reservation_id: str, reason: str, *, usage: Any = None) -> dict:
     def change(data: dict) -> dict:
         row = data["reservations"].get(reservation_id)
@@ -1882,7 +1994,7 @@ async def dispatch(body: dict, *, route: dict, url: str, send: Callable[[], Awai
         result = await send_frozen(pre["body_bytes"]) if context_contract else await send()
     except BaseException as exc:
         try:
-            retain(path, rid, "transport:" + type(exc).__name__)
+            _close_failed_send(path, rid, exc, controlled=controlled)
         except Exception:
             _log.exception("llm usd gate could not mark a failed send; reservation stays")
         if controlled and isinstance(exc, Exception):
