@@ -101,6 +101,163 @@ async def test_documents_send_their_text(fresh_user_dir):
         bot_send.parse_docs([{"name": "x"}])
 
 
+def _png_ihdr(width: int, height: int) -> bytes:
+    import struct
+    import zlib
+
+    def chunk(tag: bytes, data: bytes) -> bytes:
+        return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
+
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IEND", b"")
+
+
+def _view_file(base, name: str, data: bytes, kind: str = "input") -> str:
+    folder = base / kind
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / name).write_bytes(data)
+    return f"/api/view?filename={name}&type={kind}"
+
+
+async def test_chat_send_downscales_a_16384_jpeg_into_the_llm_request(fresh_user_dir, tmp_path):
+    """The chat attachment path drafts the JPEG, then the planner request carries that copy."""
+    import base64
+    import io
+
+    from PIL import Image
+
+    from ComfyArt.api import provider_admin
+    from ComfyArt.bot.local_llm import LocalLlmProvider
+    from ComfyArt.bot.providers import TurnHandle, TurnRequest
+    from test_llm_usd_gate import _route
+
+    frame = Image.new("RGB", (16384, 12288), (30, 60, 90))
+    blob = io.BytesIO()
+    frame.save(blob, format="JPEG", quality=20)
+    del frame
+    src = _view_file(fresh_user_dir, "wide.jpg", blob.getvalue())
+    attachments, _lines = await bot_send.prepare_attachments(
+        bot_send.parse_refs([{"src": src, "id": "shape:wide"}]), [])
+    assert attachments[0]["media_type"] == "image/jpeg"
+    with Image.open(io.BytesIO(base64.b64decode(attachments[0]["data"]))) as sent:
+        assert max(sent.size) <= 1568
+
+    posted = []
+
+    async def transport(session, method, url, *, headers, json_body=None, timeout=120):
+        if str(url).endswith("/chat/completions"):
+            posted.append(json_body)
+            return {"choices": [{"message": {"role": "assistant", "content": "ok"}}]}
+        if (json_body or {}).get("method") == "tools/list":
+            return {"result": {"tools": []}}
+        return {"data": [{"id": "deepseek-flash", "context_length": 1000000}]}
+
+    provider = LocalLlmProvider(base_url=lambda: "https://api.deepseek.com")
+
+    async def _request_json(session, method, url, *, headers, json_body=None, timeout=120):
+        return await provider_admin.gated_llm_http(
+            session, method, url, headers=headers, json_body=json_body, timeout=timeout,
+            transport=transport, ledger_path=str(tmp_path / "send.json"), bound_fn=None)
+
+    provider._request_json = _request_json
+    provider._run_store = lambda: None
+
+    async def _emit(_event):
+        return None
+
+    token = provider_admin._llm_lock.set(_route())
+    try:
+        result = await provider.send(TurnRequest(
+            chat_id="send-wide", user_text="look", lang="en", model="deepseek-flash",
+            mcp_endpoint="http://mock-no-network/mcp", project_id="local",
+            attachments=attachments), _emit, TurnHandle())
+    finally:
+        provider_admin._llm_lock.reset(token)
+    assert not result.error, result.error
+    assert posted
+    url = posted[0]["messages"][-1]["content"][1]["image_url"]["url"]
+    assert url.startswith("data:image/jpeg;base64,")
+    with Image.open(io.BytesIO(base64.b64decode(url.split(",", 1)[1]))) as im:
+        assert max(im.size) <= 1568
+
+
+async def _chat(client, provider="fake-test"):
+    resp = await client.post("/comfyart/bot/chats", json={"project": "p", "provider": provider})
+    assert resp.status == 200, await resp.text()
+    return (await resp.json())["chat"]
+
+
+async def test_chat_send_still_accepts_a_4000_png(fresh_user_dir):
+    import base64
+    import io
+
+    from PIL import Image
+
+    frame = Image.new("RGB", (4000, 4000), (200, 10, 10))
+    blob = io.BytesIO()
+    frame.save(blob, format="PNG")
+    src = _view_file(fresh_user_dir, "fourk.png", blob.getvalue())
+    attachments, _lines = await bot_send.prepare_attachments(
+        bot_send.parse_refs([{"src": src}]), [])
+    assert attachments[0]["media_type"] == "image/jpeg"
+    with Image.open(io.BytesIO(base64.b64decode(attachments[0]["data"]))) as im:
+        assert max(im.size) <= 1568
+
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+async def test_header_only_png_and_remote_url_are_unreadable(bot_client, fake_provider, fresh_user_dir, lang):
+    from conftest import write_settings
+    from ComfyArt.bot.llm_usd_gate import official_input_bound, price_snapshot, user_notice
+    import base64
+
+    write_settings(**{"enable-mcp": True, "enable-bot": True})
+
+    raw = _png_ihdr(12000, 9000)
+    src = _view_file(fresh_user_dir, f"hdr-{lang}.png", raw)
+    data_url = "data:image/png;base64," + base64.b64encode(raw).decode()
+    bound = official_input_bound(
+        {"messages": [{"role": "user", "content": [
+            {"type": "text", "text": "look"},
+            {"type": "image_url", "image_url": {"url": data_url}},
+        ]}]},
+        price_snapshot("deepseek-flash"),
+    )
+    assert bound.code == "unbounded_multimodal"
+
+    header = await bot_client.post(
+        f"/comfyart/bot/chats/{(await _chat(bot_client))['id']}/send",
+        json={"text": "look", "lang": lang, "refs": [{"src": src}]})
+    assert header.status == 400
+    assert (await header.json())["error"] == user_notice("unbounded_multimodal", lang)
+    assert fake_provider.last_turn is None
+
+    remote = await bot_client.post(
+        f"/comfyart/bot/chats/{(await _chat(bot_client))['id']}/send",
+        json={"text": "look", "lang": lang, "refs": [{"src": "https://example.com/photo.png"}]})
+    assert remote.status == 400
+    body = await remote.json()
+    assert body["error"] == user_notice("unbounded_multimodal", lang)
+    assert "not a ComfyUI file URL" not in body["error"]
+    assert "这次生成没有完成" not in body["error"]
+    assert fake_provider.last_turn is None
+
+
+async def test_declared_over_250mp_chat_ref_is_too_large_with_zero_posts(bot_client, fake_provider, fresh_user_dir):
+    from conftest import write_settings
+    from ComfyArt.bot.llm_usd_gate import user_notice
+
+    write_settings(**{"enable-mcp": True, "enable-bot": True})
+
+    src = _view_file(fresh_user_dir, "huge.png", _png_ihdr(20000, 15000))
+    chat = await _chat(bot_client)
+    resp = await bot_client.post(
+        f"/comfyart/bot/chats/{chat['id']}/send",
+        json={"text": "look", "lang": "zh", "refs": [{"src": src}]})
+    assert resp.status == 400
+    assert (await resp.json())["error"] == user_notice("image_too_large", "zh")
+    assert fake_provider.last_turn is None
+
+
 def test_compose_puts_memory_first_and_skill_instruction_before_the_text():
     text = bot_send.compose_provider_text("make it", skill_name="Poster", memory="MEM", lines=["[ref]"])
     assert text.startswith("MEM\n\nUse the ComfyArt skill 'Poster'")

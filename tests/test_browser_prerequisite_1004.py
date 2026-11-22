@@ -4,13 +4,16 @@ The project id is the captured chat project. The image is the existing synthetic
 PNG, not the frozen original file. No deployment ledger is opened.
 """
 import asyncio
+import base64
 import copy
+import io
 import json
 import os
 from pathlib import Path
 
 import aiohttp
 import pytest
+from PIL import Image
 from server import PromptServer
 
 from ComfyArt.api import mcp_commands, provider_admin
@@ -149,7 +152,10 @@ class PageRig:
 def _assert_full_request(body):
     assert len(body["tools"]) == 52
     assert {tool["function"]["name"] for tool in body["tools"]} == set(CORE_MCP_TOOLS) | {local_llm.QUOTE_TOOL}
-    assert body["messages"][1]["content"][1]["image_url"]["url"].endswith(PNG)
+    sent_url = body["messages"][1]["content"][1]["image_url"]["url"]
+    assert sent_url.startswith("data:image/jpeg;base64,")
+    with Image.open(io.BytesIO(base64.b64decode(sent_url.split(",", 1)[1]))) as sent:
+        assert max(sent.size) <= 1568
     assert body["thinking"] == {"type": "disabled"} and body["max_tokens"] == 8192
 
 
@@ -175,6 +181,7 @@ async def test_open_matching_tab_keeps_tools_image_and_project(monkeypatch, tmp_
     rig = PageRig(monkeypatch, tmp_path)
     result, turn = await rig.run(TurnHandle())
     assert result.error == ""
+    assert turn.attachments[0]["data"] == PNG
     assert turn.project_id == PROJECT
     assert len(rig.model_posts) == 1
     _assert_full_request(rig.model_posts[0])

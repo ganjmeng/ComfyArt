@@ -2726,9 +2726,9 @@ async def _poll_once(task: str, job: dict, now: float) -> dict:
         entry["delivered_size"] = audit.get("delivered")
         entry["size_check"] = {"match": bool(audit.get("match")), "mode": audit.get("mode") or "exact",
                                **({"ratio_error_pct": audit["ratio_error_pct"]} if "ratio_error_pct" in audit else {})}
-        if not audit.get("match"):
-            from .skill_size import size_notice
-            entry["size_notice"] = audit.get("notice") or size_notice(None, None)
+        notice = audit.get("notice") if not audit.get("match") else None
+        if notice:
+            entry["size_notice"] = notice
             log.warning("P1 size check failed for charged task %s (model=%s, requested=%s, provider=%s, mode=%s); "
                         "delivered as returned: %s", task, job.get("model"), audit.get("requested"),
                         audit.get("provider_output"), audit.get("mode") or "exact", audit.get("error"))

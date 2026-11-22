@@ -26,7 +26,9 @@ _SKIP_NOTE = (
     "user skipped this question; do NOT write a separate pre-generate "
     "confirmation (no Got it / 知道了 skip line before images). Immediately "
     "continue the user's original task (generation expected when they did "
-    "not ask to wait). Only if their own instructions asked you to wait or "
+    "not ask to wait). A paid generate_image still requires the existing "
+    "quote/approval card to be confirmed first; do not skip that cost "
+    "confirmation. Only if their own instructions asked you to wait or "
     "not generate yet, use the pinned wait sentences and do not generate "
     "this turn — do not re-ask immediately"
 )
@@ -34,7 +36,9 @@ _ANSWER_NOTE = (
     "user answered; do NOT write a separate pre-generate confirmation "
     "(no Got it / 知道了 restating the choice before images). Immediately "
     "continue the user's original task — generation is expected and "
-    "required when they did not ask to wait. After images are delivered, "
+    "required when they did not ask to wait, but a paid generate_image "
+    "still requires the existing quote/approval card to be confirmed "
+    "first; do not skip that cost confirmation. After images are delivered, "
     "restate their selection in the completion intro and invite "
     "adjustments. Only if their own instructions asked you to wait or not "
     "generate yet, use the pinned wait sentences and do not generate this "
@@ -887,6 +891,8 @@ def validate_spec(args: dict) -> dict:
 
 
 def _validate_spec(args: dict) -> dict:
+    from .multi_angle import normalize_card as normalize_multi_angle_card
+    args = normalize_multi_angle_card(args)
     from .portrait_studio import normalize_card as normalize_portrait_studio_card
     args = normalize_portrait_studio_card(args)  # portrait-studio (reference run 7fc60c86)
     from .product_packaging import normalize_card as normalize_product_packaging_card

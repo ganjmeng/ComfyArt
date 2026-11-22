@@ -72,8 +72,11 @@ def test_context_reserves_full_context_plus_output_not_images_twice(thinking, ou
     assert pre["input_evidence"]["strictly_proven"] is False
     assert pre["input_evidence"]["charged_error_contract_proven"] is False
     assert json.loads(pre["body_bytes"])["max_tokens"] == output
-    # Merely preparing a profile does not activate/bind a scope or change strict mode.
-    assert not gate.prepare(body(), _route(), URL)["ok"]
+    # Merely preparing the profile does not activate a scope. Strict mode now
+    # accepts this image body only via the serialized-byte bound, not via 1024.
+    strict = gate.prepare(body(), _route(), URL)
+    assert strict["ok"] and strict["input_evidence"]["mode"] == "planner_image_cap"
+    assert strict["input_tokens"] != 1024
 
 
 @pytest.mark.parametrize("mutation", ["bad_base64", "bad_crc", "assistant_image", "remote_not_frozen", "bad_url", "animated", "too_wide", "orphan_tool", "unknown_role", "reasoning_type", "unknown_part", "output_max", "stream_options", "bad_thinking", "unknown_key", "surrogate"])
@@ -172,7 +175,10 @@ async def test_real_default_builder_full_tools_images_and_actual_memory_boost(mo
     for b in rig.sent:
         assert {t["function"]["name"] for t in b["tools"]} == expected
         assert {"ask_user", "get_canvas", "memory", "generate_image"} <= expected
-        assert b["messages"][1]["content"][1]["image_url"]["url"] == "data:image/png;base64," + PNG
+        sent_url = b["messages"][1]["content"][1]["image_url"]["url"]
+        assert sent_url.startswith("data:image/jpeg;base64,")
+        with Image.open(io.BytesIO(base64.b64decode(sent_url.split(",", 1)[1]))) as sent_im:
+            assert max(sent_im.size) <= 1568
     assert rig.sent[0]["thinking"] == {"type": "disabled"} and rig.sent[0]["max_tokens"] == 8192
     if thinking:
         assert rig.mcp == ["memory"]

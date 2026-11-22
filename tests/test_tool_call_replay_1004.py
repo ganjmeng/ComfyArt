@@ -325,7 +325,8 @@ def _assert_default_request(body):
     assert {tool["function"]["name"] for tool in body["tools"]} == set(CORE_MCP_TOOLS) | {local_llm.QUOTE_TOOL}
     assert body["thinking"] == {"type": "disabled"}
     assert body["max_tokens"] == 8192
-    assert body["messages"][1]["content"][1]["image_url"]["url"] == "data:image/png;base64," + PNG
+    sent_url = body["messages"][1]["content"][1]["image_url"]["url"]
+    assert sent_url.startswith("data:image/jpeg;base64,")
 
 
 async def test_default_continuation_replays_persisted_skill_read_then_asks(monkeypatch, tmp_path):
@@ -361,7 +362,10 @@ async def test_rejected_continuation_does_not_increment_the_post_count(monkeypat
         call["trace"] = "synthetic-unknown"
     rig = ContinuationRig(monkeypatch, tmp_path, call)
     result = await rig.run()
-    assert "invalid_request_envelope [messages[2].tool_calls]" in result.error
+    from ComfyArt.bot.llm_usd_gate import user_notice
+    assert result.error == user_notice("invalid_request_envelope", "en")
+    assert "invalid_request_envelope" not in result.error
+    assert "tool_calls" not in result.error
     assert len(rig.model_posts) == 1
     _assert_default_request(rig.model_posts[0])
     assert [rpc["params"]["name"] for rpc in rig.rpc if rpc["method"] == "tools/call"] == ["skill"]

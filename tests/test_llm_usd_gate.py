@@ -7,8 +7,10 @@ character-count heuristic and is not a WaveSpeed price.
 from __future__ import annotations
 
 import asyncio
+import base64
 import errno
 import inspect
+import io
 import os
 import json
 import subprocess
@@ -22,6 +24,9 @@ import pytest
 from ComfyArt.api import provider_admin
 from ComfyArt.bot import agent_loop, get_provider, llm_usd_gate, local_llm, reasoning_boost
 from ComfyArt.bot.llm_usd_gate import (
+    bind_llm_project,
+    current_llm_project,
+    reset_llm_project,
     CEILING_NANO,
     CHAT_URL,
     DEFAULT_AUTHORIZATION,
@@ -29,6 +34,8 @@ from ComfyArt.bot.llm_usd_gate import (
     ORDINARY_OUTPUT_DEFAULT,
     PRICES,
     SUMMARY_OUTPUT_DEFAULT,
+    SKILL_CALL_CAP_NANO,
+    SKILL_CUMULATIVE_STOP_NANO,
     TOKEN_URL,
     TWO_DOLLAR_AUTHORIZATION,
     TWO_DOLLAR_CEILING_NANO,
@@ -207,16 +214,732 @@ def test_production_bound_rejects_text_tools_and_images_without_the_heuristic(mo
     assert "not a guarantee" in official_input_bound(tools, snap).detail
     assert TOKEN_URL in official_input_bound(tools, snap).detail
     assert structural_block(tools) == ""
+    tiny = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGOoWHACAAN0AeF2Y/iPAAAAAElFTkSuQmCC"
     image = _text()
     image["messages"] = [{"role": "user", "content": [
         {"type": "text", "text": "look"},
-        {"type": "image_url", "image_url": {"url": "data:image/png;base64,aaaa"}},
+        {"type": "image_url", "image_url": {"url": "data:image/png;base64," + tiny}},
     ]}]
     assert structural_block(image) == "unbounded_multimodal"
-    assert VISION_URL in official_input_bound(image, snap).detail
+    proven = official_input_bound(image, snap)
+    assert proven.ok is True and proven.image_tokens == 1024
+    assert proven.tokens == proven.text_bytes + 1024
+    assert proven.tokens != len(tiny)
+    unproven = _text()
+    unproven["messages"] = [{"role": "user", "content": [
+        {"type": "text", "text": "look"},
+        {"type": "file", "file_id": "not-a-measured-url"},
+    ]}]
+    blocked = official_input_bound(unproven, snap)
+    assert blocked.ok is False and blocked.code == "unbounded_multimodal"
+    assert VISION_URL in blocked.detail
     web = _text()
     web["tools"] = [{"type": "function", "function": {"name": "deepseek_web_search", "parameters": {}}}]
     assert structural_block(web) == "unpriced_tool_fee"
+
+
+_TINY_PNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGOoWHACAAN0AeF2Y/iPAAAAAElFTkSuQmCC"
+
+
+def _image_turn(url: str, *, system: str = "plan the product", tools: bool = True) -> dict:
+    body = {
+        "model": "deepseek-flash",
+        "temperature": 0.2,
+        "thinking": {"type": "disabled"},
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": [
+                {"type": "text", "text": "参考图已附上，请写九宫格方案"},
+                {"type": "image_url", "image_url": {"url": url}},
+            ]},
+        ],
+    }
+    if tools:
+        body["tools"] = [{
+            "type": "function",
+            "function": {
+                "name": "ask_user",
+                "description": "ask",
+                "parameters": {"type": "object", "properties": {"prompt": {"type": "string"}}},
+            },
+        }]
+        body["tool_choice"] = "auto"
+    return body
+
+
+async def test_image_first_turn_passes_over_bound_blocks_and_text_is_unchanged(tmp_path):
+    """Default-route image turn: proven byte bound, image still sent, no real socket.
+
+    A no-image body keeps the old unbounded_billed_input refusal. A payload whose
+    worst case exceeds $0.50 never reaches transport. A second planner-image hold
+    that would pass $0.40 is refused, and the first reservation stays.
+    """
+    calls = []
+
+    async def transport(session, method, url, *, headers, json_body=None, timeout=120):
+        calls.append(json_body)
+        return _usage(1, 1)
+
+    path = tmp_path / "skill.json"
+    route = _route()
+    url = "https://api.deepseek.com/chat/completions"
+    small = _image_turn("data:image/png;base64," + _TINY_PNG)
+    token = provider_admin._llm_lock.set(route)
+    try:
+        await provider_admin.gated_llm_http(
+            None, "POST", url, headers={}, json_body=small,
+            transport=transport, ledger_path=str(path))
+    finally:
+        provider_admin._llm_lock.reset(token)
+    assert len(calls) == 1
+    sent = calls[0]
+    urls = [part["image_url"]["url"] for msg in sent["messages"] if isinstance(msg.get("content"), list)
+            for part in msg["content"] if part.get("type") == "image_url"]
+    assert urls == ["data:image/png;base64," + _TINY_PNG]
+    pre = prepare(dict(small), route, url)
+    assert pre["ok"] is True
+    assert pre["input_evidence"]["mode"] == "planner_image_cap"
+    assert pre["input_evidence"]["image_tokens"] == 1024
+    assert pre["input_tokens"] == pre["text_bytes"] + 1024
+    assert pre["input_tokens"] != len(_TINY_PNG)
+    assert pre["reserved_nano"] <= SKILL_CALL_CAP_NANO
+    assert pre["reserved_nano"] <= SKILL_CUMULATIVE_STOP_NANO
+    plain = _text()
+    plain["tools"] = small["tools"]
+    plain["tool_choice"] = "auto"
+    plain["messages"] = [
+        {"role": "system", "content": "plan the product"},
+        {"role": "user", "content": "参考图已附上，请写九宫格方案"},
+    ]
+    same = official_input_bound(plain, price_snapshot("deepseek-flash"))
+    assert same.ok is False and same.code == "unbounded_billed_input"
+    assert "not a guarantee" in same.detail
+    before = len(calls)
+    token = provider_admin._llm_lock.set(route)
+    try:
+        with pytest.raises(LlmBudgetBlocked) as text_blocked:
+            await provider_admin.gated_llm_http(
+                None, "POST", url, headers={}, json_body=plain,
+                transport=transport, ledger_path=str(path))
+    finally:
+        provider_admin._llm_lock.reset(token)
+    assert text_blocked.value.code == "unbounded_billed_input"
+    assert len(calls) == before
+
+    remote = _image_turn("https://example.com/photo.png")
+    token = provider_admin._llm_lock.set(route)
+    try:
+        with pytest.raises(LlmBudgetBlocked) as remote_blocked:
+            await provider_admin.gated_llm_http(
+                None, "POST", url, headers={}, json_body=remote,
+                transport=transport, ledger_path=str(tmp_path / "remote.json"))
+    finally:
+        provider_admin._llm_lock.reset(token)
+    assert remote_blocked.value.code == "unbounded_multimodal"
+    from PIL import Image as _Image
+    solid = _Image.new("RGB", (4000, 4000), (200, 10, 10))
+    blob = io.BytesIO()
+    solid.save(blob, format="PNG")
+    raw_png = blob.getvalue()
+    assert len(raw_png) < 80_000
+    huge_px = _image_turn("data:image/png;base64," + base64.b64encode(raw_png).decode())
+    assert official_input_bound(huge_px, price_snapshot("deepseek-flash")).code == "image_too_large"
+    from ComfyArt.bot.local_llm import _user_content
+    planned = _user_content("看这张图", [{"data": base64.b64encode(raw_png).decode(), "media_type": "image/png"}])
+    planned_url = planned[1]["image_url"]["url"]
+    planned_im = _Image.open(io.BytesIO(base64.b64decode(planned_url.split(",", 1)[1])))
+    assert max(planned_im.size) == 1568
+    planned_body = _image_turn(planned_url)
+    planned_bound = official_input_bound(planned_body, price_snapshot("deepseek-flash"))
+    assert planned_bound.ok and planned_bound.image_tokens == 1024
+    assert planned_bound.tokens != len(raw_png)
+    stored = {"data": base64.b64encode(raw_png).decode(), "media_type": "image/png"}
+    original_field = stored["data"]
+    _user_content("看这张图", [stored])
+    assert stored["data"] == original_field
+    from ComfyArt.api import wavespeed
+    import os
+    root = wavespeed.folder_paths.get_directory_by_type("input")
+    os.makedirs(root, exist_ok=True)
+    dest = os.path.join(root, "solid4000.png")
+    with open(dest, "wb") as f:
+        f.write(raw_png)
+    from ComfyArt.bot.ref_orientation import ref_image_bytes
+    assert ref_image_bytes(["/api/view?filename=solid4000.png&type=input"]) == raw_png
+    from ComfyArt.bot.llm_usd_gate import user_notice
+    notices = {
+        "image_too_large": (
+            "参考图太大，暂时无法发送，本次未产生费用。请压缩或换一张图片再试。",
+            "This reference image is too large to send. You haven't been charged. Compress it or try a different image.",
+            "llm.imageTooLarge",
+        ),
+        "unbounded_multimodal": (
+            "这张参考图无法直接读取，本次未产生费用。请下载后直接上传再试。",
+            "This reference image can't be read directly. You haven't been charged. Download it and upload it directly, then try again.",
+            "llm.imageUnreadable",
+        ),
+        "over_budget": (
+            "本项目用量已达上限，已暂停发送，未产生费用。新建项目可继续使用。",
+            "This project has reached its usage limit. Sending is paused and you haven't been charged. Start a new project to continue.",
+            "llm.overBudget",
+        ),
+        "unbounded_billed_input": (
+            "这条消息暂时无法发送，未产生费用，请稍后再试。",
+            "This message can't be sent right now. You haven't been charged. Please try again later.",
+            "llm.messageBlocked",
+        ),
+    }
+    root = Path(__file__).resolve().parents[1]
+    locales = json.loads((root / "src/locales/zh.json").read_text(encoding="utf-8"))
+    locales_en = json.loads((root / "src/locales/en.json").read_text(encoding="utf-8"))
+    for code, (zh, en, key) in notices.items():
+        assert user_notice(code, "zh") == zh and user_notice(code, "en") == en
+        assert locales[key] == zh and locales_en[key] == en
+        assert "Blocked before HTTP" not in zh and "Blocked before HTTP" not in en
+        assert "token" not in zh.lower() and "token" not in en.lower()
+    assert len(calls) == before
+    assert not (tmp_path / "remote.json").exists()
+
+    huge = _image_turn("data:image/png;base64," + _TINY_PNG, system="x" * 1_700_000)
+    token = provider_admin._llm_lock.set(route)
+    try:
+        with pytest.raises(LlmBudgetBlocked) as over:
+            await provider_admin.gated_llm_http(
+                None, "POST", url, headers={}, json_body=huge,
+                transport=transport, ledger_path=str(tmp_path / "over.json"))
+    finally:
+        provider_admin._llm_lock.reset(token)
+    assert over.value.code == "image_too_large"
+    assert len(calls) == before
+    assert not (tmp_path / "over.json").exists()
+
+    # About $0.25 each, so the second call would pass the $0.40 cumulative stop.
+    medium = _image_turn("data:image/png;base64," + _TINY_PNG, system="y" * 800_000)
+    first = prepare(dict(medium), route, url)
+    assert first["ok"] is True
+    assert SKILL_CUMULATIVE_STOP_NANO // 2 < first["reserved_nano"] <= SKILL_CUMULATIVE_STOP_NANO
+    held_calls = []
+
+    async def retain_transport(session, method, url, *, headers, json_body=None, timeout=120):
+        held_calls.append(json_body)
+        return {"choices": [{"message": {"role": "assistant", "content": "ok"}}]}
+
+    token = provider_admin._llm_lock.set(route)
+    try:
+        await provider_admin.gated_llm_http(
+            None, "POST", url, headers={}, json_body=medium,
+            transport=retain_transport, ledger_path=str(tmp_path / "cum.json"))
+        held = ledger_state(str(tmp_path / "cum.json"))["accounted_nano"]
+        with pytest.raises(LlmBudgetBlocked) as second:
+            await provider_admin.gated_llm_http(
+                None, "POST", url, headers={}, json_body=medium,
+                transport=retain_transport, ledger_path=str(tmp_path / "cum.json"))
+    finally:
+        provider_admin._llm_lock.reset(token)
+    assert second.value.code == "over_budget"
+    assert ledger_state(str(tmp_path / "cum.json"))["accounted_nano"] == held
+    assert len(held_calls) == 1
+    assert len(calls) == before
+
+
+@pytest.mark.asyncio
+async def test_default_flow_reaches_unconfirmed_quote_inside_the_cap(tmp_path, monkeypatch):
+    """Chinese multi-angle path, mocked transport, production pixel bound. Quote stays unconfirmed."""
+    import os
+    from ComfyArt.api import bot_asks, bot_turns, chat_store, mcp, multi_angle as ma
+    from ComfyArt.api.mcp_tools import TOOLS, canvas
+    from ComfyArt.api.mcp_tools import bot_tools
+    from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
+    from ComfyArt.bot.guide import CORE_MCP_TOOLS
+    from ComfyArt.bot.providers import TurnHandle, TurnRequest
+    from multi_angle_plan_fixture import HEADPHONES_PLAN
+    from test_agent_budget_391 import calls, reply
+
+    chat = chat_store.create_chat(user="default", project="flow-bound", provider="local-llm")
+    cid = chat["id"]
+    ref = "/api/view?filename=ma_subject_691.png&type=input"
+    chat_store.create_message(chat_id=cid, role="user", blocks=[
+        {"type": "skill", "name": ma.SKILL}, {"type": "text", "text": "商品详情页，纯白无缝背景"},
+        {"type": "image", "url": ref}])
+    assistant = chat_store.create_message(chat_id=cid, role="assistant", blocks=[], status="running")
+    handle = TurnHandle()
+    monkeypatch.setitem(bot_turns.ACTIVE_TURNS, cid, bot_turns._TurnState(handle, cid, assistant["id"]))
+    quotes, seen, submitted = [], [], []
+    solid = __import__("PIL").Image.new("RGB", (4000, 4000), (180, 20, 20))
+    blob = io.BytesIO(); solid.save(blob, format="PNG"); raw = blob.getvalue()
+    root = __import__("ComfyArt.api.wavespeed", fromlist=["folder_paths"]).folder_paths.get_directory_by_type("input")
+    os.makedirs(root, exist_ok=True)
+    with open(os.path.join(root, "ma_subject_691.png"), "wb") as f:
+        f.write(raw)
+    script = [calls(("ask_user", {"prompt": "setup"})),
+              calls(("generate_image", {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
+                                        "refs": [ref], "multi_angle_stage": "preview"})),
+              reply("方案已列出，等待确认。")]
+
+    async def transport(session, method, url, *, headers, json_body=None, timeout=120):
+        if (json_body or {}).get("method") == "tools/list":
+            return {"result": {"tools": [
+                {"name": name, "description": spec.get("description") or "", "inputSchema": spec.get("inputSchema") or {"type": "object"}}
+                for name, spec in TOOLS.items() if name in CORE_MCP_TOOLS]}}
+        if not str(url).endswith("/chat/completions"):
+            return {"data": [{"id": "deepseek-flash", "context_length": 1000000}]}
+        seen.append(json_body)
+        return script[len(seen) - 1]
+
+    async def real_mcp(session, endpoint, name, arguments):
+        out = await mcp._tools_call({"name": name, "arguments": arguments})
+        return next(b["text"] for b in out["content"] if b["type"] == "text"), []
+
+    def answer_broadcast(event, payload):
+        if event != "turn_ask":
+            return
+        if payload.get("kind") == "plan_quote":
+            quotes.append(payload)
+            bot_asks.resolve_ask(payload["ask_id"], "cancelled", selected=["cancel"])
+            return
+        answers = {}
+        ids = {q["id"] for q in payload.get("questions") or []}
+        if ma.SOURCE in ids:
+            answers[ma.SOURCE] = {"selected": ["single_front"]}
+        if ma.ASPECT in ids:
+            answers[ma.ASPECT] = {"selected": ["1:1"]}
+        bot_asks.validate_answer(payload, [], "", answers)
+        bot_asks.resolve_ask(payload["ask_id"], "answered", answers=answers)
+
+    provider = LocalLlmProvider(base_url=lambda: "https://api.deepseek.com")
+
+    async def _request_json(session, method, url, *, headers, json_body=None, timeout=120):
+        return await provider_admin.gated_llm_http(
+            session, method, url, headers=headers, json_body=json_body, timeout=timeout,
+            transport=transport, ledger_path=str(tmp_path / "flow.json"), bound_fn=None)
+
+    provider._request_json = _request_json
+    provider._mcp_call_tool = real_mcp
+    provider._context_window = lambda *a: _async_return(1000000)
+    provider._price_call = lambda *a, **k: _async_return(None)
+    provider._price_one = lambda *a, **k: _async_return(None)
+    provider._models_for = lambda *a: _async_return([])
+    provider._run_store = lambda: None
+    monkeypatch.setattr(bot_tools, "broadcast", answer_broadcast)
+    monkeypatch.setattr(canvas, "submit_command", lambda *a, **k: submitted.append(a) or _async_return({"ids": []}))
+    monkeypatch.setattr(canvas, "select_model", lambda *a, **k: {"model": "bytedance/seedream-v4", "category": "auto", "auto": True})
+    monkeypatch.setattr(canvas, "unregistered_model", lambda *a, **k: None)
+    monkeypatch.setattr(canvas, "load_config", lambda: {"features": {}})
+    token = provider_admin._llm_lock.set(_route())
+    chat_token = BOT_CHAT_ID.set(cid)
+    from ComfyArt.api import paid_guard
+    paid_guard.begin_turn(cid, text="商品详情页", provider_text="商品详情页")
+    try:
+        result = await provider.send(TurnRequest(
+            chat_id=cid, user_text="Use the ComfyArt skill for this task. 商品详情页，纯白无缝背景",
+            goal_text="商品详情页，纯白无缝背景", lang="zh",
+            mcp_endpoint="http://mock-no-network/mcp", model="deepseek-flash",
+            attachments=[{"data": base64.b64encode(raw).decode(), "media_type": "image/png"}]), _emit, handle)
+    finally:
+        paid_guard.end_turn(cid)
+        provider_admin._llm_lock.reset(token)
+        BOT_CHAT_ID.reset(chat_token)
+        bot_turns.ACTIVE_TURNS.pop(cid, None)
+        bot_asks.cancel_chat_asks(cid)
+    assert not result.error, (result.error, len(seen))
+    assert quotes, "the unconfirmed quote card was not shown"
+    blob = json.dumps(quotes[0], ensure_ascii=False)
+    line = (quotes[0].get("lines") or [{}])[0].get("text") or ""
+    assert line.startswith("线稿预览 · 1152×2048 · 9:16")
+    assert "线稿预览" in blob and "1152" in blob and "2048" in blob
+    assert quotes[0].get("status") != "answered"
+    assert not submitted
+    snap = price_snapshot("deepseek-flash")
+    rows = []
+    held = 0
+    for body in seen:
+        pre = prepare(body, _route(), "https://api.deepseek.com/chat/completions")
+        assert pre["ok"], pre
+        held += pre["reserved_nano"]
+        rows.append({"body_bytes": pre["body_bytes"], "image_bytes": pre["image_bytes"],
+                     "image_tokens": pre["input_evidence"]["image_tokens"], "text_bytes": pre["text_bytes"],
+                     "max_tokens": pre["max_output_tokens"], "usd": pre["reserved_nano"] / 1e9})
+    assert held <= SKILL_CUMULATIVE_STOP_NANO
+    report = {"rows": rows, "cumulative_nano": held, "rates": {
+        "input_miss_peak_nano": snap["input_miss_peak_nano"], "output_peak_nano": snap["output_peak_nano"]}}
+    (tmp_path / "flow-rows.json").write_text(json.dumps(report, ensure_ascii=False), encoding="utf-8")
+    Path("/tmp/flow-rows.json").write_text(json.dumps(report, ensure_ascii=False), encoding="utf-8")
+
+
+def _planner_record(nano: int, project: str) -> dict:
+    return {
+        "id": uuid.uuid4().hex, "status": "reserved", "reserved_nano": nano,
+        "actual_nano": None, "retain_reason": "", "input_bound": 1000,
+        "max_output_tokens": 8192, "model": "deepseek-flash", "route": {},
+        "snapshot": price_snapshot("deepseek-flash"), "created_at": 0,
+        "project_id": project,
+        "input_evidence": {"mode": "planner_image_cap", "input_tokens": 1000},
+    }
+
+
+def test_planner_stop_is_per_project_and_survives_a_new_process(tmp_path):
+    """$0.40 is per project. $0.50 is still per call. A new process reads the same file."""
+    path = str(tmp_path / "projects.json")
+    quarter = 250_000_000
+    first = reserve_nano(path, nano=quarter, record=_planner_record(quarter, "alpha"))
+    assert first["ok"] is True
+    again = reserve_nano(path, nano=quarter, record=_planner_record(quarter, "alpha"))
+    assert again["ok"] is False and again["code"] == "over_budget"
+    other = reserve_nano(path, nano=quarter, record=_planner_record(quarter, "beta"))
+    assert other["ok"] is True
+    fresh = reserve_nano(path, nano=quarter, record=_planner_record(quarter, "gamma"))
+    assert fresh["ok"] is True
+    too_big = reserve_nano(path, nano=SKILL_CALL_CAP_NANO + 1, record=_planner_record(SKILL_CALL_CAP_NANO + 1, "delta"))
+    assert too_big["ok"] is False and too_big["code"] == "over_budget"
+    token = bind_llm_project("canvas-9")
+    try:
+        assert current_llm_project() == "canvas-9"
+    finally:
+        reset_llm_project(token)
+    assert "current_llm_project()" in inspect.getsource(llm_usd_gate.dispatch)
+    assert "bind_llm_project(" in inspect.getsource(local_llm.LocalLlmProvider.send)
+    script = (
+        "import importlib.util, sys, uuid\n"
+        "spec = importlib.util.spec_from_file_location('llm_usd_gate', sys.argv[1])\n"
+        "mod = importlib.util.module_from_spec(spec)\n"
+        "spec.loader.exec_module(mod)\n"
+        "nano = 250_000_000\n"
+        "snap = mod.price_snapshot('deepseek-flash')\n"
+        "def record(project):\n"
+        "    return {'id': uuid.uuid4().hex, 'status': 'reserved', 'reserved_nano': nano,\n"
+        "            'actual_nano': None, 'retain_reason': '', 'input_bound': 1000,\n"
+        "            'max_output_tokens': 8192, 'model': 'deepseek-flash', 'route': {},\n"
+        "            'snapshot': snap, 'created_at': 0, 'project_id': project,\n"
+        "            'input_evidence': {'mode': 'planner_image_cap', 'input_tokens': 1000}}\n"
+        "blocked = mod.reserve_nano(sys.argv[2], nano=nano, record=record('alpha'))\n"
+        "assert blocked['ok'] is False and blocked['code'] == 'over_budget', blocked\n"
+        "opened = mod.reserve_nano(sys.argv[2], nano=nano, record=record('restart-new'))\n"
+        "assert opened['ok'] is True, opened\n"
+    )
+    subprocess.check_call([sys.executable, "-c", script, str(Path(llm_usd_gate.__file__).resolve()), path])
+
+
+@pytest.mark.asyncio
+async def test_undecodable_attachment_shows_unreadable_copy_and_does_not_send(tmp_path):
+    from ComfyArt.bot.llm_usd_gate import user_notice
+    from ComfyArt.bot.providers import TurnHandle, TurnRequest
+    sent = []
+
+    async def transport(session, method, url, *, headers, json_body=None, timeout=120):
+        if str(url).endswith("/chat/completions"):
+            sent.append(json_body)
+            return {"choices": [{"message": {"role": "assistant", "content": "no"}}]}
+        if (json_body or {}).get("method") == "tools/list":
+            return {"result": {"tools": []}}
+        return {"data": [{"id": "deepseek-flash", "context_length": 1000000}]}
+
+    provider = LocalLlmProvider(base_url=lambda: "https://api.deepseek.com")
+
+    async def _request_json(session, method, url, *, headers, json_body=None, timeout=120):
+        return await provider_admin.gated_llm_http(
+            session, method, url, headers=headers, json_body=json_body, timeout=timeout,
+            transport=transport, ledger_path=str(tmp_path / "unread.json"), bound_fn=None)
+
+    provider._request_json = _request_json
+    provider._run_store = lambda: None
+    token = provider_admin._llm_lock.set(_route())
+    try:
+        result = await provider.send(TurnRequest(
+            chat_id="unread-chat", user_text="看这张图", lang="zh", model="deepseek-flash",
+            mcp_endpoint="http://mock-no-network/mcp", project_id="local",
+            attachments=[{"data": "QUJD", "media_type": "image/jpeg"}]), _emit, TurnHandle())
+    finally:
+        provider_admin._llm_lock.reset(token)
+    assert result.error == user_notice("unbounded_multimodal", "zh")
+    assert "Blocked before HTTP" not in result.error
+    assert sent == []
+    assert not (tmp_path / "unread.json").exists()
+
+
+def test_tool_images_use_the_planner_jpeg_and_unreadable_ones_stay_blocked():
+    from PIL import Image as _Image
+    from ComfyArt.bot.llm_usd_gate import user_notice
+    from ComfyArt.bot.local_llm import planner_image_url
+    solid = _Image.new("RGB", (2000, 1000), (8, 16, 32))
+    blob = io.BytesIO()
+    solid.save(blob, format="PNG")
+    raw_url = "data:image/png;base64," + base64.b64encode(blob.getvalue()).decode()
+    planned = planner_image_url(raw_url)
+    assert planned.startswith("data:image/jpeg;base64,")
+    with _Image.open(io.BytesIO(base64.b64decode(planned.split(",", 1)[1]))) as im:
+        assert im.size == (1568, 784)
+    kept = planner_image_url("data:image/png;base64,QUJD")
+    assert kept == "data:image/png;base64,QUJD"
+    blocked = official_input_bound(_image_turn(kept), price_snapshot("deepseek-flash"))
+    assert blocked.code == "unbounded_multimodal"
+    assert user_notice(blocked.code, "en").startswith("This reference image can't be read directly")
+    assert "planner_image_url(" in inspect.getsource(local_llm.LocalLlmProvider._emit_mcp)
+    assert "planner_image_url(" in inspect.getsource(local_llm.LocalLlmProvider._run_fallback_tool)
+
+
+def _png_ihdr(width: int, height: int) -> bytes:
+    """PNG whose header declares the size. No pixel buffer is allocated."""
+    import struct
+    import zlib
+
+    def chunk(tag: bytes, data: bytes) -> bytes:
+        return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
+
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IEND", b"")
+
+
+@pytest.mark.asyncio
+async def test_undecodable_header_under_250mp_is_unreadable(tmp_path, caplog):
+    """16320×12240 is about 200MP, under the 250MP cap, but this file has no pixels.
+
+    It cannot be decoded, so the copy is imageUnreadable and nothing is posted.
+    A declared size above 250MP is image_too_large; that case is separate.
+    """
+    from ComfyArt.bot.llm_usd_gate import user_notice
+    from ComfyArt.bot.providers import TurnHandle, TurnRequest
+    sent = []
+    bomb = base64.b64encode(_png_ihdr(16320, 12240)).decode()
+
+    async def transport(session, method, url, *, headers, json_body=None, timeout=120):
+        if str(url).endswith("/chat/completions"):
+            sent.append(json_body)
+            return {"choices": [{"message": {"role": "assistant", "content": "no"}}]}
+        if (json_body or {}).get("method") == "tools/list":
+            return {"result": {"tools": []}}
+        return {"data": [{"id": "deepseek-flash", "context_length": 1000000}]}
+
+    provider = LocalLlmProvider(base_url=lambda: "https://api.deepseek.com")
+
+    async def _request_json(session, method, url, *, headers, json_body=None, timeout=120):
+        return await provider_admin.gated_llm_http(
+            session, method, url, headers=headers, json_body=json_body, timeout=timeout,
+            transport=transport, ledger_path=str(tmp_path / "bomb.json"), bound_fn=None)
+
+    provider._request_json = _request_json
+    provider._run_store = lambda: None
+    token = provider_admin._llm_lock.set(_route())
+    try:
+        zh = await provider.send(TurnRequest(
+            chat_id="bomb-zh", user_text="看这张图", lang="zh", model="deepseek-flash",
+            mcp_endpoint="http://mock-no-network/mcp", project_id="local",
+            attachments=[{"data": bomb, "media_type": "image/png"}]), _emit, TurnHandle())
+        en = await provider.send(TurnRequest(
+            chat_id="bomb-en", user_text="look", lang="en", model="deepseek-flash",
+            mcp_endpoint="http://mock-no-network/mcp", project_id="local",
+            attachments=[{"data": bomb, "media_type": "image/png"}]), _emit, TurnHandle())
+    finally:
+        provider_admin._llm_lock.reset(token)
+    assert zh.error == user_notice("unbounded_multimodal", "zh")
+    assert en.error == user_notice("unbounded_multimodal", "en")
+    assert "code=unbounded_multimodal" in caplog.text
+    assert "DecompressionBomb" not in zh.error and "DecompressionBomb" not in en.error
+    assert sent == []
+    assert not (tmp_path / "bomb.json").exists()
+
+
+@pytest.mark.asyncio
+async def test_declared_300mp_is_image_too_large_before_http(tmp_path, caplog):
+    from ComfyArt.bot.llm_usd_gate import user_notice
+    from ComfyArt.bot.providers import TurnHandle, TurnRequest
+    from PIL import Image as _Image
+    sent = []
+    before = _Image.MAX_IMAGE_PIXELS
+    bomb = base64.b64encode(_png_ihdr(20000, 15000)).decode()  # 300_000_000 px
+
+    async def transport(session, method, url, *, headers, json_body=None, timeout=120):
+        if str(url).endswith("/chat/completions"):
+            sent.append(json_body)
+            return {"choices": [{"message": {"role": "assistant", "content": "no"}}]}
+        if (json_body or {}).get("method") == "tools/list":
+            return {"result": {"tools": []}}
+        return {"data": [{"id": "deepseek-flash", "context_length": 1000000}]}
+
+    provider = LocalLlmProvider(base_url=lambda: "https://api.deepseek.com")
+
+    async def _request_json(session, method, url, *, headers, json_body=None, timeout=120):
+        return await provider_admin.gated_llm_http(
+            session, method, url, headers=headers, json_body=json_body, timeout=timeout,
+            transport=transport, ledger_path=str(tmp_path / "300.json"), bound_fn=None)
+
+    provider._request_json = _request_json
+    provider._run_store = lambda: None
+    token = provider_admin._llm_lock.set(_route())
+    try:
+        zh = await provider.send(TurnRequest(
+            chat_id="px300-zh", user_text="看这张图", lang="zh", model="deepseek-flash",
+            mcp_endpoint="http://mock-no-network/mcp", project_id="local",
+            attachments=[{"data": bomb, "media_type": "image/png"}]), _emit, TurnHandle())
+        en = await provider.send(TurnRequest(
+            chat_id="px300-en", user_text="look", lang="en", model="deepseek-flash",
+            mcp_endpoint="http://mock-no-network/mcp", project_id="local",
+            attachments=[{"data": bomb, "media_type": "image/png"}]), _emit, TurnHandle())
+    finally:
+        provider_admin._llm_lock.reset(token)
+    assert zh.error == user_notice("image_too_large", "zh")
+    assert en.error == user_notice("image_too_large", "en")
+    assert "code=image_too_large" in caplog.text
+    assert sent == []
+    assert _Image.MAX_IMAGE_PIXELS == before
+    assert not (tmp_path / "300.json").exists()
+
+
+@pytest.mark.asyncio
+async def test_tool_image_undecodable_header_blocks_before_the_next_post(tmp_path, caplog, monkeypatch):
+    from ComfyArt.bot.llm_usd_gate import user_notice
+    from ComfyArt.bot.providers import TurnHandle, TurnRequest
+    monkeypatch.setenv("COMFYART_AGENT_BUDGET_LOOP", "0")
+    sent = []
+    bomb = base64.b64encode(_png_ihdr(16320, 12240)).decode()
+    posts = {"n": 0}
+
+    async def transport(session, method, url, *, headers, json_body=None, timeout=120):
+        if str(url).endswith("/chat/completions"):
+            sent.append(json_body)
+            posts["n"] += 1
+            return {"choices": [{"message": {
+                "role": "assistant", "content": "",
+                "tool_calls": [{"id": "call-bomb", "type": "function", "function": {
+                    "name": "get_canvas", "arguments": "{}"}}]}}]}
+        rpc = json_body or {}
+        if rpc.get("method") == "tools/list":
+            return {"result": {"tools": [{"name": "get_canvas", "description": "list", "inputSchema": {"type": "object"}}]}}
+        if rpc.get("method") == "tools/call":
+            return {"result": {"content": [
+                {"type": "text", "text": "ok"},
+                {"type": "image", "mimeType": "image/png", "data": bomb},
+            ]}}
+        return {"data": [{"id": "deepseek-flash", "context_length": 1000000}]}
+
+    provider = LocalLlmProvider(base_url=lambda: "https://api.deepseek.com")
+
+    async def _request_json(session, method, url, *, headers, json_body=None, timeout=120):
+        return await provider_admin.gated_llm_http(
+            session, method, url, headers=headers, json_body=json_body, timeout=timeout,
+            transport=transport, ledger_path=str(tmp_path / "tool-bomb.json"), bound_fn=None)
+
+    provider._request_json = _request_json
+    provider._run_store = lambda: None
+    provider._price_call = lambda *a, **k: _async_return(None)
+    provider._price_one = lambda *a, **k: _async_return(None)
+    token = provider_admin._llm_lock.set(_route())
+    try:
+        result = await provider.send(TurnRequest(
+            chat_id="tool-bomb", user_text="看画布", lang="zh", model="deepseek-flash",
+            mcp_endpoint="http://mock-no-network/mcp", project_id="local",
+            attachments=[{"data": _TINY_PNG, "media_type": "image/png"}]), _emit, TurnHandle())
+    finally:
+        provider_admin._llm_lock.reset(token)
+    assert result.error == user_notice("unbounded_multimodal", "zh")
+    assert "code=unbounded_multimodal" in caplog.text
+    assert "DecompressionBomb" not in result.error
+    assert len(sent) == 1
+
+
+def test_header_only_under_250mp_is_unreadable_before_the_long_edge_check():
+    """12000×9000 claims a long edge past 1568, but the file has no pixels to decode."""
+    from ComfyArt.bot.llm_usd_gate import official_input_bound, user_notice
+    raw = _png_ihdr(12000, 9000)
+    url = "data:image/png;base64," + base64.b64encode(raw).decode()
+    bound = official_input_bound(_image_turn(url), price_snapshot("deepseek-flash"))
+    assert bound.code == "unbounded_multimodal"
+    assert user_notice(bound.code, "zh").startswith("这张参考图无法直接读取")
+
+
+def test_planner_jpegs_up_to_250mp_downscale_and_300mp_is_blocked():
+    """108MP and ~201MP JPEGs are sent as a <=1568 JPEG. 300MP is image_too_large."""
+    import io
+    from PIL import Image as _Image
+    from ComfyArt.bot.llm_usd_gate import LlmBudgetBlocked, official_input_bound, user_notice
+    from ComfyArt.bot.local_llm import planner_image_url
+
+    before = _Image.MAX_IMAGE_PIXELS
+    for size in ((12000, 9000), (16384, 12288)):
+        frame = _Image.new("RGB", size, (40, 80, 120))
+        blob = io.BytesIO()
+        frame.save(blob, format="JPEG", quality=20)
+        del frame
+        url = planner_image_url("data:image/jpeg;base64," + base64.b64encode(blob.getvalue()).decode())
+        assert url.startswith("data:image/jpeg;base64,")
+        with _Image.open(io.BytesIO(base64.b64decode(url.split(",", 1)[1]))) as sent:
+            assert max(sent.size) <= 1568
+        bound = official_input_bound(_image_turn(url), price_snapshot("deepseek-flash"))
+        assert bound.evidence()["mode"] == "planner_image_cap"
+    huge = "data:image/png;base64," + base64.b64encode(_png_ihdr(20000, 15000)).decode()
+    with pytest.raises(LlmBudgetBlocked) as blocked:
+        planner_image_url(huge)
+    assert blocked.value.code == "image_too_large"
+    assert user_notice("image_too_large", "zh").startswith("参考图太大")
+    corrupt = planner_image_url("data:image/png;base64,QUJD")
+    assert official_input_bound(_image_turn(corrupt), price_snapshot("deepseek-flash")).code == "unbounded_multimodal"
+    assert user_notice("unbounded_multimodal", "en").startswith("This reference image can't be read directly")
+    assert _Image.MAX_IMAGE_PIXELS == before
+
+
+def test_memory_error_during_decode_is_image_too_large(monkeypatch):
+    from PIL import Image as _Image
+    from ComfyArt.bot.llm_usd_gate import LlmBudgetBlocked
+    from ComfyArt.bot.local_llm import planner_image_url
+
+    before = _Image.MAX_IMAGE_PIXELS
+
+    def boom(self, *args, **kwargs):
+        raise MemoryError("decode")
+
+    monkeypatch.setattr(_Image.Image, "load", boom)
+    url = "data:image/png;base64," + _TINY_PNG
+    with pytest.raises(LlmBudgetBlocked) as blocked:
+        planner_image_url(url)
+    assert blocked.value.code == "image_too_large"
+    assert _Image.MAX_IMAGE_PIXELS == before
+
+
+def test_every_other_gate_code_uses_the_message_blocked_copy():
+    from ComfyArt.bot.llm_usd_gate import _BLOCK_TEXT, user_notice
+    pinned = {
+        "image_too_large": (
+            "参考图太大，暂时无法发送，本次未产生费用。请压缩或换一张图片再试。",
+            "This reference image is too large to send. You haven't been charged. Compress it or try a different image.",
+        ),
+        "unbounded_multimodal": (
+            "这张参考图无法直接读取，本次未产生费用。请下载后直接上传再试。",
+            "This reference image can't be read directly. You haven't been charged. Download it and upload it directly, then try again.",
+        ),
+        "unreadable": (
+            "这张参考图无法直接读取，本次未产生费用。请下载后直接上传再试。",
+            "This reference image can't be read directly. You haven't been charged. Download it and upload it directly, then try again.",
+        ),
+        "over_budget": (
+            "本项目用量已达上限，已暂停发送，未产生费用。新建项目可继续使用。",
+            "This project has reached its usage limit. Sending is paused and you haven't been charged. Start a new project to continue.",
+        ),
+    }
+    generic = (
+        "这条消息暂时无法发送，未产生费用，请稍后再试。",
+        "This message can't be sent right now. You haven't been charged. Please try again later.",
+    )
+    codes = set(_BLOCK_TEXT) | set(pinned) | {
+        "unbounded_billed_input", "unpriced", "unbounded_tools", "unpriced_tool_fee",
+        "unsupported_output_cap", "unsupported_stream", "unsupported_request_field",
+        "route_mismatch", "ledger_unreadable", "browser_tab_required",
+        "activation_binding_required", "frozen_transport_required", "resolve_refused",
+        "activation_route_mismatch", "invalid_input_profile", "conflicting_input_bound",
+        "controlled_scope_required", "scope_circuit_open", "scope_posts_exhausted",
+        "scope_inflight", "activation_registry_unreadable", "activation_binding_mismatch",
+        "migration_state_unreadable",
+    }
+    for code in sorted(codes):
+        zh, en = pinned.get(code, generic)
+        assert user_notice(code, "zh") == zh
+        assert user_notice(code, "en") == en
+        for copy in (zh, en):
+            assert "Blocked before HTTP" not in copy
+            assert "token" not in copy.lower()
+            assert "Decompression" not in copy and "PIL" not in copy
+
+
+async def _async_return(value):
+    return value
 
 
 # ---------------------------------------------------------------- blocks

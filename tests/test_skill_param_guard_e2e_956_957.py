@@ -119,6 +119,7 @@ async def _open_skill(p, app_url, lang, sid, sockets):  # noqa: F811
     )
     await dlg.get_by_test_id("skill-run-go").click()
     await pg.locator(".ca-composer__input").wait_for(timeout=20000)
+    await pg.locator(".lm-loader").wait_for(state="hidden", timeout=30_000)
     # #725: the skill dialog lands ask+ref+skill as a composer draft; it is not auto-sent.
     await pg.locator(".ca-composer").get_by_text(ScriptedAgent.label, exact=True).wait_for(timeout=15000)
     box = pg.locator(".ca-composer__input")

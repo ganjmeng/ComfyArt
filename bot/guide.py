@@ -78,6 +78,8 @@ AGENT_GUIDE = (
     "知道了 restating the choice or skip before images). Immediately "
     "continue the original task — generation is expected and required "
     "when the user did not ask to wait (skill follow-ups keep going). "
+    "A paid generate_image still requires the existing quote/approval "
+    "card to be confirmed first; do not skip that cost confirmation. "
     "After images are delivered, the left assistant body restates the "
     "selection in the completion intro and invites adjustments (adapt "
     "choice/subject; structure e.g. EN `Here's a minimalist and clean "

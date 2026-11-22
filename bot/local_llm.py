@@ -413,6 +413,14 @@ def cap_tool_result(text: str, name: str, args: dict, lang: str) -> str:
 def _step_label(name: str, args: dict, lang: str) -> str:
     zh = lang == "zh"
     base = re.sub(r"^mcp__\w+__", "", name or "")
+    if base == "generate_image":
+        try:
+            from ..api.multi_angle import quote_step_label
+            preview = quote_step_label(args or {}, lang)
+            if preview:
+                return preview
+        except ImportError:
+            pass
     if base == "skill":
         ref = str(args.get("name") or args.get("id") or "").strip()
         if str(args.get("action") or "").lower() == "read" and ref:
@@ -1375,13 +1383,45 @@ def fit_history(history: Optional[list[dict]], *, context_window: Optional[int] 
     return out
 
 
+def planner_image_url(url: str) -> str:
+    """Planner JPEG for an inline image. The caller's bytes and files stay as stored.
+
+    Declared size above 250MP, or a decode that runs out of memory, raises
+    ``image_too_large`` before HTTP. Corrupt or non-image bytes are returned
+    unchanged so the gate refuses them as unreadable. The sent copy is a JPEG
+    whose long edge is at most 1568px, reserved at 1024 tokens per image.
+    """
+    import base64
+    import binascii
+
+    from ..api.bot_media import PlannerPixelOverflow, planner_jpeg
+
+    if type(url) is not str or not url.startswith("data:") or "," not in url:
+        return url
+    _header, payload = url.split(",", 1)
+    try:
+        raw = base64.b64decode(payload, validate=True)
+        planned = planner_jpeg(raw)
+    except PlannerPixelOverflow:
+        from .llm_usd_gate import LlmBudgetBlocked
+        raise LlmBudgetBlocked("image_too_large", "declared pixel count exceeds the planner decode limit")
+    except MemoryError:
+        from .llm_usd_gate import LlmBudgetBlocked
+        raise LlmBudgetBlocked("image_too_large", "image decode ran out of memory")
+    except (binascii.Error, ValueError, OSError, SyntaxError):
+        return url
+    return f"data:{planned['media_type']};base64,{planned['data']}"
+
+
+def _planner_image_part(attachment: dict) -> dict:
+    """Inline planner copy. The attachment dict and its original bytes stay as stored."""
+    media = attachment.get("media_type") or "image/jpeg"
+    url = planner_image_url(f"data:{media};base64,{attachment['data']}")
+    return {"type": "image_url", "image_url": {"url": url}}
+
+
 def _user_content(text: str, attachments: Optional[list[dict]]):
-    images = [
-        {"type": "image_url",
-         "image_url": {"url": f"data:{a.get('media_type') or 'image/jpeg'}"
-                              f";base64,{a['data']}"}}
-        for a in attachments or [] if a.get("data")
-    ]
+    images = [_planner_image_part(a) for a in attachments or [] if a.get("data")]
     if not images:
         return text
     return [{"type": "text", "text": text}, *images]
@@ -2154,7 +2194,7 @@ class LocalLlmProvider(AgentProvider):
         if images:
             out.append({"role": "user", "content": [
                 {"type": "text", "text": f"{_TOOL_IMAGES_PREFIX}{name}:"},
-                *({"type": "image_url", "image_url": {"url": u}} for u in images),
+                *({"type": "image_url", "image_url": {"url": planner_image_url(u)}} for u in images),
             ]})
         return out
 
@@ -2459,7 +2499,7 @@ class LocalLlmProvider(AgentProvider):
         if images:
             messages.append({"role": "user", "content": [
                 {"type": "text", "text": f"Images returned by {base}:"},
-                *({"type": "image_url", "image_url": {"url": u}} for u in images),
+                *({"type": "image_url", "image_url": {"url": planner_image_url(u)}} for u in images),
             ]})
         return result_text
 
@@ -2564,6 +2604,8 @@ class LocalLlmProvider(AgentProvider):
 
     async def send(self, turn: TurnRequest, emit: EmitFn,
                    handle: TurnHandle) -> TurnResult:
+        lang = turn.lang if getattr(turn, "lang", "") in ("zh", "en") else "zh"
+        from .llm_usd_gate import LlmBudgetBlocked
         self._model_blocked = ""
         handle.model_blocked = ""
         project = str(getattr(turn, "project_id", "") or "")
@@ -2580,6 +2622,8 @@ class LocalLlmProvider(AgentProvider):
             return TurnResult(
                 error="no Local LLM endpoint configured — set the endpoint "
                       "URL under Agent Settings")
+        from .llm_usd_gate import bind_llm_project, reset_llm_project
+        project_token = bind_llm_project(project or turn.chat_id or "local")
         try:
             async with aiohttp.ClientSession() as session:
                 handle.process = session
@@ -2703,12 +2747,18 @@ class LocalLlmProvider(AgentProvider):
                                   usage=usage)
         except asyncio.CancelledError:
             raise
+        except LlmBudgetBlocked as e:
+            _log.warning("llm gate blocked before http code=%s detail=%s", e.code, e)
+            from .llm_usd_gate import user_notice
+            shown = user_notice(e.code, lang)
+            return TurnResult(error=shown or str(e))
         except Exception as e:
             if handle.stop_requested:
                 return TurnResult(aborted=True)
             _log.exception("[ComfyArt/local-llm] turn failed")
             return TurnResult(error=str(e) or type(e).__name__)
         finally:
+            reset_llm_project(project_token)
             handle.process = None
 
     async def stop(self, handle: TurnHandle) -> None:

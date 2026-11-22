@@ -207,8 +207,16 @@ async def bot_send(request: web.Request) -> web.Response:
     if (send_core.visual_refs(refs) or any(k["images"] for k in kits)) and not can_see:
         return error(f"{provider.label} cannot take images; pick another agent or remove the references", 400)
     skill_name = str(body.get("skill") or "").strip()
+    lang = str(body.get("lang") or "")
+    notice_lang = lang if lang in ("zh", "en") else "zh"
     try:
         attachments, lines = await send_core.prepare_attachments(refs, kits, docs, page_images=can_see)
+    except send_core.PlannerPixelOverflow:
+        from ..bot.llm_usd_gate import user_notice
+        return error(user_notice("image_too_large", notice_lang), 400)
+    except send_core.ImageUnreadable:
+        from ..bot.llm_usd_gate import user_notice
+        return error(user_notice("unbounded_multimodal", notice_lang), 400)
     except ValueError as e:
         return error(str(e), 400)
     display_blocks = [{"type": r["kind"], "url": r["src"], "shape": r["id"]} for r in refs]
@@ -232,7 +240,6 @@ async def bot_send(request: web.Request) -> web.Response:
         ref_image=first_image_bytes(attachments) if skill_name else None,
         preset_prompt=send_core.parse_preset(body.get("preset")),
         preset_id=send_core.parse_preset_id(body.get("preset")))
-    lang = str(body.get("lang") or "")
     # #388: turn run_mode (interactive|unattended) — distinct from chat auto|ask
     turn_run_mode = str(body.get("run_mode") or "interactive")
     if turn_run_mode not in ("interactive", "unattended"):
