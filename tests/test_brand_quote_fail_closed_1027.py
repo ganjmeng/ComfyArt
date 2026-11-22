@@ -77,7 +77,9 @@ async def _run(monkeypatch, *, budget: bool, price: str, confirm: str, stage: st
         monkeypatch.setattr(rig.p, "_price_one", local_price)
     elif price == "production":
         # Rig pins an offline plan price so ordinary tests never call WaveSpeed.
-        # These cases must use the production pricer, which raises without a key.
+        # These cases put the production pricer back. With no key it does not
+        # call the price API: a published estimate or an unpriced result, which
+        # still has to be confirmed before a submit.
         monkeypatch.setattr(rig.p, "_price_one", LocalLlmProvider._price_one.__get__(rig.p, LocalLlmProvider))
     elif price == "ask":
         async def asking(steps, lang):
