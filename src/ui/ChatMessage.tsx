@@ -412,10 +412,11 @@ function askPageCount(b: BotBlock, questions: AskQuestion[]): number {
 }
 
 function qDefaults(q: AskQuestion): string[] {
+  // Recommended is a badge only. Preselect comes from explicit defaults, so a
+  // marked option (brand card 3) is not already selected when the card opens.
   const max = q.max_selections ?? (q.options?.length ? 1 : 0)
   if (q.defaults?.length) return q.defaults.slice(0, max)
-  const rec = (q.options ?? []).filter((o) => o.recommended).map((o) => o.id)
-  return rec.slice(0, max)
+  return []
 }
 
 function initQStates(questions: AskQuestion[]): Record<string, QState> {

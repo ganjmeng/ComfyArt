@@ -2221,6 +2221,8 @@ class LocalLlmProvider(AgentProvider):
         parsed = []
         tripped = False
         accepted_single = 0  # #707: a second generate in the same step is still the extra call
+        from ..api.brand_identity import begin_batch
+        begin_batch()
         for tool_call in tool_calls:
             if handle.stop_requested:
                 return TurnResult(aborted=True, usage=usage)
@@ -2255,6 +2257,14 @@ class LocalLlmProvider(AgentProvider):
                 args = apply_generate(args, current_skill, user_text=_ut,
                                       ref_image=ref_image_bytes(args.get("refs"), _ut, getattr(turn, "attachments", None)),
                                       current_preset=getattr(run, "current_preset", "") if run is not None else "")
+                if args.get("_brand_block"):
+                    block = args.pop("_brand_block")
+                    parsed.append({
+                        "name": name, "args": args, "id": tc_id,
+                        "skill_key": "", "cached": False,
+                        "reject": "[tool error] " + str(block.get("error") or block.get("user_message") or "blocked"),
+                    })
+                    continue
                 preview, early_refuse = bind_generate(run, args, consume=False)
                 if not early_refuse:
                     args = preview
@@ -2313,8 +2323,23 @@ class LocalLlmProvider(AgentProvider):
         for it in parsed:
             if it["name"] == "generate_image" and it["args"].get(RATIO_REFUSAL_994):
                 it["refuse"] = json.dumps(it["args"][RATIO_REFUSAL_994], ensure_ascii=False)
+        # #1019: one quote per brand stage. Later stages in the same step are not submitted.
+        from ..api.brand_identity import stage_of
+        first_stage = None
+        for it in parsed:
+            if it.get("reject") or it.get("name") != "generate_image":
+                continue
+            slot = (it.get("args") or {}).get("brand_slot")
+            if not slot:
+                continue
+            st = stage_of(slot)
+            if first_stage is None:
+                first_stage = st
+            elif st != first_stage:
+                it["reject"] = ("[tool error] Finish and quote the current brand stage before the next one. "
+                                "This call did not submit or charge.")
         quote_item = next((it for it in parsed if it["name"] == QUOTE_TOOL), None)
-        paid = [it for it in parsed if it["name"] in PAID_TOOLS and not it.get("refuse") and not it.get("skip")]
+        paid = [it for it in parsed if it["name"] in PAID_TOOLS and not it.get("refuse") and not it.get("reject") and not it.get("skip")]
         chunks: list[Optional[list]] = [None] * len(parsed)
 
         ran: list[int] = []
@@ -2385,6 +2410,9 @@ class LocalLlmProvider(AgentProvider):
                                                 Stop(StopReason.AWAITING_CONFIRM, "not_approved", step=step))
 
         if quote is not None and decision == "start":
+            from ..api.brand_identity import note_confirmed, steps_are_brand_stage
+            if steps_are_brand_stage(steps if isinstance(steps, list) else []):
+                note_confirmed(quote.total, quote.units)
             # #909: no whole-group count in the user's message -> the plan the card
             # showed sets the paid-guard cap (an explicit "做 3 张" still wins).
             from ..api import paid_guard

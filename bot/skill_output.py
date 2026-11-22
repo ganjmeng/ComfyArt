@@ -336,12 +336,22 @@ OUTPUTS: dict[str, dict] = {
     },
     # #979: brand delivery is TWO stages, 4 images total. Flat fields = stage 1
     # (the safe default when no stage is passed); stages carry the full contract.
+    # #1019: flat fields and `stages` are the no-template default path (8 images).
+    # Each industry preset keeps the #979 3+1 plan and is not this row.
     "brand-identity-director": {
-        "width": 1024, "height": 1024, "ratio": "1:1", "images": 4,
-        "stages": BRAND_STAGES_979,
-        "presets": {pid: {"stages": BRAND_STAGES_979, **row}
+        "width": 2048, "height": 1152, "ratio": "16:9", "images": 8,
+        "stages": (
+            {"width": 2048, "height": 1152, "ratio": "16:9", "images": 1,
+             "label": "1 moodboard, 3x3, 16:9"},
+            {"width": 2048, "height": 2048, "ratio": "1:1", "images": 3,
+             "label": "3 logo direction boards"},
+            {"width": 1536, "height": 2048, "ratio": "3:4", "images": 4,
+             "label": "spec, cup, bag at 3:4 and storefront at 16:9"},
+        ),
+        "presets": {pid: {"stages": BRAND_STAGES_979, "images": 4,
+                          "width": 1024, "height": 1024, "ratio": "1:1", **row}
                     for pid, row in BRAND_PRESETS_979.items()},
-        "names": ("brand-identity-director", "品牌视觉识别", "Logo System"),
+        "names": ("brand-identity-director", "品牌识别", "Brand Identity", "品牌视觉识别", "Logo System"),
     },
     # #979: five templates, five plans. Flat fields = the default 「主款」 (eco, t1).
     "packaging-design-director": {
@@ -440,6 +450,10 @@ def _preset_row(sid: str, preset_id: object = "") -> tuple[str, dict, bool]:
     if not presets:
         return "", row, True
     key = str(preset_id or "").strip()
+    # #1019: an empty brand preset is the plaza default path (the skill row),
+    # not the first industry template. An unknown id still falls back to that template.
+    if sid == "brand-identity-director" and not key:
+        return "", row, True
     if key in presets:
         return key, presets[key], False
     first = next(iter(presets))
@@ -576,6 +590,9 @@ def accepted_image_counts(name: object, preset_id: object = "") -> tuple[int, in
     sid = resolve(name)
     if not sid:
         return None
+    if sid == "brand-identity-director" and not str(preset_id or "").strip():
+        # Default path is eight images across three stages, never a one-image skill.
+        return int(plan_for(sid, "")["total_images"]), int(plan_for(sid, "")["total_images"])
     if sid in PRESET_PLAN_SKILLS:
         n = int(plan_for(sid, preset_id)["images"])
         return n, n
@@ -813,6 +830,16 @@ def apply_generate(args: dict | None, current_skill: str = "", user_text: str | 
     row = OUTPUTS[sid]
     if not named:
         args["skill"] = sid
+    # #1019: no industry template → the 8-image default path. A known preset keeps #979.
+    # An unknown preset id still falls through to the first template below.
+    if sid == "brand-identity-director":
+        from ..api.brand_identity import TEMPLATE_IDS, fill_default
+        preset_key = str(args.get("preset") or preset_from_text(user_text) or current_preset or "").strip()
+        # Unknown ids are NOT the default path; plan_for maps them to the first template.
+        if args.get("brand_slot") or not preset_key:
+            filled = fill_default(args)
+            if filled.get("_brand_block") or filled.get("brand_slot"):
+                return filled
     # #982: a multi-call default (ratio pack / kit / screens) picks the call by
     # explicit ratio or by the pixels the relay already filled; otherwise call 1.
     call = None
@@ -948,6 +975,10 @@ def _preset_hint(sid: str, preset_id: str, user_text: str) -> str:
     stages = plan["stages"]
     total = plan["total_images"]
     default = " (skill default template: none was selected)" if plan["default_template"] else ""
+    if sid == "brand-identity-director" and not str(preset or "").strip():
+        from ..api.brand_identity import default_hint
+        # The eight measured sizes are the contract. A ratio word in the brief does not resize them.
+        return default_hint()
     if sid == "brand-identity-director":
         sizes = []
         for i, s in enumerate(stages, 1):

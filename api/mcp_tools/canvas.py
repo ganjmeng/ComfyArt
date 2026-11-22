@@ -127,6 +127,11 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
             from ...bot.ref_orientation import ref_image_bytes
             ref_image = ref_image_bytes(args.get("refs"))
         args = apply_generate(args, ref_image=ref_image)
+        if args.get("_brand_block"):
+            return args["_brand_block"]
+        if args.get("brand_slot"):
+            from ..brand_identity import pin_exact_model
+            args = pin_exact_model(args)
         if args.get(RATIO_REFUSAL_994):
             return args[RATIO_REFUSAL_994]
         if requests_svg(args) and not svg_block(args):
@@ -257,6 +262,9 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
     if packaging_run and isinstance(result, dict) and not result.get("cancelled"):
         # #963: image 1's returned shape is the anchor holder; wait_generation swaps in the placed shape.
         product_packaging.record_submitted(result)
+    if isinstance(result, dict) and result.get("ids") and args.get("brand_slot"):
+        from ..brand_identity import record_submitted as record_brand_submitted
+        record_brand_submitted(args, result)
     if choice and isinstance(result, dict) and not result.get("cancelled"):
         ran = result.get("model")
         if choice["auto"] and choice.get("category") != "skill_size" and "edit_model" not in choice and choice["category"] != "references" and ran and ran != choice["model"]:
@@ -292,6 +300,8 @@ async def _wait_generation(args: dict) -> dict:
     payload = await submit_command("wait_generation", {**args, "timeout_s": timeout}, PROJECT.get(), timeout + 15)
     # #963: the placed anchor image shape (image 1 of a packaging turn) is what the plan gate binds to.
     product_packaging.record_wait(payload)
+    from ..brand_identity import record_wait as record_brand_wait
+    record_brand_wait(payload)
     from .. import multi_angle
     multi_angle.record_wait(payload)
     return payload
@@ -569,6 +579,10 @@ def registered_ids(action: str) -> set[str]:
 
 def unregistered_model(action: str, args: dict) -> str:
     """#734: the agent-passed model when the catalog does not register it for this tool, else ''."""
+    # #1019: the brand default path pins Qwen Image 2.0 for an exact size string.
+    # It is not on the curated dropdown; do not drop it and let Auto pick Flare.
+    if args.get("brand_slot"):
+        return ""
     model = named_or_none(args.get("model")) or ""
     if not model or not tool_feature(action):
         return ""
@@ -608,6 +622,15 @@ def select_model(action: str, args: dict, catalog: dict | None = None, cfg: dict
 def _select_model(action: str, args: dict, catalog: dict | None = None, cfg: dict | None = None,
                   user_text: str | None = None) -> dict | None:
     text = user_text if user_text is not None else _current_user_text()
+    if action == "generate_image" and args.get("brand_slot"):
+        from ..brand_identity import QWEN_EDIT, QWEN_T2I, SKILL as BRAND_SKILL
+        model = QWEN_EDIT if (args.get("refs") or args.get("base")) else QWEN_T2I
+        choice = {"model": model, "auto": True, "category": "skill_size", "skill": BRAND_SKILL,
+                  "reason": {"zh": "品牌识别默认路径按精确像素提交",
+                             "en": "the brand default path submits the exact pixel size"}}
+        if model == QWEN_EDIT:
+            choice["edit_model"] = model
+        return relabel_agent_filled_choice(choice, args, text)
     if action == "generate_image" and _exact_skill_missing_ref(args):
         return {"block": _need_person_photo_block(), "category": "need_person_photo", "auto": True}
     named = named_or_none(args.get("model"))
@@ -836,9 +859,14 @@ SPECS: dict[str, dict] = {
                                    "playful/panels/shelf). The output contract is per template; omit only when the "
                                    "user did not pick one (the skill's default template is used)."},
          "stage": {"type": "integer",
-                   "description": "1-based delivery stage of the template's output contract (brand: stage 1 = "
-                                  "3×1024×1024 direction proposals, stage 2 = 1×2048×1152 guideline board; "
-                                  "multi-SKU packaging: stage 1 = 3×1536×2048, stage 2 = 1×2048×1152). Default 1."},
+                   "description": "1-based delivery stage when an industry template is selected "
+                                  "(brand templates: stage 1 = 3×1024×1024 direction proposals, "
+                                  "stage 2 = 1×2048×1152 guideline board; "
+                                  "multi-SKU packaging: stage 1 = 3×1536×2048, stage 2 = 1×2048×1152). "
+                                  "The brand default path (no template) uses brand_slot instead. Default 1."},
+         "brand_slot": {"type": "string",
+                        "description": "brand-identity-director default path only: moodboard, logo_a, logo_b, "
+                                       "logo_c, spec, cup, bag, or storefront. The server assigns this."},
          "multi_angle_stage": {"type": "string", "enum": ["preview", "final"],
                                "description": "multi-angle only: preview lineart, then final after composition answer"},
          "composition_id": {"type": "string", "description": "multi-angle final: one answered panel number 1..9"},

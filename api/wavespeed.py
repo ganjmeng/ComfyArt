@@ -2056,6 +2056,8 @@ async def submit(inputs: dict) -> str:
         _jobs[task]["model_choice"] = model_choice
     if svg_image.requests_svg(inputs):
         _jobs[task]["svg"] = True
+    if inputs.get("brand_opaque"):
+        _jobs[task]["brand_opaque"] = True
     if inputs.get("size_lock"):
         # The provider payload is built from the schema only, so this flag stays on the job.
         _jobs[task]["size_lock"] = True
@@ -2529,6 +2531,13 @@ async def _download(session: aiohttp.ClientSession, task: str, index: int, url: 
             _write(os.path.join(root, SUBFOLDER, preview), verdict.preview_png)
         return {"filename": filename, "subfolder": SUBFOLDER, "type": "output",
                 "svg_preview": preview, "svg_state": verdict.status, "svg_message": verdict.message}
+    if (_jobs.get(task) or {}).get("brand_opaque"):
+        from .brand_identity import flatten_opaque
+        flat = flatten_opaque(data)
+        if flat is not data:
+            data = flat
+            ctype = "image/png"
+            url = url.split("?", 1)[0] + ".png"
     filename = f"ws_{task[:12]}_{index}{output_ext(url, data, ctype)}"
     path = os.path.join(root, SUBFOLDER, filename)
     if not os.path.isfile(path):

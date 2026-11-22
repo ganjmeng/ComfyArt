@@ -6,7 +6,7 @@
  *  No skill ids are named here. 「详情」 keeps main's #484 edit page (openSkillEditor). */
 import { useRef, useState } from 'react'
 
-import { uploadSkillImage, isSkillMediaVideo, loc, loadFavourites, missingInputs, presetImage, recordSkillUse, skillAuthor, skillCover, skillCoverVideoHover, skillMeta, skillMetaLabel, skillDefaults, skillDescription, skillPreset, skillRunParams, skillShareUrl, skillMedia, selectedMedia, withTemplateInputs, recordTemplateUse, unrecordTemplateUse, toggleFavourite, type SkillMediaItem, type Skill, type SkillPreset } from '../skills'
+import { uploadSkillImage, isSkillMediaVideo, loc, loadFavourites, missingInputs, presetImage, recordSkillUse, skillAuthor, skillCover, skillCoverVideoHover, skillMeta, skillMetaLabel, skillDefaults, skillDescription, skillPreset, skillRunParams, skillShareUrl, skillMedia, selectedMedia, withTemplateInputs, recordTemplateUse, unrecordTemplateUse, toggleFavourite, BRAND_DEFAULT_INPUTS, type SkillMediaItem, type Skill, type SkillPreset } from '../skills'
 import { newProject } from '../projects'
 import { BRAND } from '../brand'
 import { copyText } from '../clipboard'
@@ -123,9 +123,18 @@ export function SkillRunDialog({ skill: baseSkill, presetId, onClose, run = newP
   /** injectable for tests; default leaves for a new project exactly like main's card click */
   run?: (params: Record<string, string | string[]>) => void
 }) {
-  const [preset, setPreset] = useState(() => skillPreset(baseSkill, presetId)?.id ?? null)
+  // #1019: brand opens with no industry template selected so 开始制作 is the plaza default path.
+  // An explicit presetId (a tile the caller already chose) still selects that template.
+  const [preset, setPreset] = useState(() => (
+    baseSkill.id === 'brand-identity-director' && (presetId == null || presetId === '')
+      ? null
+      : (skillPreset(baseSkill, presetId)?.id ?? null)
+  ))
   // #748 — the right form is per template: switching templates switches inputs[] (values kept by key).
-  const skill = withTemplateInputs(baseSkill, preset)
+  const templated = withTemplateInputs(baseSkill, preset)
+  const skill = baseSkill.id === 'brand-identity-director' && !preset
+    ? { ...templated, inputs: BRAND_DEFAULT_INPUTS, activePreset: undefined }
+    : templated
   const [values, setValues] = useState(() => skillDefaults(skill))
   const [uploading, setUploading] = useState<string | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)

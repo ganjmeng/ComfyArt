@@ -1818,8 +1818,8 @@
       "source": "reference",
       "kind": "template",
       "title": {
-        "zh": "品牌视觉识别",
-        "en": "Logo System"
+        "zh": "品牌识别",
+        "en": "Brand Identity"
       },
       "assetDir": "brand",
       "templates": [

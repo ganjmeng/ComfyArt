@@ -115,7 +115,7 @@ def final_table(index: str) -> list[dict]:
 
 
 # product display overrides (our naming, not reference copy) — #751 HOLD: brand zh = 品牌视觉识别
-TITLE_OVERRIDE = {"brand-identity-director": {"zh": "品牌视觉识别"}}
+TITLE_OVERRIDE = {"brand-identity-director": {"zh": "品牌识别", "en": "Brand Identity"}}
 EXT_REQUIRED = {"character-sheet-design": 1}  # sid -> own templates that MUST be merged (c67ac2aa layout: raw/../own/)
 
 

@@ -900,6 +900,8 @@ def _validate_spec(args: dict) -> dict:
     args = normalize_clothing_swap_card(args)
     args = normalize_studio_direction_card(args)
     args = normalize_youtube_banner_card(args)
+    from .brand_identity import normalize_card as normalize_brand_card
+    args = normalize_brand_card(args)
     allow_skip = bool(args["allow_skip"]) if "allow_skip" in args else True
     raw_questions = args.get("questions")
     if raw_questions is not None:
@@ -930,7 +932,8 @@ def _validate_spec(args: dict) -> dict:
         }
         if questions[0].get("defaults"):
             spec["defaults"] = questions[0]["defaults"]
-        return spec
+        from .brand_identity import unselect_recommended
+        return unselect_recommended(spec)
 
     # Legacy single-question shape.
     prompt = str(args.get("prompt") or "").strip()
