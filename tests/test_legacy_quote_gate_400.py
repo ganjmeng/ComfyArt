@@ -72,6 +72,8 @@ class LegacyRig:
         async def price(name, args):
             return (prices or {}).get(name, 1.5)
         monkeypatch.setattr(self.p, "_price_call", price)
+        from test_agent_budget_391 import pin_offline_plan_quote
+        pin_offline_plan_quote(monkeypatch, self.p)
 
         async def ask(turn, handle, lang, name, p, left):
             self.confirms.append((name, p, left))

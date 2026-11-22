@@ -13,6 +13,7 @@ import pytest
 
 from ComfyArt.api import brand_identity as brand
 from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
+from ComfyArt.bot.local_llm import LocalLlmProvider
 from ComfyArt.bot.providers import TurnHandle
 from ComfyArt.bot.run_budget import resolve_policy
 from test_agent_budget_391 import Rig, calls, reply
@@ -74,6 +75,10 @@ async def _run(monkeypatch, *, budget: bool, price: str, confirm: str, stage: st
             return (0.04, "estimate", "test")
 
         monkeypatch.setattr(rig.p, "_price_one", local_price)
+    elif price == "production":
+        # Rig pins an offline plan price so ordinary tests never call WaveSpeed.
+        # These cases must use the production pricer, which raises without a key.
+        monkeypatch.setattr(rig.p, "_price_one", LocalLlmProvider._price_one.__get__(rig.p, LocalLlmProvider))
     elif price == "ask":
         async def asking(steps, lang):
             return _Asking()
