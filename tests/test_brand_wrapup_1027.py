@@ -210,6 +210,76 @@ def test_a_question_that_only_mentions_the_words_is_kept():
     assert "本次交付清单" not in kept
 
 
+QUESTION = "你问“本次交付清单”是什么意思：它是文件列表，不含商标注册服务。"
+EN_QUESTION = 'You asked what "delivery list" means: it is the file list, not a trademark filing.'
+BLOCK = "\n".join([
+    "本次交付清单：",
+    "- 规范卡、杯、纸袋、门头均已生成。",
+    "如实说明的边界：需要矢量替换，色值为屏幕估算。",
+    "下一步：菜单板。",
+])
+SAME_LINE = "本次交付清单：四张。下载地址 /download/qimu.zip，请用这个链接。"
+
+
+def test_quoting_the_full_title_does_not_take_the_closing_slot():
+    _reach_finals()
+    assert brand.accept_assistant_text(QUESTION) == QUESTION
+    assert brand.accept_assistant_text(EN_QUESTION) == EN_QUESTION
+    assert brand.accept_assistant_text(SUCCESS) == ""
+    for slot in _submit_finals():
+        _place(slot)
+    assert brand.release_wrapup("zh") == SUCCESS
+    assert brand.accept_assistant_text(QUESTION) == QUESTION
+    assert brand.accept_assistant_text(EN_QUESTION) == EN_QUESTION
+
+
+def test_multiline_closing_block_is_held_until_the_finals_are_placed():
+    _reach_finals()
+    assert brand.accept_assistant_text(BLOCK) == ""
+    slots = _submit_finals()
+    for slot in slots[:-1]:
+        _place(slot)
+        assert brand.release_wrapup("zh") == ""
+    _place(slots[-1])
+    released = brand.release_wrapup("zh")
+    assert "均已生成" in released
+    assert "如实说明的边界" in released
+    assert "下一步：菜单板" in released
+    assert released.startswith("本次交付清单")
+
+
+def test_a_failed_final_does_not_publish_the_multiline_success_block():
+    _reach_finals()
+    assert brand.accept_assistant_text(BLOCK) == ""
+    for slot in _submit_finals():
+        _fail(slot)
+    released = brand.release_wrapup("zh")
+    assert "没有落图" in released
+    assert "均已生成" not in released
+    assert "如实说明的边界" not in released
+
+
+def test_same_line_local_download_stays_when_the_claim_is_dropped():
+    _reach_finals()
+    shown = brand.accept_assistant_text(SAME_LINE)
+    assert "/download/qimu.zip" in shown and "请用这个链接" in shown
+    assert "本次交付清单" not in shown and "四张" not in shown
+    for slot in _submit_finals():
+        _place(slot)
+    released = brand.release_wrapup("zh")
+    assert "本次交付清单" in released and "/download/qimu.zip" not in released
+    again = brand.accept_assistant_text(SAME_LINE)
+    assert "/download/qimu.zip" in again and "请用这个链接" in again
+    assert "本次交付清单" not in again and "四张" not in again
+
+
+def test_a_blank_line_ends_the_closing_block():
+    _reach_finals()
+    shown = brand.accept_assistant_text("本次交付清单：\n- 均已生成。\n\n普通说明，和清单无关。")
+    assert shown == "普通说明，和清单无关。"
+    assert "均已生成" not in shown
+
+
 def test_progress_does_not_take_the_closing_slot():
     _reach_finals()
     assert brand.accept_assistant_text("正在生成四份成品，请稍候。") == "正在生成四份成品，请稍候。"

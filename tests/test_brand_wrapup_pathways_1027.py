@@ -52,6 +52,13 @@ async def _drive(monkeypatch, script, mcp, *, budget: bool, handle=None):
     BOT_CHAT_ID.set("c")
     _reach_finals()
     rig = Rig(monkeypatch, script, mcp=mcp)
+
+    async def confirm_plan(spec, turn, handle, **_kw):
+        # Brand stages always quote. This file has no live turn, so the real
+        # confirm would return unattended and never reach generate/wait.
+        return "start"
+
+    monkeypatch.setattr(rig.p, "_confirm_plan", confirm_plan)
     if not budget:
         pol = resolve_policy(env={"COMFYART_AGENT_BUDGET_LOOP": "0"})
         monkeypatch.setattr(rig.p, "_run_policy", lambda: pol)
@@ -198,3 +205,75 @@ async def test_cancel_while_running_does_not_announce_a_failure(monkeypatch, bud
     # The next turn on this chat does not replay the discarded list or the same note.
     assert brand.release_wrapup("zh") == ""
     assert brand.end_turn("zh") == ""
+
+
+QUESTION = "你问“本次交付清单”是什么意思：它是文件列表，不含商标注册服务。"
+BLOCK = "\n".join([
+    "本次交付清单：",
+    "- 规范卡、杯、纸袋、门头均已生成。",
+    "如实说明的边界：需要矢量替换，色值为屏幕估算。",
+    "下一步：菜单板。",
+])
+SAME_LINE = "本次交付清单：四张。下载地址 /download/qimu.zip，请用这个链接。"
+
+
+@pytest.mark.parametrize("budget", [True, False], ids=["agent_loop", "local_llm"])
+async def test_quoted_title_multiline_block_and_same_line_download(monkeypatch, budget):
+    waits = {"n": 0}
+
+    def script(messages, n):
+        if n == 0:
+            gen = calls(*((
+                "generate_image",
+                {"prompt": slot, "skill": brand.SKILL, "brand_slot": slot},
+            ) for slot in SLOTS))
+            gen["choices"][0]["message"]["content"] = QUESTION
+            return gen
+        if n == 1:
+            return {
+                "choices": [{"message": {
+                    "content": BLOCK,
+                    "tool_calls": [{"id": "w1", "function": {
+                        "name": "wait_generation",
+                        "arguments": json.dumps({"ids": [f"h-{s}" for s in SLOTS]}),
+                    }}],
+                }}],
+            }
+        if n == 2:
+            # The first wait stays on running for its twelve polls. This later
+            # call is the completion, so the held block can be released.
+            return {
+                "choices": [{"message": {
+                    "content": "",
+                    "tool_calls": [{"id": "w2", "function": {
+                        "name": "wait_generation",
+                        "arguments": json.dumps({"ids": [f"h-{s}" for s in SLOTS]}),
+                    }}],
+                }}],
+            }
+        return reply(SAME_LINE)
+
+    def mcp(name, args, i):
+        if name == "generate_image":
+            slot = args["brand_slot"]
+            brand.record_submitted(args, {"ids": [f"h-{slot}"]})
+            return json.dumps({"ids": [f"h-{slot}"]})
+        if name == "wait_generation":
+            waits["n"] += 1
+            payload = _running() if waits["n"] <= 12 else _done()
+            brand.record_wait(payload)
+            return json.dumps(payload)
+        return json.dumps({})
+
+    _res, events = await _drive(monkeypatch, script, mcp, budget=budget)
+    text = "\n".join(_deltas(events))
+    assert QUESTION in text
+    assert "/download/qimu.zip" in text and "请用这个链接" in text
+    assert "本次交付清单：四张" not in text
+    assert "均已生成" in text and "如实说明的边界" in text and "下一步：菜单板" in text
+    claim_at = next(i for i, e in enumerate(events) if e.t == "delta" and e.text and "均已生成" in e.text)
+    placed = next(i for i, e in enumerate(events)
+                  if e.t == "tool_result" and "shape:spec" in str(getattr(e, "text", "")))
+    assert claim_at > placed
+    assert text.index(QUESTION) < text.index("均已生成")
+    assert text.index("/download/qimu.zip") > text.index("均已生成")

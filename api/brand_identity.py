@@ -22,6 +22,7 @@ onto white before the file is saved.
 from __future__ import annotations
 
 import io
+import re
 
 SKILL = "brand-identity-director"
 QWEN_T2I = "wavespeed-ai/qwen-image-2.0/text-to-image"
@@ -761,13 +762,64 @@ def failure_wrapup(lang: str = "zh") -> str:
     return "没有落图：" + "、".join(listed) + "。"
 
 
-_URL_RE = __import__("re").compile(r"https?://\S+")
+# A heading opens a block. A link is either an http(s) URL or a file path such
+# as /download/qimu.zip. The words that introduce that link stay with it.
+_HEADING_RE = re.compile(r"^(?:本次交付清单|delivery list)\b", re.IGNORECASE)
+_LINK_RE = re.compile(r"https?://\S+|/(?:[\w.-]+/)+[\w.-]+")
+_LABEL_TAIL_RE = re.compile(
+    r"(?:下载地址|下载链接|下载|链接|文件地址|download(?:\s+link)?|link|url)\s*[:：]?\s*$",
+    re.IGNORECASE,
+)
+_QUESTION_RE = re.compile(r"[?？]|是什么意思|what\s+(?:does|is)\b", re.IGNORECASE)
 
 
-def _closing_line(line: str) -> bool:
-    """The delivery-list heading, not a sentence that merely mentions the words."""
-    folded = line.casefold()
-    return "本次交付清单" in line or "delivery list" in folded
+def _opening(line: str) -> str:
+    s = line.strip()
+    s = re.sub(r"^(?:#{1,6}\s+|>\s+)", "", s)
+    s = re.sub(r"^(\*\*|__)+", "", s)
+    s = re.sub(r"(\*\*|__)+$", "", s)
+    return s.strip()
+
+
+def _is_heading_line(line: str) -> bool:
+    """The line opens with the delivery-list heading. A quoted mention does not."""
+    return bool(_HEADING_RE.match(_opening(line)))
+
+
+def _has_link(line: str) -> bool:
+    return bool(_LINK_RE.search(line))
+
+
+def _split_heading_line(line: str) -> tuple[str, str]:
+    """Split a heading line into the claim and the same-line download clause.
+
+    The link and the words that introduce it stay visible. The claim is the
+    closing block.
+    """
+    match = _LINK_RE.search(line)
+    if not match:
+        return line.strip(), ""
+    left, right = line[: match.start()], line[match.start() :]
+    label = _LABEL_TAIL_RE.search(left)
+    if label:
+        right = left[label.start() :] + right
+        left = left[: label.start()]
+    left = re.sub(r"[，,。；;：:\s]+$", "", left).strip()
+    return left, right.strip()
+
+
+def _block_continues(line: str) -> bool:
+    """Following lines stay in the block until an independent answer."""
+    if not line.strip() or _is_heading_line(line) or _has_link(line):
+        return False
+    opened = _opening(line)
+    if _QUESTION_RE.search(opened):
+        return False
+    folded = opened.casefold()
+    # The heading phrase quoted mid-line is a mention, not another list item.
+    if ("本次交付清单" in opened or "delivery list" in folded) and not _HEADING_RE.match(opened):
+        return False
+    return True
 
 
 def still_generating_wrapup(lang: str = "zh") -> str:
@@ -781,23 +833,44 @@ def still_generating_wrapup(lang: str = "zh") -> str:
 
 
 def split_closing(text: str) -> tuple[str, str]:
-    """Separate the delivery-list lines from prose and links.
+    """Split one delivery-list block from the prose that must stay visible.
 
-    A download URL on the same line as the list stays with the prose.
+    The block starts at a line that opens with the heading (本次交付清单 /
+    Delivery list). It keeps the following lines — list items, the boundary
+    note, the next step — until a blank line, a line that carries a link, or a
+    question / quoted mention. A download path on the heading line itself stays
+    with the prose. A sentence that only quotes the heading is not a block.
     """
     kept: list[str] = []
     closing: list[str] = []
-    for line in str(text or "").splitlines():
-        if not _closing_line(line):
-            kept.append(line)
+    lines = str(text or "").splitlines()
+    i = 0
+    in_block = False
+    while i < len(lines):
+        line = lines[i]
+        if in_block:
+            if _block_continues(line):
+                closing.append(line)
+                i += 1
+                continue
+            in_block = False
+            if not line.strip():
+                i += 1
+                continue
+        if _is_heading_line(line):
+            claim, extra = _split_heading_line(line)
+            if claim:
+                closing.append(claim)
+            if extra:
+                kept.append(extra)
+            in_block = True
+            i += 1
             continue
-        urls = _URL_RE.findall(line)
-        body = _URL_RE.sub("", line).strip()
-        if body:
-            closing.append(body)
-        if urls:
-            kept.append(" ".join(urls))
-    return "\n".join(part for part in kept if part.strip()).strip(), "\n".join(closing).strip()
+        kept.append(line)
+        i += 1
+    prose = "\n".join(part for part in kept if part.strip()).strip()
+    block = "\n".join(part for part in closing if part.strip()).strip()
+    return prose, block
 
 
 def accept_assistant_text(text: str) -> str:
