@@ -428,12 +428,15 @@ def unselect_recommended(spec: dict) -> dict:
 
 _PROGRESS: dict[str, dict] = {}
 _HELD_WRAPUP: dict[str, str] = {}
+# Per-turn wrap-up flags. Cleared by end_turn so a later turn cannot replay them.
+_TURN: dict[str, dict] = {}
 BRAND_PLANNED_IMAGES = 8
 
 
 def reset_for_tests() -> None:
     _PROGRESS.clear()
     _HELD_WRAPUP.clear()
+    _TURN.clear()
 
 
 def _chat() -> str:
@@ -458,6 +461,7 @@ def _progress() -> dict:
             "urls": {},
             "holders": {},
             "inflight": [],
+            "failed": [],
             "spent": 0.0,
             "batch": 0,
         }
@@ -668,10 +672,21 @@ def record_wait(result: object) -> None:
             continue
         shapes = row.get("shapes") or []
         urls = row.get("urls") or []
-        if isinstance(shapes, list) and shapes:
-            progress["shapes"][slot_id] = str(shapes[0])
-        if isinstance(urls, list) and urls:
-            progress["urls"][slot_id] = str(urls[0])
+        placed = ""
+        if isinstance(shapes, list) and shapes and str(shapes[0]).strip():
+            placed = str(shapes[0]).strip()
+        failed = progress.setdefault("failed", [])
+        if placed:
+            progress["shapes"][slot_id] = placed
+            if slot_id in failed:
+                failed.remove(slot_id)
+            if isinstance(urls, list) and urls:
+                progress["urls"][slot_id] = str(urls[0])
+        elif slot_id not in progress["shapes"]:
+            # A waited holder with no shape did not land. Leaving it inflight
+            # would keep the closing text held for the rest of the session.
+            if slot_id not in failed:
+                failed.append(slot_id)
         if slot_id in progress["inflight"]:
             progress["inflight"].remove(slot_id)
         _advance(progress)
@@ -704,10 +719,106 @@ def hold_wrapup(text: str) -> None:
         _HELD_WRAPUP[_chat()] = text
 
 
-def release_wrapup() -> str:
+def _turn() -> dict:
+    chat = _chat()
+    row = _TURN.get(chat)
+    if row is None:
+        row = _TURN[chat] = {"released": False, "extra": []}
+    return row
+
+
+def _unplaced_finals(progress: dict) -> list[str]:
+    """Finals that were submitted and have no placed shape."""
+    shapes = progress.get("shapes") or {}
+    failed = set(progress.get("failed") or [])
+    inflight = set(progress.get("inflight") or [])
+    attempted = set((progress.get("holders") or {}).values()) | failed | inflight
+    return [slot for slot in FINAL_IDS if slot in attempted and slot not in shapes]
+
+
+def _final_names(slot_ids: list[str], lang: str) -> list[str]:
+    names = _QUOTE_NAME["en" if lang == "en" else "zh"]
+    return [names.get(slot) or slot for slot in slot_ids]
+
+
+def failure_wrapup(lang: str = "zh") -> str:
+    """Name the finals that have no shape. Does not claim they were delivered."""
+    missing = _unplaced_finals(_progress())
+    if not missing:
+        return ""
+    listed = _final_names(missing, lang)
+    if lang == "en":
+        return "Did not place: " + ", ".join(listed) + "."
+    return "没有落图：" + "、".join(listed) + "。"
+
+
+def is_delivery_wrapup(text: str) -> bool:
+    folded = str(text or "").casefold()
+    return "本次交付清单" in str(text or "") or "交付清单" in str(text or "") or "delivery list" in folded
+
+
+def accept_assistant_text(text: str) -> str:
+    """Text to show now. Empty means held until the finals settle, or dropped as a duplicate list."""
+    text = str(text or "").strip()
+    if not text:
+        return ""
+    turn = _turn()
+    if turn.get("released") and is_delivery_wrapup(text):
+        return ""
+    if should_hold_wrapup():
+        chat = _chat()
+        if not _HELD_WRAPUP.get(chat):
+            _HELD_WRAPUP[chat] = text
+        elif is_delivery_wrapup(text):
+            pass
+        else:
+            turn.setdefault("extra", []).append(text)
+        return ""
+    return text
+
+
+def release_wrapup(lang: str = "zh") -> str:
+    """After a tool step: the held closing once every final has a shape, or a failure note once every attempt has settled."""
+    progress = _progress()
+    phase = str(progress.get("phase") or "")
+    inflight = [slot for slot in FINAL_IDS if slot in (progress.get("inflight") or [])]
+    missing = _unplaced_finals(progress)
+    if phase in {"finals", "done"} and missing and not inflight:
+        if tuple(missing) == tuple(progress.get("wrapup_reported") or ()):
+            return ""
+        _HELD_WRAPUP.pop(_chat(), None)
+        _turn()["extra"] = []
+        _turn()["released"] = True
+        progress["wrapup_reported"] = tuple(missing)
+        return failure_wrapup(lang)
     if not finals_placed():
         return ""
-    return _HELD_WRAPUP.pop(_chat(), "")
+    text = _HELD_WRAPUP.pop(_chat(), "")
+    extras = [part for part in (_turn().get("extra") or []) if part]
+    _turn()["extra"] = []
+    parts = [part for part in [text, *extras] if part]
+    if parts:
+        _turn()["released"] = True
+        progress["wrapup_reported"] = ()
+    return "\n".join(parts)
+
+
+def end_turn(lang: str = "zh") -> str:
+    """Flush a terminal closing and drop deferred text so the next turn cannot replay it."""
+    progress = _progress()
+    phase = str(progress.get("phase") or "")
+    text = ""
+    if not _turn().get("released"):
+        missing = tuple(_unplaced_finals(progress))
+        reported = tuple(progress.get("wrapup_reported") or ())
+        if phase == "finals" and missing and missing != reported:
+            text = failure_wrapup(lang)
+            progress["wrapup_reported"] = missing
+        else:
+            text = release_wrapup(lang)
+    _HELD_WRAPUP.pop(_chat(), None)
+    _TURN.pop(_chat(), None)
+    return text
 
 
 def ensure_run_budget(tracker, skill: str, preset: str) -> None:

@@ -2742,11 +2742,10 @@ class LocalLlmProvider(AgentProvider):
                     if reasoning.strip():
                         await emit(BotEvent(t="thinking", text=reasoning.strip()))
                     if content:
-                        from ..api.brand_identity import hold_wrapup, should_hold_wrapup
-                        if should_hold_wrapup():
-                            hold_wrapup(content)
-                        else:
-                            await emit(BotEvent(t="delta", text=content))
+                        from ..api.brand_identity import accept_assistant_text
+                        shown = accept_assistant_text(content)
+                        if shown:
+                            await emit(BotEvent(t="delta", text=shown))
                     if not tool_calls:
                         return TurnResult(usage=usage)
 
@@ -2757,7 +2756,7 @@ class LocalLlmProvider(AgentProvider):
                         messages=messages, done=done, lang=lang, skill_cache=skill_cache,
                         loop=loop, gate=gate, usage=usage, llm_model=model)
                     from ..api.brand_identity import release_wrapup
-                    released = release_wrapup()
+                    released = release_wrapup(lang if lang in ("zh", "en") else "zh")
                     if released:
                         await emit(BotEvent(t="delta", text=released))
                     if stopped is not None:
@@ -2799,6 +2798,10 @@ class LocalLlmProvider(AgentProvider):
             _log.exception("[ComfyArt/local-llm] turn failed")
             return TurnResult(error=str(e) or type(e).__name__)
         finally:
+            from ..api.brand_identity import end_turn
+            flushed = end_turn(lang if lang in ("zh", "en") else "zh")
+            if flushed:
+                await emit(BotEvent(t="delta", text=flushed))
             reset_llm_project(project_token)
             handle.process = None
 

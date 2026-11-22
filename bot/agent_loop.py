@@ -822,6 +822,10 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
         return sc_mod.check(ctx.goal, ctx.blocks, await canvas_ids())
 
     async def finish(stop: Stop, *, remaining: int = 0, extra_error: str = "") -> TurnResult:
+        from ..api.brand_identity import end_turn
+        flushed = end_turn(ctx.lang if ctx.lang in ("zh", "en") else "zh")
+        if flushed:
+            await rec_emit(BotEvent(t="delta", text=flushed))
         check = await goal_check()
         # Every stop except done can be continued / retried from its checkpoint.
         status = "done" if stop.reason == StopReason.DONE else "paused"
@@ -972,11 +976,10 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
             if reasoning.strip():
                 await emit(BotEvent(t="thinking", text=reasoning.strip()))
             if content:
-                from ..api.brand_identity import hold_wrapup, should_hold_wrapup
-                if should_hold_wrapup():
-                    hold_wrapup(content)
-                else:
-                    await rec_emit(BotEvent(t="delta", text=content))
+                from ..api.brand_identity import accept_assistant_text
+                shown = accept_assistant_text(content)
+                if shown:
+                    await rec_emit(BotEvent(t="delta", text=shown))
             if not tool_calls:
                 check = await goal_check()
                 if check.applies and not check.passed:
@@ -1017,7 +1020,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                 if pure_wait:
                     ctx.budget.resume_wall()
             from ..api.brand_identity import release_wrapup
-            released = release_wrapup()
+            released = release_wrapup(ctx.lang if ctx.lang in ("zh", "en") else "zh")
             if released:
                 await rec_emit(BotEvent(t="delta", text=released))
             reason_next = reasoning_boost.wrote_memory(ctx.blocks[b_before:])
