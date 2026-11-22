@@ -567,11 +567,14 @@ QUOTE_LINE_LOCALE = {
         "quote.lineartPreviewSize": "Line-art preview · {0}×{1} · {2}",
     },
 }
+# #1019: brand dialog with no tile selected. Not the first template's name.
+DEFAULT_WORKFLOW_LOCALE = {"zh": "默认流程", "en": "Default workflow"}
 LOCALE_EXTRAS = {
     lang: {"bot.composeBannerText": BANNER_LOCALE[lang], **PORTRAIT_LOCALE[lang],
            "runStop.stillGenerating": RUN_STOP_LOCALE[lang],
            "wsErr.userRatioUnsupported": RATIO_REFUSAL_LOCALE_994[lang],
            "models.minimaxH3Image": H3_IMAGE_LOCALE[lang],
+           "skillRun.defaultWorkflow": DEFAULT_WORKFLOW_LOCALE[lang],
            **QUOTE_LINE_LOCALE[lang]}
     for lang in ("zh", "en")
 }
