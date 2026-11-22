@@ -676,19 +676,26 @@ def record_wait(result: object) -> None:
         if isinstance(shapes, list) and shapes and str(shapes[0]).strip():
             placed = str(shapes[0]).strip()
         failed = progress.setdefault("failed", [])
+        status = str(row.get("status") or "").lower()
         if placed:
             progress["shapes"][slot_id] = placed
             if slot_id in failed:
                 failed.remove(slot_id)
             if isinstance(urls, list) and urls:
                 progress["urls"][slot_id] = str(urls[0])
-        elif slot_id not in progress["shapes"]:
-            # A waited holder with no shape did not land. Leaving it inflight
-            # would keep the closing text held for the rest of the session.
-            if slot_id not in failed:
+            if slot_id in progress["inflight"]:
+                progress["inflight"].remove(slot_id)
+        elif status in {"running", "pending", "queued"}:
+            # A timeout poll that is still running is not a failed final.
+            if slot_id not in progress["inflight"]:
+                progress["inflight"].append(slot_id)
+        elif status in {"error", "failed", "cancelled", "declined"} or (
+            row.get("error") and status not in {"running", "pending", "queued"}
+        ):
+            if slot_id not in progress["shapes"] and slot_id not in failed:
                 failed.append(slot_id)
-        if slot_id in progress["inflight"]:
-            progress["inflight"].remove(slot_id)
+            if slot_id in progress["inflight"]:
+                progress["inflight"].remove(slot_id)
         _advance(progress)
 
 
@@ -727,13 +734,15 @@ def _turn() -> dict:
     return row
 
 
-def _unplaced_finals(progress: dict) -> list[str]:
-    """Finals that were submitted and have no placed shape."""
+def _explicit_failed_finals(progress: dict) -> list[str]:
+    """Finals with an explicit terminal failure. A running or pending wait is not one."""
     shapes = progress.get("shapes") or {}
-    failed = set(progress.get("failed") or [])
-    inflight = set(progress.get("inflight") or [])
-    attempted = set((progress.get("holders") or {}).values()) | failed | inflight
-    return [slot for slot in FINAL_IDS if slot in attempted and slot not in shapes]
+    failed = progress.get("failed") or []
+    return [slot for slot in FINAL_IDS if slot in failed and slot not in shapes]
+
+
+def _inflight_finals(progress: dict) -> list[str]:
+    return [slot for slot in FINAL_IDS if slot in (progress.get("inflight") or [])]
 
 
 def _final_names(slot_ids: list[str], lang: str) -> list[str]:
@@ -742,8 +751,8 @@ def _final_names(slot_ids: list[str], lang: str) -> list[str]:
 
 
 def failure_wrapup(lang: str = "zh") -> str:
-    """Name the finals that have no shape. Does not claim they were delivered."""
-    missing = _unplaced_finals(_progress())
+    """Name finals that failed terminally. Does not claim they were delivered."""
+    missing = _explicit_failed_finals(_progress())
     if not missing:
         return ""
     listed = _final_names(missing, lang)
@@ -752,28 +761,51 @@ def failure_wrapup(lang: str = "zh") -> str:
     return "没有落图：" + "、".join(listed) + "。"
 
 
-def is_delivery_wrapup(text: str) -> bool:
-    folded = str(text or "").casefold()
-    return "本次交付清单" in str(text or "") or "交付清单" in str(text or "") or "delivery list" in folded
+_URL_RE = __import__("re").compile(r"https?://\S+")
+
+
+def _closing_line(line: str) -> bool:
+    folded = line.casefold()
+    return "本次交付清单" in line or "交付清单" in line or "delivery list" in folded
+
+
+def split_closing(text: str) -> tuple[str, str]:
+    """Separate the delivery-list lines from prose and links.
+
+    A download URL on the same line as the list stays with the prose.
+    """
+    kept: list[str] = []
+    closing: list[str] = []
+    for line in str(text or "").splitlines():
+        if not _closing_line(line):
+            kept.append(line)
+            continue
+        urls = _URL_RE.findall(line)
+        body = _URL_RE.sub("", line).strip()
+        if body:
+            closing.append(body)
+        if urls:
+            kept.append(" ".join(urls))
+    return "\n".join(part for part in kept if part.strip()).strip(), "\n".join(closing).strip()
 
 
 def accept_assistant_text(text: str) -> str:
-    """Text to show now. Empty means held until the finals settle, or dropped as a duplicate list."""
+    """Show progress, links, and other prose now. Hold only the delivery-list lines until the finals settle."""
     text = str(text or "").strip()
     if not text:
         return ""
-    turn = _turn()
-    if turn.get("released") and is_delivery_wrapup(text):
-        return ""
+    prose, closing = split_closing(text)
+    if not closing:
+        return text
+    chat = _chat()
+    if _turn().get("released") or _HELD_WRAPUP.get(chat):
+        return prose
     if should_hold_wrapup():
-        chat = _chat()
-        if not _HELD_WRAPUP.get(chat):
-            _HELD_WRAPUP[chat] = text
-        elif is_delivery_wrapup(text):
-            pass
-        else:
-            turn.setdefault("extra", []).append(text)
-        return ""
+        _HELD_WRAPUP[chat] = closing
+        return prose
+    # The finals are already placed, so this list is shown now. A later list in
+    # the same turn keeps its prose and links and drops the list lines.
+    _turn()["released"] = True
     return text
 
 
@@ -781,8 +813,8 @@ def release_wrapup(lang: str = "zh") -> str:
     """After a tool step: the held closing once every final has a shape, or a failure note once every attempt has settled."""
     progress = _progress()
     phase = str(progress.get("phase") or "")
-    inflight = [slot for slot in FINAL_IDS if slot in (progress.get("inflight") or [])]
-    missing = _unplaced_finals(progress)
+    inflight = _inflight_finals(progress)
+    missing = _explicit_failed_finals(progress)
     if phase in {"finals", "done"} and missing and not inflight:
         if tuple(missing) == tuple(progress.get("wrapup_reported") or ()):
             return ""
@@ -809,12 +841,13 @@ def end_turn(lang: str = "zh") -> str:
     phase = str(progress.get("phase") or "")
     text = ""
     if not _turn().get("released"):
-        missing = tuple(_unplaced_finals(progress))
+        missing = tuple(_explicit_failed_finals(progress))
         reported = tuple(progress.get("wrapup_reported") or ())
-        if phase == "finals" and missing and missing != reported:
+        # A still-running final is not a failure, and must not flush the held list.
+        if phase == "finals" and missing and not _inflight_finals(progress) and missing != reported:
             text = failure_wrapup(lang)
             progress["wrapup_reported"] = missing
-        else:
+        elif not _inflight_finals(progress):
             text = release_wrapup(lang)
     _HELD_WRAPUP.pop(_chat(), None)
     _TURN.pop(_chat(), None)

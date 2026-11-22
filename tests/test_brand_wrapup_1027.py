@@ -167,6 +167,34 @@ def test_consecutive_closing_lists_collapse_to_one_and_other_text_stays():
     assert brand.end_turn("zh") == ""
 
 
+def test_running_wait_does_not_finalize_and_a_later_done_releases_the_list():
+    _reach_finals()
+    slots = _submit_finals()
+    assert brand.accept_assistant_text(SUCCESS) == ""
+    brand.record_wait({"status": "running", "results": [
+        {"id": f"h-{slot}", "status": "running"} for slot in slots]})
+    assert brand.release_wrapup("zh") == ""
+    assert "cup" not in (brand._progress().get("failed") or [])
+    for slot in slots:
+        _place(slot)
+    assert brand.release_wrapup("zh") == SUCCESS
+
+
+def test_mixed_message_keeps_links_and_drops_only_the_list_line():
+    _reach_finals()
+    shown = brand.accept_assistant_text(
+        "进度正常。\n本次交付清单：规范卡。\n下载：https://example.com/spec.png")
+    assert "进度正常" in shown and "https://example.com/spec.png" in shown
+    assert "本次交付清单" not in shown
+    for slot in _submit_finals():
+        _place(slot)
+    assert brand.release_wrapup("zh") == "本次交付清单：规范卡。"
+    again = brand.accept_assistant_text(
+        "补充说明。\n本次交付清单：又一份。\n下载：https://example.com/b.png")
+    assert "补充说明" in again and "https://example.com/b.png" in again
+    assert "又一份" not in again
+
+
 def test_end_turn_clears_deferred_text_for_the_next_turn_and_other_chats():
     _reach_finals()
     brand.accept_assistant_text(SUCCESS)
