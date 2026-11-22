@@ -257,6 +257,11 @@ export const PORTRAIT_SHOTS_708 = '\nShot rules (#708): when the user does not n
 /** #687-2 — poster / banner / interior: EFFECT_INPUTS structure, English copy = the reference card (Upload Files / Additional Details / Anything else to add?). */
 /** #687-1 — reference-card Upload Files + Additional Details (max 500), both optional. */
 const REF_CARD_INPUTS_687: SkillInput[] = [I('file', ['上传文件', 'Upload Files'], 'image'), { ...I('note', ['补充描述', 'Additional Details'], 'textarea', false, ['还有什么想补充的吗？', 'Anything else to add?']), maxLength: 500 }]
+/** #1019 plaza default path: text required, one optional image. Shown only when no industry template is selected. */
+export const BRAND_DEFAULT_INPUTS: SkillInput[] = [
+  { ...I('user_requirement', ['品牌需求', 'Brand brief'], 'textarea', true, ['写下品牌名、品类和想要的视觉系统', 'Brand name, category, and the visual system you want']), maxLength: 500 },
+  { ...I('user_image', ['参考图', 'Reference image'], 'image'), maxCount: 1, maxSizeMb: 10 },
+]
 /** #806 — 动态海报. Both templates: source_image* / motion_brief / visual_direction. 首尾帧动画 also optional start_frame. */
 const MOTION_BRIEF_PH: L = ['写下哪些要动、哪些保持不动；不填则自动规划。', 'Say what should move and what should stay still. Leave blank to plan it automatically.']
 const MOTION_LOOK_PH: L = ['描述想要的画面效果，或附上参考；没有可不填。', 'Describe the look you want or attach a reference. Optional.']
@@ -424,11 +429,16 @@ export interface SkillOutput extends SkillOutputStage {
   /** #982: default material studies for logo-material-explorer. */
   materials?: readonly string[]
 }
-/** #979: product ruling #911 comment 6872615903 — brand is a two-step 4-image set:
- *  3×1024×1024 (1:1) direction proposals, then 1×2048×1152 (16:9) guideline board. */
+/** #979: industry templates only — 3×1024×1024 direction proposals, then 1×2048×1152 guideline board. */
 export const BRAND_STAGES_979: SkillOutputStage[] = [
   { width: 1024, height: 1024, ratio: '1:1', images: 3 },
   { width: 2048, height: 1152, ratio: '16:9', images: 1 },
+]
+/** #1019: no template selected. Moodboard, three logo boards, four deliverables. */
+export const BRAND_DEFAULT_STAGES: SkillOutputStage[] = [
+  { width: 2048, height: 1152, ratio: '16:9', images: 1 },
+  { width: 2048, height: 2048, ratio: '1:1', images: 3 },
+  { width: 1536, height: 2048, ratio: '3:4', images: 4 },
 ]
 /** #979: packaging multi-SKU t3 = 3×1536×2048 (3:4) + 1×2048×1152 (16:9). */
 export const PACKAGING_PLAYFUL_STAGES_979: SkillOutputStage[] = [
@@ -482,18 +492,17 @@ export const SKILL_OUTPUT: Record<string, SkillOutput> = {
     width: 2048, height: 2048, ratio: '1:1', images: 1,
     presets: CHARACTER_PRESETS_982,
   },
-  // #979: template-level output contract (#911 comment 6872615903). The six brand
-  // templates share one staged plan; brand is never a single landscape board.
+  // #1019: flat fields are the no-template default path. Presets keep the #979 3+1 plan.
   'brand-identity-director': {
-    width: 1024, height: 1024, ratio: '1:1', images: 4,
-    stages: BRAND_STAGES_979,
+    width: 2048, height: 1152, ratio: '16:9', images: 8,
+    stages: BRAND_DEFAULT_STAGES,
     presets: {
-      geometric: { stages: BRAND_STAGES_979 },
-      handmade: { stages: BRAND_STAGES_979 },
-      tech: { stages: BRAND_STAGES_979 },
-      beauty: { stages: BRAND_STAGES_979 },
-      foodbev: { stages: BRAND_STAGES_979 },
-      pet: { stages: BRAND_STAGES_979 },
+      geometric: { stages: BRAND_STAGES_979, width: 1024, height: 1024, ratio: '1:1', images: 4 },
+      handmade: { stages: BRAND_STAGES_979, width: 1024, height: 1024, ratio: '1:1', images: 4 },
+      tech: { stages: BRAND_STAGES_979, width: 1024, height: 1024, ratio: '1:1', images: 4 },
+      beauty: { stages: BRAND_STAGES_979, width: 1024, height: 1024, ratio: '1:1', images: 4 },
+      foodbev: { stages: BRAND_STAGES_979, width: 1024, height: 1024, ratio: '1:1', images: 4 },
+      pet: { stages: BRAND_STAGES_979, width: 1024, height: 1024, ratio: '1:1', images: 4 },
     },
   },
   // #979: five packaging templates, five plans. Flat fields = the default 主款 (eco/t1).
@@ -551,7 +560,7 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
     category: 'social', cover: cover687('rednote-cover-maker'), quickStartCover: quickStartCover('rednote-cover-maker'), featured: feat687('rednote-cover-maker', [1, 2, 3, 4, 5]), video: video687('rednote-cover-maker'),
     presets: [P('ugc-feed', '时尚UGC信息流 1:1', 'Fashion UGC feed 1:1', 'Style: candid off-duty fashion UGC still, 1:1 feed crop, real-person feel, product clearly in frame, never staged studio look, natural everyday light.'), P('ugc-story', '时尚UGC故事 9:16', 'Fashion UGC story 9:16', 'Style: candid off-duty fashion UGC still, 9:16 story crop, real-person energy, product in hand or worn, never staged studio backdrop, mobile-first.')],
     inputs: REF_CARD_INPUTS_687 },
-  { id: 'brand-identity-director', name: t('skills.brandIdentity'), instructions: 'You are a production brand-identity designer. Deliver a usable VI kit, not a single decorative mark.\n1) Discover: brand name, category, positioning and any elements to keep from the provided files and Additional Details.\n2) Mark: design a primary logo mark on a plain background (1:1). State shape language, hex colors and type style precisely.\n3) System board: color palette swatches, primary + secondary lockups, and a clear typography specimen.\n4) Applications: at least one stationery or object mockup applying the mark; keep geometry identical across frames.\n5) Scope: when a template is selected, follow that template focus (logo system board vs mockup). Do not invent a new category.\n6) Refs: when files are uploaded, pass each shape id in refs (ref_modes content) on every generate_image call.',
+  { id: 'brand-identity-director', name: t('skills.brandIdentity'), instructions: 'You are a production brand-identity designer.\nTEMPLATE PATH: when an industry template is selected, follow that template prompt and the output lock. Deliver 3 separate 1024×1024 logo direction proposals, stop for a pick, then 1 guideline board at 2048×1152. Do not use the default-path cards.\nDEFAULT PATH (no template): do not generate before each ask_user answer.\n1) ask_user once: bi_delivery (multi), bi_color, bi_mark, bi_source, pages 1-4, page_count 4, allow_skip, allow_other, no defaults, no recommended.\n2) One moodboard only, 2048×1152, 3×3 nine-grid (tone, color, perch symbol, bilingual wordmark, layout, handmade material, cup, storefront, social).\n3) ask_user bi_moodboard. Only A or Skip continues. B or C regenerates the moodboard.\n4) Three separate 2048×2048 logo direction sheets (mark, grid, horizontal lockup, small and reversed). Different shape language. refs = the moodboard shape.\n5) ask_user bi_direction with image_url of each board. Exactly one recommended. Nothing preselected.\n6) Four deliverables: spec, cup, bag at 1536×2048 and storefront at 2048×1152. refs = the chosen logo shape then the moodboard. Palette and type live only on the spec card. No separate palette or type image.\nQuote each stage alone before it runs. Closing message, only after wait_generation has placed the four deliverables, never in the same message as those generate_image calls: delivery list, honest limits including 矢量替换 and 色值为屏幕估算, then a next step. Never say 可直接投产.\nRefs: pass shape ids in refs (ref_modes content).',
     category: 'branding', cover: cover('brand-identity-director'), quickStartCover: quickStartCover('brand-identity-director'), featured: feedCovers('brand-identity-director'), video: video('brand-identity-director'), presets: [P('geometric', '极简几何', 'Minimal geometric', 'Style: minimal geometric mark built from simple shapes, strict grid, two-color palette; deliver primary mark, lockup and palette board production-ready.', wash541(WASH_541.brand, 'brand-identity-director', 'geometric')), P('handmade', '手作温暖', 'Handmade warmth', 'Style: hand-drawn warm mark, organic lines, earthy palette, craft paper textures; deliver primary mark plus warm stationery application.', wash541(WASH_541.brand, 'brand-identity-director', 'handmade')), P('tech', '科技未来', 'Tech future', 'Style: futuristic tech identity, precise linework, gradient-free electric blue accents, monospace details; deliver mark, lockup and UI-ready glyph.', wash541(WASH_541.brand, 'brand-identity-director', 'tech')), P('beauty', '美妆个护', 'Beauty & personal care', 'Style: beauty and personal care logo system presentation board, soft refined mark with primary and secondary lockups, monogram, color swatches and typography specimen laid out on a clean board, no product mockups.', wash541(WASH_541.brand, 'brand-identity-director', 'beauty')), P('foodbev', '食品饮料', 'Food & beverage', 'Style: food and beverage logo system presentation board, lively mark with primary and stacked lockups, icon variant, color swatches and typography specimen laid out on a clean board, no product mockups.', wash541(WASH_541.brand, 'brand-identity-director', 'foodbev')), P('pet', '宠物用品', 'Pet supplies', 'Style: pet supplies logo system presentation board, friendly playful mark with primary and secondary lockups, mascot icon, color swatches and typography specimen laid out on a clean board, no product mockups.', wash541(WASH_541.brand, 'brand-identity-director', 'pet'))],
     inputs: REF_CARD_INPUTS_687 },
   { id: 'packaging-design-director', name: t('skills.packagingDesign'), instructions: 'You are a production packaging designer. Deliver shelf-ready concepts through structure, not flat posters.\n1) Brief: product, size, pack form and brand cues from Additional Details and the provided file.\n2) Front: package front view on a clean studio background; call out material, finish and label layout.\n3) Structure: when relevant, show dieline / panel logic or a clear 3/4 mockup in context.\n4) Shelf: ensure the design reads at eye level in a retail row; keep logo and claims legible.\n5) Apply the selected packaging style focus (eco, foil, playful, panels, shelf).\n6) Refs: when files are uploaded, pass shape ids in refs (ref_modes content) on every generate_image call.',

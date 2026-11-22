@@ -663,6 +663,13 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         if label:
             parts.append(label)
         text = " · ".join(parts)
+        slot_id = str((step.get("arguments") or {}).get("brand_slot") or "")
+        if slot_id:
+            from ..api.brand_identity import quote_line
+            named = quote_line(slot_id, lang)
+            if named:
+                # Material, pixels, ratio. The model-name reason is not a line item.
+                text = named
         if step["tool"] == "generate_image" and _gif().requests_gif(step["arguments"]):
             text = f"{text} · {_gif().gif_quote_label(step['arguments'].get('frame_count'), step['arguments'].get('frame_duration_ms'))}"
         if step["tool"] == "generate_image" and _svg().requests_svg(step["arguments"]):
@@ -679,6 +686,12 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
     unknown_price = any(ln.unpriced and ln.units > 0 for ln in lines)
     ask = _needs_ask(total, threshold, unknown_price)
     if _forces_quote_card(prepared) and any(ln.units > 0 for ln in lines):
+        ask = True
+    # #1019: each brand default-path stage shows its own quote card, even under
+    # the $0.50 gate. The gate itself is unchanged for every other request.
+    from ..api.brand_identity import steps_are_brand_stage
+    brand_stage = steps_are_brand_stage(prepared)
+    if brand_stage and any(ln.units > 0 for ln in lines):
         ask = True
     if len(lines) == 1 and not ask and not lines[0].unpriced:
         # #904: a known 0-credit (or under-line) single call runs as before. A single refusal
@@ -711,6 +724,19 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         question = "确定开始吗？" if lang == "zh" else "Start?"
         gap = "" if lang == "zh" else " "  # en: "…lower. Start?", never "…lower.Start?"
         prompt = prompt.replace(question, f"{LIST_PRICE_EXPLAIN[lang]}{gap}{question}")
+    if brand_stage and not any_unpriced:
+        from ..api.brand_identity import brand_prompt
+        from .run_budget import ui_credits as _ui_credits
+        prev = 0.0
+        try:
+            from ..api.brand_identity import _progress
+            prev = float(_progress().get("spent") or 0)
+        except Exception:
+            prev = 0.0
+        stage_credits = 0 if all_unpriced else _ui_credits(total)
+        cum_credits = 0 if all_unpriced else _ui_credits(prev + total)
+        under = total < float(threshold)
+        prompt = brand_prompt(stage_credits, cum_credits, len(lines), lang, under_gate=under)
     if quoted_plan is not None:
         from ..api.multi_angle import remember_quoted_plan
         remember_quoted_plan(quoted_plan)

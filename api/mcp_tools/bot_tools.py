@@ -101,6 +101,8 @@ async def ask_user(args: dict) -> dict:
     # product-to-packaging: images 2-4 follow the card's scope answer (skipped -> core three).
     from .. import product_packaging
     plan = product_packaging.record_card_answer(spec, answers)
+    from .. import brand_identity
+    brand_identity.record_card_answer(spec, answers)
     if plan is not None:
         result["image_plan"] = plan
     return result

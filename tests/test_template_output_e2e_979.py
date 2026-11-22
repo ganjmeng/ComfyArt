@@ -161,7 +161,8 @@ def _brand_script(state: dict):
             if k == 0:
                 # No preset: the brand default template (geometric) is the same staged plan.
                 return _calls(("generate_image", {
-                    "prompt": "guideline board for the chosen direction", "skill": BRAND, "stage": 2}))
+                    "prompt": "guideline board for the chosen direction", "skill": BRAND,
+                    "preset": "geometric", "stage": 2}))
             if k == 1:
                 return _calls(("wait_generation", {"ids": _all_ids(messages)}))
             return _reply("规范板已生成。" if state.get("lang") == "zh" else "The guideline board is ready.")
