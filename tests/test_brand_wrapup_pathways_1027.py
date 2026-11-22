@@ -53,11 +53,16 @@ async def _drive(monkeypatch, script, mcp, *, budget: bool, handle=None):
     _reach_finals()
     rig = Rig(monkeypatch, script, mcp=mcp)
 
+    async def local_price(model, inputs):
+        # A local price so the real quote builder does not call WaveSpeed.
+        return (0.04, "estimate", "test")
+
     async def confirm_plan(spec, turn, handle, **_kw):
-        # Brand stages always quote. This file has no live turn, so the real
-        # confirm would return unattended and never reach generate/wait.
+        # Test-only stand-in for a person pressing start. Production confirm is
+        # not changed. Fail-closed cases live in test_brand_quote_fail_closed_1027.
         return "start"
 
+    monkeypatch.setattr(rig.p, "_price_one", local_price)
     monkeypatch.setattr(rig.p, "_confirm_plan", confirm_plan)
     if not budget:
         pol = resolve_policy(env={"COMFYART_AGENT_BUDGET_LOOP": "0"})
@@ -204,6 +209,53 @@ async def test_cancel_while_running_does_not_announce_a_failure(monkeypatch, bud
     assert res.aborted or (res.run and res.run.get("stop", {}).get("reason") == "user_stop")
     # The next turn on this chat does not replay the discarded list or the same note.
     assert brand.release_wrapup("zh") == ""
+    assert brand.end_turn("zh") == ""
+
+
+def _done_empty():
+    return {"status": "done", "results": [
+        {"id": f"h-{slot}", "status": "done", "shapes": [], "urls": [], "placed": False,
+         "generation_succeeded": False, "delivered": 0}
+        for slot in SLOTS]}
+
+
+@pytest.mark.parametrize("budget", [True, False], ids=["agent_loop", "local_llm"])
+async def test_done_without_output_names_a_failure_not_still_generating(monkeypatch, budget):
+    def script(messages, n):
+        if n == 0:
+            return calls(*((
+                "generate_image",
+                {"prompt": slot, "skill": brand.SKILL, "brand_slot": slot},
+            ) for slot in SLOTS))
+        if n == 1:
+            return {
+                "choices": [{"message": {
+                    "content": SUCCESS,
+                    "tool_calls": [{"id": "w", "function": {
+                        "name": "wait_generation",
+                        "arguments": json.dumps({"ids": [f"h-{s}" for s in SLOTS]}),
+                    }}],
+                }}],
+            }
+        return reply("之后的说明")
+
+    def mcp(name, args, i):
+        if name == "generate_image":
+            slot = args["brand_slot"]
+            brand.record_submitted(args, {"ids": [f"h-{slot}"]})
+            return json.dumps({"ids": [f"h-{slot}"]})
+        if name == "wait_generation":
+            payload = _done_empty()
+            brand.record_wait(payload)
+            return json.dumps(payload)
+        return json.dumps({})
+
+    _res, events = await _drive(monkeypatch, script, mcp, budget=budget)
+    text = "\n".join(_deltas(events))
+    assert "没有落图" in text and "规范卡" in text and "外带杯与杯套" in text
+    assert "仍在生成" not in text
+    assert "本次交付清单" not in text
+    assert "之后的说明" in text
     assert brand.end_turn("zh") == ""
 
 

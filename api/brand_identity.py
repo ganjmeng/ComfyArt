@@ -674,29 +674,52 @@ def record_wait(result: object) -> None:
         shapes = row.get("shapes") or []
         urls = row.get("urls") or []
         placed = ""
-        if isinstance(shapes, list) and shapes and str(shapes[0]).strip():
-            placed = str(shapes[0]).strip()
+        if isinstance(shapes, list):
+            for shape in shapes:
+                if str(shape or "").strip():
+                    placed = str(shape).strip()
+                    break
+        url = ""
+        if isinstance(urls, list):
+            for item in urls:
+                if str(item or "").strip():
+                    url = str(item).strip()
+                    break
         failed = progress.setdefault("failed", [])
+        unknown = progress.setdefault("unknown", [])
         status = str(row.get("status") or "").lower()
+        open_wait = {"running", "pending", "queued"}
+        # Only an explicit in-flight status stays open. done/error/unknown are terminal.
         if placed:
             progress["shapes"][slot_id] = placed
             if slot_id in failed:
                 failed.remove(slot_id)
-            if isinstance(urls, list) and urls:
-                progress["urls"][slot_id] = str(urls[0])
+            if slot_id in unknown:
+                unknown.remove(slot_id)
+            if url:
+                progress["urls"][slot_id] = url
             if slot_id in progress["inflight"]:
                 progress["inflight"].remove(slot_id)
-        elif status in {"running", "pending", "queued"}:
-            # A timeout poll that is still running is not a failed final.
+        elif status in open_wait:
             if slot_id not in progress["inflight"]:
                 progress["inflight"].append(slot_id)
-        elif status in {"error", "failed", "cancelled", "declined"} or (
-            row.get("error") and status not in {"running", "pending", "queued"}
-        ):
-            if slot_id not in progress["shapes"] and slot_id not in failed:
-                failed.append(slot_id)
+        else:
             if slot_id in progress["inflight"]:
                 progress["inflight"].remove(slot_id)
+            if slot_id in progress["shapes"]:
+                pass
+            elif status in {"unknown", "unknown id"} or (
+                status and status not in {"done", "complete", "completed", "success",
+                                           "error", "failed", "cancelled", "canceled", "declined"}
+                and not row.get("error")
+            ):
+                if slot_id not in failed and slot_id not in unknown:
+                    unknown.append(slot_id)
+            elif slot_id not in failed:
+                # Terminal with no placed shape: error, declined, or done with no output.
+                failed.append(slot_id)
+                if slot_id in unknown:
+                    unknown.remove(slot_id)
         _advance(progress)
 
 
@@ -744,6 +767,14 @@ def _explicit_failed_finals(progress: dict) -> list[str]:
 
 def _inflight_finals(progress: dict) -> list[str]:
     return [slot for slot in FINAL_IDS if slot in (progress.get("inflight") or [])]
+
+
+def _unknown_finals(progress: dict) -> list[str]:
+    """Terminal waits we cannot classify as placed or failed. Not still generating."""
+    shapes = progress.get("shapes") or {}
+    failed = progress.get("failed") or []
+    unknown = progress.get("unknown") or []
+    return [slot for slot in FINAL_IDS if slot in unknown and slot not in shapes and slot not in failed]
 
 
 def _final_names(slot_ids: list[str], lang: str) -> list[str]:
@@ -822,6 +853,20 @@ def _block_continues(line: str) -> bool:
     return True
 
 
+def unknown_wrapup(lang: str = "zh") -> str:
+    """Name finals whose wait ended without a placed image or an explicit error."""
+    names = _final_names(_unknown_finals(_progress()), lang)
+    if not names:
+        return ""
+    if lang == "en":
+        return "Unknown result: " + ", ".join(names) + "."
+    return "结果未知：" + "、".join(names) + "。"
+
+
+def _settled_note(lang: str) -> str:
+    return "\n".join(part for part in (failure_wrapup(lang), unknown_wrapup(lang)) if part)
+
+
 def still_generating_wrapup(lang: str = "zh") -> str:
     """Honest note for finals that are still in flight. Does not call them failures."""
     names = _final_names(_inflight_finals(_progress()), lang)
@@ -898,15 +943,18 @@ def release_wrapup(lang: str = "zh") -> str:
     progress = _progress()
     phase = str(progress.get("phase") or "")
     inflight = _inflight_finals(progress)
-    missing = _explicit_failed_finals(progress)
-    if phase in {"finals", "done"} and missing and not inflight:
-        if tuple(missing) == tuple(progress.get("wrapup_reported") or ()):
+    missing = tuple(_explicit_failed_finals(progress))
+    unknowns = tuple(_unknown_finals(progress))
+    if phase in {"finals", "done"} and (missing or unknowns) and not inflight:
+        signature = ("settled", missing, unknowns)
+        reported = progress.get("wrapup_reported")
+        if reported == signature or (not unknowns and reported == missing):
             return ""
         _HELD_WRAPUP.pop(_chat(), None)
         _turn()["extra"] = []
         _turn()["released"] = True
-        progress["wrapup_reported"] = tuple(missing)
-        return failure_wrapup(lang)
+        progress["wrapup_reported"] = signature
+        return _settled_note(lang)
     if not finals_placed():
         return ""
     text = _HELD_WRAPUP.pop(_chat(), "")
@@ -926,20 +974,22 @@ def end_turn(lang: str = "zh") -> str:
     text = ""
     if not _turn().get("released"):
         missing = tuple(_explicit_failed_finals(progress))
+        unknowns = tuple(_unknown_finals(progress))
         reported = progress.get("wrapup_reported")
         inflight = tuple(_inflight_finals(progress))
-        # A still-running final is not a failure. Say it is still generating,
-        # and do not publish the held success list.
+        settled = ("settled", missing, unknowns)
+        # A still-running final is not a failure. A terminal done with no output
+        # is already in `missing` or `unknowns`, so it is not called still generating.
         if phase == "finals" and inflight:
-            signature = ("running", missing, inflight)
+            signature = ("running", missing, unknowns, inflight)
             if signature != reported:
-                parts = [failure_wrapup(lang), still_generating_wrapup(lang)]
+                parts = [failure_wrapup(lang), unknown_wrapup(lang), still_generating_wrapup(lang)]
                 text = "\n".join(part for part in parts if part)
                 progress["wrapup_reported"] = signature
             _HELD_WRAPUP.pop(_chat(), None)
-        elif phase == "finals" and missing and missing != reported:
-            text = failure_wrapup(lang)
-            progress["wrapup_reported"] = missing
+        elif phase == "finals" and (missing or unknowns) and reported not in {settled, missing}:
+            text = _settled_note(lang)
+            progress["wrapup_reported"] = settled
         elif not inflight:
             text = release_wrapup(lang)
     _HELD_WRAPUP.pop(_chat(), None)

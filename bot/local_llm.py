@@ -2397,22 +2397,29 @@ class LocalLlmProvider(AgentProvider):
                     unattended = run is not None and run.mode == "unattended"
                     # #418 ruling: unattended (routine / headless / no live client) never waits: the
                     # card is not approved -> zero paid calls, turn ends normally as awaiting_confirm:not_approved.
-                    choice = "unattended" if unattended else await self._confirm_plan(
-                        quote.ask_spec(), turn, handle, run=run, messages=messages)
-                    if handle.stop_requested:
-                        return TurnResult(aborted=True, usage=usage)
-                    if choice == "start":
-                        if not single:  # #418: one OK covers this call only; don't arm the plan gate
-                            gate.allow(quote, True)
-                        decision = "start"
+                    try:
+                        choice = "unattended" if unattended else await self._confirm_plan(
+                            quote.ask_spec(), turn, handle, run=run, messages=messages)
+                    except Exception as e:
+                        # A confirm that raises is not approval. Do not submit the paid tools.
+                        _log.exception("[ComfyArt/local-llm] plan confirm failed")
+                        quote_error = f"[error] {type(e).__name__}: {e}"
+                        decision = "error"
                     else:
-                        decision = "cancel"
-                        if run is not None:
-                            step = run.budget.used.steps
-                            # only the user's own Cancel is a user stop
-                            run.pending_stop = (Stop(StopReason.USER_STOP, "quote_declined", step=step)
-                                                if choice == "cancel" else
-                                                Stop(StopReason.AWAITING_CONFIRM, "not_approved", step=step))
+                        if handle.stop_requested:
+                            return TurnResult(aborted=True, usage=usage)
+                        if choice == "start":
+                            if not single:  # #418: one OK covers this call only; don't arm the plan gate
+                                gate.allow(quote, True)
+                            decision = "start"
+                        else:
+                            decision = "cancel"
+                            if run is not None:
+                                step = run.budget.used.steps
+                                # only the user's own Cancel is a user stop
+                                run.pending_stop = (Stop(StopReason.USER_STOP, "quote_declined", step=step)
+                                                    if choice == "cancel" else
+                                                    Stop(StopReason.AWAITING_CONFIRM, "not_approved", step=step))
 
         if quote is not None and decision == "start":
             from ..api.brand_identity import note_confirmed, steps_are_brand_stage
@@ -2439,6 +2446,13 @@ class LocalLlmProvider(AgentProvider):
                 else:
                     text = quote.started_result() if quote else json.dumps({"ok": True, "start": True})
                     chunks[i] = await self._emit_result(it, text, emit=emit, done=done, lang=lang)
+                continue
+            if name in PAID_TOOLS and decision == "error":
+                # Quote or confirm failed. Do not call the tool and do not leave a
+                # result that a model-fallback could resubmit.
+                chunks[i] = await self._emit_result(
+                    it, quote_error or "[error] quote failed", emit=emit, done=done,
+                    lang=lang, is_error=True)
                 continue
             if name in PAID_TOOLS and decision == "cancel":
                 continue  # do not emit a paid row: the user stopped before anything ran
@@ -2468,6 +2482,11 @@ class LocalLlmProvider(AgentProvider):
         for ch in chunks:
             if ch:
                 messages.extend(ch)
+        if decision == "error":
+            # Fail closed: no paid fallback after a quote or confirm exception.
+            note = quote_error or "[error] quote failed"
+            await emit(BotEvent(t="delta", text=note))
+            return TurnResult(usage=usage, error=note)
         for i in ran:  # #236: one fallback per failed model call, after its result is in the transcript
             it, ch = parsed[i], chunks[i]
             run = loop.get("run")

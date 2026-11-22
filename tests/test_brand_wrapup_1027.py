@@ -289,6 +289,39 @@ def test_progress_does_not_take_the_closing_slot():
     assert brand.release_wrapup("zh") == "本次交付清单：四张完成。"
 
 
+def test_done_with_no_output_is_not_still_generating():
+    _reach_finals()
+    slots = _submit_finals()
+    brand.accept_assistant_text(SUCCESS)
+    brand.record_wait({"status": "done", "results": [
+        {"id": f"h-{slot}", "status": "done", "shapes": [], "urls": [], "placed": False,
+         "generation_succeeded": False, "delivered": 0}
+        for slot in slots]})
+    note = brand.release_wrapup("zh")
+    assert "没有落图" in note
+    for name in ("规范卡", "外带杯与杯套", "纸袋", "门店门头"):
+        assert name in note
+    assert "仍在生成" not in note
+    assert "本次交付清单" not in note
+    assert brand.end_turn("zh") == ""
+    assert brand.release_wrapup("zh") == ""
+
+
+def test_unknown_terminal_is_not_still_generating():
+    _reach_finals()
+    slots = _submit_finals()
+    brand.accept_assistant_text(SUCCESS)
+    brand.record_wait({"status": "done", "results": [
+        {"id": f"h-{slot}", "status": "unknown id"} for slot in slots]})
+    note = brand.end_turn("zh")
+    assert "结果未知" in note
+    assert "规范卡" in note
+    assert "仍在生成" not in note
+    assert "没有落图" not in note
+    assert "本次交付清单" not in note
+    assert brand.end_turn("zh") == ""
+
+
 def test_cancel_names_what_is_still_generating():
     _reach_finals()
     slots = _submit_finals()
