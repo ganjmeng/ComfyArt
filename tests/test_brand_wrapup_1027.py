@@ -195,6 +195,44 @@ def test_mixed_message_keeps_links_and_drops_only_the_list_line():
     assert "又一份" not in again
 
 
+def test_a_question_that_only_mentions_the_words_is_kept():
+    _reach_finals()
+    for slot in _submit_finals():
+        _place(slot)
+    question = "你问“交付清单”是什么意思：它是文件列表，不含商标注册服务。"
+    assert brand.accept_assistant_text(question) == question
+    shown = brand.accept_assistant_text("本次交付清单：四张。")
+    assert "本次交付清单" in shown
+    kept = brand.accept_assistant_text(
+        "本次交付清单：四张。\n你问的文件下载地址是 /download/qimu.zip，请用这个链接。")
+    assert "/download/qimu.zip" in kept
+    assert "请用这个链接" in kept
+    assert "本次交付清单" not in kept
+
+
+def test_progress_does_not_take_the_closing_slot():
+    _reach_finals()
+    assert brand.accept_assistant_text("正在生成四份成品，请稍候。") == "正在生成四份成品，请稍候。"
+    assert brand.accept_assistant_text("本次交付清单：四张完成。") == ""
+    for slot in _submit_finals():
+        _place(slot)
+    assert brand.release_wrapup("zh") == "本次交付清单：四张完成。"
+
+
+def test_cancel_names_what_is_still_generating():
+    _reach_finals()
+    slots = _submit_finals()
+    brand.accept_assistant_text(SUCCESS)
+    brand.record_wait({"status": "running", "results": [
+        {"id": f"h-{slot}", "status": "running"} for slot in slots]})
+    note = brand.end_turn("zh")
+    assert "仍在生成" in note
+    assert "规范卡" in note and "外带杯与杯套" in note
+    assert "没有落图" not in note
+    assert "本次交付清单" not in note
+    assert brand.end_turn("zh") == ""
+
+
 def test_end_turn_clears_deferred_text_for_the_next_turn_and_other_chats():
     _reach_finals()
     brand.accept_assistant_text(SUCCESS)

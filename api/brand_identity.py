@@ -765,8 +765,19 @@ _URL_RE = __import__("re").compile(r"https?://\S+")
 
 
 def _closing_line(line: str) -> bool:
+    """The delivery-list heading, not a sentence that merely mentions the words."""
     folded = line.casefold()
-    return "本次交付清单" in line or "交付清单" in line or "delivery list" in folded
+    return "本次交付清单" in line or "delivery list" in folded
+
+
+def still_generating_wrapup(lang: str = "zh") -> str:
+    """Honest note for finals that are still in flight. Does not call them failures."""
+    names = _final_names(_inflight_finals(_progress()), lang)
+    if not names:
+        return ""
+    if lang == "en":
+        return "Still generating: " + ", ".join(names) + "."
+    return "仍在生成：" + "、".join(names) + "。"
 
 
 def split_closing(text: str) -> tuple[str, str]:
@@ -842,12 +853,21 @@ def end_turn(lang: str = "zh") -> str:
     text = ""
     if not _turn().get("released"):
         missing = tuple(_explicit_failed_finals(progress))
-        reported = tuple(progress.get("wrapup_reported") or ())
-        # A still-running final is not a failure, and must not flush the held list.
-        if phase == "finals" and missing and not _inflight_finals(progress) and missing != reported:
+        reported = progress.get("wrapup_reported")
+        inflight = tuple(_inflight_finals(progress))
+        # A still-running final is not a failure. Say it is still generating,
+        # and do not publish the held success list.
+        if phase == "finals" and inflight:
+            signature = ("running", missing, inflight)
+            if signature != reported:
+                parts = [failure_wrapup(lang), still_generating_wrapup(lang)]
+                text = "\n".join(part for part in parts if part)
+                progress["wrapup_reported"] = signature
+            _HELD_WRAPUP.pop(_chat(), None)
+        elif phase == "finals" and missing and missing != reported:
             text = failure_wrapup(lang)
             progress["wrapup_reported"] = missing
-        elif not _inflight_finals(progress):
+        elif not inflight:
             text = release_wrapup(lang)
     _HELD_WRAPUP.pop(_chat(), None)
     _TURN.pop(_chat(), None)

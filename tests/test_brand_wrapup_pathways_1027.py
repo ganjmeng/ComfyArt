@@ -190,9 +190,11 @@ async def test_cancel_while_running_does_not_announce_a_failure(monkeypatch, bud
 
     res, events = await _drive(monkeypatch, script, mcp, budget=budget, handle=handle)
     text = "\n".join(_deltas(events))
+    assert "仍在生成" in text
+    assert "规范卡" in text and "外带杯与杯套" in text
     assert "没有落图" not in text
     assert "本次交付清单" not in text
-    assert res.aborted or (res.run and res.run.get("stop", {}).get("reason") == "user_stop") or res.aborted
-    # The next turn on this chat does not replay the discarded list.
+    assert res.aborted or (res.run and res.run.get("stop", {}).get("reason") == "user_stop")
+    # The next turn on this chat does not replay the discarded list or the same note.
     assert brand.release_wrapup("zh") == ""
     assert brand.end_turn("zh") == ""
