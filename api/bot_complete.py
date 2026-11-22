@@ -152,23 +152,28 @@ async def bot_complete(request: web.Request) -> web.Response:
 
 
 async def _completion_transport(session, method, url, *, headers, json_body=None, timeout=120):
-    """The physical POST. HTTP errors keep the body so a verified usage can settle."""
-    import aiohttp
+    """The physical POST. A redirect hop that fails does not look like 'never sent'.
+
+    ``session`` is the caller's session. The exchange opens its own traced
+    session so the witness cannot be skipped by a substitute client. HTTP
+    errors keep the body so verified usage can settle. A 3xx that aiohttp
+    could not follow leaves the original error, and the ledger keeps the hold.
+    """
+    import json
 
     from ..bot.llm_input_envelope import FrozenJsonBody
+    from ..bot.llm_usd_gate import exchange_with_send_proof
     from ..bot.local_llm import LlmHttpError
 
     frozen = isinstance(json_body, FrozenJsonBody)
-    payload = {"data": json_body.encoded} if frozen else {"json": json_body}
-    limit = timeout if isinstance(timeout, aiohttp.ClientTimeout) else aiohttp.ClientTimeout(total=timeout)
-    async with session.request(
-        method, url, headers=headers, timeout=limit, **payload,
-    ) as res:
-        text = await res.text()
-        if res.status >= 400:
-            raise LlmHttpError(res.status, text)
-        import json
-        return json.loads(text) if text else {}
+    status, text = await exchange_with_send_proof(
+        method, url, headers=headers, timeout=timeout,
+        data=json_body.encoded if frozen else None,
+        json_body=None if frozen else json_body,
+    )
+    if status >= 400:
+        raise LlmHttpError(status, text)
+    return json.loads(text) if text else {}
 
 
 @routes.post("/comfyart/llm/complete")
@@ -182,7 +187,7 @@ async def llm_complete(request: web.Request) -> web.Response:
     import aiohttp
 
     from ..bot.local_llm import _user_content
-    from ..bot.llm_usd_gate import LlmBudgetBlocked, bind_llm_project, reset_llm_project
+    from ..bot.llm_usd_gate import LlmBudgetBlocked, RequestNotWritten, bind_llm_project, reset_llm_project
     from .llm_key import llm_api_key
     from .provider_admin import _env_configured, gated_llm_http, llm_route
 
@@ -250,6 +255,8 @@ async def llm_complete(request: web.Request) -> web.Response:
             )
     except LlmBudgetBlocked as exc:
         return _notice_response(exc.code, notice_lang)
+    except RequestNotWritten as exc:
+        return error(f"LLM endpoint unreachable: {exc.cause}", 502)
     except LlmHttpError as exc:
         return error(f"LLM endpoint: HTTP {exc.status}", 502)
     except (TimeoutError, aiohttp.ClientError, ValueError) as exc:

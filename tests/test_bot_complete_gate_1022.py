@@ -290,26 +290,24 @@ async def test_home_calls_do_not_share_the_local_bucket(bot_client, fake_llm, tm
     assert ids == {bot_complete.outside_project_id("default"), "alpha01"}
 
 
-async def test_connector_failure_on_the_one_shot_path_releases_the_hold(bot_client, fake_llm, tmp_path):
+async def test_bare_connector_exception_is_not_a_refund(bot_client, fake_llm, tmp_path):
+    """A raised ClientConnectorError has no trace, so the hold stays."""
     _open("alpha01")
     src = _png(tmp_path)
     fake_llm.boom = _connector_error()
-    for _ in range(3):
-        res = await _post(bot_client, text="look", system="brief", images=[src], project="alpha01", lang="zh")
-        assert res.status == 502
-        assert "ClientConnectorError" not in (await res.json())["error"]
+    res = await _post(bot_client, text="look", system="brief", images=[src], project="alpha01", lang="zh")
+    assert res.status == 502
     from ComfyArt.bot.llm_usd_gate import default_ledger_path
     state = ledger_state(default_ledger_path())
-    assert state["accounted_nano"] == 0
-    assert len(state["reservations"]) == 3
-    assert {row["status"] for row in state["reservations"].values()} == {"released"}
-    assert {row["retain_reason"] for row in state["reservations"].values()} == {"no_network:ClientConnectorError"}
-    # The same project can spend again: the three failures did not accumulate.
+    row = next(iter(state["reservations"].values()))
+    assert row["status"] == "retained"
+    assert row["retain_reason"] == "transport:ClientConnectorError"
+    assert state["accounted_nano"] == row["reserved_nano"] > 0
     fake_llm.boom = None
     fake_llm.payload = {"choices": [{"message": {"content": "ok"}}], **_usage(0, 1)}
     again = await _post(bot_client, text="look", system="brief", images=[src], project="alpha01", lang="zh")
     assert again.status == 200, await again.text()
-    assert ledger_state(default_ledger_path())["accounted_nano"] == 1200
+    assert ledger_state(default_ledger_path())["accounted_nano"] == row["reserved_nano"] + 1200
 
 
 async def test_official_bot_complete_refuses_a_shared_local_bucket(bot_client, monkeypatch):
@@ -350,13 +348,14 @@ def _run(coro):
     return asyncio.run(coro)
 
 
-def test_known_zero_transport_releases_and_ambiguous_failures_stay(tmp_path):
+def test_unproven_failures_stay_and_verified_usage_settles_once(tmp_path):
     from ComfyArt.bot.llm_usd_gate import dispatch
 
     path = tmp_path / "fail.json"
-    # Amount-only $2 scope, not the controlled profile. The cases below are
-    # larger than the default $0.05 ceiling when several holds are kept.
+    # Amount-only $2 scope, not the controlled profile. Several full holds
+    # would pass the default $0.05 ceiling and stop the later cases early.
     open_authorized_scope(str(path), TWO_DOLLAR_CEILING_NANO)
+    hold = 24_000_000
 
     async def connector():
         raise _connector_error()
@@ -364,19 +363,16 @@ def test_known_zero_transport_releases_and_ambiguous_failures_stay(tmp_path):
     with pytest.raises(aiohttp.ClientConnectorError):
         _run(dispatch(_text(max_tokens=20000), route=_route(), url=URL, send=connector, ledger_path=str(path), bound_fn=_zero_bound))
     state = ledger_state(str(path))
-    assert state["accounted_nano"] == 0
     row = next(iter(state["reservations"].values()))
-    assert row["status"] == "released" and row["actual_nano"] == 0
-    assert row["retain_reason"] == "no_network:ClientConnectorError"
+    assert row["status"] == "retained" and row["retain_reason"] == "transport:ClientConnectorError"
+    assert state["accounted_nano"] == hold
 
     async def connect_timeout():
         raise aiohttp.ConnectionTimeoutError("connect")
 
-    before = len(ledger_state(str(path))["reservations"])
     with pytest.raises(aiohttp.ConnectionTimeoutError):
         _run(dispatch(_text(max_tokens=20000), route=_route(), url=URL, send=connect_timeout, ledger_path=str(path), bound_fn=_zero_bound))
-    assert ledger_state(str(path))["accounted_nano"] == 0
-    assert len(ledger_state(str(path))["reservations"]) == before + 1
+    assert ledger_state(str(path))["accounted_nano"] == hold * 2
 
     async def timeout():
         raise asyncio.TimeoutError()
@@ -384,10 +380,8 @@ def test_known_zero_transport_releases_and_ambiguous_failures_stay(tmp_path):
     with pytest.raises(asyncio.TimeoutError):
         _run(dispatch(_text(max_tokens=20000), route=_route(), url=URL, send=timeout, ledger_path=str(path), bound_fn=_zero_bound))
     state = ledger_state(str(path))
-    retained = [row for row in state["reservations"].values() if row["status"] == "retained"]
-    assert len(retained) == 1
-    assert retained[0]["retain_reason"] == "transport:TimeoutError"
-    assert state["accounted_nano"] == 24_000_000
+    assert any(row["retain_reason"] == "transport:TimeoutError" for row in state["reservations"].values())
+    assert state["accounted_nano"] == hold * 3
 
     async def disconnected():
         raise aiohttp.ServerDisconnectedError("closed")
@@ -395,9 +389,8 @@ def test_known_zero_transport_releases_and_ambiguous_failures_stay(tmp_path):
     with pytest.raises(aiohttp.ServerDisconnectedError):
         _run(dispatch(_text(max_tokens=20000), route=_route(), url=URL, send=disconnected, ledger_path=str(path), bound_fn=_zero_bound))
     state = ledger_state(str(path))
-    reasons = {row["retain_reason"] for row in state["reservations"].values() if row["status"] == "retained"}
-    assert "transport:ServerDisconnectedError" in reasons
-    assert state["accounted_nano"] == 48_000_000
+    assert any(row["retain_reason"] == "transport:ServerDisconnectedError" for row in state["reservations"].values())
+    assert state["accounted_nano"] == hold * 4
 
     async def http_usage():
         raise LlmHttpError(500, json.dumps({"error": {"message": "busy"}, **_usage(0, 2)}))
@@ -407,7 +400,12 @@ def test_known_zero_transport_releases_and_ambiguous_failures_stay(tmp_path):
     state = ledger_state(str(path))
     reconciled = [row for row in state["reservations"].values() if row["status"] == "reconciled"]
     assert len(reconciled) == 1 and reconciled[0]["actual_nano"] == 2400
-    assert state["accounted_nano"] == 48_000_000 + 2400
+    assert state["accounted_nano"] == hold * 4 + 2400
+    from ComfyArt.bot.llm_usd_gate import settle
+    settled_id = next(key for key, row in state["reservations"].items() if row["status"] == "reconciled")
+    again = settle(str(path), settled_id, _usage(0, 2)["usage"])
+    assert again["code"] == "missing_reservation"
+    assert ledger_state(str(path))["accounted_nano"] == hold * 4 + 2400
 
     async def http_unknown():
         raise LlmHttpError(400, json.dumps({"error": {"message": "bad request"}}))
@@ -416,7 +414,7 @@ def test_known_zero_transport_releases_and_ambiguous_failures_stay(tmp_path):
         _run(dispatch(_text(max_tokens=20000), route=_route(), url=URL, send=http_unknown, ledger_path=str(path), bound_fn=_zero_bound))
     state = ledger_state(str(path))
     assert any(row["retain_reason"] == "transport:LlmHttpError" for row in state["reservations"].values())
-    assert state["accounted_nano"] == 48_000_000 + 2400 + 24_000_000
+    assert state["accounted_nano"] == hold * 5 + 2400
 
     async def http_malformed():
         raise LlmHttpError(200, json.dumps({"usage": {"prompt_tokens": 1}}))
@@ -425,7 +423,7 @@ def test_known_zero_transport_releases_and_ambiguous_failures_stay(tmp_path):
         _run(dispatch(_text(max_tokens=20000), route=_route(), url=URL, send=http_malformed, ledger_path=str(path), bound_fn=_zero_bound))
     state = ledger_state(str(path))
     assert any(row["retain_reason"] == "missing_or_malformed_usage" for row in state["reservations"].values())
-    assert state["accounted_nano"] == 48_000_000 + 2400 + 48_000_000
+    assert state["accounted_nano"] == hold * 6 + 2400
 
     # A restarted reader sees the same totals. Nothing is inferred back to zero.
     again = ledger_state(str(path))
@@ -454,7 +452,7 @@ def test_controlled_scope_still_keeps_a_connector_failure(tmp_path):
     assert state["control_state"]["circuit_open"] is True
 
 
-def test_concurrent_known_zero_failures_do_not_drive_the_total_negative(tmp_path):
+def test_concurrent_unproven_connector_errors_keep_each_hold(tmp_path):
     import threading
     from ComfyArt.bot.llm_usd_gate import dispatch
 
@@ -483,6 +481,132 @@ def test_concurrent_known_zero_failures_do_not_drive_the_total_negative(tmp_path
     assert len(errors) == 8
     assert all(isinstance(exc, aiohttp.ClientConnectorError) for exc in errors)
     state = ledger_state(str(path))
-    assert state["accounted_nano"] == 0
     assert len(state["reservations"]) == 8
-    assert {row["status"] for row in state["reservations"].values()} == {"released"}
+    assert {row["status"] for row in state["reservations"].values()} == {"retained"}
+    assert state["accounted_nano"] == 8 * 1_200_000
+
+
+def _closed_port() -> int:
+    import socket
+    sock = socket.socket()
+    sock.bind(("127.0.0.1", 0))
+    port = sock.getsockname()[1]
+    sock.close()
+    return port
+
+
+def _local_route(base: str) -> dict:
+    return {
+        "provider": "deepseek", "model": "deepseek-flash", "catalog_model": "deepseek-flash",
+        "base_url": base.rstrip("/"), "secret_env": "DEEPSEEK_API_KEY",
+        "adapter": "deepseek_official", "passthrough": False, "quote": "unknown",
+    }
+
+
+async def _redirect_to_closed():
+    from aiohttp import web
+    closed = _closed_port()
+    received: list[bytes] = []
+    app = web.Application()
+
+    async def handler(request):
+        received.append(await request.read())
+        raise web.HTTPTemporaryRedirect(location=f"http://127.0.0.1:{closed}/chat/completions")
+
+    app.router.add_post("/chat/completions", handler)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "127.0.0.1", 0)
+    await site.start()
+    port = runner.addresses[0][1]
+    return runner, f"http://127.0.0.1:{port}", received
+
+
+async def test_redirect_then_connector_error_keeps_the_dispatch_hold(tmp_path):
+    """First local server gets the POST. The 307 target refuses. The hold stays."""
+    from ComfyArt.bot.llm_usd_gate import dispatch, exchange_with_send_proof
+
+    runner, base, received = await _redirect_to_closed()
+    path = tmp_path / "redirect.json"
+    url = base + "/chat/completions"
+    body = _text(max_tokens=20000)
+    try:
+        async def send():
+            await exchange_with_send_proof(
+                "POST", url, headers={"Content-Type": "application/json"}, timeout=5, json_body=body,
+            )
+
+        before = 0
+        with pytest.raises(aiohttp.ClientConnectorError):
+            await dispatch(body, route=_local_route(base), url=url, send=send, ledger_path=str(path), bound_fn=_zero_bound)
+    finally:
+        await runner.cleanup()
+    assert received and len(received[0]) > 0
+    state = ledger_state(str(path))
+    row = next(iter(state["reservations"].values()))
+    assert row["status"] == "retained"
+    assert row["retain_reason"] == "transport:ClientConnectorError"
+    assert state["accounted_nano"] == row["reserved_nano"] == 24_000_000
+    assert state["accounted_nano"] > before
+
+
+async def test_initial_connection_refusal_releases_only_with_an_empty_trace(tmp_path):
+    from ComfyArt.bot.llm_usd_gate import RequestNotWritten, dispatch, exchange_with_send_proof
+
+    port = _closed_port()
+    base = f"http://127.0.0.1:{port}"
+    path = tmp_path / "refused.json"
+    url = base + "/chat/completions"
+    body = _text(max_tokens=20000)
+
+    async def send():
+        await exchange_with_send_proof(
+            "POST", url, headers={"Content-Type": "application/json"}, timeout=5, json_body=body,
+        )
+
+    with pytest.raises(RequestNotWritten) as refused:
+        await dispatch(body, route=_local_route(base), url=url, send=send, ledger_path=str(path), bound_fn=_zero_bound)
+    assert isinstance(refused.value.cause, aiohttp.ClientConnectorError)
+    state = ledger_state(str(path))
+    row = next(iter(state["reservations"].values()))
+    assert row["status"] == "released" and row["actual_nano"] == 0
+    assert row["retain_reason"] == "no_network:RequestNotWritten:ClientConnectorError"
+    assert state["accounted_nano"] == 0
+
+
+async def test_llm_complete_redirect_keeps_the_hold_and_a_refused_connect_releases(bot_client, monkeypatch, tmp_path):
+    from ComfyArt.api import provider_admin
+    from ComfyArt.bot.llm_usd_gate import default_ledger_path
+
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key-not-a-live-secret")
+    _open("alpha01")
+    src = _png(tmp_path)
+    runner, base, received = await _redirect_to_closed()
+    monkeypatch.setattr(provider_admin, "llm_route", lambda active=None: _local_route(base))
+    try:
+        redirected = await _post(
+            bot_client, text="look", system="brief", images=[src], project="alpha01", lang="en",
+        )
+    finally:
+        await runner.cleanup()
+    assert redirected.status == 502, await redirected.text()
+    assert received and len(received[0]) > 0
+    state = ledger_state(default_ledger_path())
+    row = next(iter(state["reservations"].values()))
+    assert row["status"] == "retained"
+    assert row["retain_reason"] == "transport:ClientConnectorError"
+    held = state["accounted_nano"]
+    assert held == row["reserved_nano"] > 0
+
+    closed = _closed_port()
+    monkeypatch.setattr(provider_admin, "llm_route", lambda active=None: _local_route(f"http://127.0.0.1:{closed}"))
+    refused = await _post(
+        bot_client, text="look", system="brief", images=[src], project="alpha01", lang="en",
+    )
+    assert refused.status == 502
+    state = ledger_state(default_ledger_path())
+    released = [item for item in state["reservations"].values() if item["status"] == "released"]
+    assert len(released) == 1
+    assert released[0]["actual_nano"] == 0
+    assert released[0]["retain_reason"] == "no_network:RequestNotWritten:ClientConnectorError"
+    assert state["accounted_nano"] == held

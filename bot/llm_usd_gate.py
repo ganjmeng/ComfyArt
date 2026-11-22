@@ -114,15 +114,16 @@ explicit $2 scope are unchanged. Remote URLs, file ids, and undecodable bytes
 stay unproven.
 
 A non-controlled send that fails after the hold is booked is closed in three
-ways. An exception aiohttp raises before ``ClientRequest.send`` (connector
-failure, invalid URL, TLS fingerprint mismatch, or connect timeout) is proof
-the request was not written, so the hold is released at zero. An
-``LlmHttpError`` whose body contains usage that passes the existing usage
-check is settled at that actual amount. Timeouts after connect, disconnects,
-cancellations, HTTP errors without that usage, and any other exception keep
-the full hold: a refund there would be an overspend route. A controlled scope
-is unchanged: the first failed outcome still keeps the full reservation and
-latches the breaker.
+ways. The hold is released at zero only for ``RequestNotWritten``, which
+``exchange_with_send_proof`` raises when aiohttp's own trace saw the request
+start and then no headers, no body chunk, and no redirect. A connector error
+by itself is not that proof: the client follows redirects, so the first
+server can already have the POST when a later hop raises ``ClientConnectorError``.
+That failure keeps the full reservation. An ``LlmHttpError`` whose body has
+usage that passes the existing usage check is settled at that actual amount.
+Timeouts, disconnects, cancellations, HTTP errors without that usage, and any
+other exception keep the full hold. A controlled scope is unchanged: the first
+failed outcome still keeps the full reservation and latches the breaker.
 """
 from __future__ import annotations
 
@@ -1735,13 +1736,66 @@ def settle(path: str, reservation_id: str, usage: Any) -> dict:
     return _mutate(path, change, create=False, preserve_on_failure=True)
 
 
-def _request_not_written(exc: BaseException) -> bool:
-    """True only when this aiohttp exception is raised before the request is written.
+class RequestNotWritten(Exception):
+    """aiohttp started this call and its trace shows no bytes and no redirect.
 
-    ``ConnectionTimeoutError`` is raised solely from ``connector.connect``
-    timing out, before ``ClientRequest.send``. A later read or total timeout
-    is a different class and stays ambiguous. Connector, URL, and TLS
-    fingerprint failures happen while the connection is still being acquired.
+    ``cause`` is the original failure (refused connect, connect timeout, bad
+    URL, or TLS fingerprint) on that first hop. A bare ``ClientConnectorError``
+    is not this exception: the same class is raised when a later redirect hop
+    cannot connect, after an earlier server has already received the POST.
+    """
+
+    def __init__(self, cause: BaseException) -> None:
+        self.cause = cause
+        super().__init__(type(cause).__name__)
+
+
+class _SendWitness:
+    """Counts aiohttp trace events for one ``session.request``."""
+
+    __slots__ = ("started", "headers", "chunks", "redirects")
+
+    def __init__(self) -> None:
+        self.started = 0
+        self.headers = 0
+        self.chunks = 0
+        self.redirects = 0
+
+    def config(self):
+        import aiohttp
+
+        trace = aiohttp.TraceConfig()
+
+        async def started(_session, _context, _params) -> None:
+            self.started += 1
+
+        async def headers(_session, _context, _params) -> None:
+            self.headers += 1
+
+        async def chunks(_session, _context, _params) -> None:
+            self.chunks += 1
+
+        async def redirects(_session, _context, _params) -> None:
+            self.redirects += 1
+
+        trace.on_request_start.append(started)
+        trace.on_request_headers_sent.append(headers)
+        trace.on_request_chunk_sent.append(chunks)
+        trace.on_request_redirect.append(redirects)
+        return trace
+
+    def nothing_written(self) -> bool:
+        # ``started`` must be from aiohttp itself. A substitute session that
+        # never emits the trace cannot satisfy this.
+        return self.started > 0 and self.headers == 0 and self.chunks == 0 and self.redirects == 0
+
+
+def _prewrite_failure(exc: BaseException) -> bool:
+    """Failures that can occur before the first request bytes are written.
+
+    A later read timeout, cancel, or disconnect is excluded even when the
+    witness is empty. ``ConnectionTimeoutError`` is the connect-phase timeout;
+    other timeout classes stay unknown.
     """
     import aiohttp
 
@@ -1756,6 +1810,35 @@ def _request_not_written(exc: BaseException) -> bool:
         aiohttp.InvalidURL,
         aiohttp.ServerFingerprintMismatch,
     ))
+
+
+def _request_not_written(exc: BaseException) -> bool:
+    """True only for the trace proof, not for an exception class by itself."""
+    return type(exc) is RequestNotWritten
+
+
+async def exchange_with_send_proof(method: str, url: str, *, headers, timeout, json_body=None, data=None):
+    """One HTTP exchange. Raises ``RequestNotWritten`` only when the trace is empty.
+
+    Redirects stay enabled. If the first server accepts the POST and the next
+    hop then fails to connect, the redirect (or the bytes already traced) keeps
+    the original exception, and the ledger retains the reservation.
+    """
+    import aiohttp
+
+    witness = _SendWitness()
+    limit = timeout if isinstance(timeout, aiohttp.ClientTimeout) else aiohttp.ClientTimeout(total=timeout)
+    payload = {"data": data} if data is not None else {"json": json_body}
+    async with aiohttp.ClientSession(
+        trace_configs=[witness.config()], headers=headers, timeout=limit,
+    ) as session:
+        try:
+            async with session.request(method, url, headers=headers, timeout=limit, **payload) as res:
+                return res.status, await res.text()
+        except BaseException as exc:
+            if witness.nothing_written() and _prewrite_failure(exc):
+                raise RequestNotWritten(exc) from exc
+            raise
 
 
 def _usage_from_http_error(exc: BaseException) -> Any:
@@ -1815,7 +1898,8 @@ def _close_failed_send(path: str, reservation_id: str, exc: BaseException, *, co
     """Book a send that raised. Controlled scopes always keep the full hold."""
     transport_reason = "transport:" + type(exc).__name__
     if not controlled and _request_not_written(exc):
-        closed = release(path, reservation_id, "no_network:" + type(exc).__name__)
+        cause = type(getattr(exc, "cause", None)).__name__
+        closed = release(path, reservation_id, f"no_network:RequestNotWritten:{cause}")
         if closed.get("code") in ("released", "retained"):
             return
     if not controlled:
