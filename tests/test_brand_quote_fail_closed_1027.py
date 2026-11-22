@@ -16,7 +16,7 @@ from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
 from ComfyArt.bot.providers import TurnHandle
 from ComfyArt.bot.run_budget import resolve_policy
 from test_agent_budget_391 import Rig, calls, reply
-from test_brand_wrapup_1027 import _reach_finals
+from test_brand_wrapup_1027 import _card1, _reach_finals
 
 SLOTS = ("spec", "cup", "bag", "storefront")
 
@@ -31,13 +31,27 @@ class _Asking:
         return {"questions": [{"id": "confirm", "options": [{"id": "start", "label": "开始"}]}]}
 
 
-def _script(messages, n):
-    if n == 0:
-        return calls(*((
-            "generate_image",
-            {"prompt": slot, "skill": brand.SKILL, "brand_slot": slot},
-        ) for slot in SLOTS))
-    return reply("不再生成")
+def _script_for(stage):
+    def script(messages, n):
+        if n == 0 and stage == "first":
+            return calls(("generate_image", {
+                "prompt": "board", "skill": brand.SKILL, "brand_slot": "moodboard"}))
+        if n == 0:
+            return calls(*((
+                "generate_image",
+                {"prompt": slot, "skill": brand.SKILL, "brand_slot": slot},
+            ) for slot in SLOTS))
+        return reply("不再生成")
+    return script
+
+
+def _at_stage(stage):
+    if stage == "first":
+        brand.record_card_answer(_card1(), {
+            "bi_delivery": {"selected": ["A"]}, "bi_color": {"selected": ["A"]},
+            "bi_mark": {"selected": ["A"]}, "bi_source": {"selected": ["A"]}})
+    else:
+        _reach_finals()
 
 
 def _mcp(name, args, i):
@@ -46,26 +60,21 @@ def _mcp(name, args, i):
     return json.dumps({})
 
 
-async def _run(monkeypatch, *, budget: bool, price: str, confirm: str):
+async def _run(monkeypatch, *, budget: bool, price: str, confirm: str, stage: str = "final"):
     brand.reset_for_tests()
     BOT_CHAT_ID.set("c")
-    _reach_finals()
-    rig = Rig(monkeypatch, _script, mcp=_mcp)
+    _at_stage(stage)
+    rig = Rig(monkeypatch, _script_for(stage), mcp=_mcp)
     if not budget:
         pol = resolve_policy(env={"COMFYART_AGENT_BUDGET_LOOP": "0"})
         monkeypatch.setattr(rig.p, "_run_policy", lambda: pol)
 
-    if price == "raise":
-        async def boom(model, inputs):
-            raise RuntimeError("quote validation failed")
-
-        monkeypatch.setattr(rig.p, "_price_one", boom)
-    elif price == "local":
+    if price == "local":
         async def local_price(model, inputs):
             return (0.04, "estimate", "test")
 
         monkeypatch.setattr(rig.p, "_price_one", local_price)
-    else:
+    elif price == "ask":
         async def asking(steps, lang):
             return _Asking()
 
@@ -93,12 +102,18 @@ async def _run(monkeypatch, *, budget: bool, price: str, confirm: str):
     return generated, events, res
 
 
+@pytest.mark.parametrize("stage", ["first", "final"])
 @pytest.mark.parametrize("budget", [True, False], ids=["agent_loop", "local_llm"])
-async def test_quote_exception_does_not_generate(monkeypatch, budget):
-    generated, events, res = await _run(monkeypatch, budget=budget, price="raise", confirm="production")
+async def test_quote_build_exception_does_not_generate(monkeypatch, budget, stage):
+    async def boom(*_a, **_k):
+        raise RuntimeError("quote build failed")
+
+    monkeypatch.setattr("ComfyArt.bot.plan_quote.build_quote", boom)
+    generated, events, res = await _run(
+        monkeypatch, budget=budget, price="production", confirm="production", stage=stage)
     assert generated == []
     text = "\n".join(e.text for e in events if e.t == "delta" and e.text)
-    assert "quote validation failed" in text
+    assert "quote build failed" in text
     assert res.error
 
 
@@ -125,7 +140,9 @@ async def test_unattended_production_confirm_does_not_generate(monkeypatch, budg
     assert "没有人确认" in text or "未开始" in text
 
 
+@pytest.mark.parametrize("stage,count", [("first", 1), ("final", 4)])
 @pytest.mark.parametrize("budget", [True, False], ids=["agent_loop", "local_llm"])
-async def test_confirmed_start_still_calls_generate_once_each(monkeypatch, budget):
-    generated, _events, _res = await _run(monkeypatch, budget=budget, price="local", confirm="start")
-    assert generated == ["generate_image"] * 4
+async def test_confirmed_start_still_calls_generate(monkeypatch, budget, stage, count):
+    generated, _events, _res = await _run(
+        monkeypatch, budget=budget, price="local", confirm="start", stage=stage)
+    assert generated == ["generate_image"] * count

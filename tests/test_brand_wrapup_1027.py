@@ -307,6 +307,25 @@ def test_done_with_no_output_is_not_still_generating():
     assert brand.release_wrapup("zh") == ""
 
 
+def test_done_with_a_url_and_no_shape_is_generated_not_placed():
+    _reach_finals()
+    slots = _submit_finals()
+    brand.accept_assistant_text(SUCCESS)
+    brand.record_wait({"status": "done", "results": [
+        {"id": f"h-{slot}", "status": "done", "shapes": [], "urls": [f"https://cdn.example/{slot}.png"],
+         "placed": False, "generation_succeeded": True, "delivered": 0}
+        for slot in slots]})
+    note = brand.release_wrapup("zh")
+    assert "已生成未落图" in note
+    assert "https://cdn.example/spec.png" in note
+    assert "https://cdn.example/cup.png" in note
+    assert "规范卡" in note and "外带杯与杯套" in note
+    assert "没有落图" not in note
+    assert "仍在生成" not in note
+    assert "本次交付清单" not in note
+    assert brand.end_turn("zh") == ""
+
+
 def test_unknown_terminal_is_not_still_generating():
     _reach_finals()
     slots = _submit_finals()

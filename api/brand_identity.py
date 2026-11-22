@@ -687,36 +687,51 @@ def record_wait(result: object) -> None:
                     break
         failed = progress.setdefault("failed", [])
         unknown = progress.setdefault("unknown", [])
+        unplaced = progress.setdefault("unplaced", {})
         status = str(row.get("status") or "").lower()
         open_wait = {"running", "pending", "queued"}
-        # Only an explicit in-flight status stays open. done/error/unknown are terminal.
+        done_wait = {"done", "complete", "completed", "success"}
+
+        def _clear_open(slot: str) -> None:
+            if slot in progress["inflight"]:
+                progress["inflight"].remove(slot)
+
+        # A shape is on the canvas. A URL with no shape was generated and not placed.
+        # Only running / pending / queued stay in flight.
         if placed:
             progress["shapes"][slot_id] = placed
             if slot_id in failed:
                 failed.remove(slot_id)
             if slot_id in unknown:
                 unknown.remove(slot_id)
+            unplaced.pop(slot_id, None)
             if url:
                 progress["urls"][slot_id] = url
-            if slot_id in progress["inflight"]:
-                progress["inflight"].remove(slot_id)
+            _clear_open(slot_id)
         elif status in open_wait:
             if slot_id not in progress["inflight"]:
                 progress["inflight"].append(slot_id)
         else:
-            if slot_id in progress["inflight"]:
-                progress["inflight"].remove(slot_id)
+            _clear_open(slot_id)
             if slot_id in progress["shapes"]:
                 pass
+            elif status in done_wait and url:
+                if slot_id in failed:
+                    failed.remove(slot_id)
+                if slot_id in unknown:
+                    unknown.remove(slot_id)
+                unplaced[slot_id] = url
+                progress["urls"][slot_id] = url
             elif status in {"unknown", "unknown id"} or (
-                status and status not in {"done", "complete", "completed", "success",
-                                           "error", "failed", "cancelled", "canceled", "declined"}
+                status and status not in done_wait | {"error", "failed", "cancelled", "canceled", "declined"}
                 and not row.get("error")
             ):
+                unplaced.pop(slot_id, None)
                 if slot_id not in failed and slot_id not in unknown:
                     unknown.append(slot_id)
             elif slot_id not in failed:
-                # Terminal with no placed shape: error, declined, or done with no output.
+                # Terminal and no usable output: explicit error, or done with no URL.
+                unplaced.pop(slot_id, None)
                 failed.append(slot_id)
                 if slot_id in unknown:
                     unknown.remove(slot_id)
@@ -775,6 +790,18 @@ def _unknown_finals(progress: dict) -> list[str]:
     failed = progress.get("failed") or []
     unknown = progress.get("unknown") or []
     return [slot for slot in FINAL_IDS if slot in unknown and slot not in shapes and slot not in failed]
+
+
+def _unplaced_finals(progress: dict) -> list[tuple[str, str]]:
+    """Generated URLs that never became a canvas shape. Not a failure and not in flight."""
+    shapes = progress.get("shapes") or {}
+    unplaced = progress.get("unplaced") or {}
+    rows = []
+    for slot in FINAL_IDS:
+        url = str(unplaced.get(slot) or "").strip()
+        if url and slot not in shapes:
+            rows.append((slot, url))
+    return rows
 
 
 def _final_names(slot_ids: list[str], lang: str) -> list[str]:
@@ -863,8 +890,21 @@ def unknown_wrapup(lang: str = "zh") -> str:
     return "结果未知：" + "、".join(names) + "。"
 
 
+def unplaced_wrapup(lang: str = "zh") -> str:
+    """Name finals that have a file and are not on the canvas. Keeps the URL."""
+    rows = _unplaced_finals(_progress())
+    if not rows:
+        return ""
+    names = _QUOTE_NAME["en" if lang == "en" else "zh"]
+    parts = [f"{names.get(slot) or slot} {url}" for slot, url in rows]
+    if lang == "en":
+        return "Generated, not on the canvas: " + "; ".join(parts) + "."
+    return "已生成未落图：" + "、".join(parts) + "。"
+
+
 def _settled_note(lang: str) -> str:
-    return "\n".join(part for part in (failure_wrapup(lang), unknown_wrapup(lang)) if part)
+    return "\n".join(part for part in (
+        failure_wrapup(lang), unplaced_wrapup(lang), unknown_wrapup(lang)) if part)
 
 
 def still_generating_wrapup(lang: str = "zh") -> str:
@@ -945,10 +985,11 @@ def release_wrapup(lang: str = "zh") -> str:
     inflight = _inflight_finals(progress)
     missing = tuple(_explicit_failed_finals(progress))
     unknowns = tuple(_unknown_finals(progress))
-    if phase in {"finals", "done"} and (missing or unknowns) and not inflight:
-        signature = ("settled", missing, unknowns)
+    unplaced = tuple(_unplaced_finals(progress))
+    if phase in {"finals", "done"} and (missing or unknowns or unplaced) and not inflight:
+        signature = ("settled", missing, unknowns, unplaced)
         reported = progress.get("wrapup_reported")
-        if reported == signature or (not unknowns and reported == missing):
+        if reported == signature or (not unknowns and not unplaced and reported == missing):
             return ""
         _HELD_WRAPUP.pop(_chat(), None)
         _turn()["extra"] = []
@@ -975,19 +1016,21 @@ def end_turn(lang: str = "zh") -> str:
     if not _turn().get("released"):
         missing = tuple(_explicit_failed_finals(progress))
         unknowns = tuple(_unknown_finals(progress))
+        unplaced = tuple(_unplaced_finals(progress))
         reported = progress.get("wrapup_reported")
         inflight = tuple(_inflight_finals(progress))
-        settled = ("settled", missing, unknowns)
-        # A still-running final is not a failure. A terminal done with no output
-        # is already in `missing` or `unknowns`, so it is not called still generating.
+        settled = ("settled", missing, unknowns, unplaced)
+        # Running stays open. A done row with a URL is generated-not-placed.
+        # A done row with no URL is a missed place. Neither is still generating.
         if phase == "finals" and inflight:
-            signature = ("running", missing, unknowns, inflight)
+            signature = ("running", missing, unknowns, unplaced, inflight)
             if signature != reported:
-                parts = [failure_wrapup(lang), unknown_wrapup(lang), still_generating_wrapup(lang)]
+                parts = [failure_wrapup(lang), unplaced_wrapup(lang), unknown_wrapup(lang),
+                         still_generating_wrapup(lang)]
                 text = "\n".join(part for part in parts if part)
                 progress["wrapup_reported"] = signature
             _HELD_WRAPUP.pop(_chat(), None)
-        elif phase == "finals" and (missing or unknowns) and reported not in {settled, missing}:
+        elif phase == "finals" and (missing or unknowns or unplaced) and reported not in {settled, missing}:
             text = _settled_note(lang)
             progress["wrapup_reported"] = settled
         elif not inflight:

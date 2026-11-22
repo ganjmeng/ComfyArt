@@ -259,6 +259,55 @@ async def test_done_without_output_names_a_failure_not_still_generating(monkeypa
     assert brand.end_turn("zh") == ""
 
 
+def _done_url():
+    return {"status": "done", "results": [
+        {"id": f"h-{slot}", "status": "done", "shapes": [], "urls": [f"https://cdn.example/{slot}.png"],
+         "placed": False, "generation_succeeded": True, "delivered": 0}
+        for slot in SLOTS]}
+
+
+@pytest.mark.parametrize("budget", [True, False], ids=["agent_loop", "local_llm"])
+async def test_done_with_url_keeps_the_file_and_does_not_say_failed(monkeypatch, budget):
+    def script(messages, n):
+        if n == 0:
+            return calls(*((
+                "generate_image",
+                {"prompt": slot, "skill": brand.SKILL, "brand_slot": slot},
+            ) for slot in SLOTS))
+        if n == 1:
+            return {
+                "choices": [{"message": {
+                    "content": SUCCESS,
+                    "tool_calls": [{"id": "w", "function": {
+                        "name": "wait_generation",
+                        "arguments": json.dumps({"ids": [f"h-{s}" for s in SLOTS]}),
+                    }}],
+                }}],
+            }
+        return reply("文件在，画布上还没有")
+
+    def mcp(name, args, i):
+        if name == "generate_image":
+            slot = args["brand_slot"]
+            brand.record_submitted(args, {"ids": [f"h-{slot}"]})
+            return json.dumps({"ids": [f"h-{slot}"]})
+        if name == "wait_generation":
+            payload = _done_url()
+            brand.record_wait(payload)
+            return json.dumps(payload)
+        return json.dumps({})
+
+    _res, events = await _drive(monkeypatch, script, mcp, budget=budget)
+    text = "\n".join(_deltas(events))
+    assert "已生成未落图" in text
+    assert "https://cdn.example/spec.png" in text
+    assert "https://cdn.example/storefront.png" in text
+    assert "没有落图" not in text
+    assert "仍在生成" not in text
+    assert "本次交付清单" not in text
+    assert brand.end_turn("zh") == ""
+
+
 QUESTION = "你问“本次交付清单”是什么意思：它是文件列表，不含商标注册服务。"
 BLOCK = "\n".join([
     "本次交付清单：",
