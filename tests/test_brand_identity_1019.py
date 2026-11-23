@@ -142,8 +142,10 @@ def test_each_slot_prompt_locks_a_different_structure():
     spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})
     assert "one measured grid of seven filled cells" in spec["prompt"]
     assert "版式 is a filled layout diagram" in spec["prompt"]
-    assert brand.color_palette_line() in spec["prompt"]
-    assert "#C4784A" in spec["prompt"]
+    assert "sampled from the references" in spec["prompt"]
+    assert "at most 5%" in spec["prompt"]
+    assert "exactly three Chinese rows" in spec["prompt"]
+    assert "#C4784A" not in spec["prompt"]
     store = brand.fill_default({"brand_slot": "storefront", "prompt": "门头"})
     assert "full shopfront, front view" in store["prompt"]
     assert "A-frame standing sign" in store["prompt"]
@@ -522,7 +524,7 @@ def test_card3_without_logo_urls_is_an_error_and_the_second_try_stops():
     assert "还不能出方向卡" in second
 
 
-def test_spec_palette_follows_the_saved_color_answer():
+def test_spec_palette_follows_the_pictures_not_the_saved_preset():
     brand.record_card_answer(_card1(), {
         "bi_delivery": {"selected": ["A"]},
         "bi_color": {"selected": ["B"]},
@@ -530,8 +532,15 @@ def test_spec_palette_follows_the_saved_color_answer():
         "bi_source": {"selected": ["A"]},
     })
     spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})
-    assert "#C46A3A" in spec["prompt"]
-    assert "#C4784A" not in spec["prompt"]
+    saved = brand.color_palette_line()
+    assert saved.startswith("陶土橘")
+    assert saved not in spec["prompt"]
+    assert "色彩 cell on the moodboard" in spec["prompt"]
+    assert "at most 5%" in spec["prompt"]
+    assert "品牌名" in spec["prompt"] and "副标" in spec["prompt"] and "正文" in spec["prompt"]
+    assert "no fourth line" in spec["prompt"]
+    for preset in ("#C46A3A", "#C4784A", "#3D4A7C", "#F4EDE4"):
+        assert preset not in spec["prompt"]
 
 
 def _logos_ready():

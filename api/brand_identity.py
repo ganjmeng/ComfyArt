@@ -544,7 +544,7 @@ _COLOR_PALETTES = {
 
 
 def color_palette_line() -> str:
-    """Ratios and hex for the spec card. A missing answer uses palette A."""
+    """The card-1 color answer. The spec card does not print this preset."""
     color = _progress().get("color") if isinstance(_progress().get("color"), dict) else {}
     selected = color.get("selected") or []
     key = str(selected[0]).upper()[:1] if selected else ""
@@ -559,10 +559,17 @@ def _spec_lock() -> str:
     return (
         "GUIDELINE LOCK: one measured grid of seven filled cells, no empty cell. "
         "Headings exactly: 最小尺寸, 变体, 色彩比例, 字体层级, 版式, 使用禁忌, 影像材质. "
-        f"色彩比例 prints these ratios and hex values and no others: {color_palette_line()}. "
+        "色彩比例 is sampled from the references, not from a preset. "
+        "Read the 色彩 cell on the moodboard and the primary colors already used on the chosen logo. "
+        "Print those sampled colors as one proportion bar. Every swatch shows its share and its hex. "
+        "The primary colors take the bar. Any accent swatch is at most 5%. "
+        "Do not substitute a stored palette, and do not print a color that is not visible in the references. "
+        "字体层级 has exactly three Chinese rows and no fourth line: 品牌名, 副标, 正文. "
+        "Each row is the role, a size in 磅, and a weight of 粗体 or 常规. "
+        "No English words, no Latin letters, and no garbled line. "
         "版式 is a filled layout diagram, not an empty cell. "
         "最小尺寸 states one real minimum size and no other micro-text. "
-        "No garbled labels and no extra captions. Paper ground, not black."
+        "Paper ground, not black."
     )
 
 
@@ -1602,7 +1609,10 @@ def default_hint() -> str:
         "Then exactly four deliverables, brand_slot spec, cup, bag (each 1536x2048 3:4) and storefront (2048x1152 16:9). "
         "refs are the chosen logo shape and the moodboard. The spec card is one grid of seven filled cells: "
         "最小尺寸, 变体, 色彩比例, 字体层级, 版式, 使用禁忌, 影像材质. "
-        "色彩比例 prints the ratios and hex values from the color answer. 版式 is a filled layout diagram. "
+        "色彩比例 copies the moodboard 色彩 cell and the chosen logo's primary colors. "
+        "Each swatch shows a share and a hex, and any accent is at most 5%. It does not print a preset palette. "
+        "字体层级 is exactly three Chinese rows, 品牌名, 副标, 正文, each with a size in 磅 and a weight of 粗体 or 常规, and no English line. "
+        "版式 is a filled layout diagram. "
         "The storefront is the full shopfront, front view, with the names once on the fascia and an A-frame standing sign. "
         "Cup and bag print both the Chinese name and the English name. "
         "Do not emit a separate palette image or a type specimen. "
