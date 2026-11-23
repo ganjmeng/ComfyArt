@@ -110,10 +110,14 @@ function brandOrigin(slotId: string): { x: number; y: number } | null {
 
 function place(editor: Editor, id: TLShapeId, args: Args, chat: string) {
   const brandAt = typeof args.brand_slot === 'string' ? brandOrigin(args.brand_slot) : null
-  if (brandAt && chat) {
-    placeInChatFrame(editor, id, chat)
+  if (brandAt) {
+    // Keep the three slot rows. The chat frame's auto-pack would wrap these boards.
+    if (chat) placeInChatFrame(editor, id, chat)
     const placed = editor.getShape(id)!
-    editor.updateShape({ id, type: placed.type, x: brandAt.x, y: brandAt.y })
+    editor.updateShape({
+      id, type: placed.type, x: brandAt.x, y: brandAt.y,
+      meta: { ...placed.meta, brand_slot: args.brand_slot },
+    })
     return
   }
   const shape = editor.getShape(id)!

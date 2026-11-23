@@ -2386,8 +2386,14 @@ class LocalLlmProvider(AgentProvider):
                 quote_error = f"[error] {type(e).__name__}: {e}"
                 decision = "error"
             else:
+                from ..api.brand_identity import stage_already_quoted
+                # The user already confirmed this stage. Do not open a second quote card.
+                already = stage_already_quoted(steps if isinstance(steps, list) else [])
                 if quote is None:
                     decision = "passthrough"
+                elif already:
+                    gate.allow(quote, not single)
+                    decision = "start"
                 elif not quote.ask:
                     gate.allow(quote, False)
                     decision = "start"

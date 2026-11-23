@@ -46,8 +46,10 @@ function moveTo(editor: Editor, s: TLShape, b: Box, x: number, y: number) {
 }
 
 function autoLayout(editor: Editor, frame: TLFrameShape) {
-  const items = childBoxes(editor, frame).sort((a, b) => a.b.y - b.b.y || a.b.x - b.b.x)
-  if (!items.length) return
+  const all = childBoxes(editor, frame)
+  const pinned = new Set(all.filter(({ s }) => typeof s.meta?.brand_slot === 'string' && s.meta.brand_slot).map(({ s }) => s.id))
+  const items = all.filter(({ s }) => !pinned.has(s.id)).sort((a, b) => a.b.y - b.b.y || a.b.x - b.b.x)
+  if (!all.length) return
   // #282: the reference area never shrinks on drop: items wrap inside its current width and it only grows downward
   const keep = !!frame.meta.refFrame
   const fixedW = keep || sizingOf(frame, 'w') === 'fixed'
@@ -69,6 +71,14 @@ function autoLayout(editor: Editor, frame: TLFrameShape) {
     }
     width = Math.max(width, x)
     y += Math.max(...row.map(({ b }) => b.h)) + PAD
+  }
+  const origin = editor.getShapePageBounds(frame.id)
+  if (origin) {
+    for (const { s, b } of all) {
+      if (!pinned.has(s.id)) continue
+      width = Math.max(width, b.maxX - origin.x + PAD)
+      y = Math.max(y, b.maxY - origin.y + PAD)
+    }
   }
   if (keep) {
     editor.updateShape<TLFrameShape>({ id: frame.id, type: 'frame', props: { w: Math.max(frame.props.w, width), h: Math.max(frame.props.h, y) } })

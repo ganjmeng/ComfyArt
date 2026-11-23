@@ -219,18 +219,18 @@ _CARD3_ZH = {
     "id": _CARD3,
     "prompt": "选定哪个 Logo 方向作为最终标识（logo_primary）？",
     "options": [
-        {"id": "A", "label": "方向 A"},
-        {"id": "B", "label": "方向 B"},
-        {"id": "C", "label": "方向 C"},
+        {"id": "A", "label": "单线鸟停枝", "description": "一根连续的线，画出停在枝上的鸟"},
+        {"id": "B", "label": "木牌加圆印", "description": "实心木牌，旁边一枚圆形印章"},
+        {"id": "C", "label": "杯形负空间", "description": "杯子外形，符号是杯中的负空间"},
     ],
 }
 _CARD3_EN = {
     "id": _CARD3,
     "prompt": "Which logo direction should be the final mark (logo_primary)?",
     "options": [
-        {"id": "A", "label": "Direction A"},
-        {"id": "B", "label": "Direction B"},
-        {"id": "C", "label": "Direction C"},
+        {"id": "A", "label": "Single-line bird on a branch", "description": "One continuous line draws a bird perched on a branch"},
+        {"id": "B", "label": "Wooden signboard and round seal", "description": "A solid wooden signboard plus a separate round seal"},
+        {"id": "C", "label": "Cup-shaped negative space", "description": "A cup-shaped container; the symbol is the cup's negative space"},
     ],
 }
 
@@ -329,6 +329,15 @@ def _card3(lang: str, raw: dict | None) -> dict:
             break
     if wanted not in {o["id"] for o in options}:
         wanted = "A"
+    # Titles follow the image lock. A model title such as 手刻印章 cannot disagree with the sheet.
+    locked_by_id = {opt["id"]: opt for opt in locked["options"]}
+    for opt in options:
+        src = locked_by_id.get(opt["id"])
+        if not src:
+            continue
+        opt["label"] = src["label"]
+        if src.get("description"):
+            opt["description"] = src["description"]
     for opt in options:
         if opt["id"] == wanted:
             opt["recommended"] = True
@@ -599,19 +608,19 @@ _SLOT_LOCK = {
         "No filled plaque, no circular seal, no cup silhouette. "
         "The sheet still shows the mark, a construction grid, a horizontal lockup, small sizes, and one reversed dark block. "
         "The lockup prints BOTH the Chinese brand name and the English brand name from the brief. "
-        "No other English words and no garbled captions."
+        "No other English words and no garbled captions. No bottom caption."
     ),
     "logo_b": (
         "STRUCTURE LOCK B: two separate parts, a solid filled wood plaque AND a circular seal. "
         "Not a line-drawing bird standing on a branch. "
         "The lockup prints BOTH the Chinese brand name and the English brand name. "
-        "No garbled English captions."
+        "No garbled English captions. No bottom caption."
     ),
     "logo_c": (
         "STRUCTURE LOCK C: the mark is a cup-shaped container and the symbol is the cup's negative space. "
         "Not a bird standing on a branch, not a circular seal, not a wood plaque. "
         "The lockup prints BOTH the Chinese brand name and the English brand name. "
-        "No garbled English captions."
+        "No garbled English captions. No bottom caption."
     ),
     "spec": (
         "GUIDELINE LOCK: one board with exactly these seven Chinese headings: "
@@ -620,7 +629,7 @@ _SLOT_LOCK = {
         "No invented English such as fake size labels. Paper ground, not black."
     ),
     "cup": (
-        "APPLICATION LOCK: takeaway cup and sleeve. The print is a complete bilingual lockup: "
+        "APPLICATION LOCK: takeaway cup wearing a sleeve (杯套). The print is a complete bilingual lockup: "
         "the Chinese brand name AND the English brand name, both readable. Do not print the English name alone. "
         "No extra English captions. A real cup on a light ground, not a black void."
     ),
@@ -1228,6 +1237,14 @@ def quoted_stage(steps: list) -> int:
             stages.append(stage)
     unique = set(stages)
     return stages[0] if len(unique) == 1 else 0
+
+
+def stage_already_quoted(steps: list) -> bool:
+    """True after this stage's quote was confirmed, so a later turn must not open another card."""
+    stage = quoted_stage(steps)
+    if not stage:
+        return False
+    return int(stage) in (_progress().get("quoted_stages") or {})
 
 
 def spend_before(stage: int) -> float:

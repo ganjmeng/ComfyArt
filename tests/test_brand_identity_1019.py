@@ -117,6 +117,8 @@ def test_each_slot_prompt_locks_a_different_structure():
     cup = brand.fill_default({"brand_slot": "cup", "prompt": "杯"})
     assert "使用禁忌" in spec["prompt"] and "最小尺寸" in spec["prompt"]
     assert "Chinese brand name AND the English brand name" in cup["prompt"]
+    assert "sleeve" in cup["prompt"] and "杯套" in cup["prompt"]
+    assert "No bottom caption." in a["prompt"] and "No bottom caption." in b["prompt"] and "No bottom caption." in c["prompt"]
     again = brand.fill_default({"brand_slot": "logo_a", "prompt": a["prompt"]})
     assert again["prompt"].count("STRUCTURE LOCK A") == 1
 
@@ -143,6 +145,10 @@ def test_rows_center_the_logos_between_moodboard_and_deliverables():
     assert a[0] > spec[0]
     assert a[1] == b[1] == c[1]
     assert spec[1] == store[1]
+    assert mood[1] == 0
+    assert a[1] == 1152 + brand.GAP
+    assert spec[1] == a[1] + 2048 + brand.GAP
+    assert b[0] - a[0] == 2048 + brand.GAP
 
 
 def test_flatten_puts_alpha_on_white_and_leaves_opaque_bytes():
@@ -175,8 +181,12 @@ def test_fallback_copy_does_not_name_one_brand():
         "options": [{"id": "A", "label": "x"}],
     }]})
     labels = [opt["label"] for opt in card3["questions"][0]["options"]]
-    assert labels == ["方向 A", "方向 B", "方向 C"]
-    assert all("description" not in opt for opt in card3["questions"][0]["options"])
+    assert labels == ["单线鸟停枝", "木牌加圆印", "杯形负空间"]
+    assert [opt["description"] for opt in card3["questions"][0]["options"]] == [
+        "一根连续的线，画出停在枝上的鸟",
+        "实心木牌，旁边一枚圆形印章",
+        "杯子外形，符号是杯中的负空间",
+    ]
     assert "栖" not in __import__("json").dumps(card3, ensure_ascii=False)
 
 
@@ -313,3 +323,103 @@ def test_stage_quote_is_separate_and_names_the_cumulative():
     assert quote.total == 0.03
     assert quote.lines[0].text == "情绪板 2048×1152 16:9"
     assert "精确像素" not in quote.lines[0].text
+
+
+def test_card3_options_match_the_enforced_structures():
+    card = validate_spec({"questions": [{
+        "id": "bi_direction",
+        "prompt": "选定哪个 Logo 方向作为最终标识（logo_primary）？",
+        "options": [
+            {"id": "A", "label": "手刻印章", "recommended": True, "image_url": "/a.png"},
+            {"id": "B", "label": "木纹", "image_url": "/b.png"},
+            {"id": "C", "label": "方向 C", "image_url": "/c.png"},
+        ],
+    }]})
+    opts = card["questions"][0]["options"]
+    assert [(o["label"], o["description"]) for o in opts] == [
+        ("单线鸟停枝", "一根连续的线，画出停在枝上的鸟"),
+        ("木牌加圆印", "实心木牌，旁边一枚圆形印章"),
+        ("杯形负空间", "杯子外形，符号是杯中的负空间"),
+    ]
+    blob = __import__("json").dumps(card, ensure_ascii=False)
+    assert "手刻印章" not in blob
+    assert opts[0]["recommended"] is True
+    assert [o.get("image_url") for o in opts] == ["/a.png", "/b.png", "/c.png"]
+    assert "defaults" not in card["questions"][0]
+    en = brand.normalize_card({"questions": [{
+        "id": "bi_direction",
+        "prompt": "Which logo direction should be the final mark (logo_primary)?",
+        "options": [{"id": "A", "label": "Hand seal", "recommended": True},
+                    {"id": "B", "label": "B"}, {"id": "C", "label": "C"}],
+    }]}, "en")
+    en_opts = en["questions"][0]["options"]
+    assert [o["label"] for o in en_opts] == [
+        "Single-line bird on a branch",
+        "Wooden signboard and round seal",
+        "Cup-shaped negative space",
+    ]
+    assert "bird perched on a branch" in en_opts[0]["description"]
+    assert "round seal" in en_opts[1]["description"]
+    assert "negative space" in en_opts[2]["description"]
+    assert en_opts[0]["recommended"] is True
+
+
+def _logos_ready():
+    brand.record_card_answer(_card1(), {
+        "bi_delivery": {"selected": ["A"]}, "bi_color": {"selected": ["A"]},
+        "bi_mark": {"selected": ["A"]}, "bi_source": {"selected": ["A"]},
+    })
+    brand.record_submitted({"brand_slot": "moodboard"}, {"ids": ["h"]})
+    brand.record_wait({"results": [{"id": "h", "shapes": ["shape:mood"], "urls": ["/m.png"]}]})
+    brand.record_card_answer({"questions": [{
+        "id": "bi_moodboard", "prompt": "这张情绪板可以作为后续全套物料的视觉基准吗？",
+        "options": [{"id": "A", "label": "就这版，通过"}],
+    }]}, {"bi_moodboard": {"selected": ["A"]}})
+
+
+async def test_a_repeat_of_a_confirmed_stage_does_not_open_another_card(monkeypatch):
+    from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
+    from ComfyArt.bot.providers import TurnHandle
+    from ComfyArt.bot.run_budget import resolve_policy
+    from test_agent_budget_391 import Rig, calls, reply
+
+    token = BOT_CHAT_ID.set("c")
+    try:
+        _logos_ready()
+
+        def script(messages, n):
+            if n == 0:
+                return calls(*(
+                    ("generate_image", {"prompt": slot, "skill": brand.SKILL, "brand_slot": slot})
+                    for slot in ("logo_a", "logo_b", "logo_c")
+                ))
+            return reply("好")
+
+        async def once(confirms):
+            rig = Rig(monkeypatch, script)
+            monkeypatch.setattr(rig.p, "_run_policy", lambda: resolve_policy(env={"COMFYART_AGENT_BUDGET_LOOP": "0"}))
+
+            async def price(model, inputs):
+                return (0.03, "quote", "test-stage")
+
+            monkeypatch.setattr(rig.p, "_price_one", price)
+
+            async def yes(spec, turn, handle, **kwargs):
+                confirms.append(1)
+                return "start"
+
+            monkeypatch.setattr(rig.p, "_confirm_plan", yes)
+            await rig.send("做三个方向", goal="", handle=TurnHandle())
+            return rig
+
+        first = []
+        await once(first)
+        assert first == [1]
+        assert brand._progress()["spent"] == 0.09
+        again = []
+        rig = await once(again)
+        assert again == []
+        assert len(rig.paid_mcp()) == 3
+        assert brand._progress()["spent"] == 0.09
+    finally:
+        BOT_CHAT_ID.reset(token)
