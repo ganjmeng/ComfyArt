@@ -132,8 +132,22 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "STRUCTURE LOCK B" in b["prompt"] and "circular seal" in b["prompt"]
     assert "STRUCTURE LOCK C" in c["prompt"] and "cup-shaped" in c["prompt"]
     assert "single-line" not in b["prompt"]
+    assert "perched bird is the negative space inside the cup" in c["prompt"]
     assert "bird standing on a branch" in c["prompt"]
+    for board in (a, b, c):
+        assert "主组合, 符号构造, 横版, 小尺寸" in board["prompt"]
+        assert "exactly once" in board["prompt"]
+        assert "No other small text." in board["prompt"]
+        assert "No bottom caption." in board["prompt"]
     spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})
+    assert "one measured grid of seven filled cells" in spec["prompt"]
+    assert "版式 is a filled layout diagram" in spec["prompt"]
+    assert brand.color_palette_line() in spec["prompt"]
+    assert "#C4784A" in spec["prompt"]
+    store = brand.fill_default({"brand_slot": "storefront", "prompt": "门头"})
+    assert "full shopfront, front view" in store["prompt"]
+    assert "A-frame standing sign" in store["prompt"]
+    assert "Not a hanging-sign close-up" in store["prompt"]
     cup = brand.fill_default({"brand_slot": "cup", "prompt": "杯"})
     assert "使用禁忌" in spec["prompt"] and "最小尺寸" in spec["prompt"]
     assert "Chinese brand name AND the English brand name" in cup["prompt"]
@@ -248,6 +262,7 @@ def test_fallback_copy_does_not_name_one_brand():
     spec = _card1()
     blob = __import__("json").dumps(spec, ensure_ascii=False)
     assert "栖木" not in blob and "QIMU" not in blob and "枝桠" not in blob
+    brand._progress()["urls"] = {"logo_a": "/a.png", "logo_b": "/b.png", "logo_c": "/c.png"}
     card3 = validate_spec({"questions": [{
         "id": "bi_direction",
         "prompt": "选定哪个 Logo 方向作为最终标识（logo_primary）？",
@@ -258,7 +273,7 @@ def test_fallback_copy_does_not_name_one_brand():
     assert [opt["description"] for opt in card3["questions"][0]["options"]] == [
         "一根连续的线，画出停在枝上的鸟",
         "实心木牌，旁边一枚圆形印章",
-        "杯子外形，符号是杯中的负空间",
+        "杯子外形，停着的鸟是杯中的负空间",
     ]
     assert "栖" not in __import__("json").dumps(card3, ensure_ascii=False)
 
@@ -412,7 +427,7 @@ def test_card3_options_match_the_enforced_structures():
     assert [(o["label"], o["description"]) for o in opts] == [
         ("单线鸟停枝", "一根连续的线，画出停在枝上的鸟"),
         ("木牌加圆印", "实心木牌，旁边一枚圆形印章"),
-        ("杯形负空间", "杯子外形，符号是杯中的负空间"),
+        ("杯形负空间", "杯子外形，停着的鸟是杯中的负空间"),
     ]
     blob = __import__("json").dumps(card, ensure_ascii=False)
     assert "手刻印章" not in blob
@@ -422,8 +437,9 @@ def test_card3_options_match_the_enforced_structures():
     en = brand.normalize_card({"questions": [{
         "id": "bi_direction",
         "prompt": "Which logo direction should be the final mark (logo_primary)?",
-        "options": [{"id": "A", "label": "Hand seal", "recommended": True},
-                    {"id": "B", "label": "B"}, {"id": "C", "label": "C"}],
+        "options": [{"id": "A", "label": "Hand seal", "recommended": True, "image_url": "/a.png"},
+                    {"id": "B", "label": "B", "image_url": "/b.png"},
+                    {"id": "C", "label": "C", "image_url": "/c.png"}],
     }]}, "en")
     en_opts = en["questions"][0]["options"]
     assert [o["label"] for o in en_opts] == [
@@ -433,8 +449,75 @@ def test_card3_options_match_the_enforced_structures():
     ]
     assert "bird perched on a branch" in en_opts[0]["description"]
     assert "round seal" in en_opts[1]["description"]
-    assert "negative space" in en_opts[2]["description"]
+    assert "perched bird is the negative space inside the cup" in en_opts[2]["description"]
     assert en_opts[0]["recommended"] is True
+
+
+def _direction_ask(options):
+    return {"questions": [{
+        "id": "bi_direction",
+        "prompt": "选定哪个 Logo 方向作为最终标识（logo_primary）？",
+        "options": options,
+    }]}
+
+
+def test_card3_accepts_logo_slot_ids_and_recovered_wait_urls():
+    card = validate_spec(_direction_ask([
+        {"id": "logo_a", "label": "方向 A", "image_url": "/from-a.png"},
+        {"id": "logo_b", "label": "方向 B", "image_url": "/from-b.png"},
+        {"id": "logo_c", "label": "方向 C", "image_url": "/from-c.png"},
+    ]))
+    assert [o["image_url"] for o in card["questions"][0]["options"]] == ["/from-a.png", "/from-b.png", "/from-c.png"]
+    brand.reset_for_tests()
+    brand.record_wait({"results": [
+        {"id": "logo_a", "status": "done", "shapes": ["s:a"], "urls": ["/slot-a.png"]},
+        {"id": "B", "status": "done", "shapes": ["s:b"], "urls": ["/slot-b.png"]},
+        {"id": "task-c", "brand_slot": "logo_c", "status": "done", "shapes": ["s:c"], "urls": ["/slot-c.png"]},
+    ]})
+    recovered = validate_spec(_direction_ask([
+        {"id": "A", "label": "方向 A"},
+        {"id": "B", "label": "方向 B"},
+        {"id": "C", "label": "方向 C"},
+    ]))
+    assert [o["image_url"] for o in recovered["questions"][0]["options"]] == [
+        "/slot-a.png", "/slot-b.png", "/slot-c.png"]
+
+
+def test_card3_without_logo_urls_is_an_error_and_the_second_try_stops():
+    ask = _direction_ask([
+        {"id": "A", "label": "方向 A"},
+        {"id": "B", "label": "方向 B"},
+        {"id": "C", "label": "方向 C"},
+    ])
+    try:
+        validate_spec(ask)
+    except ValueError as exc:
+        first = str(exc)
+    else:
+        raise AssertionError("a text-only card 3 was returned")
+    assert "还不能出方向卡" in first
+    assert "wait_generation" in first
+    assert "[non-retryable]" not in first
+    try:
+        validate_spec(ask)
+    except ValueError as exc:
+        second = str(exc)
+    else:
+        raise AssertionError("the second miss still returned a card")
+    assert "[non-retryable]" in second
+    assert "还不能出方向卡" in second
+
+
+def test_spec_palette_follows_the_saved_color_answer():
+    brand.record_card_answer(_card1(), {
+        "bi_delivery": {"selected": ["A"]},
+        "bi_color": {"selected": ["B"]},
+        "bi_mark": {"selected": ["A"]},
+        "bi_source": {"selected": ["A"]},
+    })
+    spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})
+    assert "#C46A3A" in spec["prompt"]
+    assert "#C4784A" not in spec["prompt"]
 
 
 def _logos_ready():

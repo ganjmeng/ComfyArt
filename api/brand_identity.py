@@ -221,7 +221,7 @@ _CARD3_ZH = {
     "options": [
         {"id": "A", "label": "单线鸟停枝", "description": "一根连续的线，画出停在枝上的鸟"},
         {"id": "B", "label": "木牌加圆印", "description": "实心木牌，旁边一枚圆形印章"},
-        {"id": "C", "label": "杯形负空间", "description": "杯子外形，符号是杯中的负空间"},
+        {"id": "C", "label": "杯形负空间", "description": "杯子外形，停着的鸟是杯中的负空间"},
     ],
 }
 _CARD3_EN = {
@@ -230,7 +230,7 @@ _CARD3_EN = {
     "options": [
         {"id": "A", "label": "Single-line bird on a branch", "description": "One continuous line draws a bird perched on a branch"},
         {"id": "B", "label": "Wooden signboard and round seal", "description": "A solid wooden signboard plus a separate round seal"},
-        {"id": "C", "label": "Cup-shaped negative space", "description": "A cup-shaped container; the symbol is the cup's negative space"},
+        {"id": "C", "label": "Cup-shaped negative space", "description": "A cup-shaped badge; a perched bird is the negative space inside the cup"},
     ],
 }
 
@@ -341,15 +341,12 @@ def _card3(lang: str, raw: dict | None) -> dict:
     for opt in options:
         if opt["id"] == wanted:
             opt["recommended"] = True
-    urls = _logo_urls()
     for opt, slot in zip(options, LOGO_IDS):
-        url = urls.get(slot) or ""
+        url = _logo_option_url(raw_opts, opt["id"], slot)
         if not url:
-            for raw_opt in raw_opts:
-                if isinstance(raw_opt, dict) and str(raw_opt.get("id") or "").upper()[:1] == opt["id"]:
-                    url = str(raw_opt.get("image_url") or "").strip()
-        if url:
-            opt["image_url"] = url
+            _refuse_card3_without_thumbs(lang)
+        opt["image_url"] = url
+    _progress()["card3_thumb_miss"] = 0
     return {
         "id": _CARD3,
         "prompt": locked["prompt"],
@@ -482,6 +479,93 @@ def _logo_urls() -> dict:
     return dict(_progress().get("urls") or {})
 
 
+_LOGO_ALIASES = {
+    "logo_a": "logo_a", "a": "logo_a",
+    "logo_b": "logo_b", "b": "logo_b",
+    "logo_c": "logo_c", "c": "logo_c",
+}
+
+
+def _logo_alias(value: object) -> str:
+    return _LOGO_ALIASES.get(str(value or "").strip().lower(), "")
+
+
+def _slot_of_wait_row(row: dict, holders: dict) -> str:
+    """Holder id first. A logo row can also name its slot when the holder id does not match."""
+    holder = str((holders or {}).get(str(row.get("id") or "")) or "")
+    if holder:
+        return holder
+    for key in ("brand_slot", "slot", "id"):
+        slot = _logo_alias(row.get(key))
+        if slot:
+            return slot
+    return ""
+
+
+def _logo_option_url(raw_opts: list, option_id: str, slot: str) -> str:
+    url = str((_logo_urls().get(slot) or "")).strip()
+    if url:
+        return url
+    wanted = {option_id.lower(), slot.lower()}
+    for raw_opt in raw_opts:
+        if not isinstance(raw_opt, dict):
+            continue
+        rid = str(raw_opt.get("id") or "").strip().lower()
+        if rid not in wanted and not (len(rid) == 1 and rid == option_id.lower()):
+            continue
+        found = str(raw_opt.get("image_url") or "").strip()
+        if found:
+            return found
+    return ""
+
+
+_CARD3_WAIT = {
+    "zh": "还不能出方向卡：三个 Logo 的结果图还没到齐。请先等待 logo_a、logo_b、logo_c 的 wait_generation 结果，再调用 ask_user 出 bi_direction。不要出只有文字的方向卡。",
+    "en": "Card 3 cannot be shown yet: the three logo results are not all in. Wait for wait_generation of logo_a, logo_b, and logo_c, then call ask_user for bi_direction. Do not send a text-only direction card.",
+}
+
+
+def _refuse_card3_without_thumbs(lang: str) -> None:
+    """One miss tells the model to wait. The second miss is non-retryable so it cannot loop."""
+    progress = _progress()
+    misses = int(progress.get("card3_thumb_miss") or 0) + 1
+    progress["card3_thumb_miss"] = misses
+    text = _CARD3_WAIT["zh" if lang == "zh" else "en"]
+    if misses >= 2:
+        text = "[non-retryable] " + text
+    raise ValueError(text)
+
+
+_COLOR_PALETTES = {
+    "A": "暖土 70% #C4784A, 米白 20% #F4EDE4, 靛蓝 10% #3D4A7C",
+    "B": "陶土橘 40% #C46A3A, 焦糖 30% #A86B3C, 米白 20% #F3EBDD, 深焙棕 10% #4A2E24",
+    "C": "鼠尾草绿 45% #8A9A7B, 原木 35% #C4A574, 米白 20% #F4F0E6",
+}
+
+
+def color_palette_line() -> str:
+    """Ratios and hex for the spec card. A missing answer uses palette A."""
+    color = _progress().get("color") if isinstance(_progress().get("color"), dict) else {}
+    selected = color.get("selected") or []
+    key = str(selected[0]).upper()[:1] if selected else ""
+    base = _COLOR_PALETTES.get(key) or _COLOR_PALETTES["A"]
+    other = str(color.get("other") or "").strip()
+    if other:
+        return f"{other}；若未给出比例与色值则使用 {base}"
+    return base
+
+
+def _spec_lock() -> str:
+    return (
+        "GUIDELINE LOCK: one measured grid of seven filled cells, no empty cell. "
+        "Headings exactly: 最小尺寸, 变体, 色彩比例, 字体层级, 版式, 使用禁忌, 影像材质. "
+        f"色彩比例 prints these ratios and hex values and no others: {color_palette_line()}. "
+        "版式 is a filled layout diagram, not an empty cell. "
+        "最小尺寸 states one real minimum size and no other micro-text. "
+        "No garbled labels and no extra captions. Paper ground, not black."
+    )
+
+
 def begin_batch() -> None:
     """A new assistant step assigns slots from what has actually been submitted."""
     _progress()["batch"] = 0
@@ -514,6 +598,8 @@ def record_card_answer(spec: dict, answers: object) -> str | None:
         return None
     progress = _progress()
     if kind == "card1":
+        selected, other = _selected(answers, _Q_COLOR)
+        progress["color"] = {"selected": selected[:1], "other": other}
         if progress["phase"] in {"need_card1", "done"}:
             progress["phase"] = "moodboard"
             progress["mood_inflight"] = False
@@ -611,27 +697,23 @@ _SLOT_LOCK = {
     "logo_a": (
         "STRUCTURE LOCK A: the mark is one open single-line drawing of a bird perched on a branch. "
         "No filled plaque, no circular seal, no cup silhouette. "
-        "The sheet still shows the mark, a construction grid, a horizontal lockup, small sizes, and one reversed dark block. "
-        "The lockup prints BOTH the Chinese brand name and the English brand name from the brief. "
-        "No other English words and no garbled captions. No bottom caption."
+        "The sheet has exactly four labelled zones, in this order: 主组合, 符号构造, 横版, 小尺寸. "
+        "In each zone the Chinese brand name and the English brand name appear together exactly once. "
+        "No other small text. No bottom caption."
     ),
     "logo_b": (
         "STRUCTURE LOCK B: two separate parts, a solid filled wood plaque AND a circular seal. "
         "Not a line-drawing bird standing on a branch. "
-        "The lockup prints BOTH the Chinese brand name and the English brand name. "
-        "No garbled English captions. No bottom caption."
+        "The sheet has exactly four labelled zones, in this order: 主组合, 符号构造, 横版, 小尺寸. "
+        "In each zone the Chinese brand name and the English brand name appear together exactly once. "
+        "No other small text. No garbled English captions. No bottom caption."
     ),
     "logo_c": (
-        "STRUCTURE LOCK C: the mark is a cup-shaped container and the symbol is the cup's negative space. "
-        "Not a bird standing on a branch, not a circular seal, not a wood plaque. "
-        "The lockup prints BOTH the Chinese brand name and the English brand name. "
-        "No garbled English captions. No bottom caption."
-    ),
-    "spec": (
-        "GUIDELINE LOCK: one board with exactly these seven Chinese headings: "
-        "最小尺寸, 变体, 色彩比例, 字体层级, 版式, 使用禁忌, 影像材质. "
-        "Short Chinese words only, plus the brand's own Chinese and English names. "
-        "No invented English such as fake size labels. Paper ground, not black."
+        "STRUCTURE LOCK C: the badge is a cup-shaped container. A perched bird is the negative space inside the cup, "
+        "not a bird standing on a branch outside it. Not a circular seal, not a wood plaque. "
+        "The sheet has exactly four labelled zones, in this order: 主组合, 符号构造, 横版, 小尺寸. "
+        "In each zone the Chinese brand name and the English brand name appear together exactly once. "
+        "No other small text. No garbled English captions. No bottom caption."
     ),
     "cup": (
         "APPLICATION LOCK: takeaway cup wearing a sleeve (杯套). The print is a complete bilingual lockup: "
@@ -643,8 +725,10 @@ _SLOT_LOCK = {
         "Not English only. No garbled captions. Real paper, not a black void."
     ),
     "storefront": (
-        "APPLICATION LOCK: storefront sign with both the Chinese brand name and the English brand name. "
-        "No garbled small type. The sign is on a real facade, not a black field."
+        "APPLICATION LOCK: the full shopfront, front view, the facade filling the frame edge to edge. "
+        "The fascia carries the Chinese brand name and the English brand name once. "
+        "An A-frame standing sign stands on the pavement in front of the entrance. "
+        "Not a hanging-sign close-up. No garbled small type."
     ),
 }
 
@@ -683,7 +767,7 @@ def fill_default(args: dict) -> dict:
     args["brand_opaque"] = True
     args.pop("preset", None)
     args.pop("stage", None)
-    lock = _SLOT_LOCK.get(str(slot["id"]))
+    lock = _spec_lock() if str(slot["id"]) == "spec" else _SLOT_LOCK.get(str(slot["id"]))
     if lock and lock not in str(args.get("prompt") or ""):
         args["prompt"] = (str(args.get("prompt") or "").rstrip() + "\n" + lock).strip()
     refs = _refs_for(slot, progress)
@@ -733,7 +817,7 @@ def record_wait(result: object) -> None:
     for row in result.get("results") or []:
         if not isinstance(row, dict):
             continue
-        slot_id = progress["holders"].get(str(row.get("id") or ""))
+        slot_id = _slot_of_wait_row(row, progress.get("holders") or {})
         if not slot_id:
             continue
         shapes = row.get("shapes") or []
@@ -1509,13 +1593,16 @@ def default_hint() -> str:
         "Then exactly three SEPARATE logo direction boards, brand_slot logo_a then logo_b then logo_c, "
         "each 2048x2048 1:1. logo_a is one open single-line bird on a branch. "
         "logo_b is a filled wood plaque plus a separate circular seal. "
-        "logo_c is a cup-shaped negative-space container, not a bird on a branch. "
-        "Every lockup prints the Chinese brand name and the English brand name. "
+        "logo_c is a cup-shaped badge with a perched bird as the negative space inside the cup. "
+        "Each logo board has four labelled zones: 主组合, 符号构造, 横版, 小尺寸. "
+        "The Chinese name and the English name appear together exactly once in each zone. No other small text. "
         "Pass the moodboard shape id in refs. "
         "Card 3 bi_direction: three options with image_url of those boards, exactly one recommended, nothing preselected. "
         "Then exactly four deliverables, brand_slot spec, cup, bag (each 1536x2048 3:4) and storefront (2048x1152 16:9). "
-        "refs are the chosen logo shape and the moodboard. The spec card has seven Chinese blocks: "
+        "refs are the chosen logo shape and the moodboard. The spec card is one grid of seven filled cells: "
         "最小尺寸, 变体, 色彩比例, 字体层级, 版式, 使用禁忌, 影像材质. "
+        "色彩比例 prints the ratios and hex values from the color answer. 版式 is a filled layout diagram. "
+        "The storefront is the full shopfront, front view, with the names once on the fascia and an A-frame standing sign. "
         "Cup and bag print both the Chinese name and the English name. "
         "Do not emit a separate palette image or a type specimen. "
         "Quote each stage once, before it runs (moodboard, then the three logos, then the four deliverables). "
