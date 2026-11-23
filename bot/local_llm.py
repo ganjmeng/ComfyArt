@@ -814,6 +814,10 @@ _PLAN_GATE_STOP = {
     "zh": "同一个付费调用被已确认的计划拦住了两次，本次运行已停止。没有重新报价，也没有提交。",
     "en": "The same paid call was blocked by the confirmed plan twice, so this run stopped. It was not quoted again and nothing was submitted.",
 }
+_SLOT_ALREADY = {
+    "zh": "这一张已经提交过了，不要再生成。请继续本阶段还没提交的图片。",
+    "en": "This image was already submitted. Do not generate it again. Continue with the images in this stage that have not been submitted.",
+}
 _QUOTE_PLAN_TOOL = {
     "type": "function",
     "function": {
@@ -2544,6 +2548,9 @@ class LocalLlmProvider(AgentProvider):
             if name in PAID_TOOLS and gate.blocks(name, it["args"]):
                 # First block explains why. The same call blocked again stops the run
                 # instead of handing the model another "please quote_plan" result.
+                # A slot already submitted on this or an earlier turn is not a new quote.
+                from ..api.brand_identity import slot_already_submitted
+                already = name == "generate_image" and slot_already_submitted(it["args"])
                 if gate.note_plan_block(name, it["args"]) >= 2:
                     detail = _PLAN_GATE_STOP[lang_key]
                     run = loop.get("run")
@@ -2553,6 +2560,9 @@ class LocalLlmProvider(AgentProvider):
                             StopReason.ERROR, "tool", step=run.budget.used.steps, detail=detail)
                     chunks[i] = await self._emit_result(
                         it, detail, emit=emit, done=done, lang=lang, is_error=True)
+                elif already:
+                    chunks[i] = await self._emit_result(
+                        it, _SLOT_ALREADY[lang_key], emit=emit, done=done, lang=lang, is_error=True)
                 else:
                     chunks[i] = await self._emit_result(
                         it, _PLAN_REFUSE[lang_key], emit=emit, done=done, lang=lang, is_error=True)

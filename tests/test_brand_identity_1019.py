@@ -104,15 +104,17 @@ def test_industry_template_is_unchanged():
 def test_each_slot_prompt_locks_a_different_structure():
     mood = brand.fill_default({"brand_slot": "moodboard", "prompt": "栖木咖啡"})
     assert "3 equal columns and 3 equal rows" in mood["prompt"]
-    labels = ["色调", "色彩", "符号", "字体", "版式", "材质", "外带杯", "门头", "数字"]
+    labels = ["质感", "色彩", "符号", "字标", "版式", "材料", "外带杯", "门头", "数字"]
     positions = [mood["prompt"].index(label) for label in labels]
     assert positions == sorted(positions)
     assert "exactly one Chinese label" in mood["prompt"]
     assert "image that matches that label" in mood["prompt"]
     assert "No empty cell" in mood["prompt"]
     assert "separator" in mood["prompt"] and "｜" in mood["prompt"]
-    for old in ("质感", "字标", "材料"):
-        assert old not in mood["prompt"]
+    assert "full-bleed" in mood["prompt"] and "edge to edge" in mood["prompt"]
+    assert "bottom-left" in mood["prompt"]
+    for wrong in ("色调", "字体", "材质"):
+        assert wrong not in mood["prompt"]
     hint = brand.default_hint()
     hint_at = [hint.index(label) for label in labels]
     assert hint_at == sorted(hint_at)
@@ -120,8 +122,9 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "matching that label" in hint
     assert "No empty cell" in hint
     assert "separator" in hint
-    for old in ("质感", "字标", "材料"):
-        assert old not in hint
+    assert "full-bleed" in hint and "edge to edge" in hint
+    assert "bottom-left" in hint
+    assert "色调" not in hint
     a = brand.fill_default({"brand_slot": "logo_a", "prompt": "方向A"})
     b = brand.fill_default({"brand_slot": "logo_b", "prompt": "方向B"})
     c = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})
@@ -186,6 +189,12 @@ def test_stage_repeat_continues_once_then_blocks_and_a_changed_plan_is_new():
     assert brand._progress()["spent"] == 0.09
     assert brand.spend_before(2) == 0.0
     assert brand.stage_repeat(steps) == "continue"
+    brand.note_brand_submitted(_logo_plan("logo_a")["arguments"])
+    brand.mark_stage_dispatched(steps)
+    assert brand.submitted_slots(2) == {"logo_a"}
+    assert brand.stage_repeat(steps) == "continue"
+    brand.note_brand_submitted(_logo_plan("logo_b")["arguments"])
+    brand.note_brand_submitted(_logo_plan("logo_c")["arguments"])
     brand.mark_stage_dispatched(steps)
     assert brand.stage_repeat(steps) == "done"
     assert brand.stage_repeat([_logo_plan(slot, width=1024) for slot in ("logo_a", "logo_b", "logo_c")]) == "new"
@@ -705,6 +714,48 @@ async def test_short_quote_then_long_generates_submit_once_each(monkeypatch):
         assert all("LONG PROMPT" in args["prompt"] for _name, args in paid)
         assert all(e.t != "tool_result" or "请先调用 quote_plan" not in e.text for e in events)
         assert brand.stage_repeat(_short_logo_steps()) == "done"
+    finally:
+        BOT_CHAT_ID.reset(token)
+
+
+async def test_a_partial_stage_resumes_only_the_unsubmitted_slots(monkeypatch):
+    """One submitted logo must not close the stage. The next turn finishes the other two."""
+    from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
+    from test_agent_budget_391 import calls, reply
+
+    token = BOT_CHAT_ID.set("c")
+    try:
+        _logos_ready()
+
+        def first(messages, n):
+            if n == 0:
+                return calls(("quote_plan", {"steps": _short_logo_steps()}), _long_generate("logo_a"))
+            return reply("好")
+
+        rig, _res, _events, confirms, submits = await _live_brand_run(monkeypatch, first)
+        assert len(confirms) == 1
+        assert submits == []
+        assert [args["brand_slot"] for _name, args in rig.paid_mcp()] == ["logo_a"]
+        assert brand.submitted_slots(2) == {"logo_a"}
+        assert brand.stage_repeat(_short_logo_steps()) == "continue"
+
+        def again(messages, n):
+            if n == 0:
+                return calls(
+                    ("quote_plan", {"steps": _short_logo_steps()}),
+                    _long_generate("logo_a"),
+                    _long_generate("logo_b"),
+                    _long_generate("logo_c"),
+                )
+            return reply("好")
+
+        rig, _res, events, confirms, submits = await _live_brand_run(monkeypatch, again)
+        assert confirms == []
+        assert submits == []
+        assert [args["brand_slot"] for _name, args in rig.paid_mcp()] == ["logo_b", "logo_c"]
+        assert "已经提交过了" in " ".join(_tool_texts(events, "generate_image"))
+        assert brand.stage_repeat(_short_logo_steps()) == "done"
+        assert brand.submitted_slots(2) == {"logo_a", "logo_b", "logo_c"}
     finally:
         BOT_CHAT_ID.reset(token)
 

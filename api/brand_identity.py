@@ -603,7 +603,9 @@ _SLOT_LOCK = {
         "Each cell has exactly one Chinese label and is filled with an image that matches that label. "
         "One label per cell. Never put several labels in one cell, and never join labels with a separator "
         "such as ｜, |, /, 、, or +. No empty cell, no blank cell, no merged cell. "
-        "The nine labels, in this order, are: 色调, 色彩, 符号, 字体, 版式, 材质, 外带杯, 门头, 数字. "
+        "Every cell's content is full-bleed, filling its cell edge to edge: photos and layouts, "
+        "no inner margin and no half-empty cell. The label is a small caption in the cell's bottom-left corner. "
+        "The nine labels, in this order, are: 质感, 色彩, 符号, 字标, 版式, 材料, 外带杯, 门头, 数字. "
         "No English sentences, no lorem, no tiny Latin captions. Warm paper ground, not a black field."
     ),
     "logo_a": (
@@ -1313,8 +1315,8 @@ def stage_repeat(steps: list) -> str:
     """How a later quote relates to the confirmed plan: new, continue, or done.
 
     new: no confirmed fingerprint, or this quote changed tools, model, size, count, or slots.
-    continue: same fingerprint, and its tools have not been dispatched yet.
-    done: same fingerprint, and those tools were already dispatched or completed.
+    continue: same fingerprint, and at least one confirmed slot has not been submitted.
+    done: same fingerprint, and every confirmed slot has been submitted.
     """
     stage = quoted_stage(steps)
     fp = stage_fingerprint(steps)
@@ -1326,7 +1328,11 @@ def stage_repeat(steps: list) -> str:
     saved = tuple(tuple(row) for row in rec["fingerprint"])
     if saved != fp:
         return "new"
-    return "done" if rec.get("dispatched") else "continue"
+    confirmed = {str(row[-1]) for row in saved}
+    submitted = {str(slot) for slot in (rec.get("submitted_slots") or [])}
+    if confirmed and confirmed <= submitted:
+        return "done"
+    return "continue"
 
 
 def remember_stage_plan(steps: list, *, fresh: bool) -> None:
@@ -1349,18 +1355,21 @@ def remember_stage_plan(steps: list, *, fresh: bool) -> None:
         rec["fingerprint"] = fp
         if fresh:
             rec["dispatched"] = False
+            rec["submitted_slots"] = []
 
 
 def mark_stage_dispatched(steps: list) -> None:
-    """The confirmed plan's paid tools were submitted. A repeat must not submit them again."""
+    """Refresh the stage flag from the slots that were actually submitted.
+
+    Submitting one image does not mark the other confirmed slots as submitted.
+    """
     stage = quoted_stage(steps)
     rec = _stage_record(stage) if stage else None
     if rec is None:
         return
-    rec["dispatched"] = True
-    slots = [row[-1] for row in (rec.get("fingerprint") or ()) if row]
-    if slots:
-        rec["submitted_slots"] = list(dict.fromkeys([*(rec.get("submitted_slots") or []), *slots]))
+    confirmed = {str(row[-1]) for row in (rec.get("fingerprint") or ()) if row}
+    submitted = {str(slot) for slot in (rec.get("submitted_slots") or [])}
+    rec["dispatched"] = bool(confirmed) and confirmed <= submitted
 
 
 def note_brand_submitted(args: dict) -> None:
@@ -1386,6 +1395,14 @@ def submitted_slots(stage: int) -> set[str]:
     if rec is None:
         return set()
     return {str(slot) for slot in (rec.get("submitted_slots") or [])}
+
+
+def slot_already_submitted(args: dict) -> bool:
+    """True when this confirmed brand slot was already submitted, including on an earlier turn."""
+    row = brand_gate_row(args)
+    if row is None:
+        return False
+    return str(row[-1]) in submitted_slots(stage_of(row[-1]))
 
 
 _STAGE_DONE = {
@@ -1484,7 +1501,9 @@ def default_hint() -> str:
         "Then exactly one moodboard, brand_slot=moodboard, 2048x1152 16:9, exactly 3 equal columns by 3 equal rows, "
         "nine cells in row order. Each cell has exactly one Chinese label and an image matching that label. "
         "One label per cell. Never join several labels with a separator. No empty cell. "
-        "Labels in order: 色调 色彩 符号 字体 版式 材质 外带杯 门头 数字. "
+        "Every cell's content is full-bleed, filling its cell edge to edge, with no inner margin and no half-empty cell. "
+        "The label is a small caption in the cell's bottom-left corner. "
+        "Labels in order: 质感 色彩 符号 字标 版式 材料 外带杯 门头 数字. "
         "No English captions and no garbled Latin. "
         "Card 2 bi_moodboard confirms that board. Only answer A (or Skip) may continue. B or C returns to the moodboard. "
         "Then exactly three SEPARATE logo direction boards, brand_slot logo_a then logo_b then logo_c, "
