@@ -1240,11 +1240,124 @@ def quoted_stage(steps: list) -> int:
 
 
 def stage_already_quoted(steps: list) -> bool:
-    """True after this stage's quote was confirmed, so a later turn must not open another card."""
+    """True after this stage number was confirmed. A matching plan still needs stage_repeat."""
     stage = quoted_stage(steps)
     if not stage:
         return False
     return int(stage) in (_progress().get("quoted_stages") or {})
+
+
+def _fp_int(value: object, default: int) -> int:
+    try:
+        number = int(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return default
+    return number if number > 0 else default
+
+
+def stage_fingerprint(steps: list) -> tuple:
+    """Identity of one confirmed stage: tool, model, size, count, and prompt-slot id.
+
+    A missing size or model uses the slot default, so a quote that names the slots
+    matches the generate calls fill_default will actually submit. An explicit
+    different model, size, count, or extra slot stays in the fingerprint.
+    """
+    rows = []
+    progress = _progress()
+    for step in steps or []:
+        if not isinstance(step, dict) or step.get("tool") != "generate_image":
+            continue
+        args = step.get("arguments") if isinstance(step.get("arguments"), dict) else {}
+        slot = _BY_ID.get(str(args.get("brand_slot") or ""))
+        if slot is None:
+            continue
+        model = str(args.get("edit_model") or args.get("model") or step.get("model") or "")
+        if not model:
+            model = QWEN_EDIT if (args.get("refs") or args.get("base") or _refs_for(slot, progress)) else QWEN_T2I
+        rows.append((
+            "generate_image",
+            model,
+            _fp_int(args.get("width"), int(slot["width"])),
+            _fp_int(args.get("height"), int(slot["height"])),
+            _fp_int(args.get("count"), 1),
+            str(slot["id"]),
+        ))
+    return tuple(sorted(rows))
+
+
+def _stage_record(stage: int) -> dict | None:
+    rec = (_progress().get("quoted_stages") or {}).get(int(stage or 0))
+    if isinstance(rec, dict):
+        return rec
+    return None
+
+
+def _stage_amount(rec: object) -> float:
+    if isinstance(rec, dict):
+        return float(rec.get("amount") or 0)
+    if rec is None:
+        return 0.0
+    return float(rec)
+
+
+def stage_repeat(steps: list) -> str:
+    """How a later quote relates to the confirmed plan: new, continue, or done.
+
+    new: no confirmed fingerprint, or this quote changed tools, model, size, count, or slots.
+    continue: same fingerprint, and its tools have not been dispatched yet.
+    done: same fingerprint, and those tools were already dispatched or completed.
+    """
+    stage = quoted_stage(steps)
+    fp = stage_fingerprint(steps)
+    if not stage or not fp:
+        return "new"
+    rec = _stage_record(stage)
+    if rec is None or not rec.get("fingerprint"):
+        return "new"
+    saved = tuple(tuple(row) for row in rec["fingerprint"])
+    if saved != fp:
+        return "new"
+    return "done" if rec.get("dispatched") else "continue"
+
+
+def remember_stage_plan(steps: list, *, fresh: bool) -> None:
+    """Store the plan the user just confirmed. A new confirm clears the dispatched flag."""
+    stage = quoted_stage(steps)
+    fp = stage_fingerprint(steps)
+    if not stage or not fp:
+        return
+    progress = _progress()
+    done = progress.setdefault("quoted_stages", {})
+    rec = done.get(int(stage))
+    if not isinstance(rec, dict):
+        rec = {
+            "amount": _stage_amount(rec) if rec is not None else 0.0,
+            "fingerprint": None,
+            "dispatched": False,
+        }
+        done[int(stage)] = rec
+    if fresh or not rec.get("fingerprint"):
+        rec["fingerprint"] = fp
+        if fresh:
+            rec["dispatched"] = False
+
+
+def mark_stage_dispatched(steps: list) -> None:
+    """The confirmed plan's paid tools were submitted. A repeat must not submit them again."""
+    stage = quoted_stage(steps)
+    rec = _stage_record(stage) if stage else None
+    if rec is not None:
+        rec["dispatched"] = True
+
+
+_STAGE_DONE = {
+    "zh": "这一阶段已经确认并提交过了，不要再生成。请进入下一阶段。",
+    "en": "This stage was already confirmed and submitted. Do not generate it again. Continue to the next stage.",
+}
+
+
+def stage_done_text(lang: str) -> str:
+    return _STAGE_DONE["zh" if lang == "zh" else "en"]
 
 
 def spend_before(stage: int) -> float:
@@ -1254,7 +1367,7 @@ def spend_before(stage: int) -> float:
     already = (progress.get("quoted_stages") or {}).get(int(stage or 0))
     if already is None:
         return spent
-    return round(max(0.0, spent - float(already)), 4)
+    return round(max(0.0, spent - _stage_amount(already)), 4)
 
 
 def note_confirmed(total_usd: float, units: int = 0, stage: int = 0) -> None:
@@ -1265,10 +1378,14 @@ def note_confirmed(total_usd: float, units: int = 0, stage: int = 0) -> None:
     amount = float(total_usd or 0)
     if key and key in done:
         progress["spent"] = round(spend_before(key) + amount, 4)
-        done[key] = amount
+        rec = done[key]
+        if isinstance(rec, dict):
+            rec["amount"] = amount
+        else:
+            done[key] = {"amount": amount, "fingerprint": None, "dispatched": False}
         return
     if key:
-        done[key] = amount
+        done[key] = {"amount": amount, "fingerprint": None, "dispatched": False}
     progress["spent"] = round(float(progress.get("spent") or 0) + amount, 4)
     if units <= 0:
         return

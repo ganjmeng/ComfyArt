@@ -132,6 +132,53 @@ def test_a_second_confirm_of_the_same_stage_does_not_double_the_total():
     assert brand.spend_before(2) == 0.0
 
 
+def _logo_plan(slot: str, **over):
+    args = {
+        "skill": brand.SKILL,
+        "brand_slot": slot,
+        "width": 2048,
+        "height": 2048,
+        "count": 1,
+        "edit_model": brand.QWEN_EDIT,
+        "prompt": slot,
+    }
+    args.update(over)
+    return {
+        "tool": "generate_image",
+        "model": str(args.get("edit_model") or args.get("model") or ""),
+        "arguments": args,
+    }
+
+
+def _three_logos():
+    return [_logo_plan(slot) for slot in ("logo_a", "logo_b", "logo_c")]
+
+
+def test_stage_repeat_continues_once_then_blocks_and_a_changed_plan_is_new():
+    """Fingerprint is tool, model, size, count, and slot. Prompt wording is not part of it."""
+    steps = _three_logos()
+    assert brand.stage_repeat(steps) == "new"
+    brand.note_confirmed(0.09, 3, stage=2)
+    brand.remember_stage_plan(steps, fresh=True)
+    assert brand.stage_repeat(steps) == "continue"
+    reworded = [_logo_plan(slot, prompt="entirely different prompt") for slot in ("logo_a", "logo_b", "logo_c")]
+    assert brand.stage_fingerprint(reworded) == brand.stage_fingerprint(steps)
+    assert brand.stage_repeat(reworded) == "continue"
+    # A repeat confirm replaces the amount and keeps the unsubmitted plan.
+    brand.note_confirmed(0.09, 3, stage=2)
+    assert brand._progress()["spent"] == 0.09
+    assert brand.spend_before(2) == 0.0
+    assert brand.stage_repeat(steps) == "continue"
+    brand.mark_stage_dispatched(steps)
+    assert brand.stage_repeat(steps) == "done"
+    assert brand.stage_repeat([_logo_plan(slot, width=1024) for slot in ("logo_a", "logo_b", "logo_c")]) == "new"
+    assert brand.stage_repeat([_logo_plan(slot, edit_model="other-model") for slot in ("logo_a", "logo_b", "logo_c")]) == "new"
+    assert brand.stage_repeat([_logo_plan(slot, count=2) for slot in ("logo_a", "logo_b", "logo_c")]) == "new"
+    assert brand.stage_repeat(_three_logos() + [_logo_plan("logo_a")]) == "new"
+    assert "下一阶段" in brand.stage_done_text("zh")
+    assert "next stage" in brand.stage_done_text("en")
+
+
 def test_rows_center_the_logos_between_moodboard_and_deliverables():
     mood = brand.slot_origin("moodboard")
     a, b, c = (brand.slot_origin(s) for s in ("logo_a", "logo_b", "logo_c"))
@@ -377,49 +424,169 @@ def _logos_ready():
     }]}, {"bi_moodboard": {"selected": ["A"]}})
 
 
-async def test_a_repeat_of_a_confirmed_stage_does_not_open_another_card(monkeypatch):
-    from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
+def _logo_calls():
+    return tuple(
+        ("generate_image", {"prompt": slot, "skill": brand.SKILL, "brand_slot": slot})
+        for slot in ("logo_a", "logo_b", "logo_c")
+    )
+
+
+async def _brand_turn(monkeypatch, script):
+    """One scripted turn. Pricing and MCP are local; WaveSpeed submit is counted and refused."""
+    from ComfyArt.api import wavespeed
     from ComfyArt.bot.providers import TurnHandle
     from ComfyArt.bot.run_budget import resolve_policy
-    from test_agent_budget_391 import Rig, calls, reply
+    from test_agent_budget_391 import Rig
+
+    submits: list = []
+
+    async def submit(*_args, **_kwargs):
+        submits.append(1)
+        raise AssertionError("wavespeed.submit must not run in this test")
+
+    monkeypatch.setattr(wavespeed, "submit", submit)
+    confirms: list = []
+    rig = Rig(monkeypatch, script)
+    monkeypatch.setattr(rig.p, "_run_policy", lambda: resolve_policy(env={"COMFYART_AGENT_BUDGET_LOOP": "0"}))
+
+    async def price(model, inputs):
+        return (0.03, "quote", "test-stage")
+
+    monkeypatch.setattr(rig.p, "_price_one", price)
+
+    async def models_for(feature):
+        return []
+
+    monkeypatch.setattr(rig.p, "_models_for", models_for)
+
+    async def yes(spec, turn, handle, **kwargs):
+        confirms.append(spec)
+        return "start"
+
+    monkeypatch.setattr(rig.p, "_confirm_plan", yes)
+    _res, events = await rig.send("做三个方向", goal="", handle=TurnHandle())
+    return rig, events, confirms, submits
+
+
+def _tool_texts(events, name):
+    return [e.text for e in events if e.t == "tool_result" and e.name == name]
+
+
+async def test_a_repeat_of_a_confirmed_stage_does_not_open_another_card(monkeypatch):
+    from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
+    from test_agent_budget_391 import calls, reply
 
     token = BOT_CHAT_ID.set("c")
     try:
         _logos_ready()
 
-        def script(messages, n):
+        def first_script(messages, n):
             if n == 0:
-                return calls(*(
-                    ("generate_image", {"prompt": slot, "skill": brand.SKILL, "brand_slot": slot})
-                    for slot in ("logo_a", "logo_b", "logo_c")
-                ))
+                return calls(*_logo_calls())
             return reply("好")
 
-        async def once(confirms):
-            rig = Rig(monkeypatch, script)
-            monkeypatch.setattr(rig.p, "_run_policy", lambda: resolve_policy(env={"COMFYART_AGENT_BUDGET_LOOP": "0"}))
-
-            async def price(model, inputs):
-                return (0.03, "quote", "test-stage")
-
-            monkeypatch.setattr(rig.p, "_price_one", price)
-
-            async def yes(spec, turn, handle, **kwargs):
-                confirms.append(1)
-                return "start"
-
-            monkeypatch.setattr(rig.p, "_confirm_plan", yes)
-            await rig.send("做三个方向", goal="", handle=TurnHandle())
-            return rig
-
-        first = []
-        await once(first)
-        assert first == [1]
-        assert brand._progress()["spent"] == 0.09
-        again = []
-        rig = await once(again)
-        assert again == []
+        rig, _events, confirms, submits = await _brand_turn(monkeypatch, first_script)
+        assert len(confirms) == 1
         assert len(rig.paid_mcp()) == 3
+        assert submits == []
         assert brand._progress()["spent"] == 0.09
+        assert brand.stage_repeat(_three_logos()) == "done"
+
+        def again_script(messages, n):
+            if n == 0:
+                return calls(("quote_plan", {"steps": _three_logos()}), *_logo_calls())
+            return reply("好")
+
+        rig, events, confirms, submits = await _brand_turn(monkeypatch, again_script)
+        assert confirms == []
+        assert rig.paid_mcp() == []
+        assert submits == []
+        texts = _tool_texts(events, "quote_plan") + _tool_texts(events, "generate_image")
+        assert len(texts) == 4
+        assert all("下一阶段" in text for text in texts)
+        assert brand._progress()["spent"] == 0.09
+    finally:
+        BOT_CHAT_ID.reset(token)
+
+
+async def test_identical_quote_dispatches_once_before_it_is_marked_done(monkeypatch):
+    from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
+    from test_agent_budget_391 import calls, reply
+
+    token = BOT_CHAT_ID.set("c")
+    try:
+        _logos_ready()
+
+        def quote_only(messages, n):
+            if n == 0:
+                return calls(("quote_plan", {"steps": _three_logos()}))
+            return reply("好")
+
+        rig, _events, confirms, submits = await _brand_turn(monkeypatch, quote_only)
+        assert len(confirms) == 1
+        assert rig.paid_mcp() == []
+        assert submits == []
+        assert brand.stage_repeat(_three_logos()) == "continue"
+        assert brand._progress()["spent"] == 0.09
+
+        def generate(messages, n):
+            if n == 0:
+                return calls(*_logo_calls())
+            return reply("好")
+
+        rig, _events, confirms, submits = await _brand_turn(monkeypatch, generate)
+        assert confirms == []
+        assert len(rig.paid_mcp()) == 3
+        assert submits == []
+        assert brand.stage_repeat(_three_logos()) == "done"
+
+        rig, events, confirms, submits = await _brand_turn(monkeypatch, generate)
+        assert confirms == []
+        assert rig.paid_mcp() == []
+        assert submits == []
+        texts = _tool_texts(events, "generate_image")
+        assert len(texts) == 3 and all("下一阶段" in text for text in texts)
+        assert brand._progress()["spent"] == 0.09
+    finally:
+        BOT_CHAT_ID.reset(token)
+
+
+async def test_a_changed_fingerprint_asks_again_using_spend_before(monkeypatch):
+    from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
+    from test_agent_budget_391 import calls, reply
+
+    token = BOT_CHAT_ID.set("c")
+    try:
+        _logos_ready()
+
+        def first_script(messages, n):
+            if n == 0:
+                return calls(*_logo_calls())
+            return reply("好")
+
+        await _brand_turn(monkeypatch, first_script)
+        assert brand._progress()["spent"] == 0.09
+
+        changed = [
+            _logo_plan(slot, width=1024, height=1024, edit_model="other-model")
+            for slot in ("logo_a", "logo_b", "logo_c")
+        ] + [_logo_plan("logo_a", width=1024, height=1024, edit_model="other-model")]
+        assert brand.stage_repeat(changed) == "new"
+
+        def replan(messages, n):
+            if n == 0:
+                return calls(("quote_plan", {"steps": changed}))
+            return reply("好")
+
+        _rig, _events, confirms, submits = await _brand_turn(monkeypatch, replan)
+        assert len(confirms) == 1
+        assert submits == []
+        prompt = confirms[0]["prompt"]
+        # 4 x $0.03 = $0.12 = 12 credits. spend_before removes the previous $0.09,
+        # so the card is 12, not 0.09 + 0.12 = 21.
+        assert "累计 12" in prompt
+        assert "21" not in prompt
+        assert brand._progress()["spent"] == 0.12
+        assert brand.spend_before(2) == 0.0
     finally:
         BOT_CHAT_ID.reset(token)

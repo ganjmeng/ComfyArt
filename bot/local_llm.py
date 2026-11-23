@@ -2368,6 +2368,8 @@ class LocalLlmProvider(AgentProvider):
         decision = ""
         quote = None
         quote_error = ""
+        brand_steps: list = []
+        repeat = "new"
         # #418: a single paid call is quoted too (build_quote returns None under the confirm line,
         # so cheap calls run as before). Not after a strict 开始: there the gate refuses unquoted calls.
         single = quote_item is None and len(paid) == 1
@@ -2379,6 +2381,7 @@ class LocalLlmProvider(AgentProvider):
             from ..api.brand_identity import annotate_quote_steps
             steps = annotate_quote_steps(
                 steps, [it["args"] for it in paid if it["name"] == "generate_image"])
+            brand_steps = steps if isinstance(steps, list) else []
             try:
                 quote = await self._quote_steps(steps, lang)
             except Exception as e:
@@ -2386,12 +2389,15 @@ class LocalLlmProvider(AgentProvider):
                 quote_error = f"[error] {type(e).__name__}: {e}"
                 decision = "error"
             else:
-                from ..api.brand_identity import stage_already_quoted
-                # The user already confirmed this stage. Do not open a second quote card.
-                already = stage_already_quoted(steps if isinstance(steps, list) else [])
+                from ..api.brand_identity import stage_repeat
+                # Same confirmed plan: no second card. A changed plan asks again.
+                # An already-submitted plan does not dispatch.
+                repeat = stage_repeat(brand_steps)
                 if quote is None:
                     decision = "passthrough"
-                elif already:
+                elif repeat == "done":
+                    decision = "done"
+                elif repeat == "continue":
                     gate.allow(quote, not single)
                     decision = "start"
                 elif not quote.ask:
@@ -2428,9 +2434,15 @@ class LocalLlmProvider(AgentProvider):
                                                     Stop(StopReason.AWAITING_CONFIRM, "not_approved", step=step))
 
         if quote is not None and decision == "start":
-            from ..api.brand_identity import note_confirmed, quoted_stage, steps_are_brand_stage
-            if steps_are_brand_stage(steps if isinstance(steps, list) else []):
-                note_confirmed(quote.total, quote.units, stage=quoted_stage(steps if isinstance(steps, list) else []))
+            from ..api.brand_identity import (
+                note_confirmed, quoted_stage, remember_stage_plan, steps_are_brand_stage,
+            )
+            if steps_are_brand_stage(brand_steps):
+                note_confirmed(quote.total, quote.units, stage=quoted_stage(brand_steps))
+                # continue keeps the fingerprint and the not-yet-dispatched flag.
+                # A human confirm of a new or changed plan replaces both.
+                if repeat != "continue":
+                    remember_stage_plan(brand_steps, fresh=True)
             # #909: no whole-group count in the user's message -> the plan the card
             # showed sets the paid-guard cap (an explicit "做 3 张" still wins).
             from ..api import paid_guard
@@ -2449,6 +2461,10 @@ class LocalLlmProvider(AgentProvider):
                     text = quote.cancel_text if quote else CANCEL_TEXT[lang_key]
                     chunks[i] = await self._emit_result(
                         it, text, emit=emit, done=done, lang=lang, detail="cancelled")
+                elif decision == "done":
+                    from ..api.brand_identity import stage_done_text
+                    chunks[i] = await self._emit_result(
+                        it, stage_done_text(lang), emit=emit, done=done, lang=lang)
                 else:
                     text = quote.started_result() if quote else json.dumps({"ok": True, "start": True})
                     chunks[i] = await self._emit_result(it, text, emit=emit, done=done, lang=lang)
@@ -2462,6 +2478,12 @@ class LocalLlmProvider(AgentProvider):
                 continue
             if name in PAID_TOOLS and decision == "cancel":
                 continue  # do not emit a paid row: the user stopped before anything ran
+            if name in PAID_TOOLS and decision == "done":
+                # This exact plan was already submitted. Do not call WaveSpeed again.
+                from ..api.brand_identity import stage_done_text
+                chunks[i] = await self._emit_result(
+                    it, stage_done_text(lang), emit=emit, done=done, lang=lang)
+                continue
             if name in PAID_TOOLS and handle.stop_requested:
                 continue  # #419: stopped before this step was submitted: skip it, no row, no charge, no placeholder
             if name in PAID_TOOLS and gate.blocks(name, it["args"]):
@@ -2484,6 +2506,10 @@ class LocalLlmProvider(AgentProvider):
                         bound.get("skill"), str(bound.get("preset") or "")):
                     run_for_plan.single_image_gens = int(getattr(run_for_plan, "single_image_gens", 0) or 0) + 1
             await run_mcp(i)
+
+        if decision == "start" and any(parsed[i]["name"] in PAID_TOOLS for i in ran):
+            from ..api.brand_identity import mark_stage_dispatched
+            mark_stage_dispatched(brand_steps)
 
         for ch in chunks:
             if ch:
