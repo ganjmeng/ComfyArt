@@ -2422,9 +2422,9 @@ class LocalLlmProvider(AgentProvider):
                                                     Stop(StopReason.AWAITING_CONFIRM, "not_approved", step=step))
 
         if quote is not None and decision == "start":
-            from ..api.brand_identity import note_confirmed, steps_are_brand_stage
+            from ..api.brand_identity import note_confirmed, quoted_stage, steps_are_brand_stage
             if steps_are_brand_stage(steps if isinstance(steps, list) else []):
-                note_confirmed(quote.total, quote.units)
+                note_confirmed(quote.total, quote.units, stage=quoted_stage(steps if isinstance(steps, list) else []))
             # #909: no whole-group count in the user's message -> the plan the card
             # showed sets the paid-guard cap (an explicit "做 3 张" still wins).
             from ..api import paid_guard

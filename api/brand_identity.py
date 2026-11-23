@@ -587,6 +587,54 @@ def _refs_for(slot: dict, progress: dict) -> list[str]:
     return []
 
 
+# Appended to the image prompt. The three logos must not share one bird-on-a-branch drawing.
+_SLOT_LOCK = {
+    "moodboard": (
+        "LAYOUT LOCK: exactly 3 equal columns and 3 equal rows, nine filled cells, no blank cell, no merged cell. "
+        "One short Chinese label per cell, in this order: 质感, 色彩, 符号, 字标, 版式, 材料, 外带杯, 门头, 数字. "
+        "No English sentences, no lorem, no tiny Latin captions. Warm paper ground, not a black field."
+    ),
+    "logo_a": (
+        "STRUCTURE LOCK A: the mark is one open single-line drawing of a bird perched on a branch. "
+        "No filled plaque, no circular seal, no cup silhouette. "
+        "The sheet still shows the mark, a construction grid, a horizontal lockup, small sizes, and one reversed dark block. "
+        "The lockup prints BOTH the Chinese brand name and the English brand name from the brief. "
+        "No other English words and no garbled captions."
+    ),
+    "logo_b": (
+        "STRUCTURE LOCK B: two separate parts, a solid filled wood plaque AND a circular seal. "
+        "Not a line-drawing bird standing on a branch. "
+        "The lockup prints BOTH the Chinese brand name and the English brand name. "
+        "No garbled English captions."
+    ),
+    "logo_c": (
+        "STRUCTURE LOCK C: the mark is a cup-shaped container and the symbol is the cup's negative space. "
+        "Not a bird standing on a branch, not a circular seal, not a wood plaque. "
+        "The lockup prints BOTH the Chinese brand name and the English brand name. "
+        "No garbled English captions."
+    ),
+    "spec": (
+        "GUIDELINE LOCK: one board with exactly these seven Chinese headings: "
+        "最小尺寸, 变体, 色彩比例, 字体层级, 版式, 使用禁忌, 影像材质. "
+        "Short Chinese words only, plus the brand's own Chinese and English names. "
+        "No invented English such as fake size labels. Paper ground, not black."
+    ),
+    "cup": (
+        "APPLICATION LOCK: takeaway cup and sleeve. The print is a complete bilingual lockup: "
+        "the Chinese brand name AND the English brand name, both readable. Do not print the English name alone. "
+        "No extra English captions. A real cup on a light ground, not a black void."
+    ),
+    "bag": (
+        "APPLICATION LOCK: paper bag. Complete bilingual lockup, Chinese name and English name both readable. "
+        "Not English only. No garbled captions. Real paper, not a black void."
+    ),
+    "storefront": (
+        "APPLICATION LOCK: storefront sign with both the Chinese brand name and the English brand name. "
+        "No garbled small type. The sign is on a real facade, not a black field."
+    ),
+}
+
+
 def fill_default(args: dict) -> dict:
     """Size, slot and refs for one default-path generate. Idempotent when brand_slot is already set.
 
@@ -621,6 +669,9 @@ def fill_default(args: dict) -> dict:
     args["brand_opaque"] = True
     args.pop("preset", None)
     args.pop("stage", None)
+    lock = _SLOT_LOCK.get(str(slot["id"]))
+    if lock and lock not in str(args.get("prompt") or ""):
+        args["prompt"] = (str(args.get("prompt") or "").rstrip() + "\n" + lock).strip()
     refs = _refs_for(slot, progress)
     if refs:
         # The moodboard / chosen logo lead. A caller-supplied ref stays behind them.
@@ -1165,10 +1216,43 @@ def cumulative_line(total_usd: float, lang: str) -> str:
     return f"This stage is {stage} credits. Cumulative {cum} credits, including this stage."
 
 
-def note_confirmed(total_usd: float, units: int = 0) -> None:
-    """Record the stage price and let this stage run on top of images already made."""
+def quoted_stage(steps: list) -> int:
+    """The single brand stage in a quote, or 0 when the steps are not one stage."""
+    stages = []
+    for step in steps or []:
+        if not isinstance(step, dict) or step.get("tool") != "generate_image":
+            continue
+        args = step.get("arguments") if isinstance(step.get("arguments"), dict) else {}
+        stage = stage_of(args.get("brand_slot"))
+        if stage:
+            stages.append(stage)
+    unique = set(stages)
+    return stages[0] if len(unique) == 1 else 0
+
+
+def spend_before(stage: int) -> float:
+    """Spent total with this stage's previous confirmation removed, so a repeat card does not double it."""
     progress = _progress()
-    progress["spent"] = round(float(progress.get("spent") or 0) + float(total_usd or 0), 4)
+    spent = float(progress.get("spent") or 0)
+    already = (progress.get("quoted_stages") or {}).get(int(stage or 0))
+    if already is None:
+        return spent
+    return round(max(0.0, spent - float(already)), 4)
+
+
+def note_confirmed(total_usd: float, units: int = 0, stage: int = 0) -> None:
+    """Record the stage price once. A second confirm of the same stage replaces it and does not add."""
+    progress = _progress()
+    done = progress.setdefault("quoted_stages", {})
+    key = int(stage or 0)
+    amount = float(total_usd or 0)
+    if key and key in done:
+        progress["spent"] = round(spend_before(key) + amount, 4)
+        done[key] = amount
+        return
+    if key:
+        done[key] = amount
+    progress["spent"] = round(float(progress.get("spent") or 0) + amount, 4)
     if units <= 0:
         return
     try:
@@ -1225,19 +1309,24 @@ def default_hint() -> str:
         "NOT the 3+1 logo-system template. Three ask_user cards, then eight images, count=1 each. "
         "Card 1 before any image: one ask_user, questions bi_delivery (multi), bi_color, bi_mark, bi_source, "
         "pages 1-4, page_count 4, allow_skip true, allow_other true, no defaults and no recommended. "
-        "Then exactly one moodboard, brand_slot=moodboard, 2048x1152 16:9, a 3x3 nine-grid "
-        "(tone, color, perch symbol, bilingual wordmark, layout margins, handmade material, takeaway cup, "
-        "storefront, social extension). "
+        "Then exactly one moodboard, brand_slot=moodboard, 2048x1152 16:9, exactly 3 equal columns by 3 equal rows, "
+        "no empty cell. Chinese labels only, in order: 质感 色彩 符号 字标 版式 材料 外带杯 门头 数字. "
+        "No English captions and no garbled Latin. "
         "Card 2 bi_moodboard confirms that board. Only answer A (or Skip) may continue. B or C returns to the moodboard. "
         "Then exactly three SEPARATE logo direction boards, brand_slot logo_a then logo_b then logo_c, "
-        "each 2048x2048 1:1, each a direction sheet (primary mark, construction grid, horizontal lockup, small and reversed). "
-        "Pass the moodboard shape id in refs. Different shape language on each board. "
+        "each 2048x2048 1:1. logo_a is one open single-line bird on a branch. "
+        "logo_b is a filled wood plaque plus a separate circular seal. "
+        "logo_c is a cup-shaped negative-space container, not a bird on a branch. "
+        "Every lockup prints the Chinese brand name and the English brand name. "
+        "Pass the moodboard shape id in refs. "
         "Card 3 bi_direction: three options with image_url of those boards, exactly one recommended, nothing preselected. "
         "Then exactly four deliverables, brand_slot spec, cup, bag (each 1536x2048 3:4) and storefront (2048x1152 16:9). "
-        "refs are the chosen logo shape and the moodboard. Palette and type live only on the spec card. "
+        "refs are the chosen logo shape and the moodboard. The spec card has seven Chinese blocks: "
+        "最小尺寸, 变体, 色彩比例, 字体层级, 版式, 使用禁忌, 影像材质. "
+        "Cup and bag print both the Chinese name and the English name. "
         "Do not emit a separate palette image or a type specimen. "
-        "Quote each stage on its own before it runs (moodboard, then the three logos, then the four deliverables); "
-        "do not quote all eight on one card. "
+        "Quote each stage once, before it runs (moodboard, then the three logos, then the four deliverables). "
+        "Do not send a second quote card for a stage that was already confirmed, and do not quote all eight on one card. "
         "The closing message has three parts: a delivery list, an honest-limits paragraph that includes "
         "矢量替换 and 色值为屏幕估算 (vector replacement and screen-estimated color), and a next-step suggestion. "
         "Send that closing only after wait_generation reports the four deliverables placed. "

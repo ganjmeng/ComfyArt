@@ -725,14 +725,10 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         gap = "" if lang == "zh" else " "  # en: "…lower. Start?", never "…lower.Start?"
         prompt = prompt.replace(question, f"{LIST_PRICE_EXPLAIN[lang]}{gap}{question}")
     if brand_stage and not any_unpriced:
-        from ..api.brand_identity import brand_prompt
+        from ..api.brand_identity import brand_prompt, quoted_stage, spend_before
         from .run_budget import ui_credits as _ui_credits
-        prev = 0.0
-        try:
-            from ..api.brand_identity import _progress
-            prev = float(_progress().get("spent") or 0)
-        except Exception:
-            prev = 0.0
+        stage = quoted_stage(prepared)
+        prev = spend_before(stage) if stage else 0.0
         stage_credits = 0 if all_unpriced else _ui_credits(total)
         cum_credits = 0 if all_unpriced else _ui_credits(prev + total)
         under = total < float(threshold)

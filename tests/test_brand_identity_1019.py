@@ -101,6 +101,35 @@ def test_industry_template_is_unchanged():
     assert "brand_slot" not in args
 
 
+def test_each_slot_prompt_locks_a_different_structure():
+    mood = brand.fill_default({"brand_slot": "moodboard", "prompt": "栖木咖啡"})
+    assert "3 equal columns and 3 equal rows" in mood["prompt"]
+    assert "质感" in mood["prompt"] and "数字" in mood["prompt"]
+    a = brand.fill_default({"brand_slot": "logo_a", "prompt": "方向A"})
+    b = brand.fill_default({"brand_slot": "logo_b", "prompt": "方向B"})
+    c = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})
+    assert "STRUCTURE LOCK A" in a["prompt"] and "single-line" in a["prompt"]
+    assert "STRUCTURE LOCK B" in b["prompt"] and "circular seal" in b["prompt"]
+    assert "STRUCTURE LOCK C" in c["prompt"] and "cup-shaped" in c["prompt"]
+    assert "single-line" not in b["prompt"]
+    assert "bird standing on a branch" in c["prompt"]
+    spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})
+    cup = brand.fill_default({"brand_slot": "cup", "prompt": "杯"})
+    assert "使用禁忌" in spec["prompt"] and "最小尺寸" in spec["prompt"]
+    assert "Chinese brand name AND the English brand name" in cup["prompt"]
+    again = brand.fill_default({"brand_slot": "logo_a", "prompt": a["prompt"]})
+    assert again["prompt"].count("STRUCTURE LOCK A") == 1
+
+
+def test_a_second_confirm_of_the_same_stage_does_not_double_the_total():
+    brand.reset_for_tests()
+    steps = [{"tool": "generate_image", "arguments": {"brand_slot": "logo_a"}}]
+    brand.note_confirmed(0.2, 3, stage=brand.quoted_stage(steps))
+    brand.note_confirmed(0.2, 3, stage=2)
+    assert brand._progress()["spent"] == 0.2
+    assert brand.spend_before(2) == 0.0
+
+
 def test_rows_center_the_logos_between_moodboard_and_deliverables():
     mood = brand.slot_origin("moodboard")
     a, b, c = (brand.slot_origin(s) for s in ("logo_a", "logo_b", "logo_c"))
