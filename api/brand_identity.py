@@ -599,8 +599,11 @@ def _refs_for(slot: dict, progress: dict) -> list[str]:
 # Appended to the image prompt. The three logos must not share one bird-on-a-branch drawing.
 _SLOT_LOCK = {
     "moodboard": (
-        "LAYOUT LOCK: exactly 3 equal columns and 3 equal rows, nine filled cells, no blank cell, no merged cell. "
-        "One short Chinese label per cell, in this order: 质感, 色彩, 符号, 字标, 版式, 材料, 外带杯, 门头, 数字. "
+        "LAYOUT LOCK: exactly 3 equal columns and 3 equal rows, nine cells in row order from the top left. "
+        "Each cell has exactly one Chinese label and is filled with an image that matches that label. "
+        "One label per cell. Never put several labels in one cell, and never join labels with a separator "
+        "such as ｜, |, /, 、, or +. No empty cell, no blank cell, no merged cell. "
+        "The nine labels, in this order, are: 色调, 色彩, 符号, 字体, 版式, 材质, 外带杯, 门头, 数字. "
         "No English sentences, no lorem, no tiny Latin captions. Warm paper ground, not a black field."
     ),
     "logo_a": (
@@ -1255,6 +1258,12 @@ def _fp_int(value: object, default: int) -> int:
     return number if number > 0 else default
 
 
+def brand_gate_row(args: dict) -> tuple | None:
+    """One confirmed generate, ignoring prompt text: tool, model, size, count, slot."""
+    rows = stage_fingerprint([{"tool": "generate_image", "arguments": args or {}}])
+    return rows[0] if rows else None
+
+
 def stage_fingerprint(steps: list) -> tuple:
     """Identity of one confirmed stage: tool, model, size, count, and prompt-slot id.
 
@@ -1346,8 +1355,37 @@ def mark_stage_dispatched(steps: list) -> None:
     """The confirmed plan's paid tools were submitted. A repeat must not submit them again."""
     stage = quoted_stage(steps)
     rec = _stage_record(stage) if stage else None
-    if rec is not None:
+    if rec is None:
+        return
+    rec["dispatched"] = True
+    slots = [row[-1] for row in (rec.get("fingerprint") or ()) if row]
+    if slots:
+        rec["submitted_slots"] = list(dict.fromkeys([*(rec.get("submitted_slots") or []), *slots]))
+
+
+def note_brand_submitted(args: dict) -> None:
+    """One confirmed slot was submitted. The stage is done only after every confirmed slot is."""
+    row = brand_gate_row(args)
+    if row is None:
+        return
+    slot = str(row[-1])
+    rec = _stage_record(stage_of(slot))
+    if rec is None:
+        return
+    done = list(rec.get("submitted_slots") or [])
+    if slot not in done:
+        done.append(slot)
+    rec["submitted_slots"] = done
+    confirmed = {str(item[-1]) for item in (rec.get("fingerprint") or ()) if item}
+    if confirmed and confirmed <= set(done):
         rec["dispatched"] = True
+
+
+def submitted_slots(stage: int) -> set[str]:
+    rec = _stage_record(stage)
+    if rec is None:
+        return set()
+    return {str(slot) for slot in (rec.get("submitted_slots") or [])}
 
 
 _STAGE_DONE = {
@@ -1444,7 +1482,9 @@ def default_hint() -> str:
         "Card 1 before any image: one ask_user, questions bi_delivery (multi), bi_color, bi_mark, bi_source, "
         "pages 1-4, page_count 4, allow_skip true, allow_other true, no defaults and no recommended. "
         "Then exactly one moodboard, brand_slot=moodboard, 2048x1152 16:9, exactly 3 equal columns by 3 equal rows, "
-        "no empty cell. Chinese labels only, in order: 质感 色彩 符号 字标 版式 材料 外带杯 门头 数字. "
+        "nine cells in row order. Each cell has exactly one Chinese label and an image matching that label. "
+        "One label per cell. Never join several labels with a separator. No empty cell. "
+        "Labels in order: 色调 色彩 符号 字体 版式 材质 外带杯 门头 数字. "
         "No English captions and no garbled Latin. "
         "Card 2 bi_moodboard confirms that board. Only answer A (or Skip) may continue. B or C returns to the moodboard. "
         "Then exactly three SEPARATE logo direction boards, brand_slot logo_a then logo_b then logo_c, "

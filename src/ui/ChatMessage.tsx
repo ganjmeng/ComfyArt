@@ -922,6 +922,12 @@ function Plan({ b, live }: { b: BotBlock; live: boolean }) {
   )
 }
 
+/** Visible sentence for a failed generate row. The plan gate and model failures both land here. */
+function toolErrorLine(result?: BotBlock): string {
+  const raw = (result?.text ?? '').trim().replace(/^\[(?:tool error|error)\]\s*/i, '').trim()
+  return raw.length > 400 ? `${raw.slice(0, 400)}…` : raw
+}
+
 type ProcessStep = {
   key: string
   kind: ProcessKind
@@ -931,6 +937,8 @@ type ProcessStep = {
   title?: string
   /** #421: generation (or linked wait) failed — row reads as failed, not done. */
   error?: boolean
+  /** Plan-gate and model failures: the tool result sentence, not only the word Failed. */
+  errorText?: string
   /** #437: the search source's real favicon, shown before the page count. */
   favicon?: string
   text?: string
@@ -1057,6 +1065,7 @@ function ProcessTimeline({ steps: rawSteps }: { steps: ProcessStep[] }) {
             </div>
             {card}
             {memDetail}
+            {s.errorText ? <div className="ca-process__errtext" data-testid="process-row-error">{s.errorText}</div> : null}
             </div>
           )
         })}
@@ -1356,6 +1365,7 @@ export function AssistantBlocks({ editor, m, dockAsks }: { editor: Editor; m: Bo
         }
         const genFailed = ownState === 'error' || waitFailed
         const genCancelled = ownState === 'cancelled'
+        const errorText = genFailed ? toolErrorLine(result) : ''
         proc.push({
           key: `p${i}`,
           kind: kindResolved,
@@ -1377,6 +1387,7 @@ export function AssistantBlocks({ editor, m, dockAsks }: { editor: Editor; m: Bo
             }),
           live: stepLive,
           error: genFailed || undefined,
+          errorText: errorText || undefined,
           text: b.type === 'thinking' ? b.text : undefined,
           title: modelTitle,
           aspectRatio,

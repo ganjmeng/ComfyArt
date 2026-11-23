@@ -809,6 +809,11 @@ _PLAN_REFUSE = {
     "zh": "[tool error] 这是多步付费任务。请先调用 quote_plan 列出每一个付费步骤，用户确认后再调用付费工具。这次调用没有执行。",
     "en": "[tool error] This is a multi-step paid task. Call quote_plan with every paid step and wait for the user before any paid tool. This call did not run.",
 }
+# The second block of the same paid call stops the run. It must not ask the model to quote again.
+_PLAN_GATE_STOP = {
+    "zh": "同一个付费调用被已确认的计划拦住了两次，本次运行已停止。没有重新报价，也没有提交。",
+    "en": "The same paid call was blocked by the confirmed plan twice, so this run stopped. It was not quoted again and nothing was submitted.",
+}
 _QUOTE_PLAN_TOOL = {
     "type": "function",
     "function": {
@@ -1467,13 +1472,39 @@ class _PlanGate:
         self.strict = False
         self.keys: set[tuple] = set()
         self.chat_id = chat_id
+        # Brand stages match slot/model/size/count, not the prompt. Each row may submit once.
+        # The gate object lives for the whole turn, so this allowance survives the next model step.
+        self.brand_fp: tuple = ()
+        self.brand_left: dict[tuple, int] = {}
+        self._plan_blocks: dict[tuple, int] = {}
 
-    def allow(self, quote, strict: bool) -> None:
+    def allow(self, quote, strict: bool, steps=None, *, fresh: bool = True) -> None:
+        """Arm the quoted calls. A brand continue does not re-arm the same confirmation."""
+        from ..api.brand_identity import stage_fingerprint, steps_are_brand_stage, submitted_slots, quoted_stage
+        fp = ()
+        if steps and steps_are_brand_stage(steps):
+            fp = stage_fingerprint(steps)
+        if fp and not fresh and self.brand_fp == fp and self.brand_left:
+            return
         self.strict = strict
         self.keys = set(quote.keys)
+        if not fp:
+            return
+        submitted = submitted_slots(quoted_stage(steps))
+        self.brand_fp = fp
+        self.brand_left = {row: 0 if str(row[-1]) in submitted else 1 for row in fp}
 
     def blocks(self, name: str, args: dict) -> bool:
-        if not self.strict or name not in PAID_TOOLS:
+        if name not in PAID_TOOLS:
+            return False
+        if name == "generate_image" and self.brand_left:
+            from ..api.brand_identity import brand_gate_row
+            row = brand_gate_row(args if isinstance(args, dict) else {})
+            if row is not None:
+                # Confirmed slot, model, size and count: allowed once. Prompt text is not compared.
+                # A different slot, size, model or count, or a second submit, is blocked.
+                return self.brand_left.get(row, 0) <= 0
+        if not self.strict:
             return False
         # #963: plan keys compare a packaging anchor slot semantically -- the quote names a
         # future anchor, the submit names the shape placed by image 1 -- but the submit side
@@ -1484,6 +1515,27 @@ class _PlanGate:
             from ..api import product_packaging
             anchor = product_packaging.anchor_for(self.chat_id)
         return canon_key(name, args, plan=True, anchor=anchor) not in self.keys
+
+    def consume_brand(self, args: dict) -> None:
+        """The confirmed slot is being submitted. A later call of that slot is blocked."""
+        if not self.brand_left:
+            return
+        from ..api.brand_identity import brand_gate_row
+        row = brand_gate_row(args if isinstance(args, dict) else {})
+        if row is None or row not in self.brand_left:
+            return
+        self.brand_left[row] = max(0, self.brand_left[row] - 1)
+
+    def note_plan_block(self, name: str, args: dict) -> int:
+        """How many times this paid call has been blocked by the plan gate in this run."""
+        from ..api.brand_identity import brand_gate_row
+        row = brand_gate_row(args if isinstance(args, dict) else {}) if name == "generate_image" else None
+        if row is not None:
+            key = row
+        else:
+            key = canon_key(name, args if isinstance(args, dict) else {}, plan=True)
+        self._plan_blocks[key] = self._plan_blocks.get(key, 0) + 1
+        return self._plan_blocks[key]
 
 
 TEST_TIMEOUT_S = 10.0
@@ -2398,7 +2450,8 @@ class LocalLlmProvider(AgentProvider):
                 elif repeat == "done":
                     decision = "done"
                 elif repeat == "continue":
-                    gate.allow(quote, not single)
+                    # Arm once per confirmation. A later continue must not reset the remaining slots.
+                    gate.allow(quote, not single, brand_steps, fresh=False)
                     decision = "start"
                 elif not quote.ask:
                     gate.allow(quote, False)
@@ -2422,7 +2475,7 @@ class LocalLlmProvider(AgentProvider):
                             return TurnResult(aborted=True, usage=usage)
                         if choice == "start":
                             if not single:  # #418: one OK covers this call only; don't arm the plan gate
-                                gate.allow(quote, True)
+                                gate.allow(quote, True, brand_steps, fresh=True)
                             decision = "start"
                         else:
                             decision = "cancel"
@@ -2486,9 +2539,23 @@ class LocalLlmProvider(AgentProvider):
                 continue
             if name in PAID_TOOLS and handle.stop_requested:
                 continue  # #419: stopped before this step was submitted: skip it, no row, no charge, no placeholder
+            if name in PAID_TOOLS and getattr(loop.get("run"), "pending_stop", None) is not None:
+                continue  # the plan gate already stopped this run; do not submit the rest
             if name in PAID_TOOLS and gate.blocks(name, it["args"]):
-                chunks[i] = await self._emit_result(
-                    it, _PLAN_REFUSE[lang_key], emit=emit, done=done, lang=lang, is_error=True)
+                # First block explains why. The same call blocked again stops the run
+                # instead of handing the model another "please quote_plan" result.
+                if gate.note_plan_block(name, it["args"]) >= 2:
+                    detail = _PLAN_GATE_STOP[lang_key]
+                    run = loop.get("run")
+                    if run is not None:
+                        from .run_budget import Stop, StopReason
+                        run.pending_stop = Stop(
+                            StopReason.ERROR, "tool", step=run.budget.used.steps, detail=detail)
+                    chunks[i] = await self._emit_result(
+                        it, detail, emit=emit, done=done, lang=lang, is_error=True)
+                else:
+                    chunks[i] = await self._emit_result(
+                        it, _PLAN_REFUSE[lang_key], emit=emit, done=done, lang=lang, is_error=True)
                 continue
             if it.get("refuse"):
                 chunks[i] = await self._emit_result(
@@ -2505,7 +2572,12 @@ class LocalLlmProvider(AgentProvider):
                 if run_for_plan is not None and is_single(
                         bound.get("skill"), str(bound.get("preset") or "")):
                     run_for_plan.single_image_gens = int(getattr(run_for_plan, "single_image_gens", 0) or 0) + 1
+            if name == "generate_image":
+                gate.consume_brand(it["args"])
             await run_mcp(i)
+            if name == "generate_image":
+                from ..api.brand_identity import note_brand_submitted
+                note_brand_submitted(it["args"])
 
         if decision == "start" and any(parsed[i]["name"] in PAID_TOOLS for i in ran):
             from ..api.brand_identity import mark_stage_dispatched

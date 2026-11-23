@@ -104,7 +104,24 @@ def test_industry_template_is_unchanged():
 def test_each_slot_prompt_locks_a_different_structure():
     mood = brand.fill_default({"brand_slot": "moodboard", "prompt": "栖木咖啡"})
     assert "3 equal columns and 3 equal rows" in mood["prompt"]
-    assert "质感" in mood["prompt"] and "数字" in mood["prompt"]
+    labels = ["色调", "色彩", "符号", "字体", "版式", "材质", "外带杯", "门头", "数字"]
+    positions = [mood["prompt"].index(label) for label in labels]
+    assert positions == sorted(positions)
+    assert "exactly one Chinese label" in mood["prompt"]
+    assert "image that matches that label" in mood["prompt"]
+    assert "No empty cell" in mood["prompt"]
+    assert "separator" in mood["prompt"] and "｜" in mood["prompt"]
+    for old in ("质感", "字标", "材料"):
+        assert old not in mood["prompt"]
+    hint = brand.default_hint()
+    hint_at = [hint.index(label) for label in labels]
+    assert hint_at == sorted(hint_at)
+    assert "exactly one Chinese label" in hint
+    assert "matching that label" in hint
+    assert "No empty cell" in hint
+    assert "separator" in hint
+    for old in ("质感", "字标", "材料"):
+        assert old not in hint
     a = brand.fill_default({"brand_slot": "logo_a", "prompt": "方向A"})
     b = brand.fill_default({"brand_slot": "logo_b", "prompt": "方向B"})
     c = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})
@@ -590,3 +607,177 @@ async def test_a_changed_fingerprint_asks_again_using_spend_before(monkeypatch):
         assert brand.spend_before(2) == 0.0
     finally:
         BOT_CHAT_ID.reset(token)
+
+
+def _short_logo_steps():
+    """The quote the model actually sent: short prompts, same slot, model, size and count."""
+    steps = []
+    for slot, letter in (("logo_a", "A"), ("logo_b", "B"), ("logo_c", "C")):
+        steps.append({
+            "tool": "generate_image",
+            "model": brand.QWEN_EDIT,
+            "arguments": {
+                "skill": brand.SKILL,
+                "brand_slot": slot,
+                "prompt": (
+                    f"Logo direction {letter} for 栖木咖啡 QIMU COFFEE: "
+                    "one open single-line bird on a branch, bilingual lockup, 2048x2048"
+                ),
+                "width": 2048,
+                "height": 2048,
+                "count": 1,
+                "refs": ["shape:mood"],
+                "edit_model": brand.QWEN_EDIT,
+            },
+        })
+    return steps
+
+
+def _long_generate(slot: str):
+    return ("generate_image", {
+        "prompt": (
+            f"LONG PROMPT for {slot}. Full construction sheet, bilingual lockup, "
+            "grid, reversed block, and many sentences that are not the quote text."
+        ),
+        "skill": brand.SKILL,
+        "brand_slot": slot,
+        "refs": ["shape:mood"],
+    })
+
+
+async def _live_brand_run(monkeypatch, script, handle=None):
+    """One agent-loop turn. The plan gate is created once and kept across model steps."""
+    from ComfyArt.api import wavespeed
+    from ComfyArt.bot.providers import TurnHandle
+    from test_agent_budget_391 import Rig
+
+    submits: list = []
+
+    async def submit(*_args, **_kwargs):
+        submits.append(1)
+        raise AssertionError("wavespeed.submit must not run in this test")
+
+    monkeypatch.setattr(wavespeed, "submit", submit)
+    confirms: list = []
+    rig = Rig(monkeypatch, script)
+
+    async def price(model, inputs):
+        return (0.03, "quote", "test-stage")
+
+    monkeypatch.setattr(rig.p, "_price_one", price)
+
+    async def models_for(feature):
+        return []
+
+    monkeypatch.setattr(rig.p, "_models_for", models_for)
+
+    async def yes(spec, turn, handle, **kwargs):
+        confirms.append(spec)
+        return "start"
+
+    monkeypatch.setattr(rig.p, "_confirm_plan", yes)
+    res, events = await rig.send("做三个方向", goal="", handle=handle or TurnHandle())
+    return rig, res, events, confirms, submits
+
+
+async def test_short_quote_then_long_generates_submit_once_each(monkeypatch):
+    """The stage-2 failure: quote_plan alone, then one generate_image per later step."""
+    from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
+    from test_agent_budget_391 import calls, reply
+
+    token = BOT_CHAT_ID.set("c")
+    try:
+        _logos_ready()
+        slots = ("logo_a", "logo_b", "logo_c")
+
+        def script(messages, n):
+            if n == 0:
+                return calls(("quote_plan", {"steps": _short_logo_steps()}))
+            if 1 <= n <= 3:
+                return calls(_long_generate(slots[n - 1]))
+            return reply("好")
+
+        rig, _res, events, confirms, submits = await _live_brand_run(monkeypatch, script)
+        assert len(confirms) == 1
+        assert submits == []
+        paid = rig.paid_mcp()
+        assert [args["brand_slot"] for _name, args in paid] == list(slots)
+        assert all("LONG PROMPT" in args["prompt"] for _name, args in paid)
+        assert all(e.t != "tool_result" or "请先调用 quote_plan" not in e.text for e in events)
+        assert brand.stage_repeat(_short_logo_steps()) == "done"
+    finally:
+        BOT_CHAT_ID.reset(token)
+
+
+async def test_plan_gate_stops_when_the_same_call_is_blocked_twice(monkeypatch):
+    from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
+    from test_agent_budget_391 import calls, reply
+
+    token = BOT_CHAT_ID.set("c")
+    try:
+        _logos_ready()
+        extra = {"calls": 0}
+
+        def script(messages, n):
+            extra["calls"] = n + 1
+            if n == 0:
+                return calls(("quote_plan", {"steps": _short_logo_steps()}))
+            if n in (1, 2):
+                return calls(("generate_image", {
+                    "prompt": "unconfirmed spec board " * 12,
+                    "skill": brand.SKILL,
+                    "brand_slot": "spec",
+                }))
+            return reply("应该停在第二次拦截")
+
+        rig, res, events, confirms, submits = await _live_brand_run(monkeypatch, script)
+        assert len(confirms) == 1
+        assert rig.paid_mcp() == []
+        assert submits == []
+        texts = _tool_texts(events, "generate_image")
+        assert texts[0].startswith("[tool error]") and "请先调用 quote_plan" in texts[0]
+        assert "拦住了两次" in texts[1]
+        assert "请先调用 quote_plan" not in texts[1]
+        assert extra["calls"] == 3  # quote, first block, second block; no further model step
+        stop = res.run["stop"]
+        assert stop["reason"] == "error" and stop["sub"] == "tool"
+        assert "拦住了两次" in stop["detail"]
+    finally:
+        BOT_CHAT_ID.reset(token)
+
+
+async def test_stop_interrupts_before_the_next_brand_generate(monkeypatch):
+    from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
+    from ComfyArt.bot.providers import TurnHandle
+    from test_agent_budget_391 import calls
+
+    token = BOT_CHAT_ID.set("c")
+    try:
+        _logos_ready()
+        handle = TurnHandle()
+
+        def script(messages, n):
+            if n == 0:
+                return calls(("quote_plan", {"steps": _short_logo_steps()}))
+            handle.stop_requested = True
+            return calls(_long_generate("logo_a"))
+
+        rig, res, _events, confirms, submits = await _live_brand_run(monkeypatch, script, handle)
+        assert len(confirms) == 1
+        assert rig.paid_mcp() == []
+        assert submits == []
+        assert rig.n == 2
+        assert res.aborted is True
+        assert res.run["stop"]["reason"] == "user_stop"
+    finally:
+        BOT_CHAT_ID.reset(token)
+
+
+def test_failed_generate_row_renders_the_tool_error_sentence():
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    chat = (root / "src/ui/ChatMessage.tsx").read_text(encoding="utf-8")
+    css = (root / "src/styles/overlays.css").read_text(encoding="utf-8")
+    assert "function toolErrorLine" in chat
+    assert 'data-testid="process-row-error"' in chat
+    assert "ca-process__errtext" in css
