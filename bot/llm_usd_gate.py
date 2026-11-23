@@ -877,7 +877,18 @@ def apply_output_cap(body: dict) -> tuple[Optional[int], str]:
     return raw, ""
 
 
+def usd_gate_enabled() -> bool:
+    """Off unless the process opts in with COMFYART_LLM_USD_GATE=1.
+
+    Budget guards must not block a real run by default. Opted in, the checks
+    below are unchanged.
+    """
+    return os.environ.get("COMFYART_LLM_USD_GATE", "").strip() == "1"
+
+
 def route_requires_gate(method: str, url: str, route: Optional[dict]) -> bool:
+    if not usd_gate_enabled():
+        return False
     if not isinstance(route, dict) or route.get("passthrough"):
         return False
     if route.get("adapter") != "deepseek_official":
