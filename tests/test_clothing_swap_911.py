@@ -32,7 +32,7 @@ CLOTHING_SWAP_TAIL_SHA256 = "f3036b3d1ebcb3320bcee7d76c961014b38cbb443783ae53485
 AUTO_MODELS_SHA256 = "9ef106b6133d427f04347d0c31c31931e641e1cd47d2a86c0d0769cde48c5d7b"
 OTHER_SKILL_ENTRIES_SHA256 = "f088dd000ad53f7802bec2675b815cb40d0343da3127c413fadc12b40895488a"
 # #1003: multi-angle skill read keeps the nine-grid contract and still asks source after an upload.
-UNCHANGED_SKILL_ENTRIES_SHA256 = "f8fd698ca7acf0942f030a979ec699020594e4ee46a8c2a52c3be5130b4cb2b2"  # #1019 brand closing is sent only after the four deliverables are placed
+UNCHANGED_SKILL_ENTRIES_SHA256 = "cd297501a5d5a7c709b9e4cc6ec45bb80d50db2851f54f2b7c6d812c26c75911"  # #1019 brand logo zones / logo C bird-in-cup instructions
 SHARED_CONST_SHA256 = {
     "NEARMISS_INPUTS": "4fe64962178b3c0404f163a02b5a0cdfff1c072d1be399e9f6acbbf597730722",
     "EFFECT_INPUTS": "bbca63995ca34766f0f0ac21ae1baf8cf66df417c9ddaa3f584a128c619eacb6",
