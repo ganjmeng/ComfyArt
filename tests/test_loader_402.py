@@ -53,6 +53,76 @@ def test_mutation_removing_hard_cut_goes_red():
         assert_loader_duration_and_hard_cut(js, css)
 
 
+LOADER_DOM = r"""
+const fs = require('fs');
+const src = fs.readFileSync(process.argv[2], 'utf8');
+const nodes = [];
+function makeEl() {
+  return {
+    removed: false,
+    className: '',
+    innerHTML: '',
+    dataset: {},
+    style: { pointerEvents: '', setProperty() {} },
+    setAttribute() {},
+    addEventListener(type, fn) { this['on' + type] = fn; },
+    remove() { this.removed = true; },
+  };
+}
+global.document = {
+  createElement: makeEl,
+  body: { appendChild(el) { nodes.push(el); } },
+  querySelectorAll(sel) {
+    return nodes.filter((n) => !n.removed && n.className === 'lm-loader');
+  },
+};
+global.matchMedia = () => ({ matches: false });
+global.window = {
+  BRAND_CONFIG: { name: 'Loomi', logoSvg: '<svg></svg>' },
+  dispatchEvent() {},
+};
+let now = 5000;
+Date.now = () => now;
+const timers = [];
+global.setTimeout = (fn) => { timers.push(fn); return timers.length; };
+eval(src);
+const mode = process.argv[3];
+const handle = window.LoomiLoader.mount({ waitForReady: true });
+const live = () => nodes.filter((n) => !n.removed);
+if (mode === 'lost-timer') {
+  now += 1200;
+  handle.ready();
+  if (live().length) process.exit(2);
+} else if (mode === 'early-ready') {
+  handle.ready();
+  if (live().length !== 1) process.exit(3);
+  timers.forEach((fn) => fn());
+  if (live().length) process.exit(5);
+} else {
+  process.exit(6);
+}
+console.log('ok');
+"""
+
+
+def test_ready_cuts_a_lost_timer_and_releases_clicks_early(tmp_path):
+    """QA 940 en: the composer was filled, but lm-loader still intercepted clicks for 30s.
+
+    ready() is the app-ready signal. If the animation timer never runs after the
+    1200ms window, the overlay must hard-cut. If ready() arrives during the
+    animation, clicks pass through and the timer still removes the node.
+    """
+    import subprocess
+    script = tmp_path / "loader-dom.js"
+    script.write_text(LOADER_DOM, encoding="utf-8")
+    for mode in ("lost-timer", "early-ready"):
+        run = subprocess.run(
+            ["node", str(script), str(JS), mode],
+            capture_output=True, text=True, timeout=20,
+        )
+        assert run.returncode == 0, (mode, run.returncode, run.stdout, run.stderr)
+
+
 def test_loomic_mark_leftover_gone():
     """Soft ask from #401 / #402: unused loomic-mark.svg must not ship."""
     assert not (ROOT / "public" / "brand" / "loomic-mark.svg").exists()

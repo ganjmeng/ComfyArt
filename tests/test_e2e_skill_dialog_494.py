@@ -37,12 +37,27 @@ async def test_dialog_from_data_and_handoff(app_url, lang):  # noqa: F811
         assert await dlg.locator(".ca-skillrun__left").count() == 1
         assert await dlg.locator(".ca-skillrun__right").count() == 1
         keys = await dlg.get_by_test_id("skill-run-field").evaluate_all("fs => fs.map(f => f.dataset.key)")
-        assert keys == ["brand_info", "subject_image", "visual_direction"]  # #748 Final raw: brand template[0] form
+        # #1019: no tile selected is the plaza default path (brief + one optional reference).
+        assert keys == ["user_requirement", "user_image"]
         assert await pg.get_by_test_id("skill-run-preset").count() == 6
+        # No tile is selected. The current-template row says the default workflow,
+        # never the first tile (餐饮服务 / Food Service).
+        current = (await dlg.get_by_test_id("skill-run-current-name").inner_text()).strip()
+        assert current == ("默认流程" if lang == "zh" else "Default workflow")
+        assert await dlg.locator('[data-testid="skill-run-preset"][data-on="true"]').count() == 0
+        assert await dlg.get_by_test_id("skill-run-current").get_attribute("data-selected") == "none"
         go = pg.get_by_test_id("skill-run-go")
-        assert await go.get_attribute("aria-disabled") == "true"  # #748 required brand_info empty
+        assert await go.get_attribute("aria-disabled") == "true"  # required brief is empty
+        tile = pg.get_by_test_id("skill-run-preset").nth(1)
+        tile_name = (await tile.locator(".ca-skillrun__presetname").inner_text()).strip()
+        await tile.click()
+        assert (await dlg.get_by_test_id("skill-run-current-name").inner_text()).strip() == tile_name
+        assert await tile.get_attribute("data-on") == "true"
+        assert tile_name not in ("默认流程", "Default workflow")
+        keys = await dlg.get_by_test_id("skill-run-field").evaluate_all("fs => fs.map(f => f.dataset.key)")
+        assert keys == ["brand_info", "subject_image", "visual_direction"]  # #748 template form, unchanged
+        assert await go.get_attribute("aria-disabled") == "true"  # required brand_info still empty
         await pg.locator('[data-testid="skill-run-field"][data-key="brand_info"]').fill("Autumn launch")
-        await pg.get_by_test_id("skill-run-preset").nth(1).click()
         assert await pg.get_by_test_id("skill-run-current").inner_text()
         await go.click()
         await pg.wait_for_url(re.compile(r"[?&]skill=brand-identity-director"), timeout=10_000)

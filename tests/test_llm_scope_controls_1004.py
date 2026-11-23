@@ -22,6 +22,7 @@ from test_llm_usd_gate import _provider, _reserve_record, _route, _text, _usage 
 
 @pytest.fixture(autouse=True)
 def isolated_controls(monkeypatch):
+    monkeypatch.setenv("COMFYART_LLM_USD_GATE", "1")
     gate.clear_authorized_scope()
     gate._write_fault = None
     token = provider_admin._llm_lock.set(_route())

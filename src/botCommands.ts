@@ -76,7 +76,50 @@ function nextToFree(editor: Editor, id: TLShapeId, b: { x: number; y: number; w:
   return spots.find((p) => free(p.x, p.y)) ?? spots[0]
 }
 
+/** #1019 default-path rows. Same numbers as api/brand_identity.slot_origin (GAP 40). */
+const BRAND_PLACED: { id: string; row: number; col: number; w: number; h: number }[] = [
+  { id: 'moodboard', row: 1, col: 0, w: 2048, h: 1152 },
+  { id: 'logo_a', row: 2, col: 0, w: 2048, h: 2048 },
+  { id: 'logo_b', row: 2, col: 1, w: 2048, h: 2048 },
+  { id: 'logo_c', row: 2, col: 2, w: 2048, h: 2048 },
+  { id: 'spec', row: 3, col: 0, w: 1536, h: 2048 },
+  { id: 'cup', row: 3, col: 1, w: 1536, h: 2048 },
+  { id: 'bag', row: 3, col: 2, w: 1536, h: 2048 },
+  { id: 'storefront', row: 3, col: 3, w: 2048, h: 1152 },
+]
+function brandOrigin(slotId: string): { x: number; y: number } | null {
+  const slot = BRAND_PLACED.find((s) => s.id === slotId)
+  if (!slot) return null
+  const width = (row: number) => {
+    const cols = BRAND_PLACED.filter((s) => s.row === row)
+    return cols.reduce((sum, s) => sum + s.w, 0) + GAP * (cols.length - 1)
+  }
+  const widest = Math.max(width(1), width(2), width(3))
+  let x = Math.floor((widest - width(slot.row)) / 2)
+  for (const s of BRAND_PLACED) {
+    if (s.row !== slot.row) continue
+    if (s.col >= slot.col) break
+    x += s.w + GAP
+  }
+  let y = 0
+  for (let row = 1; row < slot.row; row++) {
+    y += Math.max(...BRAND_PLACED.filter((s) => s.row === row).map((s) => s.h)) + GAP
+  }
+  return { x, y }
+}
+
 function place(editor: Editor, id: TLShapeId, args: Args, chat: string) {
+  const brandAt = typeof args.brand_slot === 'string' ? brandOrigin(args.brand_slot) : null
+  if (brandAt) {
+    // Keep the three slot rows. The chat frame's auto-pack would wrap these boards.
+    if (chat) placeInChatFrame(editor, id, chat)
+    const placed = editor.getShape(id)!
+    editor.updateShape({
+      id, type: placed.type, x: brandAt.x, y: brandAt.y,
+      meta: { ...placed.meta, brand_slot: args.brand_slot },
+    })
+    return
+  }
   const shape = editor.getShape(id)!
   if (args.frame) {
     const frame = shapeOf(editor, args.frame)

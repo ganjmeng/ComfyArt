@@ -3,18 +3,43 @@
    Only the card does. The card must not cover the composer, the send button,
    or the bottom toolbar. Width follows the text, wraps, and does not truncate. */
 .tlui-toast__viewport {
-  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
   justify-content: flex-start;
   padding: 16px 16px 0 0;
   pointer-events: none;
+  overflow: visible;
+  box-sizing: border-box;
 }
 .tlui-toast__viewport > * { pointer-events: none; }
+.tlui-toast__viewport ol {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  width: min(360px, calc(100% - 16px));
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tlui-toast__viewport ol > li:nth-child(n+4) { display: none; }
 .tlui-toast__container {
   align-self: flex-end;
+  position: relative;
   pointer-events: auto;
-  width: max-content;
+  width: 100%;
   max-width: 360px;
   min-width: 0;
+  margin: 0;
+  animation: none;
+  transform: none;
+}
+.tlui-toast__container[data-state='open'],
+.tlui-toast__container[data-state='closed'] {
+  animation: none;
+  transform: none;
 }
 .tlui-toast__main { max-width: none; min-width: 0; }
 .tlui-toast__title,

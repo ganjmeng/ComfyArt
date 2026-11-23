@@ -349,6 +349,8 @@ async def test_ask_is_the_paid_gate_and_names_both_models(monkeypatch):
         return {"result": {"tools": [{"name": "generate_image"}, {"name": "ask_user"}]}}
 
     monkeypatch.setattr(provider, "_request_json", fake_request)
+    from test_agent_budget_391 import pin_offline_plan_quote
+    pin_offline_plan_quote(monkeypatch, provider)
     events: list[BotEvent] = []
 
     async def emit(ev):

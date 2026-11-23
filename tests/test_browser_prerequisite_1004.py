@@ -38,6 +38,7 @@ RECOVERABLE = "ValueError: no shape x"
 
 @pytest.fixture(autouse=True)
 def offline(monkeypatch):
+    monkeypatch.setenv("COMFYART_LLM_USD_GATE", "1")
     gate.clear_authorized_scope()
     gate._write_fault = None
     saved_pages, saved_sockets = dict(mcp_commands._pages), dict(PromptServer.instance.sockets)

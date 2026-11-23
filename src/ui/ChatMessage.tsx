@@ -22,6 +22,7 @@ import { attachSkill, loadSkills, skillCreatorAtom } from '../skills'
 import { openSkillEditor } from './SkillsDialog'
 import { Tip } from './Tip'
 import { autoPillLabel, autoPillTooltip, inputIsAuto, modelChoiceOfResult, skillPinReason } from '../autoPill'
+import { visibleToolError } from './toolErrorLine'
 
 function CustomLlmFailNotice({ text, action }: { text?: string; action?: string }) {
   return (
@@ -412,10 +413,11 @@ function askPageCount(b: BotBlock, questions: AskQuestion[]): number {
 }
 
 function qDefaults(q: AskQuestion): string[] {
+  // Recommended is a badge only. Preselect comes from explicit defaults, so a
+  // marked option (brand card 3) is not already selected when the card opens.
   const max = q.max_selections ?? (q.options?.length ? 1 : 0)
   if (q.defaults?.length) return q.defaults.slice(0, max)
-  const rec = (q.options ?? []).filter((o) => o.recommended).map((o) => o.id)
-  return rec.slice(0, max)
+  return []
 }
 
 function initQStates(questions: AskQuestion[]): Record<string, QState> {
@@ -921,6 +923,11 @@ function Plan({ b, live }: { b: BotBlock; live: boolean }) {
   )
 }
 
+/** Visible sentence for a failed generate row. The plan gate and model failures both land here. */
+function toolErrorLine(result?: BotBlock): string {
+  return visibleToolError(result?.text)
+}
+
 type ProcessStep = {
   key: string
   kind: ProcessKind
@@ -930,6 +937,8 @@ type ProcessStep = {
   title?: string
   /** #421: generation (or linked wait) failed — row reads as failed, not done. */
   error?: boolean
+  /** Plan-gate and model failures: the tool result sentence, not only the word Failed. */
+  errorText?: string
   /** #437: the search source's real favicon, shown before the page count. */
   favicon?: string
   text?: string
@@ -1056,6 +1065,7 @@ function ProcessTimeline({ steps: rawSteps }: { steps: ProcessStep[] }) {
             </div>
             {card}
             {memDetail}
+            {s.errorText ? <div className="ca-process__errtext" data-testid="process-row-error">{s.errorText}</div> : null}
             </div>
           )
         })}
@@ -1355,6 +1365,7 @@ export function AssistantBlocks({ editor, m, dockAsks }: { editor: Editor; m: Bo
         }
         const genFailed = ownState === 'error' || waitFailed
         const genCancelled = ownState === 'cancelled'
+        const errorText = genFailed ? toolErrorLine(result) : ''
         proc.push({
           key: `p${i}`,
           kind: kindResolved,
@@ -1376,6 +1387,7 @@ export function AssistantBlocks({ editor, m, dockAsks }: { editor: Editor; m: Bo
             }),
           live: stepLive,
           error: genFailed || undefined,
+          errorText: errorText || undefined,
           text: b.type === 'thinking' ? b.text : undefined,
           title: modelTitle,
           aspectRatio,

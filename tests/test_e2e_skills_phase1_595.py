@@ -67,7 +67,8 @@ async def test_multi_angle_carousel_and_brand_dialog_to_agent(app_url):  # noqa:
         # Phase1 upgrade skill: dialog → new Agent project (AC ≥1)
         await pg.locator('[data-testid="home-skill-card"][data-skill="brand-identity-director"]').click()
         await dlg.wait_for()
-        await pg.locator('[data-testid="skill-run-field"][data-key="brand_info"]').fill("Autumn launch kit")  # #687-1 Additional Details
+        # #1019 default path: the required field is the brand brief, not template brand_info.
+        await pg.locator('[data-testid="skill-run-field"][data-key="user_requirement"]').fill("Autumn launch kit")
         await pg.get_by_test_id("skill-run-go").click()
         await pg.wait_for_url(re.compile(r"[?&]skill=brand-identity-director"), timeout=10_000)
         assert "mode=agent" in pg.url

@@ -32,7 +32,7 @@ CLOTHING_SWAP_TAIL_SHA256 = "f3036b3d1ebcb3320bcee7d76c961014b38cbb443783ae53485
 AUTO_MODELS_SHA256 = "9ef106b6133d427f04347d0c31c31931e641e1cd47d2a86c0d0769cde48c5d7b"
 OTHER_SKILL_ENTRIES_SHA256 = "f088dd000ad53f7802bec2675b815cb40d0343da3127c413fadc12b40895488a"
 # #1003: multi-angle skill read keeps the nine-grid contract and still asks source after an upload.
-UNCHANGED_SKILL_ENTRIES_SHA256 = "561b5e5a9d9cb62c813277c1ed902b7f1aa6859341e8a119eef6dcc3cf3ea11d"  # unrelated skill entries remain snapshot-locked
+UNCHANGED_SKILL_ENTRIES_SHA256 = "19c87df3bbd730f8af01b3bf67e88204b8f59b16bb0ac449462daca4a4fac904"
 SHARED_CONST_SHA256 = {
     "NEARMISS_INPUTS": "4fe64962178b3c0404f163a02b5a0cdfff1c072d1be399e9f6acbbf597730722",
     "EFFECT_INPUTS": "bbca63995ca34766f0f0ac21ae1baf8cf66df417c9ddaa3f584a128c619eacb6",
@@ -633,7 +633,9 @@ def test_qa4_clothing_swap_drops_rule6_and_708_others_unchanged():
     excluded = {"clothing-swap", "youtube-channel-banner", "portrait-studio", "before-after",
                 "product-to-packaging",
                 # #982: the two output contracts deliberately add a Delivery line.
-                "logo-material-explorer", "character-sheet-design"}
+                "logo-material-explorer", "character-sheet-design",
+                # #1019: brand skill prompt is tuned separately.
+                "brand-identity-director"}
     assert _entries_sha256(SKILLS, [sid for sid in ids if sid not in excluded]) == UNCHANGED_SKILL_ENTRIES_SHA256
 
 

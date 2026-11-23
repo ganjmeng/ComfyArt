@@ -206,11 +206,20 @@ async def test_fresh_interpreter_validates_same_scope_without_new_money(candidat
     inputs.write_text(json.dumps({"candidate": c, "expected": asdict(expected)}))
     before = bytes_state(expected.canonical_absolute_ledger_path)
     program = """
-import json,sys
-sys.path.insert(0,sys.argv[1])
-import conftest
-from ComfyArt.bot import llm_activation_manifest as m, llm_usd_gate as gate
+import json,sys,types
 from pathlib import Path
+# The tests directory is argv[1]. Load only the two offline modules. Importing
+# conftest pulls ComfyArt/__init__ and bot/__init__ (the whole agent, server,
+# and provider stack). Under the gate that import did not finish inside 30s;
+# this check does not need it. The parent process's ledger binding stays out.
+repo=Path(sys.argv[1]).resolve().parent
+sys.path.insert(0,str(repo.parent))
+for name,path in (('ComfyArt',repo),('ComfyArt.bot',repo/'bot')):
+    pkg=types.ModuleType(name)
+    pkg.__path__=[str(path)]
+    pkg.__package__=name
+    sys.modules.setdefault(name,pkg)
+from ComfyArt.bot import llm_activation_manifest as m, llm_usd_gate as gate
 d=json.loads(Path(sys.argv[2]).read_text());e=d['expected']
 e['sources']=tuple(tuple(p) for p in e['sources'])
 e['runtime_binding']=tuple(e['runtime_binding']);e['tool_allowlist']=tuple(e['tool_allowlist'])

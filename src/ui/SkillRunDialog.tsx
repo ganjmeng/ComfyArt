@@ -6,7 +6,7 @@
  *  No skill ids are named here. 「详情」 keeps main's #484 edit page (openSkillEditor). */
 import { useRef, useState } from 'react'
 
-import { uploadSkillImage, isSkillMediaVideo, loc, loadFavourites, missingInputs, presetImage, recordSkillUse, skillAuthor, skillCover, skillCoverVideoHover, skillMeta, skillMetaLabel, skillDefaults, skillDescription, skillPreset, skillRunParams, skillShareUrl, skillMedia, selectedMedia, withTemplateInputs, recordTemplateUse, unrecordTemplateUse, toggleFavourite, type SkillMediaItem, type Skill, type SkillPreset } from '../skills'
+import { uploadSkillImage, isSkillMediaVideo, loc, loadFavourites, missingInputs, presetImage, recordSkillUse, skillAuthor, skillCover, skillCoverVideoHover, skillMeta, skillMetaLabel, skillDefaults, skillDescription, skillPreset, skillRunParams, skillShareUrl, skillMedia, selectedMedia, withTemplateInputs, recordTemplateUse, unrecordTemplateUse, toggleFavourite, BRAND_DEFAULT_INPUTS, type SkillMediaItem, type Skill, type SkillPreset } from '../skills'
 import { newProject } from '../projects'
 import { BRAND } from '../brand'
 import { copyText } from '../clipboard'
@@ -123,9 +123,18 @@ export function SkillRunDialog({ skill: baseSkill, presetId, onClose, run = newP
   /** injectable for tests; default leaves for a new project exactly like main's card click */
   run?: (params: Record<string, string | string[]>) => void
 }) {
-  const [preset, setPreset] = useState(() => skillPreset(baseSkill, presetId)?.id ?? null)
+  // #1019: brand opens with no industry template selected so 开始制作 is the plaza default path.
+  // An explicit presetId (a tile the caller already chose) still selects that template.
+  const [preset, setPreset] = useState(() => (
+    baseSkill.id === 'brand-identity-director' && (presetId == null || presetId === '')
+      ? null
+      : (skillPreset(baseSkill, presetId)?.id ?? null)
+  ))
   // #748 — the right form is per template: switching templates switches inputs[] (values kept by key).
-  const skill = withTemplateInputs(baseSkill, preset)
+  const templated = withTemplateInputs(baseSkill, preset)
+  const skill = baseSkill.id === 'brand-identity-director' && !preset
+    ? { ...templated, inputs: BRAND_DEFAULT_INPUTS, activePreset: undefined }
+    : templated
   const [values, setValues] = useState(() => skillDefaults(skill))
   const [uploading, setUploading] = useState<string | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
@@ -135,7 +144,9 @@ export function SkillRunDialog({ skill: baseSkill, presetId, onClose, run = newP
   const [fav, setFav] = useState(() => loadFavourites().includes(skill.id))
   const [shared, setShared] = useState(false)
   const missing = missingInputs(skill, values)
-  const chosen = skillPreset(skill, preset)
+  // A name is shown only for the tile the user clicked. Null is the default
+  // workflow, never the first template (brand used to fall through to 餐饮服务).
+  const chosen = preset ? skill.presets?.find((p) => p.id === preset) : undefined
   const author = skillAuthor(skill)
   const desc = skillDescription(skill)
   const metaBase = skillMeta(skill)
@@ -205,15 +216,24 @@ export function SkillRunDialog({ skill: baseSkill, presetId, onClose, run = newP
             <button type="button" className="ca-panel__icon" data-testid="skill-run-close" title={t('common.close')} onClick={onClose}>{Icons.close}</button>
           </div>
           <div className="ca-skillrun__body">
-            {chosen && (() => {
+            {(() => {
               const presetTiles = skillMedia(skill).filter((m) => m.presetId && skill.presets?.some((p) => p.id === m.presetId))
               const pickOnLeft = presetTiles.length > 0
               // #636 PRODUCT HARD LOCK: C5 nearMiss Examples-only → remove entire 「当前模板」 row.
               // Presets are default params only; never expose as select. FieldSelect+custom chevron
               // only when left has real preset media tiles (template switch). Never native system arrow.
               if (!pickOnLeft) return null
+              if (!chosen) return (
+                <div className="ca-skillrun__current" data-testid="skill-run-current" data-selected="none">
+                  <span className="ca-skillrun__currentlabel">{t('skillRun.currentTemplate')}</span>
+                  <div className="ca-skillrun__currentrow" data-testid="skill-run-current-row">
+                    <span className="ca-skillrun__currentname" data-testid="skill-run-current-name">{t('skillRun.defaultWorkflow')}</span>
+                    <span className="ca-skillrun__currenthint">{t('skillRun.pickLeft')}</span>
+                  </div>
+                </div>
+              )
               return (
-              <div className="ca-skillrun__current" data-testid="skill-run-current">
+              <div className="ca-skillrun__current" data-testid="skill-run-current" data-selected={chosen.id}>
                 <span className="ca-skillrun__currentlabel">{t('skillRun.currentTemplate')}</span>
                 {(() => {
                   // #748: name / thumb / usage from the SELECTED media item (click only — hover never changes this row).

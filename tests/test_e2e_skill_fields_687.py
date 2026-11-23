@@ -40,6 +40,18 @@ async def _check(pg, sid, lang):
     await card.get_by_test_id("skills-card-try").click()
     dlg = pg.locator(f'[data-testid="skill-run-dialog"][data-skill="{sid}"]')
     await dlg.wait_for(timeout=10000)
+    if sid == "brand-identity-director":
+        # #1019 opens with no industry template. The #748 template form returns after a tile click.
+        opened = await dlg.evaluate(READ)
+        assert [g["key"] for g in opened] == ["user_requirement", "user_image"], sid
+        brief, image = opened
+        assert (brief["type"], brief["required"], brief["star"], brief["max"]) == ("textarea", True, True, 500), brief
+        assert (image["type"], image["required"], image["star"]) == ("image", False, False), image
+        assert brief["label"] == ("品牌需求" if lang == "zh" else "Brand brief"), brief["label"]
+        assert image["label"] == ("参考图" if lang == "zh" else "Reference image"), image["label"]
+        if lang == "en":
+            assert brief["ph"] == "Brand name, category, and the visual system you want", brief["ph"]
+        await dlg.get_by_test_id("skill-run-preset").first.click()
     got = await dlg.evaluate(READ)
     want = SPEC[sid]
     assert [g["key"] for g in got] == [w[0] for w in want], sid
