@@ -22,6 +22,7 @@ import { attachSkill, loadSkills, skillCreatorAtom } from '../skills'
 import { openSkillEditor } from './SkillsDialog'
 import { Tip } from './Tip'
 import { autoPillLabel, autoPillTooltip, inputIsAuto, modelChoiceOfResult, skillPinReason } from '../autoPill'
+import { visibleToolError } from './toolErrorLine'
 
 function CustomLlmFailNotice({ text, action }: { text?: string; action?: string }) {
   return (
@@ -924,8 +925,7 @@ function Plan({ b, live }: { b: BotBlock; live: boolean }) {
 
 /** Visible sentence for a failed generate row. The plan gate and model failures both land here. */
 function toolErrorLine(result?: BotBlock): string {
-  const raw = (result?.text ?? '').trim().replace(/^\[(?:tool error|error)\]\s*/i, '').trim()
-  return raw.length > 400 ? `${raw.slice(0, 400)}…` : raw
+  return visibleToolError(result?.text)
 }
 
 type ProcessStep = {

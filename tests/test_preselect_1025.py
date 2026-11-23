@@ -10,7 +10,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from ComfyArt.api import bot_asks, portrait_studio, product_packaging
+from ComfyArt.api import bot_asks, brand_identity, portrait_studio, product_packaging
 from ComfyArt.api.multi_angle import SOURCE, normalize_card
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -148,18 +148,29 @@ def test_youtube_banner_cards_do_not_preselect_either_language():
 
 
 def test_brand_card3_keeps_the_badge_and_clears_the_default():
-    spec = bot_asks.validate_spec({"questions": [{
-        "id": "bi_direction",
-        "prompt": "选定哪个 Logo 方向作为最终标识（logo_primary）？",
-        "options": [
-            {"id": "A", "label": "方向 A", "recommended": True},
-            {"id": "B", "label": "方向 B"},
-            {"id": "C", "label": "方向 C"},
-        ],
-    }]})
-    assert "defaults" not in spec["questions"][0]
-    assert spec["questions"][0]["options"][0]["recommended"] is True
-    assert _selected(spec) == []
+    brand_identity.reset_for_tests()
+    try:
+        for slot in ("logo_a", "logo_b", "logo_c"):
+            brand_identity.record_submitted({"brand_slot": slot}, {"ids": [f"holder-{slot}"]})
+            brand_identity.record_wait({"results": [{
+                "id": f"holder-{slot}",
+                "shapes": [f"shape:{slot}"],
+                "urls": [f"/view?f={slot}.png"],
+            }]})
+        spec = bot_asks.validate_spec({"questions": [{
+            "id": "bi_direction",
+            "prompt": "选定哪个 Logo 方向作为最终标识（logo_primary）？",
+            "options": [
+                {"id": "A", "label": "方向 A", "recommended": True},
+                {"id": "B", "label": "方向 B"},
+                {"id": "C", "label": "方向 C"},
+            ],
+        }]})
+        assert "defaults" not in spec["questions"][0]
+        assert spec["questions"][0]["options"][0]["recommended"] is True
+        assert _selected(spec) == []
+    finally:
+        brand_identity.reset_for_tests()
 
 
 def test_client_qdefaults_ignores_a_bare_recommended_flag():

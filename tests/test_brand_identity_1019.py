@@ -139,6 +139,9 @@ def test_each_slot_prompt_locks_a_different_structure():
         assert "exactly once" in board["prompt"]
         assert "No other small text." in board["prompt"]
         assert "No bottom caption." in board["prompt"]
+        assert "Each of the four zone labels appears exactly once." in board["prompt"]
+        assert "No empty placeholder box" in board["prompt"] and "no X box" in board["prompt"]
+        assert "小尺寸 includes the symbol" in board["prompt"]
     spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})
     assert "exactly seven cells" in spec["prompt"]
     assert "标识, 色彩, 变体, 字体, 版式, 使用禁忌, 影像与材质" in spec["prompt"]
@@ -151,6 +154,8 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "Do not drop a character" in spec["prompt"]
     assert "red X" in spec["prompt"]
     assert "no invented words" in spec["prompt"]
+    assert "no body copy" in spec["prompt"] and "no sample English" in spec["prompt"]
+    assert "uses only those brand colors" in spec["prompt"]
     assert "title, subtitle" not in spec["prompt"]
     assert "最小尺寸" not in spec["prompt"]
     assert "#" not in spec["prompt"]
@@ -164,7 +169,8 @@ def test_each_slot_prompt_locks_a_different_structure():
     cup = brand.fill_default({"brand_slot": "cup", "prompt": "杯"})
     assert "使用禁忌" in spec["prompt"] and "影像与材质" in spec["prompt"]
     assert "Chinese brand name AND the English brand name" in cup["prompt"]
-    assert "sleeve" in cup["prompt"] and "杯套" in cup["prompt"]
+    assert "must wear a cup sleeve" in cup["prompt"] and "杯套" in cup["prompt"]
+    assert "A bare cup with no sleeve is wrong." in cup["prompt"]
     again = brand.fill_default({"brand_slot": "logo_a", "prompt": a["prompt"]})
     assert again["prompt"].count("STRUCTURE LOCK A") == 1
 
@@ -275,6 +281,8 @@ def test_closing_rules_are_in_the_skill_instructions():
     assert "exact values are on the spec card" in skill
     assert "moodboard color cell" in skill
     assert "no invented words" in skill
+    assert "no body copy" in skill and "cup sleeve" in skill
+    assert "标识, 色彩, 变体, 字体, 版式, 使用禁忌, 影像与材质" in skill
     assert "#" not in skill
     hint = brand.default_hint()
     assert "矢量替换" in hint and "色值为屏幕估算" in hint
