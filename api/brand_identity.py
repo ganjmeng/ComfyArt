@@ -240,7 +240,7 @@ _HEADS = {
     _Q_MARK: ("构成方向偏好", "which logo construction"),
     _Q_SOURCE: ("素材怎么处理", "how should the store and product"),
     _CARD2: ("视觉基准", "visual baseline"),
-    _CARD3: ("logo_primary", "final mark"),
+    _CARD3: ("logo_primary", "final mark", "Logo 方向", "logo direction"),
 }
 
 
@@ -692,7 +692,8 @@ _SLOT_LOCK = {
         "Every cell's content is full-bleed, filling its cell edge to edge: photos and layouts, "
         "no inner margin and no half-empty cell. The label is a small caption in the cell's bottom-left corner. "
         "The nine labels, in this order, are: 质感, 色彩, 符号, 字标, 版式, 材料, 外带杯, 门头, 数字. "
-        "No English sentences, no lorem, no tiny Latin captions. Warm paper ground, not a black field."
+        "No English sentences, no lorem, no tiny Latin captions, no cell numbers such as 9. "
+        "Exactly three cells in each row. Warm paper ground, not a black field."
     ),
     "logo_a": (
         "STRUCTURE LOCK A: the mark is one open single-line drawing of a bird perched on a branch. "

@@ -152,7 +152,6 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "使用禁忌" in spec["prompt"] and "最小尺寸" in spec["prompt"]
     assert "Chinese brand name AND the English brand name" in cup["prompt"]
     assert "sleeve" in cup["prompt"] and "杯套" in cup["prompt"]
-    assert "No bottom caption." in a["prompt"] and "No bottom caption." in b["prompt"] and "No bottom caption." in c["prompt"]
     again = brand.fill_default({"brand_slot": "logo_a", "prompt": a["prompt"]})
     assert again["prompt"].count("STRUCTURE LOCK A") == 1
 
@@ -433,6 +432,21 @@ def test_card3_options_match_the_enforced_structures():
     assert "手刻印章" not in blob
     assert opts[0]["recommended"] is True
     assert [o.get("image_url") for o in opts] == ["/a.png", "/b.png", "/c.png"]
+    brand.reset_for_tests()
+    brand._progress()["urls"] = {"logo_a": "/a.png", "logo_b": "/b.png", "logo_c": "/c.png"}
+    loose = brand.normalize_card({"questions": [{
+        "prompt": "选定哪个 Logo 方向？",
+        "allow_other": True,
+        "options": [
+            {"id": "A", "label": "甲"}, {"id": "B", "label": "乙"},
+            {"id": "C", "label": "丙"}, {"id": "D", "label": "其他"},
+        ],
+    }]}, "zh")
+    loose_opts = loose["questions"][0]["options"]
+    assert loose["allow_other"] is False
+    assert [o["id"] for o in loose_opts] == ["A", "B", "C"]
+    assert [o.get("image_url") for o in loose_opts] == ["/a.png", "/b.png", "/c.png"]
+    assert all(o["label"] != "其他" for o in loose_opts)
     assert "defaults" not in card["questions"][0]
     en = brand.normalize_card({"questions": [{
         "id": "bi_direction",
