@@ -536,30 +536,50 @@ def _refuse_card3_without_thumbs(lang: str) -> None:
     raise ValueError(text)
 
 
-_COLOR_PALETTES = {
-    "A": "暖土 70% #C4784A, 米白 20% #F4EDE4, 靛蓝 10% #3D4A7C",
-    "B": "陶土橘 40% #C46A3A, 焦糖 30% #A86B3C, 米白 20% #F3EBDD, 深焙棕 10% #4A2E24",
-    "C": "鼠尾草绿 45% #8A9A7B, 原木 35% #C4A574, 米白 20% #F4F0E6",
-}
+_HEX_TOKEN = re.compile(r"#[0-9A-Fa-f]{3,8}")
 
 
-def color_palette_line() -> str:
-    """Ratios and hex for the spec card. A missing answer uses palette A."""
+def _strip_hex(text: str) -> str:
+    cleaned = _HEX_TOKEN.sub("", str(text or ""))
+    cleaned = re.sub(r"\s{2,}", " ", cleaned)
+    return cleaned.strip(" ，,;；、")
+
+
+def color_hue_hint() -> str:
+    """The saved color answer as words. Never a hex value and never a ratio."""
     color = _progress().get("color") if isinstance(_progress().get("color"), dict) else {}
     selected = color.get("selected") or []
     key = str(selected[0]).upper()[:1] if selected else ""
-    base = _COLOR_PALETTES.get(key) or _COLOR_PALETTES["A"]
-    other = str(color.get("other") or "").strip()
-    if other:
-        return f"{other}；若未给出比例与色值则使用 {base}"
-    return base
+    other = _strip_hex(str(color.get("other") or ""))
+    label = ""
+    for row in _CARD1_ZH:
+        if row["id"] != _Q_COLOR:
+            continue
+        for opt in row["options"]:
+            if str(opt.get("id") or "") == key:
+                label = _strip_hex(str(opt.get("label") or ""))
+    return other or label
 
 
 def _spec_lock() -> str:
+    hint = color_hue_hint()
+    hint_line = ""
+    if hint:
+        hint_line = (
+            "Soft hue-family hint from the color answer, never a hex value and never a printed swatch: "
+            f"{hint}. It does not add a color. "
+        )
     return (
         "GUIDELINE LOCK: one measured grid of seven filled cells, no empty cell. "
         "Headings exactly: 最小尺寸, 变体, 色彩比例, 字体层级, 版式, 使用禁忌, 影像材质. "
-        f"色彩比例 prints these ratios and hex values and no others: {color_palette_line()}. "
+        "色彩比例 is a ratio strip whose colors are sampled from the reference moodboard's 色彩 cell and from the chosen logo, "
+        "so the strip matches those deliverables. Main colors carry the bulk of the strip. "
+        "Any accent is at most about 5%. Do not print a color that is absent from those references. "
+        "Do not copy a stored palette and do not invent hex values. "
+        + hint_line
+        + "字体层级 shows only the real Chinese brand name and the real English brand name, "
+        "set as type samples at two or three sizes: title, subtitle, and caption. "
+        "No body paragraph. No placeholder text. No lorem ipsum. No invented words. "
         "版式 is a filled layout diagram, not an empty cell. "
         "最小尺寸 states one real minimum size and no other micro-text. "
         "No garbled labels and no extra captions. Paper ground, not black."
@@ -1602,14 +1622,21 @@ def default_hint() -> str:
         "Then exactly four deliverables, brand_slot spec, cup, bag (each 1536x2048 3:4) and storefront (2048x1152 16:9). "
         "refs are the chosen logo shape and the moodboard. The spec card is one grid of seven filled cells: "
         "最小尺寸, 变体, 色彩比例, 字体层级, 版式, 使用禁忌, 影像材质. "
-        "色彩比例 prints the ratios and hex values from the color answer. 版式 is a filled layout diagram. "
+        "色彩比例 is a ratio strip sampled from the reference moodboard's 色彩 cell and the chosen logo, "
+        "matching the deliverables. Main colors carry the bulk. Any accent is at most about 5%. "
+        "No color absent from those references. Do not invent hex values. "
+        "字体层级 shows only the real Chinese brand name and the real English brand name "
+        "as type samples at title, subtitle, and caption sizes. No body paragraph, no placeholder or lorem text, "
+        "and no invented words. 版式 is a filled layout diagram. "
         "The storefront is the full shopfront, front view, with the names once on the fascia and an A-frame standing sign. "
         "Cup and bag print both the Chinese name and the English name. "
         "Do not emit a separate palette image or a type specimen. "
         "Quote each stage once, before it runs (moodboard, then the three logos, then the four deliverables). "
         "Do not send a second quote card for a stage that was already confirmed, and do not quote all eight on one card. "
-        "The closing message has three parts: a delivery list, an honest-limits paragraph that includes "
-        "矢量替换 and 色值为屏幕估算 (vector replacement and screen-estimated color), and a next-step suggestion. "
+        "The closing message has three parts: a delivery list, an honest-limits paragraph, and a next-step suggestion. "
+        "Describe the palette in words consistent with the moodboard. Do not state hex values. "
+        "Say the exact values are on the spec card and are screen estimates. "
+        "The paragraph includes 矢量替换 and 色值为屏幕估算 (vector replacement and screen-estimated color). "
         "Send that closing only after wait_generation reports the four deliverables placed. "
         "Do not put it in the same message as those generate_image calls. "
         "Never say the work is ready to produce (可直接投产)."

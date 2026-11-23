@@ -142,8 +142,15 @@ def test_each_slot_prompt_locks_a_different_structure():
     spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})
     assert "one measured grid of seven filled cells" in spec["prompt"]
     assert "版式 is a filled layout diagram" in spec["prompt"]
-    assert brand.color_palette_line() in spec["prompt"]
-    assert "#C4784A" in spec["prompt"]
+    assert "sampled from the reference moodboard" in spec["prompt"]
+    assert "色彩 cell" in spec["prompt"]
+    assert "real Chinese brand name" in spec["prompt"] and "real English brand name" in spec["prompt"]
+    assert "title, subtitle, and caption" in spec["prompt"]
+    assert "No body paragraph" in spec["prompt"] and "No invented words" in spec["prompt"]
+    assert "#" not in spec["prompt"]
+    assert "sampled from the reference moodboard" in hint
+    assert "Do not state hex values" in hint and "exact values are on the spec card" in hint
+    assert "#" not in hint
     store = brand.fill_default({"brand_slot": "storefront", "prompt": "门头"})
     assert "full shopfront, front view" in store["prompt"]
     assert "A-frame standing sign" in store["prompt"]
@@ -253,8 +260,19 @@ def test_flatten_puts_alpha_on_white_and_leaves_opaque_bytes():
 def test_closing_rules_are_in_the_skill_instructions():
     from pathlib import Path
     text = Path("src/skills.ts").read_text(encoding="utf-8")
-    assert "矢量替换" in text and "色值为屏幕估算" in text
-    assert "可直接投产" in text and "Never say" in text
+    start = text.index("id: 'brand-identity-director'")
+    skill = text[start:text.index("category: 'branding'", start)]
+    assert "矢量替换" in skill and "色值为屏幕估算" in skill
+    assert "可直接投产" in skill and "Never say" in skill
+    assert "words consistent with the moodboard" in skill
+    assert "does not state hex values" in skill
+    assert "exact values are on the spec card" in skill
+    assert "sampled from the reference moodboard" in skill
+    assert "no invented words" in skill
+    assert "#" not in skill
+    hint = brand.default_hint()
+    assert "矢量替换" in hint and "色值为屏幕估算" in hint
+    assert "#" not in hint
 
 
 def test_fallback_copy_does_not_name_one_brand():
@@ -522,16 +540,32 @@ def test_card3_without_logo_urls_is_an_error_and_the_second_try_stops():
     assert "还不能出方向卡" in second
 
 
-def test_spec_palette_follows_the_saved_color_answer():
+def test_spec_palette_is_sampled_and_the_color_answer_is_only_a_hue_hint():
+    brand.record_card_answer(_card1(), {
+        "bi_delivery": {"selected": ["A"]},
+        "bi_color": {"selected": ["B"], "other_text": "暖木棕 #6B4A32"},
+        "bi_mark": {"selected": ["A"]},
+        "bi_source": {"selected": ["A"]},
+    })
+    assert brand.color_hue_hint() == "暖木棕"
+    assert "#" not in brand.color_hue_hint()
+    spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})
+    assert "暖木棕" in spec["prompt"]
+    assert "6B4A32" not in spec["prompt"]
+    assert "#C46A3A" not in spec["prompt"] and "#C4784A" not in spec["prompt"]
+    assert "#" not in spec["prompt"]
+    assert "sampled from the reference moodboard" in spec["prompt"]
+    assert "never a printed swatch" in spec["prompt"]
+    brand.reset_for_tests()
     brand.record_card_answer(_card1(), {
         "bi_delivery": {"selected": ["A"]},
         "bi_color": {"selected": ["B"]},
         "bi_mark": {"selected": ["A"]},
         "bi_source": {"selected": ["A"]},
     })
-    spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})
-    assert "#C46A3A" in spec["prompt"]
-    assert "#C4784A" not in spec["prompt"]
+    family = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})
+    assert "纯暖土色系" in family["prompt"]
+    assert "#" not in family["prompt"]
 
 
 def _logos_ready():
