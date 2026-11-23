@@ -131,14 +131,20 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "STRUCTURE LOCK A" in a["prompt"] and "single-line" in a["prompt"]
     assert "STRUCTURE LOCK B" in b["prompt"] and "circular seal" in b["prompt"]
     assert "STRUCTURE LOCK C" in c["prompt"] and "cup-shaped" in c["prompt"]
+    assert "bird perched on a branch" in c["prompt"] and "not leaves alone" in c["prompt"]
     assert "single-line" not in b["prompt"]
-    assert "bird standing on a branch" in c["prompt"]
+    for board in (a, b, c):
+        assert "主组合" in board["prompt"] and "横版" in board["prompt"] and "小尺寸" in board["prompt"]
+        assert "bottom caption" in board["prompt"]
     spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})
     cup = brand.fill_default({"brand_slot": "cup", "prompt": "杯"})
+    front = brand.fill_default({"brand_slot": "storefront", "prompt": "门头"})
     assert "使用禁忌" in spec["prompt"] and "最小尺寸" in spec["prompt"]
+    assert "百分比" in spec["prompt"] or "proportion" in spec["prompt"]
+    assert "版式 contains a short layout rule" in spec["prompt"]
     assert "Chinese brand name AND the English brand name" in cup["prompt"]
     assert "sleeve" in cup["prompt"] and "杯套" in cup["prompt"]
-    assert "No bottom caption." in a["prompt"] and "No bottom caption." in b["prompt"] and "No bottom caption." in c["prompt"]
+    assert "门楣横招牌" in front["prompt"] and "正面门店外立面全景" in front["prompt"]
     again = brand.fill_default({"brand_slot": "logo_a", "prompt": a["prompt"]})
     assert again["prompt"].count("STRUCTURE LOCK A") == 1
 
@@ -258,7 +264,7 @@ def test_fallback_copy_does_not_name_one_brand():
     assert [opt["description"] for opt in card3["questions"][0]["options"]] == [
         "一根连续的线，画出停在枝上的鸟",
         "实心木牌，旁边一枚圆形印章",
-        "杯子外形，符号是杯中的负空间",
+        "杯子外形，杯中的负空间是一只停在枝上的鸟",
     ]
     assert "栖" not in __import__("json").dumps(card3, ensure_ascii=False)
 
@@ -412,12 +418,27 @@ def test_card3_options_match_the_enforced_structures():
     assert [(o["label"], o["description"]) for o in opts] == [
         ("单线鸟停枝", "一根连续的线，画出停在枝上的鸟"),
         ("木牌加圆印", "实心木牌，旁边一枚圆形印章"),
-        ("杯形负空间", "杯子外形，符号是杯中的负空间"),
+        ("杯形负空间", "杯子外形，杯中的负空间是一只停在枝上的鸟"),
     ]
     blob = __import__("json").dumps(card, ensure_ascii=False)
     assert "手刻印章" not in blob
     assert opts[0]["recommended"] is True
     assert [o.get("image_url") for o in opts] == ["/a.png", "/b.png", "/c.png"]
+    brand.reset_for_tests()
+    brand._progress()["urls"] = {"logo_a": "/a.png", "logo_b": "/b.png", "logo_c": "/c.png"}
+    loose = brand.normalize_card({"questions": [{
+        "prompt": "选定哪个 Logo 方向？",
+        "allow_other": True,
+        "options": [
+            {"id": "A", "label": "甲"}, {"id": "B", "label": "乙"},
+            {"id": "C", "label": "丙"}, {"id": "D", "label": "其他"},
+        ],
+    }]}, "zh")
+    loose_opts = loose["questions"][0]["options"]
+    assert loose["allow_other"] is False
+    assert [o["id"] for o in loose_opts] == ["A", "B", "C"]
+    assert [o.get("image_url") for o in loose_opts] == ["/a.png", "/b.png", "/c.png"]
+    assert all(o["label"] != "其他" for o in loose_opts)
     assert "defaults" not in card["questions"][0]
     en = brand.normalize_card({"questions": [{
         "id": "bi_direction",

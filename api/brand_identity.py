@@ -221,7 +221,7 @@ _CARD3_ZH = {
     "options": [
         {"id": "A", "label": "单线鸟停枝", "description": "一根连续的线，画出停在枝上的鸟"},
         {"id": "B", "label": "木牌加圆印", "description": "实心木牌，旁边一枚圆形印章"},
-        {"id": "C", "label": "杯形负空间", "description": "杯子外形，符号是杯中的负空间"},
+        {"id": "C", "label": "杯形负空间", "description": "杯子外形，杯中的负空间是一只停在枝上的鸟"},
     ],
 }
 _CARD3_EN = {
@@ -230,7 +230,7 @@ _CARD3_EN = {
     "options": [
         {"id": "A", "label": "Single-line bird on a branch", "description": "One continuous line draws a bird perched on a branch"},
         {"id": "B", "label": "Wooden signboard and round seal", "description": "A solid wooden signboard plus a separate round seal"},
-        {"id": "C", "label": "Cup-shaped negative space", "description": "A cup-shaped container; the symbol is the cup's negative space"},
+        {"id": "C", "label": "Cup-shaped negative space", "description": "A cup outline whose negative space is a bird perched on a branch"},
     ],
 }
 
@@ -240,7 +240,7 @@ _HEADS = {
     _Q_MARK: ("构成方向偏好", "which logo construction"),
     _Q_SOURCE: ("素材怎么处理", "how should the store and product"),
     _CARD2: ("视觉基准", "visual baseline"),
-    _CARD3: ("logo_primary", "final mark"),
+    _CARD3: ("logo_primary", "final mark", "Logo 方向", "logo direction"),
 }
 
 
@@ -606,32 +606,35 @@ _SLOT_LOCK = {
         "Every cell's content is full-bleed, filling its cell edge to edge: photos and layouts, "
         "no inner margin and no half-empty cell. The label is a small caption in the cell's bottom-left corner. "
         "The nine labels, in this order, are: 质感, 色彩, 符号, 字标, 版式, 材料, 外带杯, 门头, 数字. "
-        "No English sentences, no lorem, no tiny Latin captions. Warm paper ground, not a black field."
+        "No English sentences, no lorem, no tiny Latin captions, no cell numbers such as 9. "
+        "Exactly three cells in each row. Warm paper ground, not a black field."
     ),
     "logo_a": (
         "STRUCTURE LOCK A: the mark is one open single-line drawing of a bird perched on a branch. "
         "No filled plaque, no circular seal, no cup silhouette. "
-        "The sheet still shows the mark, a construction grid, a horizontal lockup, small sizes, and one reversed dark block. "
-        "The lockup prints BOTH the Chinese brand name and the English brand name from the brief. "
-        "No other English words and no garbled captions. No bottom caption."
+        "SHEET LOCK: exactly four zones, top to bottom, each once: 主组合, 符号, 横版, 小尺寸. "
+        "One short Chinese label per zone. The bilingual wordmark appears once in 主组合 and once in 横版, nowhere else. "
+        "No repeated wordmark, no garbled characters, no bottom caption, no English sentences."
     ),
     "logo_b": (
         "STRUCTURE LOCK B: two separate parts, a solid filled wood plaque AND a circular seal. "
         "Not a line-drawing bird standing on a branch. "
-        "The lockup prints BOTH the Chinese brand name and the English brand name. "
-        "No garbled English captions. No bottom caption."
+        "SHEET LOCK: exactly four zones, top to bottom, each once: 主组合, 符号, 横版, 小尺寸. "
+        "The bilingual wordmark appears once in 主组合 and once in 横版, nowhere else. No garbled characters. No bottom caption."
     ),
     "logo_c": (
-        "STRUCTURE LOCK C: the mark is a cup-shaped container and the symbol is the cup's negative space. "
-        "Not a bird standing on a branch, not a circular seal, not a wood plaque. "
-        "The lockup prints BOTH the Chinese brand name and the English brand name. "
-        "No garbled English captions. No bottom caption."
+        "STRUCTURE LOCK C: the mark is a cup-shaped container. Inside the cup, the negative space is a bird perched on a branch, not leaves alone. "
+        "Not a bird standing outside the cup, not a circular seal, not a wood plaque. "
+        "SHEET LOCK: exactly four zones, top to bottom, each once: 主组合, 符号, 横版, 小尺寸. "
+        "The bilingual wordmark appears once in 主组合 and once in 横版, nowhere else. No garbled characters. No bottom caption."
     ),
     "spec": (
         "GUIDELINE LOCK: one board with exactly these seven Chinese headings: "
         "最小尺寸, 变体, 色彩比例, 字体层级, 版式, 使用禁忌, 影像材质. "
-        "Short Chinese words only, plus the brand's own Chinese and English names. "
-        "No invented English such as fake size labels. Paper ground, not black."
+        "最小尺寸 states a real minimum size in Chinese, with no garbled characters. "
+        "版式 contains a short layout rule, not a heading alone. "
+        "色彩比例 shows a percentage or a proportion bar on every color. "
+        "No invented English. Paper ground, not black."
     ),
     "cup": (
         "APPLICATION LOCK: takeaway cup wearing a sleeve (杯套). The print is a complete bilingual lockup: "
@@ -643,8 +646,10 @@ _SLOT_LOCK = {
         "Not English only. No garbled captions. Real paper, not a black void."
     ),
     "storefront": (
-        "APPLICATION LOCK: storefront sign with both the Chinese brand name and the English brand name. "
-        "No garbled small type. The sign is on a real facade, not a black field."
+        "APPLICATION LOCK: a front view of the whole storefront facade (正面门店外立面全景). "
+        "A horizontal lintel sign (门楣横招牌), a shop window, and a standing sidewalk sign. "
+        "Not a close-up of a side-hanging board. Both the Chinese brand name and the English brand name are on the lintel sign. "
+        "No garbled small type."
     ),
 }
 
