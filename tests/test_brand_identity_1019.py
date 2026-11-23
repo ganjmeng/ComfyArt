@@ -140,15 +140,21 @@ def test_each_slot_prompt_locks_a_different_structure():
         assert "No other small text." in board["prompt"]
         assert "No bottom caption." in board["prompt"]
     spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})
-    assert "one measured grid of seven filled cells" in spec["prompt"]
-    assert "版式 is a filled layout diagram" in spec["prompt"]
-    assert "sampled from the reference moodboard" in spec["prompt"]
-    assert "色彩 cell" in spec["prompt"]
+    assert "exactly seven cells" in spec["prompt"]
+    assert "标识, 色彩, 变体, 字体, 版式, 使用禁忌, 影像与材质" in spec["prompt"]
+    assert "No heading is repeated" in spec["prompt"] and "版式 appears once" in spec["prompt"]
+    assert "版式 is one filled layout diagram" in spec["prompt"]
+    assert "moodboard 色彩 cell" in spec["prompt"]
+    assert "Chinese color name, and a percentage" in spec["prompt"]
     assert "real Chinese brand name" in spec["prompt"] and "real English brand name" in spec["prompt"]
-    assert "title, subtitle, and caption" in spec["prompt"]
-    assert "No body paragraph" in spec["prompt"] and "No invented words" in spec["prompt"]
+    assert "character for character" in spec["prompt"]
+    assert "Do not drop a character" in spec["prompt"]
+    assert "red X" in spec["prompt"]
+    assert "no invented words" in spec["prompt"]
+    assert "title, subtitle" not in spec["prompt"]
+    assert "最小尺寸" not in spec["prompt"]
     assert "#" not in spec["prompt"]
-    assert "sampled from the reference moodboard" in hint
+    assert "moodboard 色彩 cell" in hint
     assert "Do not state hex values" in hint and "exact values are on the spec card" in hint
     assert "#" not in hint
     store = brand.fill_default({"brand_slot": "storefront", "prompt": "门头"})
@@ -156,7 +162,7 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "A-frame standing sign" in store["prompt"]
     assert "Not a hanging-sign close-up" in store["prompt"]
     cup = brand.fill_default({"brand_slot": "cup", "prompt": "杯"})
-    assert "使用禁忌" in spec["prompt"] and "最小尺寸" in spec["prompt"]
+    assert "使用禁忌" in spec["prompt"] and "影像与材质" in spec["prompt"]
     assert "Chinese brand name AND the English brand name" in cup["prompt"]
     assert "sleeve" in cup["prompt"] and "杯套" in cup["prompt"]
     again = brand.fill_default({"brand_slot": "logo_a", "prompt": a["prompt"]})
@@ -267,7 +273,7 @@ def test_closing_rules_are_in_the_skill_instructions():
     assert "words consistent with the moodboard" in skill
     assert "does not state hex values" in skill
     assert "exact values are on the spec card" in skill
-    assert "sampled from the reference moodboard" in skill
+    assert "moodboard color cell" in skill
     assert "no invented words" in skill
     assert "#" not in skill
     hint = brand.default_hint()
@@ -554,7 +560,7 @@ def test_spec_palette_is_sampled_and_the_color_answer_is_only_a_hue_hint():
     assert "6B4A32" not in spec["prompt"]
     assert "#C46A3A" not in spec["prompt"] and "#C4784A" not in spec["prompt"]
     assert "#" not in spec["prompt"]
-    assert "sampled from the reference moodboard" in spec["prompt"]
+    assert "sampled from the moodboard 色彩 cell" in spec["prompt"]
     assert "never a printed swatch" in spec["prompt"]
     brand.reset_for_tests()
     brand.record_card_answer(_card1(), {
