@@ -235,6 +235,7 @@ def test_locales_only_add_memory_retrieved_430():
         "skillRun.defaultWorkflow",
         # Brand quote cards: expired sentence and the fixed-size notice.
         "jobs.quoteExpired", "jobs.fixedSlotSize",
+        "jobs.brandStart", "jobs.requote", "jobs.quoteDeadline",
     }
     for p, v in (("src/locales/zh.json", "记忆已读取"), ("src/locales/en.json", "Memory retrieved")):
         cur = json.loads(_src(p))
@@ -267,6 +268,10 @@ def test_locales_only_add_memory_retrieved_430():
     assert en["jobs.quoteExpired"] == "This quote has expired. Request a new price."
     assert zh["jobs.fixedSlotSize"] == "尺寸固定，不可修改"
     assert en["jobs.fixedSlotSize"] == "Size is fixed and cannot be edited"
+    assert zh["jobs.brandStart"] == "开始" and en["jobs.brandStart"] == "Start"
+    assert zh["jobs.requote"] == "重新取价" and en["jobs.requote"] == "Request a new price"
+    assert zh["jobs.quoteDeadline"] == "报价 10 分钟内有效，截止 {0}（北京时间）"
+    assert en["jobs.quoteDeadline"] == "This quote is valid for 10 minutes, until {0} (Beijing time)."
     # Same substitution the quote card uses ({0} width, {1} height, {2} ratio).
     for template, face in (
         (zh["quote.lineartPreviewSize"], "线稿预览 · 1152×2048 · 9:16"),

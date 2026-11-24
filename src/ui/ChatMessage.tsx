@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { Editor } from 'tldraw'
 
-import { answerAsk, quoteAnswer, continueRun, outputsOf, toolLabel, toolName, type AskAnswers, type AskQuestion, type BotBlock, type BotMessage } from '../bot'
+import { answerAsk, quoteAnswer, continueRun, outputsOf, sendMessage, toolLabel, toolName, type AskAnswers, type AskQuestion, type BotBlock, type BotMessage } from '../bot'
 import { openBotSettingsWithLlmMode } from './AgentPicker'
 import { refFromUrl, setAgentPlanConfirmed } from '../comfy'
 import { draftAtom } from '../agent'
@@ -15,7 +15,7 @@ import { Markdown } from './Markdown'
 import { Thumb } from './TaskDetails'
 import { CopyButton } from './CopyButton'
 import { lang, t } from '../i18n'
-import { brandConfirmClosed } from '../brandQuoteCard'
+import { brandConfirmClosed, brandDeadlineClock, brandQuoteAction } from '../brandQuoteCard'
 import { openMemoryDialog } from './MemoryDialog'
 import { stepState } from './stepState'
 import { readLocal, writeLocal } from '../localPrefs'
@@ -870,26 +870,55 @@ function PlanQuote({ b }: { b: BotBlock }) {
       <div className="ca-chat__memo" data-testid="brand-quote-expired">
         <span className="ca-icon">{Icons.close}</span>
         {t('jobs.quoteExpired')}
+        <button
+          type="button"
+          className="ca-panel__primary"
+          data-testid="brand-quote-requote"
+          onClick={() => {
+            void sendMessage({ text: t('jobs.requote'), refs: [], docs: [], kits: [] })
+          }}
+        >
+          {t('jobs.requote')}
+        </button>
       </div>
     )
   }
   const pending = b.status === 'pending'
   if (pending && askId) {
     const answer = quoteAnswer(askId)
+    const brandAction = b.brand_confirm ? brandQuoteAction(b.price_state) : 'start'
+    const okLabel = !b.brand_confirm
+      ? t('jobs.confirmOk')
+      : brandAction === 'requote'
+        ? t('jobs.requote')
+        : t('jobs.brandStart')
+    const deadline = b.brand_confirm && typeof b.expires_at === 'number' && Number.isFinite(b.expires_at)
+      ? t('jobs.quoteDeadline', brandDeadlineClock(b.expires_at))
+      : undefined
     const card = (
       <>
-        {b.size_locked ? <p className="ca-chat__hint" data-testid="brand-fixed-size">{t('jobs.fixedSlotSize')}</p> : null}
         <ChatInlineConfirm
           title={t('jobs.confirmTitle')}
           desc={b.prompt ?? ''}
-          okLabel={t('jobs.confirmOk')}
+          okLabel={okLabel}
           lines={b.lines ?? []}
           totalLabel={b.total_label}
           total={b.total}
+          footnote={deadline}
           testId="chat-inline-planquote"
           onConfirm={async () => {
             if (brandConfirmClosed(b, Date.now())) {
               setNow(Date.now())
+              return
+            }
+            if (brandAction === 'requote') {
+              try {
+                await answer(['requote'])
+              } catch (e) {
+                setNow(Date.now())
+                setError(errorText(e))
+                throw e
+              }
               return
             }
             setAgentPlanConfirmed(true)

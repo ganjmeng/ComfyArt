@@ -574,10 +574,16 @@ BRAND_QUOTE_LOCALE = {
     "zh": {
         "jobs.quoteExpired": "报价已过期，请重新取价",
         "jobs.fixedSlotSize": "尺寸固定，不可修改",
+        "jobs.brandStart": "开始",
+        "jobs.requote": "重新取价",
+        "jobs.quoteDeadline": "报价 10 分钟内有效，截止 {0}（北京时间）",
     },
     "en": {
         "jobs.quoteExpired": "This quote has expired. Request a new price.",
         "jobs.fixedSlotSize": "Size is fixed and cannot be edited",
+        "jobs.brandStart": "Start",
+        "jobs.requote": "Request a new price",
+        "jobs.quoteDeadline": "This quote is valid for 10 minutes, until {0} (Beijing time).",
     },
 }
 LOCALE_EXTRAS = {

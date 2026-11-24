@@ -523,6 +523,122 @@ async def test_same_execution_with_a_new_currency_or_quote_id_does_not_reuse_the
         brand.reset_for_tests()
 
 
+def test_stage1_stays_text_to_image_and_later_slots_refuse_without_a_base():
+    brand.reset_for_tests()
+    try:
+        mood = brand.fill_default({"brand_slot": "moodboard", "prompt": "板"})
+        assert mood["model"] == brand.QWEN_T2I
+        assert "_brand_block" not in mood
+
+        bare = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})
+        assert bare.get("model") != brand.QWEN_T2I
+        assert "edit_model" not in bare
+        assert "缺少底图" in bare["_brand_block"]["error"]
+        assert "moodboard" in bare["_brand_block"]["error"]
+
+        brand._progress()["shapes"]["moodboard"] = "shape:mood"
+        logo = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})
+        assert logo["edit_model"] == brand.QWEN_EDIT
+        assert logo["refs"] == ["shape:mood"]
+        assert "_brand_block" not in logo
+
+        spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})
+        assert "logo_a" in spec["_brand_block"]["error"]
+        assert spec.get("model") != brand.QWEN_T2I
+        brand._progress()["shapes"]["logo_a"] = "shape:logo_a"
+        ready = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})
+        assert ready["edit_model"] == brand.QWEN_EDIT
+        assert ready["refs"] == ["shape:logo_a", "shape:mood"]
+    finally:
+        brand.reset_for_tests()
+
+
+async def test_an_estimate_keeps_approx_and_does_not_offer_start():
+    from ComfyArt.bot.plan_quote import build_quote
+
+    brand.reset_for_tests()
+    try:
+        async def estimated(_model, _inputs):
+            return (0.03, "estimate", "live")
+
+        async def models(_feature):
+            return []
+
+        steps = _three()
+        for step in steps:
+            step["model"] = brand.QWEN_EDIT
+        quote = await build_quote(steps, "zh", threshold=0.5, pricer=estimated, models_for=models)
+        assert quote is not None
+        assert "约" in quote.prompt and "约" in quote.total_text
+        assert "实时价暂不可用" in quote.prompt
+        assert "开始" not in quote.prompt
+        spec = brand.stamp_confirm_spec(
+            quote.ask_spec(), steps, _Turn(), amount=quote.total, lang="zh",
+            currency=quote.currency, quote_id=quote.quote_id)
+        assert spec["price_state"] == "estimate"
+        assert [row["id"] for row in spec["options"]] == ["requote", "cancel"]
+        assert spec["options"][0]["label"] == "重新取价"
+        assert spec["expires_at"] - spec["created_at"] == pytest.approx(600.0)
+    finally:
+        brand.reset_for_tests()
+
+
+async def test_an_unpriced_brand_card_shows_no_amount_and_no_start():
+    from ComfyArt.bot.plan_quote import build_quote
+
+    brand.reset_for_tests()
+    try:
+        async def missing(_model, _inputs):
+            return (None, "unpriced", "")
+
+        async def models(_feature):
+            return []
+
+        steps = _three()
+        for step in steps:
+            step["model"] = brand.QWEN_EDIT
+        quote = await build_quote(steps, "zh", threshold=0.5, pricer=missing, models_for=models)
+        assert quote is not None
+        assert quote.total_text == "未定价"
+        assert not any(ch.isdigit() for ch in quote.total_text)
+        assert "开始" not in quote.prompt
+        assert all(not any(ch.isdigit() for ch in line.price) for line in quote.lines)
+        spec = brand.stamp_confirm_spec(
+            quote.ask_spec(), steps, _Turn(), amount=quote.total, lang="zh")
+        assert spec["price_state"] == "unpriced"
+        assert [row["id"] for row in spec["options"]] == ["requote", "cancel"]
+    finally:
+        brand.reset_for_tests()
+
+
+async def test_a_real_brand_price_offers_start():
+    from ComfyArt.bot.plan_quote import build_quote
+
+    brand.reset_for_tests()
+    try:
+        async def priced(_model, _inputs):
+            return (0.03, "quote", "live")
+
+        async def models(_feature):
+            return []
+
+        steps = _three()
+        for step in steps:
+            step["model"] = brand.QWEN_EDIT
+        quote = await build_quote(steps, "zh", threshold=0.5, pricer=priced, models_for=models)
+        assert quote is not None
+        assert quote.price_state == "quote"
+        assert "约" not in quote.total_text
+        spec = brand.stamp_confirm_spec(
+            quote.ask_spec(), steps, _Turn(), amount=quote.total, lang="zh",
+            currency=quote.currency, quote_id=quote.quote_id)
+        assert [row["id"] for row in spec["options"]] == ["start", "cancel"]
+        assert spec["options"][0]["label"] == "开始"
+        assert spec["expires_at"] - spec["created_at"] == pytest.approx(600.0)
+    finally:
+        brand.reset_for_tests()
+
+
 class _Crash(BaseException):
     """Leaves send() the way a process kill after POST would: not an Exception."""
 
@@ -691,5 +807,60 @@ async def test_restart_after_submit_writes_fail_does_not_resend(monkeypatch):
         assert brand._grant_of(2)["expires_at"] == expires_at
     finally:
         monkeypatch.undo()
+        BOT_CHAT_ID.reset(token)
+        brand.reset_for_tests()
+
+
+async def test_a_brand_generate_without_a_slot_is_filled_and_reserved(monkeypatch):
+    from test_agent_budget_391 import calls
+
+    token = BOT_CHAT_ID.set("c")
+    try:
+        rig, expires_at = await _confirmed_stage(monkeypatch)
+
+        def boom(_args):
+            raise _Crash("after post")
+
+        monkeypatch.setattr(brand, "note_brand_submitted", boom)
+
+        def second(messages, n):
+            if n == 0:
+                return calls(
+                    ("quote_plan", {"steps": _three()}),
+                    ("generate_image", {"prompt": "logo_a", "skill": brand.SKILL}),
+                )
+            return rig._reply("好")
+
+        rig.script = second
+        rig.n = 0
+        with pytest.raises(_Crash):
+            await rig.send("生成参数没有槽位")
+        assert len(rig.paid_mcp()) == 1
+        assert rig.paid_mcp()[0][1].get("brand_slot") == "logo_a"
+        assert brand.dispatching_slots(2) == {"logo_a"}
+        assert brand._grant_of(2)["expires_at"] == expires_at
+    finally:
+        BOT_CHAT_ID.reset(token)
+        brand.reset_for_tests()
+
+
+async def test_a_logo_without_its_base_is_not_quoted_or_dispatched(monkeypatch):
+    token = BOT_CHAT_ID.set("c")
+    try:
+        rig, expires_at = await _confirmed_stage(monkeypatch)
+        brand._progress()["shapes"].pop("moodboard", None)
+
+        def second(messages, n):
+            if n == 0:
+                return _stage_message(_logo_call("logo_a"))
+            return rig._reply("好")
+
+        rig.script = second
+        rig.n = 0
+        _res, events = await rig.send("没有情绪板还要出 Logo")
+        assert rig.paid_mcp() == []
+        assert any("缺少底图" in (event.text or "") for event in events)
+        assert brand._grant_of(2)["expires_at"] == expires_at
+    finally:
         BOT_CHAT_ID.reset(token)
         brand.reset_for_tests()

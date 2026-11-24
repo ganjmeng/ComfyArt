@@ -377,10 +377,20 @@ class Quote:
             "lines": [{"text": ln.text, "price": ln.price, "source": ln.source} for ln in self.lines],
             "total_label": self.total_label,
             "total": self.total_text,
+            "price_state": self.price_state,
         }
         if self.composition_plan:
             spec["composition_plan"] = self.composition_plan
         return spec
+
+    @property
+    def price_state(self) -> str:
+        """quote, estimate, or unpriced. An estimate or an unpriced line is not a real price."""
+        if any(ln.unpriced for ln in self.lines):
+            return "unpriced"
+        if any(ln.source == SOURCE_ESTIMATE for ln in self.lines):
+            return "estimate"
+        return "quote"
 
     def started_result(self) -> str:
         """No prices: the card already showed them, and an under-threshold start shows none."""
@@ -754,7 +764,17 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         question = "确定开始吗？" if lang == "zh" else "Start?"
         gap = "" if lang == "zh" else " "  # en: "…lower. Start?", never "…lower.Start?"
         prompt = prompt.replace(question, f"{LIST_PRICE_EXPLAIN[lang]}{gap}{question}")
-    if brand_stage and not any_unpriced:
+    question = "确定开始吗？" if lang == "zh" else "Start?"
+    if brand_stage and any_estimate:
+        # Keep the generic sentence (it still says 约, and a list-price estimate
+        # keeps its own explanation). Do not replace it with the real-price prompt.
+        prompt = prompt.replace(question, "").strip()
+        note = "实时价暂不可用。" if lang == "zh" else "The live price is unavailable."
+        if note.strip("。") not in prompt and "live price is unavailable" not in prompt.lower():
+            prompt = f"{prompt}{note}" if lang == "zh" else f"{prompt} {note}"
+    elif brand_stage and any_unpriced:
+        prompt = prompt.replace(question, "").strip()
+    elif brand_stage and not any_unpriced:
         from ..api.brand_identity import brand_prompt, quoted_stage, spend_before
         from .run_budget import ui_credits as _ui_credits
         stage = quoted_stage(prepared)

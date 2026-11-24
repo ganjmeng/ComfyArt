@@ -884,7 +884,96 @@ def fill_default(args: dict) -> dict:
         # The moodboard / chosen logo lead. A caller-supplied ref stays behind them.
         extra = [str(r) for r in (args.get("refs") or []) if str(r) not in refs]
         args["refs"] = refs + extra
+    stage_n = int(slot["stage"])
+    held = str(slot["id"]) in submitted_slots(stage_n) or str(slot["id"]) in _held_slots(stage_n)
+    missing = None if held else missing_base_message(str(slot["id"]))
+    if missing or (held and not (args.get("refs") or args.get("base"))):
+        # Stage 2/3 never become a text-to-image call when the base shape is absent.
+        # A slot already reserved stays without a model; the submit gate reports it.
+        args.pop("model", None)
+        args.pop("edit_model", None)
+        args.pop("auto_model", None)
+        args.pop("size_candidates", None)
+        if missing:
+            args["_brand_block"] = {
+                "status": "failed",
+                "submitted": False,
+                "generation_succeeded": False,
+                "error": missing,
+                "user_message": missing,
+            }
+        return args
     return pin_exact_model(args)
+
+
+def missing_base_message(slot_id: str) -> str | None:
+    """Why a stage 2/3 repair slot cannot be quoted or submitted, or None when its bases are present.
+
+    Stage 1 (the moodboard) is a text-to-image and is not checked here. Stage 2 needs the
+    moodboard shape. Stage 3 needs that shape and the chosen logo shape. A missing one is
+    a refusal, not a silent text-to-image.
+    """
+    slot = _BY_ID.get(str(slot_id or ""))
+    if slot is None or int(slot["stage"]) < 2:
+        return None
+    progress = _progress()
+    shapes = progress.get("shapes") or {}
+    missing: list[str] = []
+    if not str(shapes.get("moodboard") or ""):
+        missing.append("moodboard")
+    if int(slot["stage"]) >= 3:
+        chosen = str(progress.get("chosen") or "logo_a")
+        if not str(shapes.get(chosen) or ""):
+            missing.append(chosen)
+    if not missing:
+        return None
+    names = ", ".join(missing)
+    return (
+        f"槽位 {slot['id']} 缺少底图（{names}），不能改成文生图，未报价、未提交。"
+        f" / Slot {slot['id']} is missing its base ({names}). "
+        "It was not quoted or submitted, and it was not sent as text-to-image."
+    )
+
+
+def stage_base_block(steps: list) -> str | None:
+    """The first stage 2/3 slot in this quote whose required shape is missing.
+
+    A slot already submitted, dispatching, or unknown is left to that record.
+    It is not priced again and it is not turned into a text-to-image call.
+    """
+    for step in steps or []:
+        slot = _slot_id_of(step)
+        stage = stage_of(slot)
+        if slot and (slot in submitted_slots(stage) or slot in _held_slots(stage)):
+            continue
+        message = missing_base_message(slot)
+        if message:
+            return message
+    return None
+
+
+def bind_brand_generate(args: dict, quote_steps: list | None = None, claimed: set | None = None) -> dict:
+    """Put a brand slot on this generate before it can be reserved.
+
+    Quote annotation fills the quote steps only. The generate_image arguments can
+    still omit brand_slot. Copy the next quoted slot, or the stage's next slot,
+    and then apply the same base-shape refusal as a direct fill.
+    """
+    args = dict(args or {})
+    skill = str(args.get("skill") or "")
+    if skill and skill != SKILL and not args.get("brand_slot"):
+        return args
+    if not args.get("brand_slot"):
+        taken = claimed or set()
+        for step in quote_steps or []:
+            slot = _slot_id_of(step)
+            if slot and slot not in taken:
+                args["brand_slot"] = slot
+                args["skill"] = SKILL
+                break
+    if str(args.get("skill") or "") == SKILL or args.get("brand_slot"):
+        return fill_default(args)
+    return args
 
 
 def pin_exact_model(args: dict) -> dict:
@@ -1767,7 +1856,10 @@ def normalize_slot_execution(args: dict) -> dict | None:
         return None
     filled = fill_default(raw)
     if filled.get("_brand_block"):
-        return None
+        # The quote can still name the slot. The missing base is not a text-to-image execution.
+        filled = {key: value for key, value in filled.items() if key != "_brand_block"}
+        for key in ("model", "edit_model", "auto_model", "size_candidates"):
+            filled.pop(key, None)
     params = {}
     for key in sorted(filled):
         if key in _EXEC_SKIP:
@@ -1904,6 +1996,16 @@ def stamp_confirm_spec(spec: dict, steps: list, turn: object, *, amount: float, 
     card["currency"] = str(currency or BRAND_CURRENCY)
     card["amount"] = round(float(amount or 0), 4)
     card["lang"] = lang_key
+    if str(card.get("price_state") or "") in {"estimate", "unpriced"}:
+        card["options"] = [
+            {"id": "requote", "label": "重新取价" if lang_key == "zh" else "Request a new price"},
+            {"id": "cancel", "label": "取消" if lang_key == "zh" else "Cancel"},
+        ]
+    else:
+        card["options"] = [
+            {"id": "start", "label": "开始" if lang_key == "zh" else "Start"},
+            {"id": "cancel", "label": "取消" if lang_key == "zh" else "Cancel"},
+        ]
     frozen = build_grant(
         steps,
         identity=turn_identity(turn),

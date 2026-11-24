@@ -54,7 +54,9 @@ export interface BotBlock {
   expires_at?: number
   size_locked?: boolean
   quote_id?: string
-  lines?: { text: string; price: string }[]
+  lines?: { text: string; price: string; source?: string }[]
+  /** quote, estimate, or unpriced. Estimate and unpriced brand cards do not offer Start. */
+  price_state?: string
   total?: string
   total_label?: string
   selected?: string[]

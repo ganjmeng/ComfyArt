@@ -134,9 +134,10 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "single-line" not in b["prompt"]
     assert "perched bird is the negative space inside the cup" in c["prompt"]
     assert "bird standing on a branch" in c["prompt"]
-    assert c["model"] == brand.QWEN_T2I
-    assert c["size_candidates"] == [brand.QWEN_T2I]
+    assert c.get("model") != brand.QWEN_T2I
     assert "edit_model" not in c
+    assert "缺少底图" in c["_brand_block"]["error"]
+    assert "moodboard" in c["_brand_block"]["error"]
     for board in (a, b, c):
         assert "STRUCTURE LOCK" not in board["prompt"]
         assert "GUIDELINE LOCK" not in board["prompt"]
@@ -961,6 +962,9 @@ async def test_plan_gate_stops_when_the_same_call_is_blocked_twice(monkeypatch):
     token = BOT_CHAT_ID.set("c")
     try:
         _logos_ready()
+        # The base shapes are present, so this unquoted spec is stopped by the plan gate
+        # rather than by the missing-base refusal.
+        brand._progress()["shapes"]["logo_a"] = "shape:logo_a"
         extra = {"calls": 0}
 
         def script(messages, n):
