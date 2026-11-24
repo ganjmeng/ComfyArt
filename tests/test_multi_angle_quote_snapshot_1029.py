@@ -122,23 +122,26 @@ async def _send(monkeypatch, *, mode="quote", choice="start", change_before_star
     provider = LocalLlmProvider(base_url=lambda: "http://mock-no-network/v1")
     seen = {"n": 0}
 
+    from ComfyArt.api import mcp
+
     async def fake_request(session, method, url, *, headers, json_body=None, timeout=120):
-        if (json_body or {}).get("method") == "tools/list":
+        body = json_body or {}
+        rpc = body.get("method")
+        if rpc == "tools/list":
             return {"result": {"tools": [{"name": n, "inputSchema": {"type": "object", "properties": {}}}
                                           for n in ("ask_user", "generate_image", "wait_generation")]}}
+        if rpc == "tools/call":
+            params = body.get("params") or {}
+            name = params.get("name")
+            out = await mcp._tools_call({"name": name, "arguments": params.get("arguments") or {}})
+            text = next((b.get("text") for b in (out or {}).get("content") or [] if b.get("type") == "text"), "")
+            tools.append((name, text))
+            return {"result": out or {"content": [{"type": "text", "text": ""}], "isError": True}}
         if not str(url).endswith("/chat/completions"):
             return {"data": [{"id": "mock-1029", "context_length": 32000}]}
         item = script[min(seen["n"], len(script) - 1)]
         seen["n"] += 1
         return item
-
-    from ComfyArt.api import mcp
-
-    async def real_mcp(session, endpoint, name, arguments):
-        out = await mcp._tools_call({"name": name, "arguments": arguments})
-        text = next(b["text"] for b in out["content"] if b["type"] == "text")
-        tools.append((name, text))
-        return text, []
 
     async def page(action, args, project, timeout, chat=""):
         sent.append((action, copy.deepcopy(args)))
@@ -181,13 +184,7 @@ async def _send(monkeypatch, *, mode="quote", choice="start", change_before_star
 
     monkeypatch.setattr(wavespeed.aiohttp, "ClientSession", _session_factory(records, catalog, mode))
     monkeypatch.setattr(wavespeed, "_key", lambda: "offline-stand-in")
-    async def window(*_args):
-        return 32000
-
     monkeypatch.setattr(provider, "_request_json", fake_request)
-    monkeypatch.setattr(provider, "_mcp_call_tool", real_mcp)
-    monkeypatch.setattr(provider, "_context_window", window)
-    monkeypatch.setattr(provider, "_run_store", lambda: None)
     monkeypatch.setattr(bot_tools, "broadcast", answer_broadcast)
     monkeypatch.setattr(canvas, "submit_command", page)
     token = BOT_CHAT_ID.set(cid)
