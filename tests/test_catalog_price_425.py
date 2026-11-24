@@ -75,11 +75,11 @@ async def test_quote_matches_thinking_tier(ideo):
     # Omit thinking → WaveSpeed schema default high → $0.015
     price, src = await wavespeed.quote(IDEO, job)
     assert src == "quote" and price == pytest.approx(0.015)
-    assert "thinking" not in ideo["quotes"][-1]["inputs"] or ideo["quotes"][-1]["inputs"].get("thinking") == "high"
+    assert "thinking" not in ideo["quotes"][-1]["input"] or ideo["quotes"][-1]["input"].get("thinking") == "high"
     # Explicit cheap tier → $0.003 (catalog used to show this for every run)
     price_low, src_low = await wavespeed.quote(IDEO, {**job, "thinking": "very low"})
     assert src_low == "quote" and price_low == pytest.approx(0.003)
-    assert ideo["quotes"][-1]["inputs"]["thinking"] == "very low"
+    assert ideo["quotes"][-1]["input"]["thinking"] == "very low"
 
 
 async def test_price_api_down_default_thinking_estimates_quote_price(ideo, monkeypatch):

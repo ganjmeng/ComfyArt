@@ -102,8 +102,8 @@ async def _main():
         wavespeed._quotes.clear()
         wavespeed._catalog.update(models={}, at=0.0)
         try:
-            await wavespeed.quote_detail("acme/offline-price", {"prompt": "cup"})
-            report["quote_detail"] = "allowed"
+            price, source, reason = await wavespeed.quote_detail("acme/offline-price", {"prompt": "cup"})
+            report["quote_detail"] = [price, source, reason]
         except PermissionError as exc:
             report["quote_detail"] = getattr(exc, "reason", str(exc))
         posts = [item for item in shared.attempts if item[0] == "POST"]
@@ -127,8 +127,8 @@ async def _main():
     print(json.dumps(report))
     ok = (
         report["unscoped"] == "denied"
-        and report["quote_detail"] == "inputs_plural_not_official"
-        and report["post_body_keys"] == ["inputs", "model_id"]
+        and report["quote_detail"] == [0.1, "quote", "live"]
+        and report["post_body_keys"] == ["input", "model_id"]
         and report["startup"] == "entered"
         and report["shared"] is True
         and report["sockets_revoked"] is True

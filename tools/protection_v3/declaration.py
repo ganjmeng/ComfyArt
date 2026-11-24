@@ -19,6 +19,8 @@ from tools.protection_v3.constants import (
     RECOVERY_GIT,
     RECOVERY_SOURCE,
     RETIRED_PORTS,
+    STALE_MAIN_GIT,
+    STALE_MAIN_SOURCE,
 )
 
 _RUNTIME_ID = re.compile(r"[A-Za-z0-9_.:-]{1,128}")
@@ -64,6 +66,8 @@ def declare(*, source_git, source_sha256, home, port, runtime_id) -> Declaration
     runtime = _require_text(runtime_id, "missing_runtime_id")
     if type(port) is not int:
         raise DeclarationError("missing_port")
+    if git == STALE_MAIN_GIT or source == STALE_MAIN_SOURCE:
+        raise DeclarationError("stale_main_source")
     if git in RECOVERY_GIT or source == RECOVERY_SOURCE:
         raise DeclarationError("recovery_tree_is_not_main_product")
     if git == OLD_STRICT_GIT or source == OLD_STRICT_SOURCE:

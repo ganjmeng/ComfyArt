@@ -271,7 +271,7 @@ async def test_click_to_edit_point_comment_runs_inpaint_and_pastes_back(page, mo
     assert "把蓝色方块改成红色" in edit["prompt"] and "unchanged" in edit["prompt"]
     assert len(edit["images"]) == 1 and edit["images"][0].startswith("http")  # the crop around the mark is uploaded
     # the quote the backend priced is the one submitted (no under-quote): sunburst edit with one image ref
-    q = [x for x in mock_ws["quotes"] if x["model_id"] == EDIT][-1]["inputs"]
+    q = [x for x in mock_ws["quotes"] if x["model_id"] == EDIT][-1]["input"]
     assert len(q["images"]) == 1 and q.get("resolution") == edit.get("resolution")
     # result is pasted back as a new image next to the source and a done notice is raised
     await _until(lambda: _two_images(pg), 20)
