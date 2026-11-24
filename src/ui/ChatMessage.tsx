@@ -853,6 +853,8 @@ export function OverQuote({ b }: { b: BotBlock }) {
 function PlanQuote({ b }: { b: BotBlock }) {
   const [error, setError] = useState('')
   const [now, setNow] = useState(() => Date.now())
+  const [requoted, setRequoted] = useState(false)
+  const requoteLock = useRef(false)
   const askId = b.ask_id
   const present = b.brand_confirm ? brandCardPresentation(b, now) : null
   const closed = brandConfirmClosed(b, now)
@@ -866,7 +868,7 @@ function PlanQuote({ b }: { b: BotBlock }) {
     const id = window.setTimeout(() => setNow(Date.now()), wait)
     return () => window.clearTimeout(id)
   }, [b.brand_confirm, b.status, b.expires_at])
-  if (present?.face === 'superseded') {
+  if (requoted || present?.face === 'superseded') {
     return (
       <div className="ca-chat__memo" data-testid="brand-quote-superseded">
         {t('jobs.quoteRequoted')}
@@ -882,8 +884,16 @@ function PlanQuote({ b }: { b: BotBlock }) {
           type="button"
           className="ca-panel__primary"
           data-testid="brand-quote-requote"
+          disabled={requoted}
           onClick={() => {
-            void requoteBrandCard(b.ask_id || '').catch((e) => setError(errorText(e)))
+            if (requoteLock.current) return
+            requoteLock.current = true
+            setRequoted(true)
+            void requoteBrandCard(b.ask_id || '').catch((e) => {
+              requoteLock.current = false
+              setRequoted(false)
+              setError(errorText(e))
+            })
           }}
         >
           {t('jobs.requote')}
@@ -921,9 +931,14 @@ function PlanQuote({ b }: { b: BotBlock }) {
               return
             }
             if (brandAction === 'requote') {
+              if (requoteLock.current) return
+              requoteLock.current = true
+              setRequoted(true)
               try {
                 await requoteBrandCard(askId)
               } catch (e) {
+                requoteLock.current = false
+                setRequoted(false)
                 setNow(Date.now())
                 setError(errorText(e))
                 throw e

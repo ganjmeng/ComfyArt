@@ -129,3 +129,31 @@ test('a replaced card is one line with no buttons and the new card keeps its own
   const stillOpen = { ...oldCard, replaced_by: '' }
   assert.equal(brandCardPresentation(stillOpen, now).face, 'pending')
 })
+
+test('an expired card with replaced_by collapses to one line and a second click does not surface 409', () => {
+  const now = Date.UTC(2026, 10, 24, 6, 0, 0)
+  const expired = {
+    brand_confirm: true, ask_id: 'old', status: 'pending',
+    expires_at: now / 1000 - 60, price_state: 'quote', prompt: '6 积分',
+  }
+  assert.equal(brandCardPresentation(expired, now).face, 'expired')
+  assert.deepEqual(brandCardPresentation(expired, now).buttons, ['requote'])
+  const replaced = { ...expired, replaced_by: 'new-ask' }
+  const face = brandCardPresentation(replaced, now)
+  assert.equal(face.face, 'superseded')
+  assert.deepEqual(face.buttons, [])
+  assert.equal(face.deadline, '')
+  const view = readFileSync(new URL('../src/ui/ChatMessage.tsx', import.meta.url), 'utf8')
+  const bot = readFileSync(new URL('../src/bot.ts', import.meta.url), 'utf8')
+  const clickAt = view.indexOf('data-testid="brand-quote-requote"')
+  const click = view.slice(clickAt, view.indexOf('{t(\'jobs.requote\')}', clickAt))
+  assert.match(click, /disabled=\{requoted\}/)
+  assert.match(click, /if \(requoteLock\.current\) return/)
+  assert.match(click, /setRequoted\(true\)/)
+  assert.match(click, /requoteBrandCard\(b\.ask_id/)
+  const fnAt = bot.indexOf('export async function requoteBrandCard')
+  const fn = bot.slice(fnAt, bot.indexOf('export function quoteAnswer', fnAt))
+  assert.match(fn, /requoteInflight\.has\(askId\)/)
+  assert.match(fn, /if \(res\.status === 409\) return/)
+  assert.doesNotMatch(fn, /setError/)
+})

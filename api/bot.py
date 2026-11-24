@@ -1,3 +1,5 @@
+import asyncio
+
 from aiohttp import web
 
 from ..bot import get_provider, list_providers
@@ -9,6 +11,17 @@ from .bot_turns import ACTIVE_TURNS, QUEUED, broadcast
 from .settings import bot_disabled, bot_enabled, get_setting, mcp_enabled
 
 EXTERNAL_NEEDS_MCP = "external agents need MCP: turn on MCP in Agent settings"
+# One stored-card re-quote at a time per ask. The second waiter sees this set
+# or the written replaced_by and returns 409 instead of appending another card.
+_BRAND_REQUOTE_LOCK: asyncio.Lock | None = None
+_BRAND_REQUOTE_OPEN: set[str] = set()
+
+
+def _brand_requote_lock() -> asyncio.Lock:
+    global _BRAND_REQUOTE_LOCK
+    if _BRAND_REQUOTE_LOCK is None:
+        _BRAND_REQUOTE_LOCK = asyncio.Lock()
+    return _BRAND_REQUOTE_LOCK
 
 
 def _draft_local_llm_key(body: dict, url: str) -> str:
@@ -461,18 +474,32 @@ async def bot_brand_requote(request: web.Request) -> web.Response:
             lang = str((ask.spec or {}).get("lang") or "zh")
             return error(expired_text(lang), 409)
         return web.json_response({"ok": True}, status=202)
-    message, block = _stored_brand_card(chat["id"], ask_id)
-    steps = (block or {}).get("brand_steps") if isinstance(block, dict) else None
-    if message is None or not isinstance(steps, list) or not steps:
-        return error("brand card not found", 404)
+    async with _brand_requote_lock():
+        message, block = _stored_brand_card(chat["id"], ask_id)
+        steps = (block or {}).get("brand_steps") if isinstance(block, dict) else None
+        if message is None or not isinstance(steps, list) or not steps:
+            return error("brand card not found", 404)
+        if str((block or {}).get("replaced_by") or "").strip():
+            return error("brand card already replaced", 409)
+        from .brand_identity import confirm_expired
+        if not confirm_expired(block):
+            return error("brand card is still valid", 409)
+        if ask_id in _BRAND_REQUOTE_OPEN:
+            return error("brand card already replaced", 409)
+        _BRAND_REQUOTE_OPEN.add(ask_id)
+        spec = dict(block or {})
+        spec["ask_id"] = str(spec.get("ask_id") or ask_id)
     provider = get_provider(str(chat.get("provider") or ""))
     if provider is None or not hasattr(provider, "_quote_steps"):
+        _BRAND_REQUOTE_OPEN.discard(ask_id)
         return error("brand re-quote needs the local model", 409)
     from ..bot.local_llm import continue_brand_requote
     try:
-        await continue_brand_requote(provider, chat, message["id"], steps, block)
+        await continue_brand_requote(provider, chat, message["id"], steps, spec)
     except ValueError as e:
         return error(str(e), 409)
+    finally:
+        _BRAND_REQUOTE_OPEN.discard(ask_id)
     return web.json_response({"ok": True}, status=202)
 
 

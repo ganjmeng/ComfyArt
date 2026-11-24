@@ -1098,9 +1098,6 @@ async def test_answer_requote_rejects_the_old_start_and_prices_open_slots(monkey
     finally:
         BOT_CHAT_ID.reset(token)
         brand.reset_for_tests()
-    owner_id = "local"
-    project_id = "local"
-    chat_id = "c"
 
 
 class _SameTurn:
@@ -1180,6 +1177,296 @@ async def test_requote_shows_a_new_card_and_the_old_confirmation_cannot_pay(monk
         rig.n = 0
         await rig.send("旧确认再提交")
         assert rig.paid_mcp() == []
+    finally:
+        BOT_CHAT_ID.reset(token)
+        brand.reset_for_tests()
+
+
+def _stored_steps():
+    steps = _three(lambda slot: f"user text {slot}")
+    for step in steps:
+        step["model"] = brand.QWEN_EDIT
+    return steps
+
+
+def _brand_blocks(chat_id):
+    from ComfyArt.api import chat_store
+    return [
+        block
+        for message in chat_store.list_messages(chat_id)
+        for block in (message.get("blocks") or [])
+        if isinstance(block, dict) and block.get("brand_confirm") is True
+    ]
+
+
+def _park_card(chat_id, ask_id, steps, when, *, valid=False):
+    from ComfyArt.api import chat_store
+    created = when - 610
+    block = {
+        "type": "ask",
+        "ask_id": ask_id,
+        "status": "pending",
+        "kind": "plan_quote",
+        "brand_confirm": True,
+        "lang": "zh",
+        "prompt": "old",
+        "created_at": created,
+        "expires_at": when + 600 if valid else when - 1,
+        "brand_steps": steps,
+        "options": [
+            {"id": "start", "label": "开始"},
+            {"id": "cancel", "label": "取消"},
+        ],
+    }
+    chat_store.create_message(chat_id=chat_id, role="assistant", blocks=[block], status="done")
+    return block
+
+
+async def _wait_pending(seen, n):
+    import asyncio
+    for _ in range(250):
+        if len(seen) >= n and seen[n - 1].id in bot_asks.PENDING:
+            return seen[n - 1]
+        await asyncio.sleep(0.02)
+    raise AssertionError(f"ask {n} missing; seen={len(seen)}")
+
+
+def _spy_asks(monkeypatch):
+    seen = []
+    real = bot_asks.create_ask
+
+    def spy(chat_id, message_id, spec):
+        ask = real(chat_id, message_id, spec)
+        seen.append(ask)
+        return ask
+
+    monkeypatch.setattr(bot_asks, "create_ask", spy)
+    return seen
+
+
+def _install_stored_provider(monkeypatch, priced):
+    from ComfyArt.bot import providers
+    from test_agent_budget_391 import Rig
+
+    def refuse_model(_messages, _n):
+        raise AssertionError("stored re-quote must not call the model")
+
+    rig = Rig(monkeypatch, refuse_model)
+    monkeypatch.setattr(rig.p, "_price_one", priced)
+    monkeypatch.setattr(rig.p, "_models_for", lambda _feature: [])
+    monkeypatch.setitem(providers._REGISTRY, rig.p.id, rig.p)
+    return rig
+
+
+async def test_stored_requote_start_pays_each_open_slot_once(monkeypatch, bot_client):
+    """Expired card → /brand-requote → Start pays the unsubmitted slots once.
+
+    The old card's Start is 409 and adds no paid call. The new deadline is 600 seconds.
+    """
+    import asyncio
+    import time as _time
+
+    from ComfyArt.api.paid_guard import noturn_key
+
+    token = BOT_CHAT_ID.set("")
+    try:
+        assert brand._chat() == noturn_key("anonymous")
+        brand.reset_for_tests()
+        from test_brand_identity_1019 import _logos_ready
+        _logos_ready()
+        steps = _stored_steps()
+        brand.remember_stage_plan(steps, fresh=True)
+        brand.note_brand_submitted(steps[0]["arguments"])
+        # Start's expiry check uses the wall clock. The card deadline is this
+        # same instant plus 600s, so the difference stays exact.
+        clock = {"t": _time.time()}
+        monkeypatch.setattr(brand, "_clock", lambda: clock["t"])
+
+        async def priced(_model, _inputs):
+            return (0.03, "quote", "live", "q-stored", "USD")
+
+        rig = _install_stored_provider(monkeypatch, priced)
+        seen = _spy_asks(monkeypatch)
+        created = await bot_client.post(
+            "/comfyart/bot/chats", json={"provider": "local-llm", "project": "local"})
+        assert created.status < 300, await created.text()
+        chat = (await created.json())["chat"]["id"]
+        old_id = "expired-stored-start"
+        _park_card(chat, old_id, steps, clock["t"])
+        requote = await bot_client.post(
+            f"/comfyart/bot/chats/{chat}/brand-requote", json={"ask_id": old_id})
+        assert requote.status == 202, await requote.text()
+        new = await _wait_pending(seen, 1)
+        assert new.spec["expires_at"] - new.spec["created_at"] == 600
+        assert [step["arguments"]["brand_slot"] for step in new.spec["brand_steps"]] == ["logo_b", "logo_c"]
+        assert [row["id"] for row in new.spec["options"]] == ["start", "cancel"]
+        started = await bot_client.post(
+            f"/comfyart/bot/chats/{chat}/asks/{new.id}/answer", json={"selected": ["start"]})
+        assert started.status == 202, await started.text()
+        for _ in range(250):
+            if len(rig.paid_mcp()) >= 2:
+                break
+            await asyncio.sleep(0.02)
+        paid = [args.get("brand_slot") for _name, args in rig.paid_mcp()]
+        assert paid == ["logo_b", "logo_c"]
+        assert len(paid) == len(set(paid))
+        before = len(rig.paid_mcp())
+        refused = await bot_client.post(
+            f"/comfyart/bot/chats/{chat}/asks/{old_id}/answer", json={"selected": ["start"]})
+        assert refused.status == 409
+        await asyncio.sleep(0.05)
+        assert len(rig.paid_mcp()) == before
+        cards = _brand_blocks(chat)
+        old = next(block for block in cards if block.get("ask_id") == old_id)
+        assert old.get("replaced_by") == new.id
+    finally:
+        BOT_CHAT_ID.reset(token)
+        brand.reset_for_tests()
+
+
+async def test_stored_requote_rejects_a_second_card(monkeypatch, bot_client):
+    """A second re-quote, a still-valid card, and two concurrent re-quotes make one new card."""
+    import asyncio
+
+    from ComfyArt.api.paid_guard import noturn_key
+
+    token = BOT_CHAT_ID.set("")
+    try:
+        assert brand._chat() == noturn_key("anonymous")
+        brand.reset_for_tests()
+        from test_brand_identity_1019 import _logos_ready
+        _logos_ready()
+        steps = _stored_steps()
+        brand.remember_stage_plan(steps, fresh=True)
+        clock = {"t": 1_700_000_000.0}
+        monkeypatch.setattr(brand, "_clock", lambda: clock["t"])
+        gate = asyncio.Event()
+        gate.set()
+
+        async def priced(_model, _inputs):
+            await gate.wait()
+            return (0.03, "quote", "live", "q-once", "USD")
+
+        _install_stored_provider(monkeypatch, priced)
+        created = await bot_client.post(
+            "/comfyart/bot/chats", json={"provider": "local-llm", "project": "local"})
+        assert created.status < 300, await created.text()
+        chat = (await created.json())["chat"]["id"]
+        _park_card(chat, "still-valid", steps, clock["t"], valid=True)
+        kept = await bot_client.post(
+            f"/comfyart/bot/chats/{chat}/brand-requote", json={"ask_id": "still-valid"})
+        assert kept.status == 409, await kept.text()
+        assert len(_brand_blocks(chat)) == 1
+
+        _park_card(chat, "expired-once", steps, clock["t"])
+        first = await bot_client.post(
+            f"/comfyart/bot/chats/{chat}/brand-requote", json={"ask_id": "expired-once"})
+        assert first.status == 202, await first.text()
+        assert len(_brand_blocks(chat)) == 3
+        again = await bot_client.post(
+            f"/comfyart/bot/chats/{chat}/brand-requote", json={"ask_id": "expired-once"})
+        assert again.status == 409, await again.text()
+        assert len(_brand_blocks(chat)) == 3
+        held = next(block for block in _brand_blocks(chat) if block.get("ask_id") not in {"still-valid", "expired-once"})
+        closed = await bot_client.post(
+            f"/comfyart/bot/chats/{chat}/asks/{held['ask_id']}/answer", json={"selected": ["cancel"]})
+        assert closed.status == 202, await closed.text()
+
+        other = await bot_client.post(
+            "/comfyart/bot/chats", json={"provider": "local-llm", "project": "local"})
+        assert other.status < 300, await other.text()
+        chat2 = (await other.json())["chat"]["id"]
+        _park_card(chat2, "expired-race", steps, clock["t"])
+        gate.clear()
+        pending = asyncio.gather(
+            bot_client.post(f"/comfyart/bot/chats/{chat2}/brand-requote", json={"ask_id": "expired-race"}),
+            bot_client.post(f"/comfyart/bot/chats/{chat2}/brand-requote", json={"ask_id": "expired-race"}),
+        )
+        await asyncio.sleep(0.05)
+        gate.set()
+        left, right = await pending
+        codes = sorted(response.status for response in (left, right))
+        assert codes == [202, 409], (codes, await left.text(), await right.text())
+        raced = [block for block in _brand_blocks(chat2) if block.get("ask_id") != "expired-race"]
+        assert len(raced) == 1
+        old = next(block for block in _brand_blocks(chat2) if block.get("ask_id") == "expired-race")
+        assert old.get("replaced_by") == raced[0].get("ask_id")
+        closed = await bot_client.post(
+            f"/comfyart/bot/chats/{chat2}/asks/{raced[0]['ask_id']}/answer", json={"selected": ["cancel"]})
+        assert closed.status == 202, await closed.text()
+    finally:
+        BOT_CHAT_ID.reset(token)
+        brand.reset_for_tests()
+
+
+async def test_live_turn_and_stored_requote_share_the_progress_key(monkeypatch, bot_client):
+    """A live quote and /brand-requote read one progress key and both can price."""
+    import time as _time
+
+    from ComfyArt.api import chat_store
+    from ComfyArt.api.paid_guard import noturn_key
+    from ComfyArt.bot import providers
+    from conftest import wait_bot_done
+    from test_agent_budget_391 import Rig, calls, reply
+    from test_brand_identity_1019 import _logos_ready
+
+    token = BOT_CHAT_ID.set("")
+    try:
+        brand.reset_for_tests()
+        assert BOT_CHAT_ID.get() == ""
+        assert brand._chat() == noturn_key("anonymous")
+        _logos_ready()
+        steps = _stored_steps()
+        brand.remember_stage_plan(steps, fresh=True)
+        clock = {"t": _time.time()}
+        monkeypatch.setattr(brand, "_clock", lambda: clock["t"])
+        seen_keys = []
+        phase = {"name": "live"}
+        real_chat = brand._chat
+
+        def spy():
+            key = real_chat()
+            seen_keys.append((phase["name"], key))
+            return key
+
+        monkeypatch.setattr(brand, "_chat", spy)
+        rig = Rig(monkeypatch, lambda _m, n: calls(("quote_plan", {"steps": steps})) if n == 0 else reply("好"))
+
+        async def priced(_model, _inputs):
+            return (0.03, "quote", "live", "q-key", "USD")
+
+        monkeypatch.setattr(rig.p, "_price_one", priced)
+        monkeypatch.setattr(rig.p, "_models_for", lambda _feature: [])
+        monkeypatch.setitem(providers._REGISTRY, rig.p.id, rig.p)
+        seen = _spy_asks(monkeypatch)
+        created = await bot_client.post(
+            "/comfyart/bot/chats", json={"provider": "local-llm", "project": "local"})
+        assert created.status < 300, await created.text()
+        chat = (await created.json())["chat"]["id"]
+        started = await bot_client.post(
+            f"/comfyart/bot/chats/{chat}/send", json={"text": "同一进度", "lang": "zh"})
+        assert started.status < 300, await started.text()
+        live = await _wait_pending(seen, 1)
+        assert live.spec.get("brand_steps")
+        cancelled = await bot_client.post(
+            f"/comfyart/bot/chats/{chat}/asks/{live.id}/answer", json={"selected": ["cancel"]})
+        assert cancelled.status == 202, await cancelled.text()
+        await wait_bot_done(bot_client, chat, timeout=5)
+        phase["name"] = "stored"
+        old_id = "expired-same-key"
+        _park_card(chat, old_id, steps, clock["t"])
+        requote = await bot_client.post(
+            f"/comfyart/bot/chats/{chat}/brand-requote", json={"ask_id": old_id})
+        assert requote.status == 202, await requote.text()
+        stored = await _wait_pending(seen, 2)
+        assert stored.spec.get("brand_steps")
+        phases = {name for name, _key in seen_keys}
+        assert phases == {"live", "stored"}
+        assert {key for _name, key in seen_keys} == {noturn_key("anonymous")}
+        closed = await bot_client.post(
+            f"/comfyart/bot/chats/{chat}/asks/{stored.id}/answer", json={"selected": ["cancel"]})
+        assert closed.status == 202, await closed.text()
+        assert chat_store.list_messages(chat)
     finally:
         BOT_CHAT_ID.reset(token)
         brand.reset_for_tests()

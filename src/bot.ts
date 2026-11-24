@@ -374,13 +374,34 @@ export async function continueRun(runId: string, lang: string) {
 }
 
 /** Estimate and expired brand cards. The server re-quotes and shows the new card. */
+const requoteInflight = new Set<string>()
+
 export async function requoteBrandCard(askId: string) {
   const chat = currentChat()
   if (!chat || !askId) throw new Error('Missing quote conversation')
+  // A second click while the first request is open returns without a new post.
+  if (requoteInflight.has(askId)) return
+  requoteInflight.add(askId)
   const { brandRequoteRequest } = await import('./brandQuoteCard')
   const req = brandRequoteRequest(chat.id, askId)
-  const ack = await json<{ ok?: boolean }>(req.path, send(req.body))
-  if (!ack || ack.ok !== true) throw new Error('Quote acknowledgement missing')
+  let res: Response
+  try {
+    res = await api(req.path, send(req.body))
+  } catch (e) {
+    requoteInflight.delete(askId)
+    throw e
+  }
+  const body = await res.json().catch(() => ({})) as { ok?: boolean }
+  // 409 means this card was already replaced or is no longer requotable.
+  if (res.status === 409) return
+  if (!res.ok) {
+    requoteInflight.delete(askId)
+    throw new Error(wsBodyError(body, t('err.requestFailed', res.status)))
+  }
+  if (!body || body.ok !== true) {
+    requoteInflight.delete(askId)
+    throw new Error('Quote acknowledgement missing')
+  }
 }
 
 /** Capture before opening a quote: switching chats must not redirect an approval. */
