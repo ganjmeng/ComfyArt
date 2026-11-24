@@ -83,7 +83,8 @@ def _clear_price_cache():
     wavespeed._quotes.clear()
 
 
-async def _send(monkeypatch, *, mode="quote", choice="start", change_before_start=False, generate=True):
+async def _send(monkeypatch, *, mode="quote", choice="start", change_before_start=False,
+               generate=True, through_second_quote=False):
     _clear_price_cache()
     model_id = wavespeed.load_config()["features"]["image_edit"]["default"]
     catalog = {
@@ -110,6 +111,13 @@ async def _send(monkeypatch, *, mode="quote", choice="start", change_before_star
     script = [calls(("ask_user", {"prompt": "setup"}))]
     if generate:
         script.append(calls(("generate_image", PREVIEW)))
+    if through_second_quote:
+        script += [
+            calls(("wait_generation", {"ids": ["holder:1"]})),
+            calls(("ask_user", {"prompt": "compositions"})),
+            calls(("generate_image", {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
+                                      "refs": [REF], "multi_angle_stage": "final", "composition_id": "1"})),
+        ]
     script.append(reply("done"))
     provider = LocalLlmProvider(base_url=lambda: "http://mock-no-network/v1")
     seen = {"n": 0}
@@ -117,7 +125,7 @@ async def _send(monkeypatch, *, mode="quote", choice="start", change_before_star
     async def fake_request(session, method, url, *, headers, json_body=None, timeout=120):
         if (json_body or {}).get("method") == "tools/list":
             return {"result": {"tools": [{"name": n, "inputSchema": {"type": "object", "properties": {}}}
-                                          for n in ("ask_user", "generate_image")]}}
+                                          for n in ("ask_user", "generate_image", "wait_generation")]}}
         if not str(url).endswith("/chat/completions"):
             return {"data": [{"id": "mock-1029", "context_length": 32000}]}
         item = script[min(seen["n"], len(script) - 1)]
@@ -134,7 +142,13 @@ async def _send(monkeypatch, *, mode="quote", choice="start", change_before_star
 
     async def page(action, args, project, timeout, chat=""):
         sent.append((action, copy.deepcopy(args)))
-        return {"ids": [f"holder:{len(sent)}"], "submitted": True}
+        if action == "wait_generation":
+            from multi_angle_plan_fixture import preview_url
+            return {"results": [{"id": h, "status": "done", "placed": True, "generation_succeeded": True,
+                                 "delivered": 1, "shapes": [f"shape:{h}"], "urls": [preview_url()]}
+                                for h in args.get("ids") or []]}
+        nth = sum(1 for kind, _args in sent if kind == "generate_image")
+        return {"ids": [f"holder:{nth}"], "submitted": True}
 
     def answer_broadcast(event, payload):
         if event != "turn_ask":
@@ -150,6 +164,12 @@ async def _send(monkeypatch, *, mode="quote", choice="start", change_before_star
             else:
                 bot_asks.validate_answer(payload, ["cancel"], "")
                 bot_asks.resolve_ask(payload["ask_id"], "cancelled", selected=["cancel"])
+            return
+        ids = {q.get("id") for q in payload.get("questions") or []}
+        if ma.COMPOSITIONS in ids:
+            answers = {ma.COMPOSITIONS: {"selected": ["1"]}}
+            bot_asks.validate_answer(payload, [], "", answers)
+            bot_asks.resolve_ask(payload["ask_id"], "answered", answers=answers)
             return
         seen_setup.append(payload)
         answers = {ma.SOURCE: {"selected": ["single_front"]}, ma.ASPECT: {"selected": ["1:1"]}}
@@ -258,6 +278,39 @@ async def test_real_send_confirmed_start_submits_one_preview(monkeypatch):
         BOT_CHAT_ID.reset(token)
     assert blocked["submitted"] is False and "changed after submission" in blocked["error"]
     assert len(out["sent"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_real_send_reaches_composition_selection_and_second_quote(monkeypatch):
+    """Default send continues: preview, composition answer, then the finals quote."""
+    out = await _send(monkeypatch, through_second_quote=True)
+    posts = _posts(out["http"])
+    assert len(_gets(out["http"])) == 1
+    assert len(posts) == 2, posts
+    assert all(set(body) == {"model_id", "input"} and isinstance(body["input"], dict)
+               for _method, _url, body in posts)
+    assert posts[0][2] != posts[1][2]
+    token = BOT_CHAT_ID.set(out["cid"])
+    try:
+        rows = chat_store.list_messages(out["cid"])
+        quotes = [b for row in rows for b in row["blocks"] if b.get("kind") == "plan_quote"]
+        compositions = [b for row in rows for b in row["blocks"]
+                        if any(q.get("id") == ma.COMPOSITIONS for q in b.get("questions") or [])]
+        ledger = ma._root(out["cid"])[1][ma.LEDGER]
+    finally:
+        BOT_CHAT_ID.reset(token)
+    assert len(quotes) == 2, out["tools"]
+    assert all(q["status"] == "answered" and q.get("selected") == ["start"] for q in quotes)
+    assert all(line["source"] == "quote" for q in quotes for line in q["lines"])
+    assert compositions and compositions[-1]["status"] == "answered"
+    assert compositions[-1]["answers"][ma.COMPOSITIONS]["selected"] == ["1"]
+    assert ledger["preview"].get("delivered") is True
+    assert ledger["setup_snapshot"]["aspect"]["selected"] == ["1:1"]
+    generates = [args for action, args in out["sent"] if action == "generate_image"]
+    assert len(generates) == 2, out["tools"]
+    assert (generates[0]["width"], generates[0]["height"], generates[0]["ratio"]) == (1152, 2048, "9:16")
+    assert (generates[1]["width"], generates[1]["height"], generates[1]["ratio"]) == (2048, 2048, "1:1")
+    assert len(generates[1]["refs"]) == 2
 
 
 @pytest.mark.asyncio
