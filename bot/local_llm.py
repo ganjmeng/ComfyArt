@@ -2115,9 +2115,11 @@ class LocalLlmProvider(AgentProvider):
     async def _confirm_plan(self, spec: dict, turn: TurnRequest, handle: TurnHandle, *,
                             run=None, messages: Optional[list] = None,
                             retire_previous: bool = False) -> str:
-        """'start', 'cancel' (the user's Cancel / dismiss) or 'unattended' (no live turn to ask: nothing
-        is charged and it is not a user stop). #418: an interactive card waits indefinitely, and the run
-        is checkpointed as 'awaiting_confirm' while it does."""
+        """'start', 'requote', 'cancel', 'expired', or 'unattended'.
+
+        重新取价 is its own answer. It is not a cancel and it is not a user stop.
+        #418: an interactive card waits on its deadline, and the run is checkpointed
+        as 'awaiting_confirm' while it does."""
         if handle.stop_requested:
             return "cancel"
         from ..api.bot_turns import ACTIVE_TURNS
@@ -2464,17 +2466,35 @@ class LocalLlmProvider(AgentProvider):
                 steps, [it["args"] for it in paid if it["name"] == "generate_image"])
             brand_steps = steps if isinstance(steps, list) else []
             from ..api.brand_identity import stage_base_block
-            base_block = stage_base_block(brand_steps)
-            if base_block:
-                quote_error = "[error] " + base_block
-                decision = "error"
-            else:
+            # 重新取价 returns here. The next card is the same chain:
+            # stage_base_block, then the still-open slots, then build_quote, then the stamp.
+            requote_card = None
+            while True:
+                base_block = stage_base_block(brand_steps)
+                if base_block:
+                    quote_error = base_block
+                    decision = "error"
+                    break
+                replacing = requote_card is not None
+                if replacing:
+                    from ..api import brand_identity as _brand_again
+                    opened = _brand_again.supersede_brand_card(brand_steps, requote_card)
+                    requote_card = None
+                    if not opened:
+                        quote_error = ("没有尚未提交的槽位，没有开始，也没有扣费。"
+                                       if lang == "zh" else
+                                       "No slot is still open. Nothing started and nothing was charged.")
+                        decision = "error"
+                        break
+                    brand_steps = opened
+                    steps = opened
                 try:
                     quote = await self._quote_steps(steps, lang)
                 except Exception as e:
                     _log.exception("[ComfyArt/local-llm] plan quote failed")
                     quote_error = f"[error] {type(e).__name__}: {e}"
                     decision = "error"
+                    break
                 else:
                     from ..api import brand_identity as _brand
                     # A brand stage uses the frozen grant. stage_fingerprint stays the
@@ -2541,7 +2561,8 @@ class LocalLlmProvider(AgentProvider):
                             brand_spec = spec
                         try:
                             choice = "unattended" if unattended else await self._confirm_plan(
-                                spec, turn, handle, run=run, messages=messages)
+                                spec, turn, handle, run=run, messages=messages,
+                                retire_previous=replacing)
                         except Exception as e:
                             # A confirm that raises is not approval. Do not submit the paid tools.
                             # choice is unset here; the rest of this branch must not read it.
@@ -2551,52 +2572,11 @@ class LocalLlmProvider(AgentProvider):
                         else:
                             if handle.stop_requested:
                                 return TurnResult(aborted=True, usage=usage)
-                            # A brand 重新取价 stays in this turn. The server quotes the
-                            # still-open slots and shows that card. The model is not asked again.
-                            while choice == "requote" and _brand.steps_are_brand_stage(brand_steps):
-                                opened = _brand.supersede_brand_card(brand_steps, spec)
-                                if not opened:
-                                    quote_error = ("没有尚未提交的槽位，没有开始，也没有扣费。"
-                                                   if lang == "zh" else
-                                                   "No slot is still open. Nothing started and nothing was charged.")
-                                    decision = "error"
-                                    choice = ""
-                                    break
-                                try:
-                                    requoted = await self._quote_steps(opened, lang)
-                                except Exception as e:
-                                    _log.exception("[ComfyArt/local-llm] brand re-quote failed")
-                                    quote_error = f"[error] {type(e).__name__}: {e}"
-                                    decision = "error"
-                                    choice = ""
-                                    break
-                                if requoted is None:
-                                    quote_error = ("重新取价没有得到报价，没有开始，也没有扣费。"
-                                                   if lang == "zh" else
-                                                   "The new price did not arrive. Nothing started and nothing was charged.")
-                                    decision = "error"
-                                    choice = ""
-                                    break
-                                quote = requoted
-                                brand_steps = opened
-                                spec = _brand.stamp_confirm_spec(
-                                    quote.ask_spec(), opened, turn, amount=quote.total, lang=lang,
-                                    currency=getattr(quote, "currency", "") or _brand.BRAND_CURRENCY,
-                                    quote_id=getattr(quote, "quote_id", "") or "")
-                                brand_spec = spec
-                                if unattended:
-                                    choice = "unattended"
-                                    break
-                                try:
-                                    choice = await self._confirm_plan(
-                                        spec, turn, handle, run=run, messages=messages,
-                                        retire_previous=True)
-                                except Exception as e:
-                                    _log.exception("[ComfyArt/local-llm] plan confirm failed")
-                                    quote_error = f"[error] {type(e).__name__}: {e}"
-                                    decision = "error"
-                                    choice = ""
-                                    break
+                            # Brand 重新取价 uses the quote chain above. It is not a second pricer.
+                            if choice == "requote" and _brand.steps_are_brand_stage(brand_steps):
+                                requote_card = spec
+                                decision = ""
+                                continue
                             if decision == "error":
                                 pass
                             elif handle.stop_requested:
@@ -2620,6 +2600,7 @@ class LocalLlmProvider(AgentProvider):
                                     run.pending_stop = (Stop(StopReason.USER_STOP, "quote_declined", step=step)
                                                         if choice == "cancel" else
                                                         Stop(StopReason.AWAITING_CONFIRM, "not_approved", step=step))
+                    break
 
         if quote is not None and decision == "start":
             from ..api.brand_identity import (
@@ -3200,18 +3181,22 @@ async def continue_brand_requote(provider, chat: dict, message_id: str, steps: l
     from ..api import bot_asks, chat_store
     from ..api.bot_turns import broadcast
     from ..api.brand_identity import (
-        BRAND_CURRENCY, commit_confirmed_grant, remember_stage_plan, stamp_confirm_spec,
-        supersede_brand_card,
+        BRAND_CURRENCY, commit_confirmed_grant, remember_stage_plan, stage_base_block,
+        stamp_confirm_spec, supersede_brand_card,
     )
     from ..api.mcp_tools._context import BOT_CHAT_ID
 
-    opened = supersede_brand_card(steps, spec)
-    if not opened:
-        raise ValueError("no open brand slot")
     lang = "zh" if str((spec or {}).get("lang") or "zh") == "zh" else "en"
     turn = _CardTurn(chat)
     token = BOT_CHAT_ID.set(turn.chat_id)
     try:
+        # Same chain as a live card: base check, open slots, build_quote, stamp.
+        blocked = stage_base_block(steps)
+        if blocked:
+            raise ValueError(blocked)
+        opened = supersede_brand_card(steps, spec)
+        if not opened:
+            raise ValueError("no open brand slot")
         quote = await provider._quote_steps(opened, lang)
     finally:
         BOT_CHAT_ID.reset(token)

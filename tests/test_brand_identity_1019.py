@@ -136,8 +136,10 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "bird standing on a branch" in c["prompt"]
     assert c.get("model") != brand.QWEN_T2I
     assert "edit_model" not in c
-    assert "缺少底图" in c["_brand_block"]["error"]
-    assert "moodboard" in c["_brand_block"]["error"]
+    assert "Logo 方向 C缺少情绪板底图，无法修复，未报价、未扣费。" in c["_brand_block"]["error"]
+    assert "logo_c" not in c["_brand_block"]["error"]
+    assert "moodboard" not in c["_brand_block"]["error"]
+    assert "[error]" not in c["_brand_block"]["error"]
     for board in (a, b, c):
         assert "STRUCTURE LOCK" not in board["prompt"]
         assert "GUIDELINE LOCK" not in board["prompt"]

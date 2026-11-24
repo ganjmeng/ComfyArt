@@ -765,13 +765,11 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         gap = "" if lang == "zh" else " "  # en: "…lower. Start?", never "…lower.Start?"
         prompt = prompt.replace(question, f"{LIST_PRICE_EXPLAIN[lang]}{gap}{question}")
     question = "确定开始吗？" if lang == "zh" else "Start?"
-    if brand_stage and any_estimate:
-        # Keep the generic sentence (it still says 约, and a list-price estimate
-        # keeps its own explanation). Do not replace it with the real-price prompt.
-        prompt = prompt.replace(question, "").strip()
-        note = "实时价暂不可用。" if lang == "zh" else "The live price is unavailable."
-        if note.strip("。") not in prompt and "live price is unavailable" not in prompt.lower():
-            prompt = f"{prompt}{note}" if lang == "zh" else f"{prompt} {note}"
+    if brand_stage and any_estimate and not any_unpriced:
+        # A brand estimate does not borrow the over-threshold sentence, even when
+        # the amount is under the confirm line. Non-brand cards keep that sentence.
+        prompt = (f"预计约 {total_credits} 积分，实时价暂不可用。" if lang == "zh"
+                  else f"About {total_credits} credits. The live price is unavailable.")
     elif brand_stage and any_unpriced:
         prompt = prompt.replace(question, "").strip()
     elif brand_stage and not any_unpriced:

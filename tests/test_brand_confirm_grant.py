@@ -533,8 +533,9 @@ def test_stage1_stays_text_to_image_and_later_slots_refuse_without_a_base():
         bare = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})
         assert bare.get("model") != brand.QWEN_T2I
         assert "edit_model" not in bare
-        assert "缺少底图" in bare["_brand_block"]["error"]
-        assert "moodboard" in bare["_brand_block"]["error"]
+        assert "Logo 方向 C缺少情绪板底图，无法修复，未报价、未扣费。" in bare["_brand_block"]["error"]
+        assert "logo_c" not in bare["_brand_block"]["error"]
+        assert "moodboard" not in bare["_brand_block"]["error"]
 
         brand._progress()["shapes"]["moodboard"] = "shape:mood"
         logo = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})
@@ -543,7 +544,8 @@ def test_stage1_stays_text_to_image_and_later_slots_refuse_without_a_base():
         assert "_brand_block" not in logo
 
         spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})
-        assert "logo_a" in spec["_brand_block"]["error"]
+        assert "规范卡缺少Logo 方向 A底图，无法修复，未报价、未扣费。" in spec["_brand_block"]["error"]
+        assert "logo_a" not in spec["_brand_block"]["error"]
         assert spec.get("model") != brand.QWEN_T2I
         brand._progress()["shapes"]["logo_a"] = "shape:logo_a"
         ready = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})
@@ -569,8 +571,9 @@ async def test_an_estimate_keeps_approx_and_does_not_offer_start():
             step["model"] = brand.QWEN_EDIT
         quote = await build_quote(steps, "zh", threshold=0.5, pricer=estimated, models_for=models)
         assert quote is not None
-        assert "约" in quote.prompt and "约" in quote.total_text
-        assert "实时价暂不可用" in quote.prompt
+        assert quote.prompt == "预计约 9 积分，实时价暂不可用。"
+        assert "确认线" not in quote.prompt
+        assert "约" in quote.total_text
         assert "开始" not in quote.prompt
         spec = brand.stamp_confirm_spec(
             quote.ask_spec(), steps, _Turn(), amount=quote.total, lang="zh",
@@ -859,7 +862,8 @@ async def test_a_logo_without_its_base_is_not_quoted_or_dispatched(monkeypatch):
         rig.n = 0
         _res, events = await rig.send("没有情绪板还要出 Logo")
         assert rig.paid_mcp() == []
-        assert any("缺少底图" in (event.text or "") for event in events)
+        assert any("无法修复，未报价、未扣费。" in (event.text or "") for event in events)
+        assert not any("[error]" in (event.text or "") or "moodboard" in (event.text or "") for event in events)
         assert brand._grant_of(2)["expires_at"] == expires_at
     finally:
         BOT_CHAT_ID.reset(token)
@@ -898,6 +902,113 @@ async def test_a_dispatching_slot_is_not_sent_when_generate_omits_brand_slot(mon
     finally:
         BOT_CHAT_ID.reset(token)
         brand.reset_for_tests()
+
+
+async def test_answer_requote_rejects_the_old_start_and_prices_open_slots(monkeypatch, bot_client):
+    """POST /answer ['requote'] is a real confirm result, not a cancel.
+
+    The new card is the existing quote chain. The old card's Start is refused
+    and nothing is dispatched. Open slots only, and the new deadline is 600 seconds.
+    """
+    import asyncio
+    import time as _time
+
+    from ComfyArt.api import chat_store
+    from ComfyArt.api.paid_guard import noturn_key
+    from ComfyArt.bot import providers
+    from conftest import wait_bot_done
+    from test_agent_budget_391 import Rig, calls, reply
+    from test_brand_identity_1019 import _logos_ready
+
+    token = BOT_CHAT_ID.set(noturn_key("anonymous"))
+    try:
+        brand.reset_for_tests()
+        _logos_ready()
+        steps = _three(lambda slot: f"user text {slot}")
+        for step in steps:
+            step["model"] = brand.QWEN_EDIT
+        brand.remember_stage_plan(steps, fresh=True)
+        brand.note_brand_submitted(steps[0]["arguments"])
+        clock = {"t": _time.time()}
+        monkeypatch.setattr(brand, "_clock", lambda: clock["t"])
+        rig = Rig(monkeypatch, lambda _m, n: calls(("quote_plan", {"steps": steps})) if n == 0 else reply("好"))
+
+        async def priced(_model, _inputs):
+            return (0.03, "estimate", "live", "q-re", "USD")
+
+        monkeypatch.setattr(rig.p, "_price_one", priced)
+        monkeypatch.setattr(rig.p, "_models_for", lambda _feature: [])
+        monkeypatch.setitem(providers._REGISTRY, rig.p.id, rig.p)
+        seen = []
+        real_create = bot_asks.create_ask
+
+        def spy(chat_id, message_id, spec):
+            ask = real_create(chat_id, message_id, spec)
+            seen.append(ask)
+            return ask
+
+        monkeypatch.setattr(bot_asks, "create_ask", spy)
+        created = await bot_client.post(
+            "/comfyart/bot/chats", json={"provider": "local-llm", "project": "local"})
+        assert created.status < 300, await created.text()
+        chat = (await created.json())["chat"]["id"]
+        started = await bot_client.post(
+            f"/comfyart/bot/chats/{chat}/send", json={"text": "重新取价", "lang": "zh"})
+        assert started.status < 300, await started.text()
+
+        async def wait_ask(n):
+            for _ in range(250):
+                if len(seen) >= n and seen[n - 1].id in bot_asks.PENDING:
+                    return seen[n - 1]
+                await asyncio.sleep(0.02)
+            tail = [b for m in chat_store.list_messages(chat) for b in (m.get("blocks") or [])]
+            raise AssertionError(f"ask {n} missing; seen={len(seen)} tail={tail[-3:]}")
+
+        old = await wait_ask(1)
+        clock["t"] += 5
+        requote = await bot_client.post(
+            f"/comfyart/bot/chats/{chat}/asks/{old.id}/answer", json={"selected": ["requote"]})
+        assert requote.status == 202, await requote.text()
+        new = await wait_ask(2)
+        assert new.spec["expires_at"] - new.spec["created_at"] == pytest.approx(600.0)
+        assert new.spec["created_at"] == clock["t"]
+        assert [step["arguments"]["brand_slot"] for step in new.spec["brand_steps"]] == ["logo_b", "logo_c"]
+        assert [row["id"] for row in new.spec["options"]] == ["requote", "cancel"]
+        assert new.spec["prompt"].startswith("预计约 6 积分，实时价暂不可用。")
+        assert "确认线" not in new.spec["prompt"]
+
+        class _HttpTurn:
+            owner_id = "local"
+            project_id = "local"
+            chat_id = chat
+
+        assert brand.commit_confirmed_grant(
+            steps, old.spec, _HttpTurn(), amount=old.spec.get("amount")) is None
+        refused = await bot_client.post(
+            f"/comfyart/bot/chats/{chat}/asks/{old.id}/answer", json={"selected": ["start"]})
+        assert refused.status == 409
+        cancelled = await bot_client.post(
+            f"/comfyart/bot/chats/{chat}/asks/{new.id}/answer", json={"selected": ["cancel"]})
+        assert cancelled.status == 202, await cancelled.text()
+        data = await wait_bot_done(bot_client, chat, timeout=5)
+        assert rig.paid_mcp() == []
+        cards = [
+            (mi, bi, block)
+            for mi, message in enumerate(data["messages"])
+            for bi, block in enumerate(message.get("blocks") or [])
+            if block.get("brand_confirm") is True
+        ]
+        assert [block["ask_id"] for _mi, _bi, block in cards] == [old.id, new.id]
+        assert cards[0][2].get("replaced_by") == new.id
+        assert "button" not in cards[0][2]
+        assert (cards[1][0], cards[1][1]) > (cards[0][0], cards[0][1])
+        assert cards[1][2]["expires_at"] - cards[1][2]["created_at"] == pytest.approx(600.0)
+    finally:
+        BOT_CHAT_ID.reset(token)
+        brand.reset_for_tests()
+    owner_id = "local"
+    project_id = "local"
+    chat_id = "c"
 
 
 class _SameTurn:
