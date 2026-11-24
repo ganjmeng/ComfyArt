@@ -1199,9 +1199,9 @@ def _upsert_progress(blocks: list, view: dict) -> bool:
 def sync_progress(chat_id: str, *, live: bool) -> dict | None:
     """Write the progress block onto the message that already carries it, or the setup card.
 
-    A live turn keeps the block on its own blocks when that message owns the card,
-    so a later ledger save cannot drop it. Restart (no matching live message)
-    rewrites the stored block from the ledger.
+    The write is a compare-and-swap of the blocks read above. A reservation that
+    lands between that read and the write wins: this call skips, leaves the live
+    blocks untouched, and the next sync rebuilds the card from the ledger.
     """
     chat_id = chat_id or _chat_id()
     view = progress_view(chat_id, live=live)
@@ -1220,16 +1220,15 @@ def sync_progress(chat_id: str, *, live: bool) -> dict | None:
             host = message
     if host is None:
         host = row
-    if state is not None and state.message_id == host["id"]:
-        changed = _upsert_progress(state.blocks, view)
-        blocks = state.blocks
-    else:
-        blocks = copy.deepcopy(host.get("blocks") or [])
-        changed = _upsert_progress(blocks, view)
-    if not changed:
+    expected = copy.deepcopy(host.get("blocks") or [])
+    live_here = state is not None and state.message_id == host["id"]
+    blocks = copy.deepcopy(state.blocks if live_here else expected)
+    if not _upsert_progress(blocks, view):
         return view
-    if chat_store.update_message(chat_id, host["id"], blocks=blocks) is None:
+    if not chat_store.compare_message_blocks(chat_id, host["id"], expected, blocks):
         return view
+    if live_here:
+        state.blocks[:] = blocks
     broadcast("turn_multi_angle_progress", {"chat_id": chat_id, "message_id": host["id"], "block": view})
     return view
 

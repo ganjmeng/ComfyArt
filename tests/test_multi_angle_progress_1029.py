@@ -19,6 +19,7 @@ def _guard(self, addr):
 
 socket.socket.connect = _guard
 
+import copy
 import json
 import subprocess
 from pathlib import Path
@@ -122,6 +123,46 @@ def test_record_wait_refreshes_delivered_pending_and_failed():
     assert block["final_done"] == 1
     assert block["final_total"] == 9
     assert all(slot["retry"] is False or slot["id"] == "final:6" for slot in block["slots"])
+
+
+def test_reservation_between_read_and_write_is_kept():
+    """A ledger save that lands after the read must not be overwritten.
+
+    The compare fails, so the progress write is skipped and the live blocks
+    stay as the reservation left them.
+    """
+    ledger = _ledger()
+    chat, message = _install(ledger)
+    state_blocks = copy.deepcopy(chat_store.list_messages(chat["id"])[0]["blocks"])
+    state = type("Turn", (), {"message_id": message["id"], "blocks": state_blocks})()
+    ACTIVE_TURNS[chat["id"]] = state
+    reserved = copy.deepcopy(ledger)
+    reserved["final:1"] = {"status": "reserved", "probe": "landed"}
+    seen = {}
+    real = chat_store.compare_message_blocks
+
+    def wrapped(cid, mid, expected, blocks):
+        if not seen:
+            seen["armed"] = True
+            ma._save(chat["id"], reserved, ledger)
+            seen["after_save"] = copy.deepcopy(state.blocks)
+        return real(cid, mid, expected, blocks)
+
+    try:
+        chat_store.compare_message_blocks = wrapped
+        view = ma.sync_progress(chat["id"], live=True)
+    finally:
+        chat_store.compare_message_blocks = real
+        ACTIVE_TURNS.pop(chat["id"], None)
+    assert seen.get("armed") is True
+    assert view["final_total"] == 9
+    stored = chat_store.list_messages(chat["id"])[0]["blocks"]
+    ask = next(block for block in stored if block.get("type") == "ask")
+    assert ask[ma.LEDGER]["final:1"] == {"status": "reserved", "probe": "landed"}
+    assert not any(block.get("type") == "multi_angle_progress" for block in stored)
+    assert state.blocks == seen["after_save"]
+    assert not any(block.get("type") == "multi_angle_progress" for block in state.blocks)
+    assert next(block for block in state.blocks if block.get("type") == "ask")[ma.LEDGER]["final:1"]["probe"] == "landed"
 
 
 def test_live_generating_becomes_pending_query_on_resume():
