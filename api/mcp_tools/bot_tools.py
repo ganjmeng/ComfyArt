@@ -55,6 +55,8 @@ async def _await_ask(chat_id: str, state, spec: dict, *,
     if outcome.get("answers") is not None:
         payload["answers"] = outcome["answers"]
     broadcast("turn_ask_resolved", payload)
+    if "ask_id" not in outcome:
+        outcome = {**outcome, "ask_id": ask.id}
     return outcome
 
 

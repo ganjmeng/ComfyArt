@@ -84,7 +84,9 @@ def _clear_price_cache():
 
 
 async def _send(monkeypatch, *, mode="quote", choice="start", change_before_start=False,
-               generate=True, through_second_quote=False):
+               generate=True, through_second_quote=False, finals=None, second_choice="start",
+               duplicate=False, extra_id="", selected=None, wait_finals=False, drop_before_wait=False,
+               fail_panel="", timeout_panel=""):
     _clear_price_cache()
     model_id = wavespeed.load_config()["features"]["image_edit"]["default"]
     catalog = {
@@ -108,19 +110,34 @@ async def _send(monkeypatch, *, mode="quote", choice="start", change_before_star
     handle = TurnHandle()
     state = bot_turns._TurnState(handle, cid, assistant["id"])
     monkeypatch.setitem(bot_turns.ACTIVE_TURNS, cid, state)
+    panels = list(finals) if finals is not None else (["1"] if through_second_quote else None)
     script = [calls(("ask_user", {"prompt": "setup"}))]
     if generate:
         script.append(calls(("generate_image", PREVIEW)))
-    if through_second_quote:
+    if panels is not None:
+        final_calls = [("generate_image", {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
+                                            "refs": [REF], "multi_angle_stage": "final",
+                                            "composition_id": panel}) for panel in panels]
+        if duplicate and panels:
+            final_calls.append(final_calls[0])
+        if extra_id:
+            final_calls.append(("generate_image", {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
+                                                    "refs": [REF], "multi_angle_stage": "final",
+                                                    "composition_id": extra_id}))
         script += [
             calls(("wait_generation", {"ids": ["holder:1"]})),
             calls(("ask_user", {"prompt": "compositions"})),
-            calls(("generate_image", {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
-                                      "refs": [REF], "multi_angle_stage": "final", "composition_id": "1"})),
+            calls(*final_calls),
         ]
+        if drop_before_wait:
+            script.append("DROP")
+        if wait_finals:
+            holders = [f"holder:{index + 2}" for index in range(len(panels))]
+            script.append(calls(("wait_generation", {"ids": holders})))
     script.append(reply("done"))
     provider = LocalLlmProvider(base_url=lambda: "http://mock-no-network/v1")
     seen = {"n": 0}
+    quotes_seen = {"n": 0}
 
     from ComfyArt.api import mcp
 
@@ -141,15 +158,35 @@ async def _send(monkeypatch, *, mode="quote", choice="start", change_before_star
             return {"data": [{"id": "mock-1029", "context_length": 32000}]}
         item = script[min(seen["n"], len(script) - 1)]
         seen["n"] += 1
+        if item == "DROP":
+            raise ConnectionError("offline drop before the next-turn wait")
         return item
 
     async def page(action, args, project, timeout, chat=""):
         sent.append((action, copy.deepcopy(args)))
+        if action == "generate_image" and timeout_panel:
+            gen_n = sum(1 for kind, _args in sent if kind == "generate_image")
+            if gen_n == 2:
+                raise TimeoutError("transport timeout")
         if action == "wait_generation":
             from multi_angle_plan_fixture import preview_url
-            return {"results": [{"id": h, "status": "done", "placed": True, "generation_succeeded": True,
-                                 "delivered": 1, "shapes": [f"shape:{h}"], "urls": [preview_url()]}
-                                for h in args.get("ids") or []]}
+            failed_ids = set()
+            if fail_panel:
+                token_now = BOT_CHAT_ID.set(cid)
+                try:
+                    entry = (ma._root(cid)[1].get(ma.LEDGER) or {}).get("final:" + fail_panel) or {}
+                    failed_ids.update(str(i) for i in (entry.get("result") or {}).get("ids") or [])
+                finally:
+                    BOT_CHAT_ID.reset(token_now)
+            rows = []
+            for h in args.get("ids") or []:
+                if str(h) in failed_ids:
+                    rows.append({"id": h, "status": "failed", "generation_succeeded": False,
+                                 "error": "injected failure", "placed": False})
+                else:
+                    rows.append({"id": h, "status": "done", "placed": True, "generation_succeeded": True,
+                                 "delivered": 1, "shapes": [f"shape:{h}"], "urls": [preview_url()]})
+            return {"results": rows}
         nth = sum(1 for kind, _args in sent if kind == "generate_image")
         return {"ids": [f"holder:{nth}"], "submitted": True}
 
@@ -159,10 +196,12 @@ async def _send(monkeypatch, *, mode="quote", choice="start", change_before_star
         if payload.get("kind") == "plan_quote":
             if change_before_start:
                 _retarget_aspect(cid, "4:3")
-            if choice == "start":
+            quotes_seen["n"] += 1
+            this_choice = choice if quotes_seen["n"] == 1 else second_choice
+            if this_choice == "start":
                 bot_asks.validate_answer(payload, ["start"], "")
                 bot_asks.resolve_ask(payload["ask_id"], "answered", selected=["start"])
-            elif choice == "expired":
+            elif this_choice == "expired":
                 bot_asks.resolve_ask(payload["ask_id"], "expired")
             else:
                 bot_asks.validate_answer(payload, ["cancel"], "")
@@ -170,7 +209,7 @@ async def _send(monkeypatch, *, mode="quote", choice="start", change_before_star
             return
         ids = {q.get("id") for q in payload.get("questions") or []}
         if ma.COMPOSITIONS in ids:
-            answers = {ma.COMPOSITIONS: {"selected": ["1"]}}
+            answers = {ma.COMPOSITIONS: {"selected": list(selected or panels or ["1"])}}
             bot_asks.validate_answer(payload, [], "", answers)
             bot_asks.resolve_ask(payload["ask_id"], "answered", answers=answers)
             return
@@ -179,8 +218,10 @@ async def _send(monkeypatch, *, mode="quote", choice="start", change_before_star
         bot_asks.validate_answer(payload, [], "", answers)
         bot_asks.resolve_ask(payload["ask_id"], "answered", answers=answers)
 
+    events = []
+
     async def emit(event):
-        pass
+        events.append(event)
 
     monkeypatch.setattr(wavespeed.aiohttp, "ClientSession", _session_factory(records, catalog, mode))
     monkeypatch.setattr(wavespeed, "_key", lambda: "offline-stand-in")
@@ -189,20 +230,37 @@ async def _send(monkeypatch, *, mode="quote", choice="start", change_before_star
     monkeypatch.setattr(canvas, "submit_command", page)
     token = BOT_CHAT_ID.set(cid)
     paid_guard.begin_turn(cid, text=DESC, provider_text=DESC)
+    dropped = None
+    previous_store = None
+    if drop_before_wait:
+        from ComfyArt.api.run_store_sqlite import SqliteRunStore
+        from ComfyArt.bot.run_store import get_run_store, set_run_store
+        previous_store = get_run_store()
+        set_run_store(SqliteRunStore())
     try:
         result = await provider.send(TurnRequest(
             chat_id=cid,
             user_text=f"Use the ComfyArt skill '{ma.SKILL}' for this task. {DESC}",
             goal_text=DESC, lang="zh", mcp_endpoint="http://mock-no-network/mcp", model="mock-1029"),
             emit, handle)
+        if drop_before_wait:
+            dropped = result
+            run_id = str((getattr(result, "run", None) or {}).get("run_id") or "")
+            result = await provider.send(TurnRequest(
+                chat_id=cid, user_text="", goal_text=DESC, lang="zh",
+                mcp_endpoint="http://mock-no-network/mcp", model="mock-1029",
+                resume_run_id=run_id), emit, handle)
     finally:
+        if drop_before_wait:
+            from ComfyArt.bot.run_store import set_run_store
+            set_run_store(previous_store)
         paid_guard.end_turn(cid)
         BOT_CHAT_ID.reset(token)
         bot_turns.ACTIVE_TURNS.pop(cid, None)
         bot_asks.cancel_chat_asks(cid)
         _clear_price_cache()
-    return {"cid": cid, "sent": sent, "http": records, "result": result,
-            "setup": seen_setup, "model_id": model_id, "tools": tools}
+    return {"cid": cid, "sent": sent, "http": records, "result": result, "dropped": dropped,
+            "setup": seen_setup, "model_id": model_id, "tools": tools, "events": events}
 
 
 def _retarget_aspect(cid: str, aspect: str) -> None:

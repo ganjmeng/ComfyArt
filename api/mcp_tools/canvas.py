@@ -251,8 +251,18 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
         replay = multi_angle.reserve(multi_meta)
         if replay is not None:
             return replay
-    result = await submit_command(action, args, PROJECT.get(), timeout, chat=BOT_CHAT_ID.get())
+    try:
+        result = await submit_command(action, args, PROJECT.get(), timeout, chat=BOT_CHAT_ID.get())
+    except Exception as exc:
+        import asyncio
+        import aiohttp
+        if multi_meta is not None and isinstance(exc, (TimeoutError, asyncio.TimeoutError, aiohttp.ClientError, OSError)):
+            # The reservation stays. A timeout is not a free slot and is not a new submit.
+            return multi_angle.mark_unknown(multi_meta, type(exc).__name__)
+        raise
     if multi_meta is not None:
+        if not multi_angle.trusted_submit(result):
+            return multi_angle.mark_unknown(multi_meta, "untrusted")
         multi_angle.submitted(multi_meta, result)
     if packaging_run and isinstance(result, dict) and not result.get("cancelled"):
         # #963: image 1's returned shape is the anchor holder; wait_generation swaps in the placed shape.

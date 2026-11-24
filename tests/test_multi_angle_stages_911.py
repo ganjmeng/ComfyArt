@@ -257,10 +257,10 @@ async def test_uncertain_timeout_and_explicit_failure_never_resubmit(run, monkey
 
     monkeypatch.setattr(canvas, "submit_command", uncertain)
     args = {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview"}
-    with pytest.raises(TimeoutError):
-        await canvas._relay("generate_image")(args)
     result = await canvas._relay("generate_image")(args)
-    assert result["submitted"] is False and len(sent) == 1
+    assert result["status"] == "unknown" and result["submitted"] is False and len(sent) == 1
+    result = await canvas._relay("generate_image")(args)
+    assert result["submitted"] is False and result.get("multi_angle_replay") is True and len(sent) == 1
     # Explicit failure is also retained; the agent cannot invent a retry/new request id.
     _, root = ma._root("chat-ma")
     ma.submitted({"key": "preview"}, {"status": "failed", "submitted": False})

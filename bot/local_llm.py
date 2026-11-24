@@ -1551,6 +1551,31 @@ async def test_local_llm(*, base_url: str, api_key: str = "", model: str = "",
     return {"ok": True, "code": "ok", "models": models[:20]}
 
 
+def _confirmed_final_plan(paid: list, quote) -> tuple[list[str], dict]:
+    """Deduped final panel ids on a real quote card, with each panel's line amount.
+
+    An estimate or unpriced line authorizes nothing. Repeating a panel does not
+    add a second slot. Preview-only quotes have no composition id.
+    """
+    if quote is None or any(
+            ln.source != "quote" or ln.unpriced or int(ln.units or 0) <= 0 for ln in quote.lines):
+        return [], {}
+    ids: list[str] = []
+    amounts: dict[str, float] = {}
+    paired = len(paid) == len(quote.lines)
+    for index, it in enumerate(paid):
+        args = it.get("args") or {}
+        if str(args.get("multi_angle_stage") or "") != "final":
+            continue
+        panel = str(args.get("composition_id") or "")
+        if not panel or panel in ids:
+            continue
+        ids.append(panel)
+        if paired:
+            amounts[panel] = float(quote.lines[index].amount or 0)
+    return ids, amounts
+
+
 def _call_price_params(args: dict) -> dict:
     """#953: display-only fields must never reach the pricer.
 
@@ -2083,6 +2108,8 @@ class LocalLlmProvider(AgentProvider):
             state.awaiting = ""
         selected = outcome.get("selected") or []
         if outcome.get("status") == "answered" and "start" in selected:
+            # The ask id is this confirmation. Repeating it must not add the plan again.
+            spec["confirmation_id"] = str(outcome.get("ask_id") or "")
             return "start"
         return "cancel"
 
@@ -2343,6 +2370,13 @@ class LocalLlmProvider(AgentProvider):
         decision = ""
         quote = None
         quote_error = ""
+        confirmation_id = ""
+        run = loop.get("run")
+        if run is not None and turn is not None:
+            from ..api import multi_angle as _ma_plan
+            existing_plan = _ma_plan.load_confirmed_plan(turn.chat_id)
+            if existing_plan:
+                run.tracker.apply_confirmed_plan(existing_plan)
         # #418: a single paid call is quoted too (build_quote returns None under the confirm line,
         # so cheap calls run as before). Not after a strict 开始: there the gate refuses unquoted calls.
         single = quote_item is None and len(paid) == 1
@@ -2367,8 +2401,10 @@ class LocalLlmProvider(AgentProvider):
                     unattended = run is not None and run.mode == "unattended"
                     # #418 ruling: unattended (routine / headless / no live client) never waits: the
                     # card is not approved -> zero paid calls, turn ends normally as awaiting_confirm:not_approved.
+                    spec = quote.ask_spec()
                     choice = "unattended" if unattended else await self._confirm_plan(
-                        quote.ask_spec(), turn, handle, run=run, messages=messages)
+                        spec, turn, handle, run=run, messages=messages)
+                    confirmation_id = str(spec.get("confirmation_id") or "")
                     if handle.stop_requested:
                         return TurnResult(aborted=True, usage=usage)
                     if choice == "start":
@@ -2389,6 +2425,47 @@ class LocalLlmProvider(AgentProvider):
             # showed sets the paid-guard cap (an explicit "做 3 张" still wins).
             from ..api import paid_guard
             paid_guard.allow_planned_cap(turn.chat_id, quote.units)
+            final_ids, slot_amounts = _confirmed_final_plan(paid, quote)
+            if final_ids and confirmation_id and run is not None:
+                from ..api import multi_angle as _ma_plan
+                try:
+                    selected = set(_ma_plan.selection(turn.chat_id))
+                except ValueError:
+                    selected = set()
+                # A panel the composition card did not answer is not authorized,
+                # even if this quote also listed it.
+                final_ids = [panel for panel in final_ids if panel in selected]
+                slot_amounts = {panel: slot_amounts.get(panel, 0.0) for panel in final_ids}
+            if final_ids and confirmation_id and run is not None:
+                # Before the plan is bound, gen_cap is still the global default.
+                run.tracker.note_counts("before_confirm")
+                from ..api import multi_angle as _ma_plan
+                bound = _ma_plan.register_confirmed_finals(
+                    turn.chat_id, confirmation_id, final_ids,
+                    round(sum(slot_amounts.values()), 6), len(final_ids), slot_amounts)
+                run.tracker.apply_confirmed_plan(bound)
+                run.tracker.note_counts("after_confirm")
+                _ma_plan.persist_counts(turn.chat_id, run.tracker.count_log)
+
+        if run is not None and run.tracker.confirmed_generates and any(
+                it["name"] == "generate_image" and chunks[i] is None and not it.get("refuse")
+                for i, it in enumerate(parsed)):
+            if not any(isinstance(row, dict) and row.get("point") == "before_dispatch"
+                       for row in run.tracker.count_log):
+                run.tracker.note_counts("before_dispatch")
+                from ..api import multi_angle as _ma_plan
+                _ma_plan.persist_counts(turn.chat_id, run.tracker.count_log)
+            from ..api import multi_angle as _ma_plan
+            decisions = _ma_plan.batch_admission(turn.chat_id, [
+                {"index": i, "stage": str((it.get("args") or {}).get("multi_angle_stage") or ""),
+                 "composition_id": str((it.get("args") or {}).get("composition_id") or "")}
+                for i, it in enumerate(parsed)
+                if it["name"] == "generate_image" and chunks[i] is None and not it.get("refuse")
+            ])
+            for decision_row in decisions:
+                if decision_row.get("refuse"):
+                    parsed[decision_row["index"]]["refuse"] = json.dumps(
+                        decision_row["refuse"], ensure_ascii=False)
 
         lang_key = "zh" if lang == "zh" else "en"
         for i, it in enumerate(parsed):
