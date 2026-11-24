@@ -569,13 +569,24 @@ QUOTE_LINE_LOCALE = {
 }
 # #1019: brand dialog with no tile selected. Not the first template's name.
 DEFAULT_WORKFLOW_LOCALE = {"zh": "默认流程", "en": "Default workflow"}
+# Brand quote cards: expired copy and the fixed-size notice. The base hash stays put.
+BRAND_QUOTE_LOCALE = {
+    "zh": {
+        "jobs.quoteExpired": "报价已过期，请重新取价",
+        "jobs.fixedSlotSize": "尺寸固定，不可修改",
+    },
+    "en": {
+        "jobs.quoteExpired": "This quote has expired. Request a new price.",
+        "jobs.fixedSlotSize": "Size is fixed and cannot be edited",
+    },
+}
 LOCALE_EXTRAS = {
     lang: {"bot.composeBannerText": BANNER_LOCALE[lang], **PORTRAIT_LOCALE[lang],
            "runStop.stillGenerating": RUN_STOP_LOCALE[lang],
            "wsErr.userRatioUnsupported": RATIO_REFUSAL_LOCALE_994[lang],
            "models.minimaxH3Image": H3_IMAGE_LOCALE[lang],
            "skillRun.defaultWorkflow": DEFAULT_WORKFLOW_LOCALE[lang],
-           **QUOTE_LINE_LOCALE[lang]}
+           **QUOTE_LINE_LOCALE[lang], **BRAND_QUOTE_LOCALE[lang]}
     for lang in ("zh", "en")
 }
 # Canonical locale JSON minus the extras above. #1003 keeps jobs.sizeNotice as the #924
