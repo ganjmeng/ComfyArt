@@ -7,11 +7,38 @@ import time
 
 import pytest
 
-from ComfyArt.api import bot_asks, brand_identity as brand, wavespeed
+from ComfyArt.api import bot_asks, brand_identity as brand, paid_guard, wavespeed
 from ComfyArt.api.bot_turns import ACTIVE_TURNS
-from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
+from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID, GUARD_CHAT_ID
 from ComfyArt.bot.local_llm import LocalLlmProvider
 from ComfyArt.bot.providers import TurnHandle, TurnRequest
+
+
+@pytest.fixture(autouse=True)
+def _restore_brand_confirm_state():
+    """Restart regressions share the grant file, the stage map, and the live-turn tables.
+
+    Put every one of them back after the test, including when the test raises.
+    A later file (the #418 confirm contract) reads those same tables.
+    """
+    brand.reset_for_tests()
+    chat = BOT_CHAT_ID.set("")
+    guard = GUARD_CHAT_ID.set("")
+    turns = dict(ACTIVE_TURNS)
+    guards = dict(paid_guard.TURNS)
+    pending = dict(bot_asks.PENDING)
+    try:
+        yield
+    finally:
+        BOT_CHAT_ID.reset(chat)
+        GUARD_CHAT_ID.reset(guard)
+        ACTIVE_TURNS.clear()
+        ACTIVE_TURNS.update(turns)
+        paid_guard.TURNS.clear()
+        paid_guard.TURNS.update(guards)
+        bot_asks.PENDING.clear()
+        bot_asks.PENDING.update(pending)
+        brand.reset_for_tests()
 
 
 class _Turn:
@@ -202,17 +229,20 @@ async def test_brand_card_expires_on_a_real_timer(monkeypatch):
     assert spec["expires_at"] - spec["created_at"] == pytest.approx(0.15)
     from ComfyArt.api.bot_turns import _TurnState
     ACTIVE_TURNS["c"] = _TurnState(TurnHandle(), "c", "m-timer")
-    provider = LocalLlmProvider(base_url=lambda: "http://127.0.0.1:9/v1")
-    started = time.time()
-    choice = await provider._confirm_plan(
-        spec, TurnRequest(chat_id="c", user_text="确认", lang="zh"), TurnHandle(),
-    )
-    elapsed = time.time() - started
-    block = ACTIVE_TURNS["c"].blocks[-1]
-    ACTIVE_TURNS.pop("c", None)
-    assert choice == "expired"
-    assert block["status"] == "expired"
-    assert elapsed >= 0.1
+    try:
+        provider = LocalLlmProvider(base_url=lambda: "http://127.0.0.1:9/v1")
+        started = time.time()
+        choice = await provider._confirm_plan(
+            spec, TurnRequest(chat_id="c", user_text="确认", lang="zh"), TurnHandle(),
+        )
+        elapsed = time.time() - started
+        block = ACTIVE_TURNS["c"].blocks[-1]
+        assert choice == "expired"
+        assert block["status"] == "expired"
+        assert elapsed >= 0.1
+    finally:
+        ACTIVE_TURNS.pop("c", None)
+        brand.reset_for_tests()
 
 
 async def test_prompt_change_before_submit_does_not_reuse_the_old_grant(monkeypatch):
@@ -860,6 +890,40 @@ async def test_a_logo_without_its_base_is_not_quoted_or_dispatched(monkeypatch):
         _res, events = await rig.send("没有情绪板还要出 Logo")
         assert rig.paid_mcp() == []
         assert any("缺少底图" in (event.text or "") for event in events)
+        assert brand._grant_of(2)["expires_at"] == expires_at
+    finally:
+        BOT_CHAT_ID.reset(token)
+        brand.reset_for_tests()
+
+
+async def test_a_dispatching_slot_is_not_sent_when_generate_omits_brand_slot(monkeypatch):
+    """While a slot is dispatching, a generate_image that omits brand_slot pays nothing.
+
+    Parse fills the slot (apply_generate → fill_default). The reservation is already
+    on disk, so this send must not call the paid tool. The clock on the grant stays put.
+    """
+    from test_agent_budget_391 import calls
+
+    token = BOT_CHAT_ID.set("c")
+    try:
+        rig, expires_at = await _confirmed_stage(monkeypatch)
+        brand.reserve_brand_dispatch(_logo_args("logo_a"))
+        assert brand.dispatching_slots(2) == {"logo_a"}
+        assert rig.paid_mcp() == []
+
+        def second(messages, n):
+            if n == 0:
+                return calls(("generate_image", {"prompt": "logo_a", "skill": brand.SKILL}))
+            return rig._reply("好")
+
+        rig.script = second
+        rig.n = 0
+        _res, events = await rig.send("派发中的槽位，生成参数没有 brand_slot")
+        assert rig.paid_mcp() == []
+        assert brand.dispatching_slots(2) == {"logo_a"}
+        assert len(rig.confirms) == 1
+        assert any("待核对" in (event.text or "") for event in events)
+        assert not any("缺少底图" in (event.text or "") for event in events)
         assert brand._grant_of(2)["expires_at"] == expires_at
     finally:
         BOT_CHAT_ID.reset(token)

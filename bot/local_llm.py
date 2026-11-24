@@ -2533,24 +2533,25 @@ class LocalLlmProvider(AgentProvider):
                                 spec, turn, handle, run=run, messages=messages)
                         except Exception as e:
                             # A confirm that raises is not approval. Do not submit the paid tools.
+                            # choice is unset here; the rest of this branch must not read it.
                             _log.exception("[ComfyArt/local-llm] plan confirm failed")
                             quote_error = f"[error] {type(e).__name__}: {e}"
                             decision = "error"
                         else:
                             if handle.stop_requested:
                                 return TurnResult(aborted=True, usage=usage)
-                        if choice == "start":
-                            if not single:  # #418: one OK covers this call only; don't arm the plan gate
-                                gate.allow(quote, True, brand_steps, fresh=True)
-                            decision = "start"
-                        elif choice == "expired":
-                            decision = "expired"
-                        elif choice == "requote":
-                            decision = "requote"
-                            if run is not None:
-                                step = run.budget.used.steps
-                                run.pending_stop = Stop(StopReason.AWAITING_CONFIRM, "not_approved", step=step)
-                        else:
+                            if choice == "start":
+                                if not single:  # #418: one OK covers this call only; don't arm the plan gate
+                                    gate.allow(quote, True, brand_steps, fresh=True)
+                                decision = "start"
+                            elif choice == "expired":
+                                decision = "expired"
+                            elif choice == "requote":
+                                decision = "requote"
+                                if run is not None:
+                                    step = run.budget.used.steps
+                                    run.pending_stop = Stop(StopReason.AWAITING_CONFIRM, "not_approved", step=step)
+                            else:
                                 decision = "cancel"
                                 if run is not None:
                                     step = run.budget.used.steps
