@@ -21,6 +21,7 @@ onto white before the file is saved.
 """
 from __future__ import annotations
 
+import contextvars
 import hashlib
 import io
 import json
@@ -477,7 +478,24 @@ def drop_memory_for_tests() -> None:
     _PROGRESS.clear()
 
 
+# Set for the life of one chat's turn or stored re-quote. Two sessions must not
+# share the anonymous bucket. Empty means "no chat in scope".
+_BRAND_CHAT: contextvars.ContextVar[str] = contextvars.ContextVar("comfyart_brand_chat", default="")
+
+
+def brand_progress_scope(chat_id: str):
+    """Bind brand progress to this chat. Reset the returned token when the work ends."""
+    return _BRAND_CHAT.set(str(chat_id or ""))
+
+
+def reset_brand_progress_scope(token) -> None:
+    _BRAND_CHAT.reset(token)
+
+
 def _chat() -> str:
+    scoped = str(_BRAND_CHAT.get() or "")
+    if scoped:
+        return scoped
     try:
         from . import paid_guard
         chat = str(paid_guard.resolve_guard_chat_id() or "")

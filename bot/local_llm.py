@@ -3259,111 +3259,116 @@ async def continue_brand_requote(provider, chat: dict, message_id: str, steps: l
 
     lang = "zh" if str((spec or {}).get("lang") or "zh") == "zh" else "en"
     turn = _CardTurn(chat)
-    # Same chain as a live card: base check, open slots, build_quote, stamp.
-    # Do not pin BOT_CHAT_ID. A live quote leaves that context empty, and
-    # ``_chat`` then resolves both paths to the same progress key.
-    blocked = stage_base_block(steps)
-    if blocked:
-        raise ValueError(blocked)
-    opened = supersede_brand_card(steps, spec)
-    if not opened:
-        raise ValueError("no open brand slot")
-    quote = await provider._quote_steps(opened, lang)
-    if quote is None:
-        raise ValueError("brand re-quote returned no price")
-    new_spec = stamp_confirm_spec(
-        quote.ask_spec(), opened, turn, amount=quote.total, lang=lang,
-        currency=getattr(quote, "currency", "") or BRAND_CURRENCY,
-        quote_id=getattr(quote, "quote_id", "") or "")
-    # A new assistant message, so the card is at the end of the conversation.
-    # The previous message keeps the old card in its original place.
-    holder = chat_store.create_message(
-        chat_id=chat["id"], role="assistant", blocks=[], status="done")
-    ask = bot_asks.create_ask(chat["id"], holder["id"], new_spec)
-    ask.future  # bind the waiter to this loop before the response returns
-    shown = {"type": "ask", "ask_id": ask.id, "status": "pending", **new_spec}
-    stored = chat_store.update_message(chat["id"], holder["id"], blocks=[shown]) or {
-        **holder, "blocks": [shown],
-    }
-    broadcast("messages_logged", {"chat_id": chat["id"], "messages": [stored]})
-    _mark_brand_card_replaced(
-        chat["id"], message_id, str((spec or {}).get("ask_id") or ""), ask.id)
+    from ..api.brand_identity import brand_progress_scope, reset_brand_progress_scope
+    progress_scope = brand_progress_scope(str(chat.get("id") or ""))
+    try:
+        # Same chain as a live card: base check, open slots, build_quote, stamp.
+        # The progress scope is this chat, the same binding a live turn sets.
+        # Do not pin BOT_CHAT_ID. An empty bot-chat context stays anonymous.
+        blocked = stage_base_block(steps)
+        if blocked:
+            raise ValueError(blocked)
+        opened = supersede_brand_card(steps, spec)
+        if not opened:
+            raise ValueError("no open brand slot")
+        quote = await provider._quote_steps(opened, lang)
+        if quote is None:
+            raise ValueError("brand re-quote returned no price")
+        new_spec = stamp_confirm_spec(
+            quote.ask_spec(), opened, turn, amount=quote.total, lang=lang,
+            currency=getattr(quote, "currency", "") or BRAND_CURRENCY,
+            quote_id=getattr(quote, "quote_id", "") or "")
+        # A new assistant message, so the card is at the end of the conversation.
+        # The previous message keeps the old card in its original place.
+        holder = chat_store.create_message(
+            chat_id=chat["id"], role="assistant", blocks=[], status="done")
+        ask = bot_asks.create_ask(chat["id"], holder["id"], new_spec)
+        ask.future  # bind the waiter to this loop before the response returns
+        shown = {"type": "ask", "ask_id": ask.id, "status": "pending", **new_spec}
+        stored = chat_store.update_message(chat["id"], holder["id"], blocks=[shown]) or {
+            **holder, "blocks": [shown],
+        }
+        broadcast("messages_logged", {"chat_id": chat["id"], "messages": [stored]})
+        _mark_brand_card_replaced(
+            chat["id"], message_id, str((spec or {}).get("ask_id") or ""), ask.id)
 
-    async def _hold() -> None:
-        outcome = await ask.future
-        selected = list(outcome.get("selected") or [])
-        status = "expired" if outcome.get("status") == "expired" else str(outcome.get("status") or "answered")
-        fresh = chat_store.list_messages(chat["id"])
-        row = next((m for m in fresh if m["id"] == holder["id"]), None)
-        if row is not None:
-            updated = []
-            for block in row.get("blocks") or []:
-                if isinstance(block, dict) and block.get("ask_id") == ask.id:
-                    nxt = {**block, "status": status}
-                    if status == "answered":
-                        nxt["selected"] = selected
-                    updated.append(nxt)
-                else:
-                    updated.append(block)
-            chat_store.update_message(chat["id"], holder["id"], blocks=updated)
-        broadcast("turn_ask_resolved", {
-            "chat_id": chat["id"], "message_id": holder["id"], "ask_id": ask.id,
-            "status": status, "selected": selected if status == "answered" else None,
-        })
-        if status != "answered":
-            return
-        if "requote" in selected:
-            await continue_brand_requote(
-                provider, chat, holder["id"], opened, {**new_spec, "ask_id": ask.id})
-            return
-        if "start" in selected:
-            # The same post-confirm sequence a live turn runs after Start:
-            # note, remember, commit, then one reserved paid call per open slot.
-            try:
-                note_confirmed(quote.total, quote.units, stage=quoted_stage(opened))
-                remember_stage_plan(opened, fresh=True)
-                saved = commit_confirmed_grant(
-                    opened, new_spec, turn, amount=float(new_spec.get("amount") or 0))
-                if saved is None:
-                    raise BrandGrantPersistError("brand quote snapshot was not frozen")
-            except BrandGrantPersistError:
-                _log.exception("[ComfyArt/local-llm] brand confirmation was not saved")
+        async def _hold() -> None:
+            outcome = await ask.future
+            selected = list(outcome.get("selected") or [])
+            status = "expired" if outcome.get("status") == "expired" else str(outcome.get("status") or "answered")
+            fresh = chat_store.list_messages(chat["id"])
+            row = next((m for m in fresh if m["id"] == holder["id"]), None)
+            if row is not None:
+                updated = []
+                for block in row.get("blocks") or []:
+                    if isinstance(block, dict) and block.get("ask_id") == ask.id:
+                        nxt = {**block, "status": status}
+                        if status == "answered":
+                            nxt["selected"] = selected
+                        updated.append(nxt)
+                    else:
+                        updated.append(block)
+                chat_store.update_message(chat["id"], holder["id"], blocks=updated)
+            broadcast("turn_ask_resolved", {
+                "chat_id": chat["id"], "message_id": holder["id"], "ask_id": ask.id,
+                "status": status, "selected": selected if status == "answered" else None,
+            })
+            if status != "answered":
                 return
-            from ..api import paid_guard
-            paid_guard.allow_planned_cap(turn.chat_id, quote.units)
-            gate = _PlanGate(turn.chat_id)
-            gate.allow(quote, True, opened, fresh=True)
-            turn.mcp_endpoint = _mcp_endpoint(turn.chat_id)
-            claimed: set[str] = set()
-            paid_any = False
+            if "requote" in selected:
+                await continue_brand_requote(
+                    provider, chat, holder["id"], opened, {**new_spec, "ask_id": ask.id})
+                return
+            if "start" in selected:
+                # The same post-confirm sequence a live turn runs after Start:
+                # note, remember, commit, then one reserved paid call per open slot.
+                try:
+                    note_confirmed(quote.total, quote.units, stage=quoted_stage(opened))
+                    remember_stage_plan(opened, fresh=True)
+                    saved = commit_confirmed_grant(
+                        opened, new_spec, turn, amount=float(new_spec.get("amount") or 0))
+                    if saved is None:
+                        raise BrandGrantPersistError("brand quote snapshot was not frozen")
+                except BrandGrantPersistError:
+                    _log.exception("[ComfyArt/local-llm] brand confirmation was not saved")
+                    return
+                from ..api import paid_guard
+                paid_guard.allow_planned_cap(turn.chat_id, quote.units)
+                gate = _PlanGate(turn.chat_id)
+                gate.allow(quote, True, opened, fresh=True)
+                turn.mcp_endpoint = _mcp_endpoint(turn.chat_id)
+                claimed: set[str] = set()
+                paid_any = False
 
-            async def _quiet(_ev) -> None:
-                return None
+                async def _quiet(_ev) -> None:
+                    return None
 
-            session = aiohttp.ClientSession()
-            try:
-                for step in opened:
-                    args = step.get("arguments") if isinstance(step, dict) else None
-                    if not isinstance(args, dict):
-                        continue
-                    item = {
-                        "name": "generate_image",
-                        "args": dict(args),
-                        "id": "brand-" + str(args.get("brand_slot") or ""),
-                        "skill_key": "",
-                        "cached": False,
-                    }
-                    if gate.blocks(item["name"], item["args"]):
-                        continue
-                    sent, _messages = await provider._dispatch_one_confirmed_brand(
-                        item, opened, claimed, gate=gate, session=session, turn=turn,
-                        emit=_quiet, handle=TurnHandle(), done=[], lang=lang,
-                        skill_cache={}, llm_model="", run=None, cache_hits=0)
-                    paid_any = paid_any or sent
-            finally:
-                await session.close()
-            if paid_any:
-                mark_stage_dispatched(opened)
+                session = aiohttp.ClientSession()
+                try:
+                    for step in opened:
+                        args = step.get("arguments") if isinstance(step, dict) else None
+                        if not isinstance(args, dict):
+                            continue
+                        item = {
+                            "name": "generate_image",
+                            "args": dict(args),
+                            "id": "brand-" + str(args.get("brand_slot") or ""),
+                            "skill_key": "",
+                            "cached": False,
+                        }
+                        if gate.blocks(item["name"], item["args"]):
+                            continue
+                        sent, _messages = await provider._dispatch_one_confirmed_brand(
+                            item, opened, claimed, gate=gate, session=session, turn=turn,
+                            emit=_quiet, handle=TurnHandle(), done=[], lang=lang,
+                            skill_cache={}, llm_model="", run=None, cache_hits=0)
+                        paid_any = paid_any or sent
+                finally:
+                    await session.close()
+                if paid_any:
+                    mark_stage_dispatched(opened)
 
-    asyncio.create_task(_hold(), name=f"comfyart-brand-requote-{ask.id[:8]}")
-    return new_spec
+        asyncio.create_task(_hold(), name=f"comfyart-brand-requote-{ask.id[:8]}")
+        return new_spec
+    finally:
+        reset_brand_progress_scope(progress_scope)
