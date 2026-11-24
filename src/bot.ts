@@ -57,6 +57,8 @@ export interface BotBlock {
   lines?: { text: string; price: string; source?: string }[]
   /** quote, estimate, or unpriced. Estimate and unpriced brand cards do not offer Start. */
   price_state?: string
+  /** Set by the server once the replacement card is stored. The old card then has no buttons. */
+  replaced_by?: string
   total?: string
   total_label?: string
   selected?: string[]
@@ -503,7 +505,7 @@ const reducers: Record<string, (e: any) => void> = {
     if ((chatsAtom.get() ?? []).some((c) => c.id === e.chat_id)) void notify({ kind: 'suggestion', title: t('bot.agentIsWaitingForYour'), body: e.prompt, chat: e.chat_id })
   },
   turn_ask_resolved: (e) => patchMessages(e.chat_id, e.message_id, (m) => ({
-    ...m, blocks: m.blocks.map((b) => (b.type === 'ask' && b.ask_id === e.ask_id ? { ...b, status: e.status, selected: e.selected ?? b.selected, other_text: e.other_text ?? b.other_text, answers: e.answers ?? b.answers } : b)),
+    ...m, blocks: m.blocks.map((b) => (b.type === 'ask' && b.ask_id === e.ask_id ? { ...b, status: e.status, selected: e.selected ?? b.selected, other_text: e.other_text ?? b.other_text, answers: e.answers ?? b.answers, replaced_by: e.replaced_by ?? b.replaced_by } : b)),
   })),
   turn_done: (e) => {
     setAgentPlanConfirmed(false)

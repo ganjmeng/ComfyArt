@@ -887,6 +887,7 @@
   "jobs.requote": "重新取价",
   "jobs.quoteDeadline": "报价 10 分钟内有效，截止 {0}（北京时间）",
   "jobs.quoteExpired": "报价已过期，请重新取价",
+  "jobs.quoteRequoted": "已重新取价，此报价已失效",
   "jobs.fixedSlotSize": "尺寸固定，不可修改",
   "jobs.confirmSegLeft": "这次约需 {0} 积分（还剩 {1} 次分割，已完成的不再收费），确定继续吗？",
   "jobs.confirmSegMax": "最多 {0} 积分（识别加最多 {1} 次分割），确定继续吗？",

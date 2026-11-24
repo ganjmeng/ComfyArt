@@ -577,6 +577,7 @@ BRAND_QUOTE_LOCALE = {
         "jobs.brandStart": "开始",
         "jobs.requote": "重新取价",
         "jobs.quoteDeadline": "报价 10 分钟内有效，截止 {0}（北京时间）",
+        "jobs.quoteRequoted": "已重新取价，此报价已失效",
     },
     "en": {
         "jobs.quoteExpired": "This quote has expired. Request a new price.",
@@ -584,6 +585,7 @@ BRAND_QUOTE_LOCALE = {
         "jobs.brandStart": "Start",
         "jobs.requote": "Request a new price",
         "jobs.quoteDeadline": "This quote is valid for 10 minutes, until {0} (Beijing time).",
+        "jobs.quoteRequoted": "A new price was requested. This quote is no longer valid.",
     },
 }
 LOCALE_EXTRAS = {

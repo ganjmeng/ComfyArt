@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { brandConfirmClosed, brandDeadlineClock, brandQuoteAction, brandRequoteRequest } from '../src/brandQuoteCard.ts'
+import { brandCardPresentation, brandConfirmClosed, brandDeadlineClock, brandQuoteAction, brandQuotePositions, brandRequoteRequest } from '../src/brandQuoteCard.ts'
 
 const NOW = 1_700_000_000_000
 
@@ -33,7 +33,7 @@ test('the expired brand card uses the product sentence and does not keep Start',
   assert.match(zh, /"jobs\.quoteDeadline": "报价 10 分钟内有效，截止 \{0\}（北京时间）"/)
   assert.match(en, /"jobs\.quoteDeadline": "This quote is valid for 10 minutes, until \{0\} \(Beijing time\)\."/)
   assert.match(view, /brandConfirmClosed\(b, now\)/)
-  const closed = view.indexOf('if (closed)')
+  const closed = view.indexOf('if (closed &&')
   const button = view.indexOf('testId="chat-inline-planquote"', closed)
   assert.ok(closed > 0 && button > closed)
   assert.match(view, /data-testid="brand-quote-expired"/)
@@ -81,4 +81,51 @@ test('estimate and expired requote buttons both post the server re-quote', () =>
     path: '/comfyart/bot/chats/chat%201/brand-requote',
     body: { ask_id: 'ask/2' },
   })
+})
+
+test('a replaced card is one line with no buttons and the new card keeps its own deadline', () => {
+  const zh = readFileSync(new URL('../src/locales/zh.json', import.meta.url), 'utf8')
+  const en = readFileSync(new URL('../src/locales/en.json', import.meta.url), 'utf8')
+  const view = readFileSync(new URL('../src/ui/ChatMessage.tsx', import.meta.url), 'utf8')
+  assert.match(zh, /"jobs\.quoteRequoted": "已重新取价，此报价已失效"/)
+  assert.match(en, /"jobs\.quoteRequoted": "A new price was requested\. This quote is no longer valid\."/)
+  const supersededAt = view.indexOf('data-testid="brand-quote-superseded"')
+  const superseded = view.slice(supersededAt, view.indexOf('if (closed', supersededAt))
+  assert.ok(supersededAt > 0)
+  assert.match(superseded, /t\('jobs\.quoteRequoted'\)/)
+  assert.doesNotMatch(superseded, /<button/)
+  const oldAt = Date.UTC(2026, 10, 24, 5, 30, 0) / 1000
+  const newAt = oldAt + 600
+  const now = oldAt * 1000 + 1000
+  const oldCard = {
+    brand_confirm: true, ask_id: 'old', status: 'answered', selected: ['requote'],
+    replaced_by: 'new', expires_at: oldAt, price_state: 'estimate', prompt: '预计约 3 积分',
+  }
+  const nextCard = {
+    brand_confirm: true, ask_id: 'new', status: 'pending', expires_at: newAt,
+    price_state: 'estimate', prompt: '这次生成预计约 3 积分。实时价暂不可用。',
+  }
+  const placed = brandQuotePositions([
+    { blocks: [{ type: 'text' }, oldCard] },
+    { blocks: [{ type: 'text', text: 'a later note stays above the new card' }] },
+    { blocks: [nextCard] },
+  ], now)
+  assert.equal(placed.length, 2)
+  assert.equal(placed[0].askId, 'old')
+  assert.equal(placed[0].face, 'superseded')
+  assert.deepEqual(placed[0].buttons, [])
+  assert.equal(placed[0].messageIndex, 0)
+  assert.equal(placed[0].blockIndex, 1)
+  assert.equal(placed[1].askId, 'new')
+  assert.equal(placed[1].messageIndex, 2)
+  assert.ok(placed[1].messageIndex > placed[0].messageIndex)
+  assert.equal(placed[1].deadline, '13:40')
+  assert.equal(brandDeadlineClock(oldAt), '13:30')
+  assert.notEqual(placed[1].deadline, brandDeadlineClock(oldAt))
+  assert.deepEqual(placed[1].buttons, ['requote', 'cancel'])
+  assert.equal(placed[1].buttons.includes('start'), false)
+  assert.match(placed[1].sentence, /约/)
+  assert.deepEqual(brandCardPresentation(nextCard, now).buttons, ['requote', 'cancel'])
+  const stillOpen = { ...oldCard, replaced_by: '' }
+  assert.equal(brandCardPresentation(stillOpen, now).face, 'pending')
 })

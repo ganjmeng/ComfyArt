@@ -2113,7 +2113,8 @@ class LocalLlmProvider(AgentProvider):
         return quote_route(tool, args, position=position)
 
     async def _confirm_plan(self, spec: dict, turn: TurnRequest, handle: TurnHandle, *,
-                            run=None, messages: Optional[list] = None) -> str:
+                            run=None, messages: Optional[list] = None,
+                            retire_previous: bool = False) -> str:
         """'start', 'cancel' (the user's Cancel / dismiss) or 'unattended' (no live turn to ask: nothing
         is charged and it is not a user stop). #418: an interactive card waits indefinitely, and the run
         is checkpointed as 'awaiting_confirm' while it does."""
@@ -2137,12 +2138,20 @@ class LocalLlmProvider(AgentProvider):
                 exp = spec.get("expires_at")
                 if not isinstance(exp, bool) and isinstance(exp, (int, float)):
                     deadline = float(exp)
+            retire_ask_id = ""
+            if retire_previous:
+                for older in reversed(state.blocks):
+                    if (isinstance(older, dict) and older.get("type") == "ask"
+                            and older.get("brand_confirm") is True and not older.get("replaced_by")):
+                        retire_ask_id = str(older.get("ask_id") or "")
+                        break
             if deadline is None:
-                outcome = await _await_ask(turn.chat_id, state, spec, wait_forever=True)
+                outcome = await _await_ask(
+                    turn.chat_id, state, spec, wait_forever=True, retire_ask_id=retire_ask_id)
             else:
                 outcome = await _await_ask(
                     turn.chat_id, state, spec, wait_forever=False,
-                    timeout=max(0.0, deadline - time.time()))
+                    timeout=max(0.0, deadline - time.time()), retire_ask_id=retire_ask_id)
         except Exception:
             _log.exception("[ComfyArt/local-llm] plan confirm failed")
             return "cancel"
@@ -2153,6 +2162,8 @@ class LocalLlmProvider(AgentProvider):
         selected = outcome.get("selected") or []
         if outcome.get("status") == "answered" and "start" in selected:
             return "start"
+        if outcome.get("status") == "answered" and "requote" in selected:
+            return "requote"
         return "cancel"
 
     def _implicit_step(self, item: dict, lang: str) -> dict:
@@ -2578,7 +2589,8 @@ class LocalLlmProvider(AgentProvider):
                                     break
                                 try:
                                     choice = await self._confirm_plan(
-                                        spec, turn, handle, run=run, messages=messages)
+                                        spec, turn, handle, run=run, messages=messages,
+                                        retire_previous=True)
                                 except Exception as e:
                                     _log.exception("[ComfyArt/local-llm] plan confirm failed")
                                     quote_error = f"[error] {type(e).__name__}: {e}"
@@ -3150,6 +3162,33 @@ class _CardTurn:
         self.chat_id = str(chat.get("id") or "")
 
 
+def _mark_brand_card_replaced(chat_id: str, message_id: str, ask_id: str, replaced_by: str) -> None:
+    """Collapse the old card only after the new one is stored. Refresh reads this row."""
+    from ..api import chat_store
+    from ..api.bot_turns import broadcast
+
+    if not chat_id or not message_id or not ask_id or not replaced_by:
+        return
+    row = next((m for m in chat_store.list_messages(chat_id) if m["id"] == message_id), None)
+    if row is None:
+        return
+    blocks = []
+    found = False
+    for block in row.get("blocks") or []:
+        if isinstance(block, dict) and block.get("ask_id") == ask_id:
+            blocks.append({**block, "status": "answered", "selected": ["requote"], "replaced_by": replaced_by})
+            found = True
+        else:
+            blocks.append(block)
+    if not found:
+        return
+    chat_store.update_message(chat_id, message_id, blocks=blocks)
+    broadcast("turn_ask_resolved", {
+        "chat_id": chat_id, "message_id": message_id, "ask_id": ask_id,
+        "status": "answered", "selected": ["requote"], "replaced_by": replaced_by,
+    })
+
+
 async def continue_brand_requote(provider, chat: dict, message_id: str, steps: list, spec: dict) -> dict:
     """Quote the still-open slots and show that card. Does not call the model or a paid tool.
 
@@ -3182,24 +3221,26 @@ async def continue_brand_requote(provider, chat: dict, message_id: str, steps: l
         quote.ask_spec(), opened, turn, amount=quote.total, lang=lang,
         currency=getattr(quote, "currency", "") or BRAND_CURRENCY,
         quote_id=getattr(quote, "quote_id", "") or "")
-    ask = bot_asks.create_ask(chat["id"], message_id, new_spec)
+    # A new assistant message, so the card is at the end of the conversation.
+    # The previous message keeps the old card in its original place.
+    holder = chat_store.create_message(
+        chat_id=chat["id"], role="assistant", blocks=[], status="done")
+    ask = bot_asks.create_ask(chat["id"], holder["id"], new_spec)
     ask.future  # bind the waiter to this loop before the response returns
-    msgs = chat_store.list_messages(chat["id"])
-    target = next((m for m in msgs if m["id"] == message_id), None)
-    blocks = list((target or {}).get("blocks") or [])
-    blocks.append({"type": "ask", "ask_id": ask.id, "status": "pending", **new_spec})
-    if target is not None:
-        chat_store.update_message(chat["id"], message_id, blocks=blocks)
-    broadcast("turn_ask", {
-        "chat_id": chat["id"], "message_id": message_id, "ask_id": ask.id, **new_spec,
-    })
+    shown = {"type": "ask", "ask_id": ask.id, "status": "pending", **new_spec}
+    stored = chat_store.update_message(chat["id"], holder["id"], blocks=[shown]) or {
+        **holder, "blocks": [shown],
+    }
+    broadcast("messages_logged", {"chat_id": chat["id"], "messages": [stored]})
+    _mark_brand_card_replaced(
+        chat["id"], message_id, str((spec or {}).get("ask_id") or ""), ask.id)
 
     async def _hold() -> None:
         outcome = await ask.future
         selected = list(outcome.get("selected") or [])
         status = "expired" if outcome.get("status") == "expired" else str(outcome.get("status") or "answered")
         fresh = chat_store.list_messages(chat["id"])
-        row = next((m for m in fresh if m["id"] == message_id), None)
+        row = next((m for m in fresh if m["id"] == holder["id"]), None)
         if row is not None:
             updated = []
             for block in row.get("blocks") or []:
@@ -3210,9 +3251,9 @@ async def continue_brand_requote(provider, chat: dict, message_id: str, steps: l
                     updated.append(nxt)
                 else:
                     updated.append(block)
-            chat_store.update_message(chat["id"], message_id, blocks=updated)
+            chat_store.update_message(chat["id"], holder["id"], blocks=updated)
         broadcast("turn_ask_resolved", {
-            "chat_id": chat["id"], "message_id": message_id, "ask_id": ask.id,
+            "chat_id": chat["id"], "message_id": holder["id"], "ask_id": ask.id,
             "status": status, "selected": selected if status == "answered" else None,
         })
         if status != "answered":
@@ -3220,7 +3261,8 @@ async def continue_brand_requote(provider, chat: dict, message_id: str, steps: l
         if "requote" in selected:
             hold = BOT_CHAT_ID.set(turn.chat_id)
             try:
-                await continue_brand_requote(provider, chat, message_id, opened, new_spec)
+                await continue_brand_requote(
+                    provider, chat, holder["id"], opened, {**new_spec, "ask_id": ask.id})
             finally:
                 BOT_CHAT_ID.reset(hold)
             return

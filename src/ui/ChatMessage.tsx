@@ -15,7 +15,7 @@ import { Markdown } from './Markdown'
 import { Thumb } from './TaskDetails'
 import { CopyButton } from './CopyButton'
 import { lang, t } from '../i18n'
-import { brandConfirmClosed, brandDeadlineClock, brandQuoteAction } from '../brandQuoteCard'
+import { brandCardPresentation, brandConfirmClosed, brandDeadlineClock, brandQuoteAction } from '../brandQuoteCard'
 import { openMemoryDialog } from './MemoryDialog'
 import { stepState } from './stepState'
 import { readLocal, writeLocal } from '../localPrefs'
@@ -854,6 +854,7 @@ function PlanQuote({ b }: { b: BotBlock }) {
   const [error, setError] = useState('')
   const [now, setNow] = useState(() => Date.now())
   const askId = b.ask_id
+  const present = b.brand_confirm ? brandCardPresentation(b, now) : null
   const closed = brandConfirmClosed(b, now)
   useEffect(() => {
     if (b.brand_confirm !== true || b.status !== 'pending' || typeof b.expires_at !== 'number') return
@@ -865,7 +866,14 @@ function PlanQuote({ b }: { b: BotBlock }) {
     const id = window.setTimeout(() => setNow(Date.now()), wait)
     return () => window.clearTimeout(id)
   }, [b.brand_confirm, b.status, b.expires_at])
-  if (closed) {
+  if (present?.face === 'superseded') {
+    return (
+      <div className="ca-chat__memo" data-testid="brand-quote-superseded">
+        {t('jobs.quoteRequoted')}
+      </div>
+    )
+  }
+  if (closed && present?.face !== 'pending') {
     return (
       <div className="ca-chat__memo" data-testid="brand-quote-expired">
         <span className="ca-icon">{Icons.close}</span>
@@ -884,7 +892,7 @@ function PlanQuote({ b }: { b: BotBlock }) {
       </div>
     )
   }
-  const pending = b.status === 'pending'
+  const pending = b.status === 'pending' || present?.face === 'pending'
   if (pending && askId) {
     const answer = quoteAnswer(askId)
     const brandAction = b.brand_confirm ? brandQuoteAction(b.price_state) : 'start'
