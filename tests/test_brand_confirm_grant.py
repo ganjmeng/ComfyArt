@@ -1486,3 +1486,152 @@ async def test_live_turn_and_stored_requote_share_the_progress_key(monkeypatch, 
     finally:
         BOT_CHAT_ID.reset(token)
         brand.reset_for_tests()
+
+
+async def _wait_stored_block(chat_id, ask_id):
+    import asyncio
+
+    from ComfyArt.api import chat_store
+
+    for _ in range(250):
+        for message in chat_store.list_messages(chat_id):
+            for block in message.get("blocks") or []:
+                if isinstance(block, dict) and block.get("ask_id") == ask_id:
+                    return block
+        await asyncio.sleep(0.02)
+    raise AssertionError(f"ask {ask_id} was not stored")
+
+
+def _stamp_replaced_by(chat_id, ask_id, replaced_by):
+    from ComfyArt.api import chat_store
+
+    for message in chat_store.list_messages(chat_id):
+        hit = False
+        blocks = []
+        for block in message.get("blocks") or []:
+            if isinstance(block, dict) and block.get("ask_id") == ask_id:
+                blocks.append({**block, "replaced_by": replaced_by})
+                hit = True
+            else:
+                blocks.append(block)
+        if hit:
+            chat_store.update_message(chat_id, message["id"], blocks=blocks)
+            return
+    raise AssertionError(f"ask {ask_id} is not on a stored message")
+
+
+async def test_live_pending_estimate_requote_prices_open_slots(monkeypatch, bot_client):
+    """A pending live estimate uses resolve_confirm_answer and returns a real price.
+
+    Still-valid and replaced_by return 409 only on the stored-card path. A live
+    ask that is still inside its deadline, even with replaced_by on the message,
+    is not refused. The new card lists only the unsubmitted slots.
+    """
+    import time as _time
+
+    from ComfyArt.api.paid_guard import noturn_key
+    from conftest import wait_bot_done
+    from test_agent_budget_391 import calls, reply
+    from test_brand_identity_1019 import _logos_ready
+
+    token = BOT_CHAT_ID.set("")
+    try:
+        brand.reset_for_tests()
+        assert brand._chat() == noturn_key("anonymous")
+        _logos_ready()
+        steps = _stored_steps()
+        brand.remember_stage_plan(steps, fresh=True)
+        brand.note_brand_submitted(steps[0]["arguments"])
+        clock = {"t": _time.time()}
+        monkeypatch.setattr(brand, "_clock", lambda: clock["t"])
+        phase = {"real": False}
+        resolved = []
+        real_resolve = bot_asks.resolve_confirm_answer
+
+        def spy_resolve(ask, selected, other_text=None, answers=None, *, now=None):
+            resolved.append((ask.id, list(selected or [])))
+            return real_resolve(ask, selected, other_text, answers, now=now)
+
+        monkeypatch.setattr(bot_asks, "resolve_confirm_answer", spy_resolve)
+
+        async def priced(_model, _inputs):
+            if phase["real"]:
+                return (0.03, "quote", "live", "q-real", "USD")
+            return (0.03, "estimate", "live", "q-est", "USD")
+
+        rig = _install_stored_provider(monkeypatch, priced)
+        seen = _spy_asks(monkeypatch)
+
+        async def open_chat():
+            created = await bot_client.post(
+                "/comfyart/bot/chats", json={"provider": "local-llm", "project": "local"})
+            assert created.status < 300, await created.text()
+            return (await created.json())["chat"]["id"]
+
+        stored = await open_chat()
+        _park_card(stored, "still-valid-live-guard", steps, clock["t"], valid=True)
+        kept = await bot_client.post(
+            f"/comfyart/bot/chats/{stored}/brand-requote",
+            json={"ask_id": "still-valid-live-guard"})
+        assert kept.status == 409, await kept.text()
+        assert (await kept.json())["error"] == "brand card is still valid"
+        assert resolved == []
+        assert len(_brand_blocks(stored)) == 1
+
+        expired = await open_chat()
+        _park_card(expired, "expired-replaced-guard", steps, clock["t"])
+        first = await bot_client.post(
+            f"/comfyart/bot/chats/{expired}/brand-requote",
+            json={"ask_id": "expired-replaced-guard"})
+        assert first.status == 202, await first.text()
+        held = await _wait_pending(seen, 1)
+        again = await bot_client.post(
+            f"/comfyart/bot/chats/{expired}/brand-requote",
+            json={"ask_id": "expired-replaced-guard"})
+        assert again.status == 409, await again.text()
+        assert (await again.json())["error"] == "brand card already replaced"
+        assert resolved == []
+        closed = await bot_client.post(
+            f"/comfyart/bot/chats/{expired}/asks/{held.id}/answer", json={"selected": ["cancel"]})
+        assert closed.status == 202, await closed.text()
+        assert resolved == [(held.id, ["cancel"])]
+        resolved.clear()
+
+        rig.script = lambda _messages, n: calls(("quote_plan", {"steps": steps})) if n == 0 else reply("好")
+        rig.n = 0
+        live = await open_chat()
+        started = await bot_client.post(
+            f"/comfyart/bot/chats/{live}/send", json={"text": "活估价卡重新取价", "lang": "zh"})
+        assert started.status < 300, await started.text()
+        old = await _wait_pending(seen, 2)
+        await _wait_stored_block(live, old.id)
+        assert old.id in bot_asks.PENDING
+        assert old.spec["price_state"] == "estimate"
+        assert [row["id"] for row in old.spec["options"]] == ["requote", "cancel"]
+        assert brand.confirm_expired(old.spec) is False
+        assert [step["arguments"]["brand_slot"] for step in old.spec["brand_steps"]] == ["logo_b", "logo_c"]
+        _stamp_replaced_by(live, old.id, "stored-path-would-refuse")
+        stamped = next(
+            block for block in _brand_blocks(live) if block.get("ask_id") == old.id)
+        assert stamped.get("replaced_by") == "stored-path-would-refuse"
+        phase["real"] = True
+        requote = await bot_client.post(
+            f"/comfyart/bot/chats/{live}/brand-requote", json={"ask_id": old.id})
+        assert requote.status == 202, await requote.text()
+        assert await requote.json() == {"ok": True}
+        assert resolved == [(old.id, ["requote"])]
+        new = await _wait_pending(seen, 3)
+        assert new.spec["price_state"] == "quote"
+        assert [row["id"] for row in new.spec["options"]] == ["start", "cancel"]
+        assert [step["arguments"]["brand_slot"] for step in new.spec["brand_steps"]] == ["logo_b", "logo_c"]
+        assert "实时价暂不可用" not in new.spec["prompt"]
+        assert "确定开始吗？" in new.spec["prompt"]
+        assert new.spec["expires_at"] - new.spec["created_at"] == 600
+        assert rig.paid_mcp() == []
+        cancelled = await bot_client.post(
+            f"/comfyart/bot/chats/{live}/asks/{new.id}/answer", json={"selected": ["cancel"]})
+        assert cancelled.status == 202, await cancelled.text()
+        await wait_bot_done(bot_client, live, timeout=5)
+    finally:
+        BOT_CHAT_ID.reset(token)
+        brand.reset_for_tests()
