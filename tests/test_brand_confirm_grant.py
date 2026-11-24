@@ -537,9 +537,14 @@ def test_stage1_stays_text_to_image_and_later_slots_refuse_without_a_base():
         bare = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})
         assert bare.get("model") != brand.QWEN_T2I
         assert "edit_model" not in bare
-        assert "Logo 方向 C缺少情绪板底图，无法修复，未报价、未扣费。" in bare["_brand_block"]["error"]
+        missing_c = (
+            "Logo 方向 C 缺少情绪板底图，这一张暂时做不了。没有报价，也没有扣积分。"
+            " / Logo direction C is missing its moodboard base, so it can't be made right now. "
+            "No quote was made and nothing was charged."
+        )
+        assert bare["_brand_block"]["error"] == missing_c
+        assert bare["_brand_block"]["user_message"] == missing_c
         assert "logo_c" not in bare["_brand_block"]["error"]
-        assert "moodboard" not in bare["_brand_block"]["error"]
 
         brand._progress()["shapes"]["moodboard"] = "shape:mood"
         logo = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})
@@ -548,7 +553,13 @@ def test_stage1_stays_text_to_image_and_later_slots_refuse_without_a_base():
         assert "_brand_block" not in logo
 
         spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})
-        assert "规范卡缺少Logo 方向 A底图，无法修复，未报价、未扣费。" in spec["_brand_block"]["error"]
+        missing_spec = (
+            "规范卡 缺少Logo 方向 A底图，这一张暂时做不了。没有报价，也没有扣积分。"
+            " / Guideline card is missing its Logo direction A base, so it can't be made right now. "
+            "No quote was made and nothing was charged."
+        )
+        assert spec["_brand_block"]["error"] == missing_spec
+        assert spec["_brand_block"]["user_message"] == missing_spec
         assert "logo_a" not in spec["_brand_block"]["error"]
         assert spec.get("model") != brand.QWEN_T2I
         brand._progress()["shapes"]["logo_a"] = "shape:logo_a"
@@ -869,8 +880,13 @@ async def test_a_logo_without_its_base_is_not_quoted_or_dispatched(monkeypatch):
         rig.n = 0
         _res, events = await rig.send("没有情绪板还要出 Logo")
         assert rig.paid_mcp() == []
-        assert any("无法修复，未报价、未扣费。" in (event.text or "") for event in events)
-        assert not any("[error]" in (event.text or "") or "moodboard" in (event.text or "") for event in events)
+        missing_a = (
+            "Logo 方向 A 缺少情绪板底图，这一张暂时做不了。没有报价，也没有扣积分。"
+            " / Logo direction A is missing its moodboard base, so it can't be made right now. "
+            "No quote was made and nothing was charged."
+        )
+        assert any((event.text or "") == missing_a for event in events)
+        assert not any("[error]" in (event.text or "") or "logo_a" in (event.text or "") for event in events)
         assert brand._grant_of(2)["expires_at"] == expires_at
     finally:
         BOT_CHAT_ID.reset(token)

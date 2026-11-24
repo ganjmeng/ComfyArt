@@ -930,11 +930,11 @@ def missing_base_message(slot_id: str) -> str | None:
     zh_slot = _QUOTE_NAME["zh"].get(slot["id"], slot["id"])
     en_slot = _QUOTE_NAME["en"].get(slot["id"], slot["id"])
     zh_names = "、".join(_QUOTE_NAME["zh"].get(item, item) for item in missing)
-    en_names = ", ".join(_QUOTE_NAME["en"].get(item, item) for item in missing)
+    en_names = ", ".join("moodboard" if item == "moodboard" else _QUOTE_NAME["en"].get(item, item) for item in missing)
     return (
-        f"{zh_slot}缺少{zh_names}底图，无法修复，未报价、未扣费。"
-        f" / {en_slot} is missing the {en_names} base, so it cannot be repaired. "
-        "Nothing was quoted and nothing was charged."
+        f"{zh_slot} 缺少{zh_names}底图，这一张暂时做不了。没有报价，也没有扣积分。"
+        f" / {en_slot} is missing its {en_names} base, so it can't be made right now. "
+        "No quote was made and nothing was charged."
     )
 
 
