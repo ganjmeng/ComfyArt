@@ -31,11 +31,12 @@ export function AngleProgress({ block, onRetry }: { block: AngleProgressBlock; o
   const total = Number(block.final_total || 0)
   const done = Number(block.final_done || 0)
   if (!total) return null
-  const head = block.phase === 'confirmed'
-    ? t('bot.angleConfirmed', Number(block.preview || 1), total)
-    : block.phase === 'generating'
-      ? t('bot.angleGenerating', done, total)
-      : t('bot.angleCount', done, total)
+  const preview = Number(block.preview || 1)
+  const head = block.phase === 'generating'
+    ? t('bot.angleGenerating', preview, done, total)
+    : block.phase === 'partial'
+      ? t('bot.angleInterrupted', preview, done, total)
+      : t('bot.angleSummary', preview, done, total)
   return (
     <div className="ca-angle-progress" data-phase={block.phase || 'partial'} data-testid="angle-progress">
       <div className="ca-angle-progress__head">

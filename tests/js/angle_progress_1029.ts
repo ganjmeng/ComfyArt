@@ -34,22 +34,24 @@ function check(lang: 'zh' | 'en', html: string, parts: string[], absent: string[
 const copy = {
   zh: {
     confirmed: '预览 1 + 成品 0/9',
-    generating: '生成中 3/9',
-    done: '9/9',
+    generating: '生成中 · 预览 1 + 成品 3/9',
+    done: '预览 1 + 成品 9/9',
+    interrupted: '已中断 · 预览 1 + 成品 1/9',
     delivered: '已交付',
     generatingSlot: '生成中',
     pending: '待查询',
-    failed: '失败可重试',
+    failed: '生成失败',
     retry: '重试',
   },
   en: {
-    confirmed: 'Preview 1 + finals 0/9',
-    generating: 'Generating 3/9',
-    done: '9/9',
+    confirmed: 'Preview 1 + Finals 0/9',
+    generating: 'Generating · Preview 1 + Finals 3/9',
+    done: 'Preview 1 + Finals 9/9',
+    interrupted: 'Interrupted · Preview 1 + Finals 1/9',
     delivered: 'Delivered',
     generatingSlot: 'Generating',
     pending: 'Awaiting results',
-    failed: 'Failed, retry',
+    failed: 'Failed',
     retry: 'Retry',
   },
 }
@@ -67,7 +69,7 @@ for (const lang of ['zh', 'en'] as const) {
   reports.push(check(lang, generating, [c.generating, 'data-state="generating"', c.delivered], ['0/0', '<progress', 'angle-retry-all']))
   reports.push(check(lang, done, [c.done, c.delivered], ['0/0', '<progress', 'angle-retry-']))
   reports.push(check(lang, resume, [
-    '1/9', c.delivered, c.pending, c.failed, `data-testid="angle-retry-final:6"`, c.retry,
+    c.interrupted, c.delivered, c.pending, c.failed, `data-testid="angle-retry-final:6"`, c.retry,
     'data-state="pending_query"',
   ], ['0/0', '<progress', 'angle-retry-all', 'angle-retry-final:2', 'data-state="failed">待查询', 'data-state="failed">Awaiting']))
   if (states.length !== 4) reports.push({ lang, missing: ['four states'], present: [], html: '' })

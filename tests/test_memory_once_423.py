@@ -231,7 +231,7 @@ def test_locales_only_add_memory_retrieved_430():
         # line is the size template with the call's width, height and ratio.
         "quote.lineartPreview", "quote.lineartPreviewSize",
         # confirmed multi-angle progress card (not memory copy)
-        "bot.angleConfirmed", "bot.angleGenerating", "bot.angleCount",
+        "bot.angleSummary", "bot.angleGenerating", "bot.angleInterrupted",
         "bot.anglePreview", "bot.angleFinal",
         "bot.angleSlotDelivered", "bot.angleSlotGenerating", "bot.angleSlotPending",
         "bot.angleSlotFailed", "bot.angleSlotWaiting",
@@ -271,12 +271,12 @@ def test_locales_only_add_memory_retrieved_430():
         for index, value in enumerate((1152, 2048, "9:16")):
             text = text.replace("{" + str(index) + "}", str(value))
         assert text == face
-    assert zh["bot.angleConfirmed"] == "预览 {0} + 成品 0/{1}"
-    assert en["bot.angleConfirmed"] == "Preview {0} + finals 0/{1}"
-    assert zh["bot.angleGenerating"] == "生成中 {0}/{1}"
-    assert en["bot.angleGenerating"] == "Generating {0}/{1}"
-    assert zh["bot.angleCount"] == "{0}/{1}"
-    assert en["bot.angleCount"] == "{0}/{1}"
+    assert zh["bot.angleSummary"] == "预览 {0} + 成品 {1}/{2}"
+    assert en["bot.angleSummary"] == "Preview {0} + Finals {1}/{2}"
+    assert zh["bot.angleGenerating"] == "生成中 · 预览 {0} + 成品 {1}/{2}"
+    assert en["bot.angleGenerating"] == "Generating · Preview {0} + Finals {1}/{2}"
+    assert zh["bot.angleInterrupted"] == "已中断 · 预览 {0} + 成品 {1}/{2}"
+    assert en["bot.angleInterrupted"] == "Interrupted · Preview {0} + Finals {1}/{2}"
     assert zh["bot.anglePreview"] == "预览"
     assert en["bot.anglePreview"] == "Preview"
     assert zh["bot.angleFinal"] == "成品 {0}"
@@ -287,8 +287,8 @@ def test_locales_only_add_memory_retrieved_430():
     assert en["bot.angleSlotGenerating"] == "Generating"
     assert zh["bot.angleSlotPending"] == "待查询"
     assert en["bot.angleSlotPending"] == "Awaiting results"
-    assert zh["bot.angleSlotFailed"] == "失败可重试"
-    assert en["bot.angleSlotFailed"] == "Failed, retry"
+    assert zh["bot.angleSlotFailed"] == "生成失败"
+    assert en["bot.angleSlotFailed"] == "Failed"
     assert zh["bot.angleSlotWaiting"] == "未开始"
     assert en["bot.angleSlotWaiting"] == "Not started"
     assert zh["bot.angleRetry"] == "重试"
