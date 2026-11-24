@@ -818,6 +818,26 @@ _SLOT_ALREADY = {
     "zh": "这一张已经提交过了，不要再生成。请继续本阶段还没提交的图片。",
     "en": "This image was already submitted. Do not generate it again. Continue with the images in this stage that have not been submitted.",
 }
+# Shown in the chat. The stored quote_error and TurnResult.error keep their [error] marker.
+_QUOTE_FAIL_SHOWN = {
+    "zh": "这次没能拿到报价，没有开始，也没有扣积分。请稍后重新取价。",
+    "en": "Couldn't get a quote. Nothing started and nothing was charged. Please requote in a moment.",
+}
+_CONFIRM_UNSAVED_SHOWN = {
+    "zh": "确认没有保存成功，没有开始，也没有扣积分。请重新取价。",
+    "en": "Your confirmation wasn't saved. Nothing started and nothing was charged. Please requote.",
+}
+
+
+def _shown_quote_failure(internal: str, lang: str) -> str:
+    """User sentence for a quote or confirm failure. Internal text stays on quote_error."""
+    text = str(internal or "")
+    key = "zh" if lang == "zh" else "en"
+    if "BrandGrantPersistError" in text:
+        return _CONFIRM_UNSAVED_SHOWN[key]
+    if text.startswith("[error]"):
+        return _QUOTE_FAIL_SHOWN[key]
+    return text
 _QUOTE_PLAN_TOOL = {
     "type": "function",
     "function": {
@@ -2637,7 +2657,8 @@ class LocalLlmProvider(AgentProvider):
             if name == QUOTE_TOOL:
                 if decision == "error":
                     chunks[i] = await self._emit_result(
-                        it, quote_error, emit=emit, done=done, lang=lang, is_error=True)
+                        it, _shown_quote_failure(quote_error, lang), emit=emit, done=done,
+                        lang=lang, is_error=True)
                 elif decision == "cancel":
                     text = quote.cancel_text if quote else CANCEL_TEXT[lang_key]
                     chunks[i] = await self._emit_result(
@@ -2668,8 +2689,8 @@ class LocalLlmProvider(AgentProvider):
                 # Quote or confirm failed. Do not call the tool and do not leave a
                 # result that a model-fallback could resubmit.
                 chunks[i] = await self._emit_result(
-                    it, quote_error or "[error] quote failed", emit=emit, done=done,
-                    lang=lang, is_error=True)
+                    it, _shown_quote_failure(quote_error or "[error] quote failed", lang),
+                    emit=emit, done=done, lang=lang, is_error=True)
                 continue
             if name in PAID_TOOLS and decision in {"cancel", "requote"}:
                 continue  # do not emit a paid row: the user stopped before anything ran
@@ -2759,7 +2780,7 @@ class LocalLlmProvider(AgentProvider):
                         if isinstance(blocked, dict):
                             detail = str(blocked.get("error") or blocked.get("user_message") or "")
                         chunks[i] = await self._emit_result(
-                            it, "[error] " + (detail or "brand generate has no slot"),
+                            it, detail or _shown_quote_failure("[error] quote failed", lang),
                             emit=emit, done=done, lang=lang, is_error=True)
                         continue
                     it["args"] = prepared
@@ -2767,9 +2788,11 @@ class LocalLlmProvider(AgentProvider):
                     try:
                         reserve_brand_dispatch(it["args"])
                     except BrandGrantPersistError as exc:
+                        _log.exception("[ComfyArt/local-llm] brand reservation was not saved")
                         chunks[i] = await self._emit_result(
-                            it, f"[error] {type(exc).__name__}: {exc}", emit=emit, done=done,
-                            lang=lang, is_error=True)
+                            it, _shown_quote_failure(
+                                f"[error] {type(exc).__name__}: {exc}", lang),
+                            emit=emit, done=done, lang=lang, is_error=True)
                         continue
             if name == "generate_image":
                 gate.consume_brand(it["args"])
@@ -2788,7 +2811,7 @@ class LocalLlmProvider(AgentProvider):
         if decision == "error":
             # Fail closed: no paid fallback after a quote or confirm exception.
             note = quote_error or "[error] quote failed"
-            await emit(BotEvent(t="delta", text=note))
+            await emit(BotEvent(t="delta", text=_shown_quote_failure(note, lang)))
             return TurnResult(usage=usage, error=note)
         for i in ran:  # #236: one fallback per failed model call, after its result is in the transcript
             it, ch = parsed[i], chunks[i]

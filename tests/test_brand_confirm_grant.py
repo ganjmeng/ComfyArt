@@ -369,7 +369,11 @@ async def test_a_failed_grant_write_does_not_dispatch(monkeypatch):
         _res, events = await rig.send("做这一阶段")
         assert rig.paid_mcp() == []
         assert brand._grant_of(2) is None
-        assert any("BrandGrantPersistError" in (event.text or "") for event in events)
+        shown = "确认没有保存成功，没有开始，也没有扣积分。请重新取价。"
+        visible = [event for event in events if event.t in ("delta", "tool_result")]
+        assert visible and all(event.text == shown for event in visible)
+        assert _res.error.startswith("[error]")
+        assert "BrandGrantPersistError" in (_res.error or "")
     finally:
         monkeypatch.undo()
         BOT_CHAT_ID.reset(token)
@@ -744,7 +748,10 @@ async def test_a_failed_dispatching_write_does_not_dispatch(monkeypatch):
         assert rig.paid_mcp() == []
         assert "logo_a" not in brand.dispatching_slots(2)
         assert "logo_a" not in brand.submitted_slots(2)
-        assert any("BrandGrantPersistError" in (event.text or "") for event in events)
+        failed = [event for event in events if event.t == "tool_result" and event.is_error]
+        assert failed
+        assert all(event.text == "确认没有保存成功，没有开始，也没有扣积分。请重新取价。" for event in failed)
+        assert not any("BrandGrantPersistError" in (event.text or "") or "[error]" in (event.text or "") for event in failed)
         assert brand._grant_of(2)["expires_at"] == expires_at
     finally:
         monkeypatch.undo()
@@ -899,6 +906,91 @@ async def test_a_dispatching_slot_is_not_sent_when_generate_omits_brand_slot(mon
         assert any("待核对" in (event.text or "") for event in events)
         assert not any("缺少底图" in (event.text or "") for event in events)
         assert brand._grant_of(2)["expires_at"] == expires_at
+    finally:
+        BOT_CHAT_ID.reset(token)
+        brand.reset_for_tests()
+
+
+_QUOTE_FAIL = {
+    "zh": "这次没能拿到报价，没有开始，也没有扣积分。请稍后重新取价。",
+    "en": "Couldn't get a quote. Nothing started and nothing was charged. Please requote in a moment.",
+}
+_CONFIRM_UNSAVED = {
+    "zh": "确认没有保存成功，没有开始，也没有扣积分。请重新取价。",
+    "en": "Your confirmation wasn't saved. Nothing started and nothing was charged. Please requote.",
+}
+
+
+async def _send_lang(rig, text, lang):
+    events = []
+
+    async def emit(ev):
+        events.append(ev)
+
+    res = await rig.p.send(TurnRequest(
+        chat_id="c", user_text=text, lang=lang, mcp_endpoint="http://x/mcp",
+        model="m", goal_text=text), emit, TurnHandle())
+    return res, events
+
+
+def _assert_failure_copy(res, events, sentence, leaked):
+    visible = [event for event in events if event.t == "delta" or (event.t == "tool_result" and event.is_error)]
+    assert visible
+    assert all(event.text == sentence for event in visible)
+    for event in visible:
+        assert "[error]" not in (event.text or "")
+        for word in leaked:
+            assert word not in (event.text or "")
+    assert (res.error or "").startswith("[error]")
+    for word in leaked:
+        assert word in (res.error or "")
+
+
+async def test_quote_and_confirm_failures_show_the_product_sentence(monkeypatch):
+    """A failed quote or an unsaved confirmation does not show the exception to the user."""
+    from test_agent_budget_391 import calls
+
+    token = BOT_CHAT_ID.set("c")
+    try:
+        for lang, leaked in (("zh", ("RuntimeError", "logo_c")), ("en", ("RuntimeError", "logo_a"))):
+            brand.reset_for_tests()
+            rig = await _brand_provider(
+                monkeypatch, lambda: (0.03, "quote", "live", "q-fail", "USD"))
+
+            async def boom(_steps, _lang, marker=leaked[1]):
+                raise RuntimeError(f"{marker} price lookup failed")
+
+            monkeypatch.setattr(rig.p, "_quote_steps", boom)
+
+            def script(messages, n):
+                if n == 0:
+                    return calls(("quote_plan", {"steps": _three()}))
+                return rig._reply("好")
+
+            rig.script = script
+            res, events = await _send_lang(rig, "取价失败", lang)
+            _assert_failure_copy(res, events, _QUOTE_FAIL[lang], leaked)
+            assert rig.paid_mcp() == []
+
+        for lang in ("zh", "en"):
+            brand.reset_for_tests()
+            rig = await _brand_provider(
+                monkeypatch, lambda: (0.03, "quote", "live", "q-save", "USD"))
+
+            def refuse(*_args, **_kwargs):
+                raise brand.BrandGrantPersistError("logo_b was not frozen")
+
+            monkeypatch.setattr(brand, "commit_confirmed_grant", refuse)
+
+            def script(messages, n):
+                if n == 0:
+                    return calls(("quote_plan", {"steps": _three()}))
+                return rig._reply("好")
+
+            rig.script = script
+            res, events = await _send_lang(rig, "确认没保存", lang)
+            _assert_failure_copy(res, events, _CONFIRM_UNSAVED[lang], ("BrandGrantPersistError", "logo_b"))
+            assert rig.paid_mcp() == []
     finally:
         BOT_CHAT_ID.reset(token)
         brand.reset_for_tests()

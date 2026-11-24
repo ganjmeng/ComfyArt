@@ -135,17 +135,28 @@ async def test_quote_build_exception_does_not_generate(monkeypatch, budget, stag
     generated, events, res = await _run(
         monkeypatch, budget=budget, price="production", confirm="production", stage=stage)
     assert generated == []
-    text = "\n".join(e.text for e in events if e.t == "delta" and e.text)
-    assert "quote build failed" in text
-    assert res.error
+    shown = "这次没能拿到报价，没有开始，也没有扣积分。请稍后重新取价。"
+    deltas = [e.text for e in events if e.t == "delta" and e.text]
+    tools = [e.text for e in events if e.t == "tool_result" and e.is_error]
+    assert deltas == [shown]
+    assert tools and all(text == shown for text in tools)
+    assert "quote build failed" not in shown
+    assert (res.error or "").startswith("[error]")
+    assert "RuntimeError" in res.error and "quote build failed" in res.error
 
 
 @pytest.mark.parametrize("budget", [True, False], ids=["agent_loop", "local_llm"])
 async def test_confirm_timeout_does_not_generate(monkeypatch, budget):
-    generated, events, _res = await _run(monkeypatch, budget=budget, price="ask", confirm="timeout")
+    generated, events, res = await _run(monkeypatch, budget=budget, price="ask", confirm="timeout")
     assert generated == []
-    text = "\n".join(e.text for e in events if e.t == "delta" and e.text)
-    assert "TimeoutError" in text or "confirm timed out" in text
+    shown = "这次没能拿到报价，没有开始，也没有扣积分。请稍后重新取价。"
+    deltas = [e.text for e in events if e.t == "delta" and e.text]
+    tools = [e.text for e in events if e.t == "tool_result" and e.is_error]
+    assert deltas == [shown]
+    assert tools and all(text == shown for text in tools)
+    assert "TimeoutError" not in shown and "confirm timed out" not in shown
+    assert (res.error or "").startswith("[error]")
+    assert "TimeoutError" in res.error and "confirm timed out" in res.error
 
 
 @pytest.mark.parametrize("budget", [True, False], ids=["agent_loop", "local_llm"])
