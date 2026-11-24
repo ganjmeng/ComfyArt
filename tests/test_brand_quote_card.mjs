@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { brandConfirmClosed, brandDeadlineClock, brandQuoteAction } from '../src/brandQuoteCard.ts'
+import { brandConfirmClosed, brandDeadlineClock, brandQuoteAction, brandRequoteRequest } from '../src/brandQuoteCard.ts'
 
 const NOW = 1_700_000_000_000
 
@@ -61,4 +61,24 @@ test('a real price starts and an estimate or unpriced card does not offer Start'
   assert.equal(brandQuoteAction(undefined), 'start')
   assert.equal(brandQuoteAction('estimate'), 'requote')
   assert.equal(brandQuoteAction('unpriced'), 'requote')
+})
+
+test('estimate and expired requote buttons both post the server re-quote', () => {
+  const view = readFileSync(new URL('../src/ui/ChatMessage.tsx', import.meta.url), 'utf8')
+  const bot = readFileSync(new URL('../src/bot.ts', import.meta.url), 'utf8')
+  const expiredAt = view.indexOf('data-testid="brand-quote-requote"')
+  const expiredClick = view.slice(expiredAt, expiredAt + 280)
+  assert.match(expiredClick, /requoteBrandCard\(b\.ask_id/)
+  assert.doesNotMatch(expiredClick, /sendMessage/)
+  const estimateAt = view.indexOf('await requoteBrandCard(askId)')
+  const estimateClick = view.slice(estimateAt, estimateAt + 80)
+  assert.match(estimateClick, /requoteBrandCard\(askId\)/)
+  assert.doesNotMatch(view, /answer\(\['requote'\]\)/)
+  assert.equal(view.split('requoteBrandCard(').length - 1, 2)
+  assert.match(bot, /requoteBrandCard/)
+  assert.match(bot, /brandRequoteRequest/)
+  assert.deepEqual(brandRequoteRequest('chat 1', 'ask/2'), {
+    path: '/comfyart/bot/chats/chat%201/brand-requote',
+    body: { ask_id: 'ask/2' },
+  })
 })

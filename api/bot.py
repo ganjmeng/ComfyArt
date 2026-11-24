@@ -424,6 +424,58 @@ async def bot_answer_ask(request: web.Request) -> web.Response:
     return web.json_response({"ok": True}, status=202)
 
 
+def _stored_brand_card(chat_id: str, ask_id: str) -> tuple[dict | None, dict | None]:
+    for message in chat_store.list_messages(chat_id):
+        for block in message.get("blocks") or []:
+            if (isinstance(block, dict) and block.get("type") == "ask"
+                    and block.get("ask_id") == ask_id and block.get("brand_confirm") is True):
+                return message, block
+    return None, None
+
+
+@routes.post("/comfyart/bot/chats/{cid}/brand-requote")
+async def bot_brand_requote(request: web.Request) -> web.Response:
+    """Re-quote a brand card in this request. A live ask wakes the waiting turn.
+
+    A card whose ask has already closed (the expired face) uses the same quote
+    and stamp path and appends the new card. Neither path asks the model.
+    """
+    if not bot_enabled():
+        return bot_disabled()
+    chat = _owned_chat(request)
+    body = await json_body(request)
+    ask_id = str(body.get("ask_id") or "")
+    if not ask_id:
+        return error("ask_id required", 400)
+    ask = bot_asks.PENDING.get(ask_id)
+    if ask is not None and ask.chat_id == chat["id"]:
+        try:
+            bot_asks.validate_answer(ask.spec, ["requote"], "")
+        except ValueError as e:
+            return error(str(e), 422)
+        outcome = bot_asks.resolve_confirm_answer(ask, ["requote"])
+        if outcome == "lost":
+            return error("ask not found or already resolved", 409)
+        if outcome == "expired":
+            from .brand_identity import expired_text
+            lang = str((ask.spec or {}).get("lang") or "zh")
+            return error(expired_text(lang), 409)
+        return web.json_response({"ok": True}, status=202)
+    message, block = _stored_brand_card(chat["id"], ask_id)
+    steps = (block or {}).get("brand_steps") if isinstance(block, dict) else None
+    if message is None or not isinstance(steps, list) or not steps:
+        return error("brand card not found", 404)
+    provider = get_provider(str(chat.get("provider") or ""))
+    if provider is None or not hasattr(provider, "_quote_steps"):
+        return error("brand re-quote needs the local model", 409)
+    from ..bot.local_llm import continue_brand_requote
+    try:
+        await continue_brand_requote(provider, chat, message["id"], steps, block)
+    except ValueError as e:
+        return error(str(e), 409)
+    return web.json_response({"ok": True}, status=202)
+
+
 
 @routes.post("/comfyart/bot/local-llm/test")
 async def bot_test_local_llm(request: web.Request) -> web.Response:

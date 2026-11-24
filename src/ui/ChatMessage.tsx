@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { Editor } from 'tldraw'
 
-import { answerAsk, quoteAnswer, continueRun, outputsOf, sendMessage, toolLabel, toolName, type AskAnswers, type AskQuestion, type BotBlock, type BotMessage } from '../bot'
+import { answerAsk, quoteAnswer, continueRun, outputsOf, requoteBrandCard, toolLabel, toolName, type AskAnswers, type AskQuestion, type BotBlock, type BotMessage } from '../bot'
 import { openBotSettingsWithLlmMode } from './AgentPicker'
 import { refFromUrl, setAgentPlanConfirmed } from '../comfy'
 import { draftAtom } from '../agent'
@@ -875,11 +875,12 @@ function PlanQuote({ b }: { b: BotBlock }) {
           className="ca-panel__primary"
           data-testid="brand-quote-requote"
           onClick={() => {
-            void sendMessage({ text: t('jobs.requote'), refs: [], docs: [], kits: [] })
+            void requoteBrandCard(b.ask_id || '').catch((e) => setError(errorText(e)))
           }}
         >
           {t('jobs.requote')}
         </button>
+        {error ? <div className="ca-chat__hint">{error}</div> : null}
       </div>
     )
   }
@@ -913,7 +914,7 @@ function PlanQuote({ b }: { b: BotBlock }) {
             }
             if (brandAction === 'requote') {
               try {
-                await answer(['requote'])
+                await requoteBrandCard(askId)
               } catch (e) {
                 setNow(Date.now())
                 setError(errorText(e))

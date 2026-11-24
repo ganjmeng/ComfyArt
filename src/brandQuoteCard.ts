@@ -32,3 +32,11 @@ export type BrandQuoteAction = 'start' | 'requote'
 export function brandQuoteAction(priceState: string | undefined): BrandQuoteAction {
   return priceState === 'estimate' || priceState === 'unpriced' ? 'requote' : 'start'
 }
+
+/** Both the estimate card and the expired card post this. The server re-quotes. */
+export function brandRequoteRequest(chatId: string, askId: string): { path: string; body: { ask_id: string } } {
+  return {
+    path: `/comfyart/bot/chats/${encodeURIComponent(chatId)}/brand-requote`,
+    body: { ask_id: askId },
+  }
+}

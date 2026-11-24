@@ -1933,6 +1933,53 @@ def invalidate_grant(stage: int) -> None:
     _persist_grants()
 
 
+def supersede_brand_card(steps: list, spec: dict) -> list:
+    """Retire this card and return the slots a new quote may list.
+
+    Submitted and held slots stay out via ``unsubmitted_steps``. The old snapshot
+    cannot be committed again. Prompts and parameters on the open slots are the
+    caller's own.
+    """
+    opened = unsubmitted_steps(steps)
+    stage = quoted_stage(steps) or quoted_stage(opened)
+    digest = ""
+    if isinstance(spec, dict):
+        frozen = spec.get("frozen")
+        if isinstance(frozen, dict):
+            digest = str(frozen.get("digest") or "")
+            stage = stage or int(frozen.get("stage") or 0)
+    if not stage:
+        return opened
+    progress = _progress()
+    done = progress.setdefault("quoted_stages", {})
+    rec = done.get(int(stage))
+    if not isinstance(rec, dict):
+        rec = {
+            "amount": 0.0,
+            "fingerprint": None,
+            "dispatched": False,
+            "submitted_slots": [],
+        }
+        done[int(stage)] = rec
+    dead = [str(item) for item in (rec.get("superseded_digests") or [])]
+    if digest and digest not in dead:
+        dead.append(digest)
+    rec["superseded_digests"] = dead
+    if isinstance(rec.get("grant"), dict):
+        invalidate_grant(int(stage))
+    else:
+        rec.pop("expires_at", None)
+        _persist_grants()
+    return opened
+
+
+def grant_digest_superseded(stage: int, digest: str) -> bool:
+    rec = _stage_record(stage)
+    if not isinstance(rec, dict) or not digest:
+        return False
+    return str(digest) in {str(item) for item in (rec.get("superseded_digests") or [])}
+
+
 def grant_still_authorizes(steps: list, turn: object = None, *, now: float | None = None,
                            amount: float | None = None, currency: str | None = None,
                            quote_id: str | None = None) -> bool:
@@ -2017,6 +2064,9 @@ def stamp_confirm_spec(spec: dict, steps: list, turn: object, *, amount: float, 
     )
     card["frozen"] = frozen
     card["frozen_slots"] = list(frozen.get("slots") or [])
+    # The steps the card quoted, so a later re-quote can keep the same prompt
+    # and parameters. They are not part of the frozen grant.
+    card["brand_steps"] = _json_ready(list(steps or []))
     return card
 
 
@@ -2040,6 +2090,8 @@ def commit_confirmed_grant(steps: list, spec: dict, turn: object, *, amount: flo
         return None
     stage = int(frozen.get("stage") or 0)
     if not stage:
+        return None
+    if grant_digest_superseded(stage, str(frozen.get("digest") or "")):
         return None
     identity = turn_identity(turn)
     if (str(frozen.get("user") or "") != identity["user"]

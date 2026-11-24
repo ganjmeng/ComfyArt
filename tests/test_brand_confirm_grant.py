@@ -898,3 +898,85 @@ async def test_a_dispatching_slot_is_not_sent_when_generate_omits_brand_slot(mon
     finally:
         BOT_CHAT_ID.reset(token)
         brand.reset_for_tests()
+
+
+class _SameTurn:
+    owner_id = "local"
+    project_id = "local"
+    chat_id = "c"
+
+
+async def test_requote_shows_a_new_card_and_the_old_confirmation_cannot_pay(monkeypatch):
+    """重新取价 stays in the turn: a new card, a new 10-minute deadline, open slots only.
+
+    The old snapshot cannot be committed, and replaying it does not dispatch.
+    An estimate card still has no Start.
+    """
+    from test_agent_budget_391 import calls
+
+    token = BOT_CHAT_ID.set("c")
+    try:
+        clock = {"t": 1_700_000_000.0}
+        monkeypatch.setattr(brand, "_clock", lambda: clock["t"])
+        rig = await _brand_provider(
+            monkeypatch, lambda: (0.03, "estimate", "live", "q-re", "USD"))
+        steps = _three(lambda slot: f"user text {slot}")
+        for step in steps:
+            step["model"] = brand.QWEN_EDIT
+        brand.remember_stage_plan(steps, fresh=True)
+        brand.note_brand_submitted(steps[0]["arguments"])
+        confirms = []
+
+        async def answer(spec, turn, handle, **_kwargs):
+            confirms.append(spec)
+            if len(confirms) == 1:
+                clock["t"] += 5
+                return "requote"
+            return "cancel"
+
+        monkeypatch.setattr(rig.p, "_confirm_plan", answer)
+
+        def first(messages, n):
+            if n == 0:
+                return calls(("quote_plan", {"steps": steps}))
+            return rig._reply("好")
+
+        rig.script = first
+        await rig.send("重新取价")
+        assert len(confirms) == 2
+        old, new = confirms
+        assert new["expires_at"] != old["expires_at"]
+        assert new["expires_at"] - new["created_at"] == pytest.approx(600.0)
+        assert new["created_at"] == clock["t"]
+        saved = {
+            step["arguments"]["brand_slot"]: step["arguments"]["prompt"]
+            for step in new["brand_steps"]
+        }
+        assert saved == {"logo_b": "user text logo_b", "logo_c": "user text logo_c"}
+        assert [row["slot"] for row in new["frozen_slots"]] == ["logo_b", "logo_c"]
+        assert [row["id"] for row in new["options"]] == ["requote", "cancel"]
+        assert rig.paid_mcp() == []
+        assert brand.commit_confirmed_grant(steps, old, _SameTurn(), amount=old["amount"]) is None
+        assert brand.grant_still_authorizes(
+            steps, _SameTurn(), quote_id=old.get("quote_id")) is False
+
+        async def start_old(spec, turn, handle, **_kwargs):
+            return "start"
+
+        monkeypatch.setattr(rig.p, "_confirm_plan", start_old)
+        monkeypatch.setattr(brand, "stamp_confirm_spec", lambda *a, **k: old)
+
+        def again(messages, n):
+            if n == 0:
+                return calls(("generate_image", {
+                    "prompt": "user text logo_b", "skill": brand.SKILL, "brand_slot": "logo_b",
+                }))
+            return rig._reply("好")
+
+        rig.script = again
+        rig.n = 0
+        await rig.send("旧确认再提交")
+        assert rig.paid_mcp() == []
+    finally:
+        BOT_CHAT_ID.reset(token)
+        brand.reset_for_tests()

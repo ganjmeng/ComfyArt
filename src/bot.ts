@@ -371,6 +371,16 @@ export async function continueRun(runId: string, lang: string) {
   await json(`/comfyart/bot/runs/${runId}/continue`, send({ lang }))
 }
 
+/** Estimate and expired brand cards. The server re-quotes and shows the new card. */
+export async function requoteBrandCard(askId: string) {
+  const chat = currentChat()
+  if (!chat || !askId) throw new Error('Missing quote conversation')
+  const { brandRequoteRequest } = await import('./brandQuoteCard')
+  const req = brandRequoteRequest(chat.id, askId)
+  const ack = await json<{ ok?: boolean }>(req.path, send(req.body))
+  if (!ack || ack.ok !== true) throw new Error('Quote acknowledgement missing')
+}
+
 /** Capture before opening a quote: switching chats must not redirect an approval. */
 export function quoteAnswer(askId: string) {
   return createQuoteAnswer(currentChat()?.id ?? null, askId, (path, body) => json(path, send(body)))

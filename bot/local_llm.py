@@ -2540,7 +2540,56 @@ class LocalLlmProvider(AgentProvider):
                         else:
                             if handle.stop_requested:
                                 return TurnResult(aborted=True, usage=usage)
-                            if choice == "start":
+                            # A brand 重新取价 stays in this turn. The server quotes the
+                            # still-open slots and shows that card. The model is not asked again.
+                            while choice == "requote" and _brand.steps_are_brand_stage(brand_steps):
+                                opened = _brand.supersede_brand_card(brand_steps, spec)
+                                if not opened:
+                                    quote_error = ("没有尚未提交的槽位，没有开始，也没有扣费。"
+                                                   if lang == "zh" else
+                                                   "No slot is still open. Nothing started and nothing was charged.")
+                                    decision = "error"
+                                    choice = ""
+                                    break
+                                try:
+                                    requoted = await self._quote_steps(opened, lang)
+                                except Exception as e:
+                                    _log.exception("[ComfyArt/local-llm] brand re-quote failed")
+                                    quote_error = f"[error] {type(e).__name__}: {e}"
+                                    decision = "error"
+                                    choice = ""
+                                    break
+                                if requoted is None:
+                                    quote_error = ("重新取价没有得到报价，没有开始，也没有扣费。"
+                                                   if lang == "zh" else
+                                                   "The new price did not arrive. Nothing started and nothing was charged.")
+                                    decision = "error"
+                                    choice = ""
+                                    break
+                                quote = requoted
+                                brand_steps = opened
+                                spec = _brand.stamp_confirm_spec(
+                                    quote.ask_spec(), opened, turn, amount=quote.total, lang=lang,
+                                    currency=getattr(quote, "currency", "") or _brand.BRAND_CURRENCY,
+                                    quote_id=getattr(quote, "quote_id", "") or "")
+                                brand_spec = spec
+                                if unattended:
+                                    choice = "unattended"
+                                    break
+                                try:
+                                    choice = await self._confirm_plan(
+                                        spec, turn, handle, run=run, messages=messages)
+                                except Exception as e:
+                                    _log.exception("[ComfyArt/local-llm] plan confirm failed")
+                                    quote_error = f"[error] {type(e).__name__}: {e}"
+                                    decision = "error"
+                                    choice = ""
+                                    break
+                            if decision == "error":
+                                pass
+                            elif handle.stop_requested:
+                                return TurnResult(aborted=True, usage=usage)
+                            elif choice == "start":
                                 if not single:  # #418: one OK covers this call only; don't arm the plan gate
                                     gate.allow(quote, True, brand_steps, fresh=True)
                                 decision = "start"
@@ -3090,3 +3139,100 @@ class LocalLlmProvider(AgentProvider):
         session = handle.process
         if isinstance(session, aiohttp.ClientSession):
             await session.close()
+
+
+class _CardTurn:
+    """Identity for a re-quote that is not riding an open model turn."""
+
+    def __init__(self, chat: dict):
+        self.owner_id = str(chat.get("user") or "local")
+        self.project_id = str(chat.get("project") or "local")
+        self.chat_id = str(chat.get("id") or "")
+
+
+async def continue_brand_requote(provider, chat: dict, message_id: str, steps: list, spec: dict) -> dict:
+    """Quote the still-open slots and show that card. Does not call the model or a paid tool.
+
+    Start on the new card goes through ``commit_confirmed_grant``. The old snapshot
+    was already retired by ``supersede_brand_card``.
+    """
+    import asyncio
+
+    from ..api import bot_asks, chat_store
+    from ..api.bot_turns import broadcast
+    from ..api.brand_identity import (
+        BRAND_CURRENCY, commit_confirmed_grant, remember_stage_plan, stamp_confirm_spec,
+        supersede_brand_card,
+    )
+    from ..api.mcp_tools._context import BOT_CHAT_ID
+
+    opened = supersede_brand_card(steps, spec)
+    if not opened:
+        raise ValueError("no open brand slot")
+    lang = "zh" if str((spec or {}).get("lang") or "zh") == "zh" else "en"
+    turn = _CardTurn(chat)
+    token = BOT_CHAT_ID.set(turn.chat_id)
+    try:
+        quote = await provider._quote_steps(opened, lang)
+    finally:
+        BOT_CHAT_ID.reset(token)
+    if quote is None:
+        raise ValueError("brand re-quote returned no price")
+    new_spec = stamp_confirm_spec(
+        quote.ask_spec(), opened, turn, amount=quote.total, lang=lang,
+        currency=getattr(quote, "currency", "") or BRAND_CURRENCY,
+        quote_id=getattr(quote, "quote_id", "") or "")
+    ask = bot_asks.create_ask(chat["id"], message_id, new_spec)
+    ask.future  # bind the waiter to this loop before the response returns
+    msgs = chat_store.list_messages(chat["id"])
+    target = next((m for m in msgs if m["id"] == message_id), None)
+    blocks = list((target or {}).get("blocks") or [])
+    blocks.append({"type": "ask", "ask_id": ask.id, "status": "pending", **new_spec})
+    if target is not None:
+        chat_store.update_message(chat["id"], message_id, blocks=blocks)
+    broadcast("turn_ask", {
+        "chat_id": chat["id"], "message_id": message_id, "ask_id": ask.id, **new_spec,
+    })
+
+    async def _hold() -> None:
+        outcome = await ask.future
+        selected = list(outcome.get("selected") or [])
+        status = "expired" if outcome.get("status") == "expired" else str(outcome.get("status") or "answered")
+        fresh = chat_store.list_messages(chat["id"])
+        row = next((m for m in fresh if m["id"] == message_id), None)
+        if row is not None:
+            updated = []
+            for block in row.get("blocks") or []:
+                if isinstance(block, dict) and block.get("ask_id") == ask.id:
+                    nxt = {**block, "status": status}
+                    if status == "answered":
+                        nxt["selected"] = selected
+                    updated.append(nxt)
+                else:
+                    updated.append(block)
+            chat_store.update_message(chat["id"], message_id, blocks=updated)
+        broadcast("turn_ask_resolved", {
+            "chat_id": chat["id"], "message_id": message_id, "ask_id": ask.id,
+            "status": status, "selected": selected if status == "answered" else None,
+        })
+        if status != "answered":
+            return
+        if "requote" in selected:
+            hold = BOT_CHAT_ID.set(turn.chat_id)
+            try:
+                await continue_brand_requote(provider, chat, message_id, opened, new_spec)
+            finally:
+                BOT_CHAT_ID.reset(hold)
+            return
+        if "start" in selected:
+            hold = BOT_CHAT_ID.set(turn.chat_id)
+            try:
+                saved = commit_confirmed_grant(
+                    opened, new_spec, turn, amount=float(new_spec.get("amount") or 0))
+                if saved is not None:
+                    remember_stage_plan(opened, fresh=True)
+            finally:
+                BOT_CHAT_ID.reset(hold)
+
+    asyncio.create_task(_hold(), name=f"comfyart-brand-requote-{ask.id[:8]}")
+    return new_spec
