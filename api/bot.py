@@ -134,6 +134,8 @@ async def bot_get_chat(request: web.Request) -> web.Response:
     if not bot_enabled():
         return bot_disabled()
     chat = _owned_chat(request)
+    from . import multi_angle
+    multi_angle.sync_progress(chat["id"], live=chat["id"] in ACTIVE_TURNS)
     messages = chat_store.list_messages(chat["id"])
     state = ACTIVE_TURNS.get(chat["id"])
     if state is not None:

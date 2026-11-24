@@ -462,6 +462,12 @@ const reducers: Record<string, (e: any) => void> = {
     return at < 0 ? appendBlock(next, e.memory_updated) : { ...next, blocks: next.blocks.map((b, i) => (i === at ? e.memory_updated! : b)) }
   }),
   turn_retry: (e) => patchMessages(e.chat_id, e.message_id, (m) => appendBlock(m, e.block)),
+  turn_multi_angle_progress: (e) => patchMessages(e.chat_id, e.message_id, (m) => ({
+    ...m,
+    blocks: m.blocks.some((b) => b.type === 'multi_angle_progress')
+      ? m.blocks.map((b) => (b.type === 'multi_angle_progress' ? e.block : b))
+      : [...m.blocks, e.block],
+  })),
   turn_run_budget: (e) => runBudgetAtom.set({ ...runBudgetAtom.get(), [e.chat_id]: e.budget }),
   turn_run_stop: (e) => patchMessages(e.chat_id, e.message_id, (m) => appendBlock(m, e.block)),
   turn_notify: (e) => {

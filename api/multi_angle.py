@@ -1089,6 +1089,151 @@ def submitted(meta: dict, result: dict, chat_id: str = "") -> None:
     _save(chat_id, ledger, expected)
 
 
+_PROGRESS = "multi_angle_progress"
+
+
+def _entry_state(entry: dict, slot: dict, *, live: bool) -> str:
+    """One slot, from the ledger. A missing result is not a failure.
+
+    Delivered stays delivered. An explicit failure is the only retryable state.
+    While the turn is still running, a reserved or submitted slot is generating.
+    After a restart, a submitted or unknown slot that was not retrieved is
+    pending_query. Authorized and not started stays waiting.
+    """
+    status = str(entry.get("status") or slot.get("status") or "")
+    failed = status == "failed" or slot.get("status") == "failed" or entry.get("generation_succeeded") is False
+    delivered = (
+        not failed and (
+            entry.get("delivered") is True or slot.get("delivered") is True
+            or status == "delivered" or entry.get("generation_succeeded") is True
+        )
+    )
+    if delivered:
+        return "delivered"
+    if failed:
+        return "failed"
+    if status in {"submitted", "unknown", "reserved"}:
+        if live and status in {"submitted", "reserved"}:
+            return "generating"
+        return "pending_query"
+    return "waiting"
+
+
+def progress_view(chat_id: str = "", *, live: bool = False) -> dict | None:
+    """Authoritative card from confirmed_plan. Empty when nothing is confirmed.
+
+    Counts come from preview + final_ids and each slot. They are not the model
+    plan steps and not the default generation cap.
+    """
+    chat_id = chat_id or _chat_id()
+    _row, root = _root(chat_id)
+    if not isinstance(root, dict):
+        return None
+    ledger = root.get(LEDGER) or {}
+    plan = ledger.get("confirmed_plan")
+    if not isinstance(plan, dict) or not plan.get("confirmation_id"):
+        return None
+    final_ids: list[str] = []
+    for raw in plan.get("final_ids") or []:
+        panel = str(raw or "")
+        if panel in PANEL_IDS and panel not in final_ids:
+            final_ids.append(panel)
+    if not final_ids:
+        return None
+    slots_meta = plan.get("slots") if isinstance(plan.get("slots"), dict) else {}
+    slots = []
+    preview_entry = ledger.get("preview") if isinstance(ledger.get("preview"), dict) else {}
+    preview_slot = slots_meta.get("preview") if isinstance(slots_meta.get("preview"), dict) else {}
+    preview_state = _entry_state(preview_entry, preview_slot, live=live)
+    slots.append({"id": "preview", "kind": "preview", "state": preview_state, "retry": preview_state == "failed"})
+    done = 0
+    generating = False
+    started = False
+    for panel in final_ids:
+        key = "final:" + panel
+        entry = ledger.get(key) if isinstance(ledger.get(key), dict) else {}
+        meta = slots_meta.get(key) if isinstance(slots_meta.get(key), dict) else {}
+        state = _entry_state(entry, meta, live=live)
+        if state == "delivered":
+            done += 1
+        elif state == "generating":
+            generating = True
+        if state != "waiting":
+            started = True
+        slots.append({"id": key, "kind": "final", "panel": panel, "state": state, "retry": state == "failed"})
+    if done == len(final_ids):
+        phase = "done"
+    elif generating:
+        phase = "generating"
+    elif not started:
+        phase = "confirmed"
+    else:
+        phase = "partial"
+    try:
+        preview_count = int(plan.get("preview") or 1)
+    except (TypeError, ValueError):
+        preview_count = 1
+    return {
+        "type": _PROGRESS,
+        "confirmation_id": str(plan.get("confirmation_id")),
+        "preview": preview_count,
+        "final_total": len(final_ids),
+        "final_done": done,
+        "phase": phase,
+        "batch_retry": False,
+        "slots": slots,
+    }
+
+
+def _upsert_progress(blocks: list, view: dict) -> bool:
+    for index, block in enumerate(blocks):
+        if isinstance(block, dict) and block.get("type") == _PROGRESS:
+            if block == view:
+                return False
+            blocks[index] = view
+            return True
+    blocks.append(view)
+    return True
+
+
+def sync_progress(chat_id: str, *, live: bool) -> dict | None:
+    """Write the progress block onto the message that already carries it, or the setup card.
+
+    A live turn keeps the block on its own blocks when that message owns the card,
+    so a later ledger save cannot drop it. Restart (no matching live message)
+    rewrites the stored block from the ledger.
+    """
+    chat_id = chat_id or _chat_id()
+    view = progress_view(chat_id, live=live)
+    if view is None:
+        return None
+    from . import chat_store
+    from .bot_turns import ACTIVE_TURNS, broadcast
+    state = ACTIVE_TURNS.get(chat_id)
+    messages = chat_store.list_messages(chat_id)
+    row, _root_block = _root(chat_id)
+    if row is None:
+        return None
+    host = None
+    for message in messages:
+        if any(isinstance(block, dict) and block.get("type") == _PROGRESS for block in message.get("blocks") or []):
+            host = message
+    if host is None:
+        host = row
+    if state is not None and state.message_id == host["id"]:
+        changed = _upsert_progress(state.blocks, view)
+        blocks = state.blocks
+    else:
+        blocks = copy.deepcopy(host.get("blocks") or [])
+        changed = _upsert_progress(blocks, view)
+    if not changed:
+        return view
+    if chat_store.update_message(chat_id, host["id"], blocks=blocks) is None:
+        return view
+    broadcast("turn_multi_angle_progress", {"chat_id": chat_id, "message_id": host["id"], "block": view})
+    return view
+
+
 def record_wait(result: dict, chat_id: str = "") -> None:
     chat_id = chat_id or _chat_id()
     _, root = _root(chat_id)
@@ -1136,6 +1281,8 @@ def record_wait(result: dict, chat_id: str = "") -> None:
             changed = True
     if changed:
         _save(chat_id, ledger, expected)
+    from .bot_turns import ACTIVE_TURNS
+    sync_progress(chat_id, live=chat_id in ACTIVE_TURNS)
 
 
 def allow_selected_cap(args: dict, chat_id: str) -> None:
