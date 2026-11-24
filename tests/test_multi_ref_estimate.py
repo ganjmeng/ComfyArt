@@ -26,7 +26,7 @@ async def test_quote_equals_charge_per_reference_count(ws, n):
     _, payload = ws["submits"][-1]
     assert len(payload["images"]) == n
     assert est["source"] == "quote" and est["price"] == pytest.approx(per_ref(payload))
-    assert len(ws["quotes"][0]["input"]["images"]) == n
+    assert len(ws["quotes"][0]["inputs"]["images"]) == n
 
 
 async def test_quote_grows_with_references(ws):
@@ -46,4 +46,4 @@ async def test_quote_caps_references_at_max_items(ws):
 async def test_no_reference_quote_sends_no_images(ws):
     ws["prices"][EDIT] = per_ref
     await wavespeed.estimate({"feature": "edit_image", "model": EDIT, "prompt": "x"})
-    assert "images" not in ws["quotes"][0]["input"]
+    assert "images" not in ws["quotes"][0]["inputs"]

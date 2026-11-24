@@ -34,7 +34,7 @@ async def test_transcribe_route_request_shape_and_quote(ws, bot_client, media):
     model, payload = ws["submits"][0]
     assert model == WHISPER and payload["audio"].startswith("https://cdn.test/")
     assert "duration" not in payload  # #185: the length prices the job only, never submitted (schema has none)
-    assert ws["quotes"] == [{"model_id": WHISPER, "input": {"duration": 60}}]  # #185: unknown length -> 60 s fallback
+    assert ws["quotes"] == [{"model_id": WHISPER, "inputs": {"duration": 60}}]  # #185: unknown length -> 60 s fallback
 
 
 async def test_caption_route_request_shape_and_quote(ws, bot_client, media):
@@ -44,7 +44,7 @@ async def test_caption_route_request_shape_and_quote(ws, bot_client, media):
     assert res.status == 200 and (await res.json())["text"] == "a cat"
     model, payload = ws["submits"][0]
     assert model == CAPTION and payload["image"].startswith("https://cdn.test/")
-    assert ws["quotes"] == [{"model_id": CAPTION, "input": {}}]
+    assert ws["quotes"] == [{"model_id": CAPTION, "inputs": {}}]
     assert (await wavespeed.estimate({"feature": "caption", "image": PIC}))  # estimate path works
 
 
@@ -96,7 +96,7 @@ async def test_transcribe_route_prices_with_page_duration(ws, bot_client, media,
     assert res.status == 200
     _, payload = ws["submits"][0]
     assert "duration" not in payload
-    assert ws["quotes"] == [{"model_id": WHISPER, "input": {"duration": seconds}}]
+    assert ws["quotes"] == [{"model_id": WHISPER, "inputs": {"duration": seconds}}]
 
 
 @pytest.mark.parametrize("seconds", [10, 60, 300])

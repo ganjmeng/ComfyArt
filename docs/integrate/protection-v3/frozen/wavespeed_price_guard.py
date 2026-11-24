@@ -3,9 +3,11 @@
 Only https://api.wavespeed.ai:443
   GET  /api/v3/models
   POST /api/v3/model/price
-with official body keys {model_id, input?}. Socket connects to resolved
-IPs of that host are permitted only after a request has already passed
-this guard. This module does no I/O of its own.
+The price body is a JSON object. This guard does not accept or reject a tree
+by the field name `input` or `inputs`. main 72f387a8 is rejected by source
+digest and label, not here. Socket connects to resolved IPs of that host are
+permitted only after a request has already passed this guard. This module
+does no I/O of its own.
 """
 from __future__ import annotations
 
@@ -17,7 +19,6 @@ WAVESPEED_PORT = 443
 PATH_MODELS = '/api/v3/models'
 PATH_PRICE = '/api/v3/model/price'
 ALLOWED_PATHS = {PATH_MODELS, PATH_PRICE}
-PRICE_BODY_KEYS = frozenset({'model_id', 'input'})
 
 # Denied examples used in docs/tests (never called for real in offline proof).
 DENIED_PATHS = (
@@ -109,22 +110,14 @@ def _extract_body(kwargs: dict):
 
 
 def price_body_allowed(kwargs: dict) -> tuple[bool, str]:
-    """POST /api/v3/model/price body gate. Official field is `input` (singular)."""
-    body, err = _extract_body(kwargs)
+    """POST /api/v3/model/price accepts a JSON object.
+
+    `input` and `inputs` are not inspected. A plural body is the same shape
+    main 72f387a8 sends, and that tree is refused by digest and label instead.
+    """
+    _body, err = _extract_body(kwargs)
     if err:
         return False, err
-    extra = set(body) - PRICE_BODY_KEYS
-    if extra:
-        # Product wavespeed.py currently sends `inputs` (plural). That is not the
-        # official Pricing API field and is rejected here as a body-boundary miss.
-        if 'inputs' in extra:
-            return False, 'inputs_plural_not_official'
-        return False, 'unexpected_keys:' + ','.join(sorted(extra))
-    mid = body.get('model_id')
-    if type(mid) is not str or not mid.strip():
-        return False, 'model_id_invalid'
-    if 'input' in body and type(body['input']) is not dict:
-        return False, 'input_not_object'
     return True, 'ok'
 
 

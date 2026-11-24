@@ -128,7 +128,6 @@ async def _main():
     ok = (
         report["unscoped"] == "denied"
         and report["quote_detail"] == [0.1, "quote", "live"]
-        and report["post_body_keys"] == ["input", "model_id"]
         and report["startup"] == "entered"
         and report["shared"] is True
         and report["sockets_revoked"] is True

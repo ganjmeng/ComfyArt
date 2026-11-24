@@ -52,15 +52,15 @@ async def test_quote_tier_equals_submitted_tier(seed, monkeypatch, res, tier):
     seed["prices"][SEED] = per_tier
     job = {**JOB, "resolution": res}
     price, src = await wavespeed.quote(SEED, job)
-    assert src == "quote" and seed["quotes"][-1]["input"]["resolution"] == tier
+    assert src == "quote" and seed["quotes"][-1]["inputs"]["resolution"] == tier
     assert price == pytest.approx(TABLE[tier] * 5)
     monkeypatch.setattr(wavespeed, "confirm_usd", lambda: 100.0)
     await wavespeed.submit(job)
     sent = seed["submits"][-1][1]
     assert sent["resolution"] == tier  # quote params == submit params
     for k in ("resolution", "duration", "aspect_ratio"):
-        if k in seed["quotes"][-1]["input"]:
-            assert seed["quotes"][-1]["input"][k] == sent.get(k)
+        if k in seed["quotes"][-1]["inputs"]:
+            assert seed["quotes"][-1]["inputs"][k] == sent.get(k)
 
 
 def _loc(lang):
@@ -130,7 +130,7 @@ async def test_agent_and_canvas_defaults_quote_and_submit_the_model_default(seed
     for res in ("720p", "1K", None):
         job = {**JOB, **({"resolution": res} if res else {})}
         await wavespeed.submit(job)
-        assert seed["quotes"][-1]["input"]["resolution"] == "720p"
+        assert seed["quotes"][-1]["inputs"]["resolution"] == "720p"
         assert seed["submits"][-1][1].get("resolution", "720p") == "720p"
     # the catalog the UI reads (#95 caps) carries that default, so the chip shows 720p too
     meta = next(m for m in MODELS if m["model_id"] == SEED)

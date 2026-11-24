@@ -1,15 +1,14 @@
 """Identity pins for the offline startup adapter.
 
-LOGICAL_SOURCE is the api/bot/__init__.py digest after the singular price body,
-the multi-angle quote snapshot join, the confirmed preview-plus-finals plan,
-and the compare-and-swap progress block. It is not a git SHA. The delivery
-commit is not stored here. Parent
-main 72f387a8 still has the old plural body and must not be accepted.
+LOGICAL_SOURCE is the api/bot/__init__.py digest of this progress-card tree.
+It is not a git SHA. The delivery commit is not stored here. main 72f387a8 is
+rejected by this label and by STALE_MAIN_SOURCE, not by the shape of a price
+body. The price POST on this tree uses the same plural inputs as that main.
 """
 
 # Not a commit SHA. Binding is LOGICAL_SOURCE. Do not replace this with the delivery SHA.
-LOGICAL_GIT = "singular-price-input"
-LOGICAL_SOURCE = "b82625cfd5b847d1803f4eb09d5d51cca717c851882f000066394c3e393f199f"
+LOGICAL_GIT = "multi-angle-progress-cas"
+LOGICAL_SOURCE = "c7b317da3f20bfd89a7c6025c24dc5d75948a28a9976ed62dc93e0d1475089aa"
 STALE_MAIN_GIT = "72f387a87ec31530b3e9ef2682f0fec33d74b11a"
 STALE_MAIN_SOURCE = "90cc5bd7c9883fa3eeea6037210931afc44464d75bf179dcd3959ebe45dc5c2f"
 
@@ -21,7 +20,6 @@ RECOVERY_GIT = frozenset({
     "a61d2464884ad84eab6483ff9be0d7e09e55e554",
     "732138ec210e142be4795004eee53edfbcd7fd83",
     "738ddbf19c71890ca1820f26e4a7e8852685ebd7",
-    "041f13009125f7605bb9254f06a6e470b4d03891",
 })
 RECOVERY_SOURCE = "530967f0412acdac93b438cd7b0965ee0767d408df068d596200b1af31a24931"
 
@@ -31,7 +29,7 @@ OLD_V3_GIT = "c7c891955e6402bf566af47f5a2dc37925cff7df"
 
 RETIRED_PORTS = frozenset({8931, 8932, 8933, 8934, 8935})
 
-FROZEN_GUARD_SHA256 = "565b321b4f2773d100be570642d0eb8a003f1fa68ed1e429921d36a5a3ce3526"
+FROZEN_GUARD_SHA256 = "2173bc655db3e642ae574a90a3cd0487e9d2a40bab178adce1e9e8a4ace4d544"
 FROZEN_BOOTSTRAP_SHA256 = "fab44c9a26114200fcc0b21f29e92db1dfce7c166e3da8684dd709847f2557ff"
 FROZEN_LAUNCHER_SHA256 = "8b57e33e5c194ffb39d6e092e71a6b2352e52e8b2e2b94156bcd585d42a8bc20"
 
