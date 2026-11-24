@@ -81,9 +81,21 @@ def _prepared():
     )
 
 
+def _revoked(guard, batch):
+    if not batch:
+        raise AssertionError("empty socket batch is not revocation evidence")
+    rows = []
+    for sock in batch:
+        allowed = guard.price_socket_allowed(sock, ("203.0.113.5", 443))
+        rows.append({"id": id(sock), "fd": sock.fileno(), "allowed": allowed})
+        if allowed:
+            raise AssertionError("socket still permitted")
+    return rows
+
+
 async def _main():
     guard = load_frozen_guard()
-    report = {"guard_id": id(guard), "dns": False}
+    report = {"guard_id": id(guard), "scenarios": {}}
     os.environ["WAVESPEED_API_KEY"] = "synthetic-offline-not-a-credential"
 
     async def startup(_prepared_value, shared):
@@ -101,19 +113,76 @@ async def _main():
         wavespeed = _wavespeed()
         wavespeed._quotes.clear()
         wavespeed._catalog.update(models={}, at=0.0)
+
+        def begin():
+            return shared.transport_calls, len(shared.sockets), shared.submissions
+
+        async def finish(name, transports_before, sockets_before, submits_before, expect_transports):
+            batch = shared.sockets[sockets_before:]
+            transports = shared.transport_calls - transports_before
+            submits = shared.submissions - submits_before
+            if transports != expect_transports or len(batch) != expect_transports or submits != 0:
+                raise AssertionError(f"{name} counts transport={transports} sockets={len(batch)} submits={submits}")
+            report["scenarios"][name] = {
+                "transport_calls": transports,
+                "sockets_registered": len(batch),
+                "submissions": submits,
+                "sockets": _revoked(guard, batch),
+            }
+
+        mark = begin()
+        price, source, reason = await wavespeed.quote_detail("acme/offline-price", {"prompt": "cup"})
+        report["quote_detail"] = [price, source, reason]
+        posts = [item for item in shared.attempts if item[0] == "POST" and str(item[1]).endswith("/model/price")]
+        report["post_body_keys"] = sorted(posts[-1][2]) if posts else None
+        await finish("success", *mark, 2)
+
+        async def boom(method, url, _kwargs, _bound, _sock):
+            if str(url).endswith("/model/price"):
+                raise __import__("aiohttp").ClientError("offline transport")
+
+        shared.observe = boom
+        wavespeed._quotes.clear()
+        mark = begin()
+        failed = await wavespeed.quote_detail("acme/offline-price", {"prompt": "down"})
+        report["transport_result"] = [failed[0], failed[1]]
+        await finish("transport_error", *mark, 2)
+
+        async def cancel(method, url, _kwargs, _bound, _sock):
+            if str(url).endswith("/model/price"):
+                raise asyncio.CancelledError()
+
+        shared.observe = cancel
+        wavespeed._quotes.clear()
+        mark = begin()
         try:
-            price, source, reason = await wavespeed.quote_detail("acme/offline-price", {"prompt": "cup"})
-            report["quote_detail"] = [price, source, reason]
-        except PermissionError as exc:
-            report["quote_detail"] = getattr(exc, "reason", str(exc))
-        posts = [item for item in shared.attempts if item[0] == "POST"]
-        report["post_body_keys"] = sorted(posts[-1][2]) if posts and isinstance(posts[-1][2], dict) else None
+            await wavespeed.quote_detail("acme/offline-price", {"prompt": "stop"})
+            report["cancel"] = "returned"
+        except asyncio.CancelledError:
+            report["cancel"] = "cancelled"
+        await finish("cancel", *mark, 1)
+
+        shared.observe = None
+        mark = begin()
+        import aiohttp
+        from tools.protection_v3.wrapper import PriceRequestDenied
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post("https://api.wavespeed.ai/api/v3/balance", json={"model_id": "m", "inputs": {}}):
+                    report["denied"] = "allowed"
+        except PriceRequestDenied as exc:
+            report["denied"] = exc.reason
+        transports, sockets, submits = mark
+        report["scenarios"]["pre_reject"] = {
+            "transport_calls": shared.transport_calls - transports,
+            "sockets_registered": len(shared.sockets) - sockets,
+            "submissions": shared.submissions - submits,
+        }
+        if report["scenarios"]["pre_reject"] != {"transport_calls": 0, "sockets_registered": 0, "submissions": 0}:
+            raise AssertionError(report["scenarios"]["pre_reject"])
         report["http_guard"] = shared.http_guard_ids
         report["connector_guard"] = shared.connector_guard_ids
         report["audit_guard"] = shared.audit_guard_ids
-        report["sockets_revoked"] = all(
-            guard.price_socket_allowed(sock, ("203.0.113.5", 443)) is False for sock in shared.sockets
-        )
         return "entered"
 
     result, shared = await connect_product(
@@ -121,19 +190,28 @@ async def _main():
         startup=startup, price_ips=IPS, guard=guard, install_audit=True,
     )
     report["startup"] = result
-    report["shared"] = shared.guard is guard and all(
-        item == id(guard) for item in shared.http_guard_ids + shared.connector_guard_ids + shared.audit_guard_ids
-    )
+    ids = shared.http_guard_ids + shared.connector_guard_ids + shared.audit_guard_ids
+    report["shared"] = bool(ids) and shared.guard is guard and all(item == id(guard) for item in ids)
     print(json.dumps(report))
+    pre = report["scenarios"]["pre_reject"]
     ok = (
         report["unscoped"] == "denied"
         and report["quote_detail"] == [0.1, "quote", "live"]
         and report["post_body_keys"] == ["input", "model_id"]
+        and report["transport_result"][1] != "quote"
+        and report["cancel"] == "cancelled"
+        and report["scenarios"]["success"]["transport_calls"] == 2
+        and report["scenarios"]["success"]["sockets_registered"] == 2
+        and report["scenarios"]["transport_error"]["transport_calls"] == 2
+        and report["scenarios"]["transport_error"]["sockets_registered"] == 2
+        and report["scenarios"]["cancel"]["transport_calls"] == 1
+        and report["scenarios"]["cancel"]["sockets_registered"] == 1
+        and pre["transport_calls"] == 0
+        and pre["sockets_registered"] == 0
         and report["startup"] == "entered"
         and report["shared"] is True
-        and report["sockets_revoked"] is True
-        and bool(report["connector_guard"])
-        and bool(report["audit_guard"])
+        and report["connector_guard"]
+        and report["audit_guard"]
     )
     return 0 if ok else 1
 
