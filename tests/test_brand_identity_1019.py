@@ -942,7 +942,9 @@ async def test_a_partial_stage_resumes_only_the_unsubmitted_slots(monkeypatch):
             return reply("好")
 
         rig, _res, events, confirms, submits = await _live_brand_run(monkeypatch, again)
-        assert confirms == []
+        # The remaining two slots are a new price, so the old grant is not reused.
+        assert len(confirms) == 1
+        assert [row["slot"] for row in confirms[0]["frozen_slots"]] == ["logo_b", "logo_c"]
         assert submits == []
         assert [args["brand_slot"] for _name, args in rig.paid_mcp()] == ["logo_b", "logo_c"]
         assert "已经提交过了" in " ".join(_tool_texts(events, "generate_image"))

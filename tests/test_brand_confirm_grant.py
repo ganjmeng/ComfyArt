@@ -268,3 +268,256 @@ async def test_prompt_change_before_submit_does_not_reuse_the_old_grant(monkeypa
     finally:
         BOT_CHAT_ID.reset(token)
         brand.reset_for_tests()
+
+
+def _logo_call(slot: str):
+    return ("generate_image", {
+        "prompt": slot, "skill": brand.SKILL, "brand_slot": slot,
+    })
+
+
+def _stage_message(*extra):
+    from test_agent_budget_391 import calls
+    return calls(("quote_plan", {"steps": _three()}), *extra)
+
+
+async def _brand_provider(monkeypatch, price):
+    """LocalLlmProvider.send with a scripted model. Pricing and MCP stay on loopback."""
+    from test_agent_budget_391 import Rig, reply
+    from test_brand_identity_1019 import _logos_ready
+
+    brand.reset_for_tests()
+    _logos_ready()
+    confirms = []
+    rig = Rig(monkeypatch, reply)
+
+    async def priced(model, inputs):
+        return price()
+
+    monkeypatch.setattr(rig.p, "_price_one", priced)
+    monkeypatch.setattr(rig.p, "_models_for", lambda feature: [])
+
+    async def answer(spec, turn, handle, **kwargs):
+        confirms.append(spec)
+        return "start" if len(confirms) == 1 else "cancel"
+
+    monkeypatch.setattr(rig.p, "_confirm_plan", answer)
+    rig.confirms = confirms
+    rig._reply = reply
+    return rig
+
+
+def _refs_of(spec):
+    return [row.get("refs") for row in (spec.get("frozen_slots") or [])]
+
+
+async def test_wait_keeps_the_reference_that_was_frozen_on_the_card(monkeypatch):
+    from test_agent_budget_391 import reply
+
+    token = BOT_CHAT_ID.set("c")
+    try:
+        rig = await _brand_provider(
+            monkeypatch, lambda: (0.03, "quote", "refs", "q-refs", "USD"))
+
+        async def answer(spec, turn, handle, **kwargs):
+            rig.confirms.append(spec)
+            brand._progress()["shapes"]["moodboard"] = "shape:changed-before-start"
+            return "start"
+
+        monkeypatch.setattr(rig.p, "_confirm_plan", answer)
+
+        def script(messages, n):
+            if n == 0:
+                return _stage_message(_logo_call("logo_a"), _logo_call("logo_b"), _logo_call("logo_c"))
+            return reply("好")
+
+        rig.script = script
+        _res, events = await rig.send("做这一阶段")
+        assert rig.confirms and _refs_of(rig.confirms[0]) == [["shape:mood"]] * 3
+        saved = brand._grant_of(2)
+        assert saved is not None
+        assert [row["refs"] for row in saved["slots"]] == [["shape:mood"]] * 3
+        assert rig.paid_mcp() == []
+        assert any("参数已变化" in (event.text or "") for event in events)
+    finally:
+        BOT_CHAT_ID.reset(token)
+        brand.reset_for_tests()
+
+
+async def test_a_failed_grant_write_does_not_dispatch(monkeypatch):
+    from ComfyArt.api import memory
+
+    token = BOT_CHAT_ID.set("c")
+    try:
+        rig = await _brand_provider(
+            monkeypatch, lambda: (0.03, "quote", "disk", "q-disk", "USD"))
+
+        def script(messages, n):
+            if n == 0:
+                return _stage_message(_logo_call("logo_a"))
+            return rig._reply("好")
+
+        rig.script = script
+        real = memory.atomic_write_json
+
+        def broken(path, data):
+            if str(path).endswith("brand-confirm.json"):
+                raise OSError("disk full")
+            return real(path, data)
+
+        monkeypatch.setattr(memory, "atomic_write_json", broken)
+        _res, events = await rig.send("做这一阶段")
+        assert rig.paid_mcp() == []
+        assert brand._grant_of(2) is None
+        assert any("BrandGrantPersistError" in (event.text or "") for event in events)
+    finally:
+        monkeypatch.undo()
+        BOT_CHAT_ID.reset(token)
+        brand.reset_for_tests()
+
+
+async def test_a_failed_submit_record_stays_unknown_and_is_not_sent_again(monkeypatch):
+    from ComfyArt.api import memory
+    from test_agent_budget_391 import calls
+
+    token = BOT_CHAT_ID.set("c")
+    try:
+        rig = await _brand_provider(
+            monkeypatch, lambda: (0.03, "quote", "after", "q-after", "USD"))
+
+        def first(messages, n):
+            if n == 0:
+                return _stage_message()
+            return rig._reply("好")
+
+        rig.script = first
+        await rig.send("先确认")
+        assert rig.paid_mcp() == []
+        assert brand._grant_of(2) is not None
+
+        real = memory.atomic_write_json
+
+        def break_submitted(path, data):
+            chats = (data.get("chats") or {}) if isinstance(data, dict) else {}
+            for chat in chats.values():
+                for rec in ((chat or {}).get("quoted_stages") or {}).values():
+                    if "logo_a" in (rec.get("submitted_slots") or []):
+                        raise OSError("disk full")
+            return real(path, data)
+
+        monkeypatch.setattr(memory, "atomic_write_json", break_submitted)
+
+        def second(messages, n):
+            if n == 0:
+                return _stage_message(_logo_call("logo_a"))
+            return rig._reply("好")
+
+        rig.script = second
+        rig.n = 0
+        failed, _events = await rig.send("提交第一张")
+        assert "disk full" in (failed.error or "")
+        assert len(rig.paid_mcp()) == 1
+        assert "logo_a" in brand.unknown_slots(2)
+        assert "logo_a" not in brand.submitted_slots(2)
+
+        brand.drop_memory_for_tests()
+        assert "logo_a" in brand.unknown_slots(2)
+
+        def third(messages, n):
+            if n == 0:
+                return calls(_logo_call("logo_a"))
+            return rig._reply("好")
+
+        rig.script = third
+        rig.n = 0
+        _res, events = await rig.send("再试一次")
+        assert len(rig.paid_mcp()) == 1
+        assert any("待核对" in (event.text or "") for event in events)
+    finally:
+        BOT_CHAT_ID.reset(token)
+        brand.reset_for_tests()
+
+
+async def test_same_execution_with_a_new_price_does_not_reuse_the_grant(monkeypatch):
+    token = BOT_CHAT_ID.set("c")
+    prices = [
+        (0.03, "quote", "price", "q-same", "USD"),
+        (0.05, "quote", "price", "q-same", "USD"),
+    ]
+    try:
+        rig = await _brand_provider(monkeypatch, lambda: prices[0])
+        seen = {"n": 0}
+
+        async def priced(model, inputs):
+            seen["n"] += 1
+            return prices[0] if seen["n"] <= 3 else prices[1]
+
+        monkeypatch.setattr(rig.p, "_price_one", priced)
+
+        def first(messages, n):
+            if n == 0:
+                return _stage_message()
+            return rig._reply("好")
+
+        rig.script = first
+        await rig.send("确认原价")
+        assert len(rig.confirms) == 1
+        assert rig.paid_mcp() == []
+
+        def second(messages, n):
+            if n == 0:
+                return _stage_message(_logo_call("logo_a"), _logo_call("logo_b"), _logo_call("logo_c"))
+            return rig._reply("好")
+
+        rig.script = second
+        rig.n = 0
+        await rig.send("同参数新价")
+        assert len(rig.confirms) == 2
+        assert rig.paid_mcp() == []
+        assert rig.confirms[1]["amount"] == pytest.approx(0.15)
+    finally:
+        BOT_CHAT_ID.reset(token)
+        brand.reset_for_tests()
+
+
+async def test_same_execution_with_a_new_currency_or_quote_id_does_not_reuse_the_grant(monkeypatch):
+    token = BOT_CHAT_ID.set("c")
+    try:
+        for follow in (
+            (0.03, "quote", "currency", "q-same", "EUR"),
+            (0.03, "quote", "quote-id", "q-new", "USD"),
+        ):
+            brand.reset_for_tests()
+            prices = [(0.03, "quote", "first", "q-same", "USD"), follow]
+            rig = await _brand_provider(monkeypatch, lambda: prices[0])
+            seen = {"n": 0}
+
+            async def priced(model, inputs, prices=prices, seen=seen):
+                seen["n"] += 1
+                return prices[0] if seen["n"] <= 3 else prices[1]
+
+            monkeypatch.setattr(rig.p, "_price_one", priced)
+
+            def first(messages, n):
+                if n == 0:
+                    return _stage_message()
+                return rig._reply("好")
+
+            rig.script = first
+            await rig.send("确认")
+            assert len(rig.confirms) == 1
+
+            def second(messages, n):
+                if n == 0:
+                    return _stage_message(_logo_call("logo_a"), _logo_call("logo_b"), _logo_call("logo_c"))
+                return rig._reply("好")
+
+            rig.script = second
+            rig.n = 0
+            await rig.send("同参数变更")
+            assert len(rig.confirms) == 2
+            assert rig.paid_mcp() == []
+            brand.reset_for_tests()
+    finally:
+        BOT_CHAT_ID.reset(token)
+        brand.reset_for_tests()

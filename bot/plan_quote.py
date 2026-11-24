@@ -5,6 +5,7 @@ tests never reach WaveSpeed. External agents do not use this module (#238).
 """
 from __future__ import annotations
 
+import hashlib
 import inspect
 import json
 import math
@@ -154,6 +155,20 @@ def credit_alloc(amounts: list[Optional[float]], total_credits: int) -> list[int
         for i in order[:abs(need)]:
             credits[i] -= 1
     return credits
+
+
+def _pricer_quote_identity(answer: object) -> tuple[str, str]:
+    """Optional ``(currency, quote_id)`` carried after ``(amount, source, reason)``.
+
+    A shorter answer leaves both empty. Brand quotes then use USD and a digest of
+    the priced total. Callers that need a different quote id pass it as item 4,
+    and a different currency as item 5.
+    """
+    if not isinstance(answer, tuple):
+        return "", ""
+    quote_id = str(answer[3] or "") if len(answer) >= 4 else ""
+    currency = str(answer[4] or "") if len(answer) >= 5 else ""
+    return currency, quote_id
 
 
 def price_source(answer: object) -> tuple[Optional[float], str, str]:
@@ -342,6 +357,10 @@ class Quote:
     total_credits: int = 0
     # Validated multi-angle preview plan, stored with the pending quote. Prompt prose is not this.
     composition_plan: Optional[dict] = None
+    # Brand continuation compares these with the frozen grant. A same-parameter
+    # re-quote whose amount, currency, or quote id changed must not reuse it.
+    currency: str = "USD"
+    quote_id: str = ""
 
     def ask_spec(self) -> dict:
         lang = _lang(self.lang)
@@ -486,6 +505,8 @@ class _StepPrice:
     height: Optional[int] = None
     ratio: str = ""
     quoted_plan: Optional[dict] = None
+    currency: str = ""
+    quote_key: str = ""
 
 
 async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
@@ -529,8 +550,10 @@ async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
     show = model
     source, reason = SOURCE_QUOTE, ""
     amount: Optional[float] = None
+    currency, quote_key = "", ""
     if model:
         answer = await pricer(model, inputs)
+        currency, quote_key = _pricer_quote_identity(answer)
         amount, source, reason = price_source(answer)
         if amount is None and answer is None:
             # #235 legacy: a pricer with no answer at all prices the dearest model of that type, labelled 约.
@@ -550,7 +573,8 @@ async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
                           stage_width, stage_height, stage_ratio, quoted_plan if isinstance(quoted_plan, dict) else None)
     return _StepPrice(round(float(amount) * units, 6),
                       approx or source == SOURCE_ESTIMATE, show, choice, None, units, source, reason,
-                      stage_width, stage_height, stage_ratio, quoted_plan if isinstance(quoted_plan, dict) else None)
+                      stage_width, stage_height, stage_ratio, quoted_plan if isinstance(quoted_plan, dict) else None,
+                      currency, quote_key)
 
 
 def _forces_quote_card(prepared: list[dict]) -> bool:
@@ -607,6 +631,8 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         return None
     lines: list[Line] = []
     quoted_plan = None
+    priced_currency = ""
+    priced_keys: list[str] = []
     positions = _plan_positions(prepared)
     for step, position in zip(prepared, positions):
         if step.get("svg_blocked"):
@@ -628,6 +654,10 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
             ))
             continue
         amount, approx, source, reason = priced.amount, priced.approx, priced.source, priced.reason
+        if priced.currency:
+            priced_currency = priced.currency
+        if priced.quote_key:
+            priced_keys.append(priced.quote_key)
         unpriced = amount is None
         name = step["text"] or step["tool"]
         if step["tool"] == "generate_image":
@@ -736,11 +766,18 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
     if quoted_plan is not None:
         from ..api.multi_angle import remember_quoted_plan
         remember_quoted_plan(quoted_plan)
+    currency = priced_currency or "USD"
+    if priced_keys and all(key == priced_keys[0] for key in priced_keys):
+        quote_id = priced_keys[0]
+    elif priced_keys:
+        quote_id = "|".join(priced_keys)
+    else:
+        quote_id = hashlib.sha256(f"{currency}:{total:.4f}:{len(lines)}".encode()).hexdigest()
     return Quote(
         lines=lines, total=total, n=len(lines), ask=ask, lang=lang,
         prompt=prompt,
         total_label=TOTAL_LABEL[lang], total_text=total_text,
         keys=[ln.key for ln in lines], cancel_text=CANCEL_TEXT[lang],
         units=sum(ln.units for ln in lines), total_credits=total_credits,
-        composition_plan=quoted_plan,
+        composition_plan=quoted_plan, currency=currency, quote_id=quote_id,
     )

@@ -2464,6 +2464,8 @@ class LocalLlmProvider(AgentProvider):
                 # slot/model/size/count key and is not the authorization.
                 if _brand.steps_are_brand_stage(brand_steps) and _brand.all_slots_submitted(brand_steps):
                     repeat = "done"
+                elif _brand.steps_are_brand_stage(brand_steps) and _brand.only_reconcile_left(brand_steps):
+                    repeat = "reconcile"
                 elif _brand.steps_are_brand_stage(brand_steps):
                     open_steps = _brand.unsubmitted_steps(brand_steps)
                     if open_steps != brand_steps:
@@ -2477,7 +2479,12 @@ class LocalLlmProvider(AgentProvider):
                             if requote is not None:
                                 quote = requote
                                 brand_steps = open_steps
-                    if decision != "error" and quote is not None and _brand.grant_still_authorizes(brand_steps, turn):
+                    quote_currency = getattr(quote, "currency", "") or _brand.BRAND_CURRENCY
+                    quote_id = getattr(quote, "quote_id", "") or None
+                    if (decision != "error" and quote is not None and open_steps
+                            and _brand.grant_still_authorizes(
+                                brand_steps, turn, amount=quote.total,
+                                currency=quote_currency, quote_id=quote_id)):
                         repeat = "continue"
                     elif decision != "error":
                         stage = _brand.quoted_stage(brand_steps)
@@ -2493,6 +2500,8 @@ class LocalLlmProvider(AgentProvider):
                     decision = "passthrough"
                 elif repeat == "done":
                     decision = "done"
+                elif repeat == "reconcile":
+                    decision = "reconcile"
                 elif repeat == "continue":
                     # Arm once per confirmation. A later continue must not reset the remaining slots.
                     gate.allow(quote, not single, brand_steps, fresh=False)
@@ -2509,7 +2518,9 @@ class LocalLlmProvider(AgentProvider):
                     spec = quote.ask_spec()
                     if _brand.steps_are_brand_stage(brand_steps):
                         spec = _brand.stamp_confirm_spec(
-                            spec, brand_steps, turn, amount=quote.total, lang=lang)
+                            spec, brand_steps, turn, amount=quote.total, lang=lang,
+                            currency=getattr(quote, "currency", "") or _brand.BRAND_CURRENCY,
+                            quote_id=getattr(quote, "quote_id", "") or "")
                         brand_spec = spec
                     try:
                         choice = "unattended" if unattended else await self._confirm_plan(
@@ -2539,16 +2550,25 @@ class LocalLlmProvider(AgentProvider):
 
         if quote is not None and decision == "start":
             from ..api.brand_identity import (
-                commit_confirmed_grant, note_confirmed, quoted_stage, remember_stage_plan,
-                steps_are_brand_stage,
+                BrandGrantPersistError, commit_confirmed_grant, note_confirmed, quoted_stage,
+                remember_stage_plan, steps_are_brand_stage,
             )
             if steps_are_brand_stage(brand_steps) and repeat != "continue":
-                note_confirmed(quote.total, quote.units, stage=quoted_stage(brand_steps))
-                # A human confirm of a new or changed plan replaces the fingerprint.
-                # Continue keeps the confirmed amount, the deadline, and submitted slots.
-                remember_stage_plan(brand_steps, fresh=True)
-                if brand_spec is not None:
-                    commit_confirmed_grant(brand_steps, brand_spec, turn, amount=quote.total)
+                try:
+                    note_confirmed(quote.total, quote.units, stage=quoted_stage(brand_steps))
+                    # A human confirm of a new or changed plan replaces the fingerprint.
+                    # Continue keeps the confirmed amount, the deadline, and submitted slots.
+                    remember_stage_plan(brand_steps, fresh=True)
+                    saved = None
+                    if brand_spec is not None:
+                        saved = commit_confirmed_grant(
+                            brand_steps, brand_spec, turn, amount=quote.total)
+                    if brand_spec is not None and saved is None:
+                        raise BrandGrantPersistError("brand quote snapshot was not frozen")
+                except BrandGrantPersistError as exc:
+                    _log.exception("[ComfyArt/local-llm] brand confirmation was not saved")
+                    quote_error = f"[error] {type(exc).__name__}: {exc}"
+                    decision = "error"
             # #909: no whole-group count in the user's message -> the plan the card
             # showed sets the paid-guard cap (an explicit "做 3 张" still wins).
             from ..api import paid_guard
@@ -2575,6 +2595,11 @@ class LocalLlmProvider(AgentProvider):
                     from ..api.brand_identity import expired_text
                     chunks[i] = await self._emit_result(
                         it, expired_text(lang), emit=emit, done=done, lang=lang, is_error=True)
+                elif decision == "reconcile":
+                    from ..api.brand_identity import submit_block_text
+                    chunks[i] = await self._emit_result(
+                        it, submit_block_text("reconcile", lang), emit=emit, done=done,
+                        lang=lang, is_error=True)
                 else:
                     text = quote.started_result() if quote else json.dumps({"ok": True, "start": True})
                     chunks[i] = await self._emit_result(it, text, emit=emit, done=done, lang=lang)
@@ -2592,6 +2617,12 @@ class LocalLlmProvider(AgentProvider):
                 from ..api.brand_identity import expired_text
                 chunks[i] = await self._emit_result(
                     it, expired_text(lang), emit=emit, done=done, lang=lang, is_error=True)
+                continue
+            if name in PAID_TOOLS and decision == "reconcile":
+                from ..api.brand_identity import submit_block_text
+                chunks[i] = await self._emit_result(
+                    it, submit_block_text("reconcile", lang), emit=emit, done=done,
+                    lang=lang, is_error=True)
                 continue
             if name in PAID_TOOLS and decision == "done":
                 # This exact plan was already submitted. Do not call WaveSpeed again.
