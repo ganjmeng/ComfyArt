@@ -1605,7 +1605,9 @@ def note_brand_submitted(args: dict) -> None:
     done = list(rec.get("submitted_slots") or [])
     if slot not in done:
         done.append(slot)
+    prior_dispatching = [str(item) for item in (rec.get("dispatching_slots") or [])]
     rec["submitted_slots"] = done
+    rec["dispatching_slots"] = [item for item in prior_dispatching if item != slot]
     confirmed = {str(item[-1]) for item in (rec.get("fingerprint") or ()) if item}
     if confirmed and confirmed <= set(done):
         rec["dispatched"] = True
@@ -1613,6 +1615,7 @@ def note_brand_submitted(args: dict) -> None:
         _persist_grants()
     except BrandGrantPersistError:
         rec["submitted_slots"] = [item for item in done if item != slot]
+        rec["dispatching_slots"] = list(prior_dispatching)
         unknown = [str(item) for item in (rec.get("unknown_slots") or [])]
         if slot not in unknown:
             unknown.append(slot)
@@ -1693,14 +1696,27 @@ def unknown_slots(stage: int) -> set[str]:
     return {str(slot) for slot in (rec.get("unknown_slots") or [])}
 
 
+def dispatching_slots(stage: int) -> set[str]:
+    """Slots reserved on disk before the paid call. A restart leaves them unsent."""
+    rec = _stage_record(stage)
+    if rec is None:
+        return set()
+    return {str(slot) for slot in (rec.get("dispatching_slots") or [])}
+
+
+def _held_slots(stage: int) -> set[str]:
+    """Unknown and dispatching both mean the paid call must not be sent again."""
+    return unknown_slots(stage) | dispatching_slots(stage)
+
+
 def unsubmitted_steps(steps: list) -> list:
     """Keep the caller's prompt, base, and references. Drop slots already submitted.
 
-    A slot whose record is unknown is not quoted again and is not sent again.
+    A slot whose record is unknown or still dispatching is not quoted again and is not sent again.
     """
     stage = quoted_stage(steps)
     done = submitted_slots(stage) if stage else set()
-    unknown = unknown_slots(stage) if stage else set()
+    held = _held_slots(stage) if stage else set()
     out = []
     for step in steps or []:
         if not isinstance(step, dict):
@@ -1709,21 +1725,25 @@ def unsubmitted_steps(steps: list) -> list:
             out.append(step)
             continue
         slot = _slot_id_of(step)
-        if slot and (slot in done or slot in unknown):
+        if slot and (slot in done or slot in held):
             continue
         out.append(step)
     return out
 
 
 def only_reconcile_left(steps: list) -> bool:
-    """True when every slot is submitted or unknown, and at least one is unknown."""
+    """True when every slot is submitted or held, and at least one is held.
+
+    Held is an unknown submit record or a dispatching reservation that never
+    became a saved submit. Neither is sent again.
+    """
     slots = [slot for slot in (_slot_id_of(step) for step in (steps or [])) if slot]
     if not slots:
         return False
     stage = quoted_stage(steps)
     done = submitted_slots(stage)
-    unknown = unknown_slots(stage)
-    return all(slot in done or slot in unknown for slot in slots) and any(slot in unknown for slot in slots)
+    held = _held_slots(stage)
+    return all(slot in done or slot in held for slot in slots) and any(slot in held for slot in slots)
 
 
 def all_slots_submitted(steps: list) -> bool:
@@ -1949,12 +1969,38 @@ def commit_confirmed_grant(steps: list, spec: dict, turn: object, *, amount: flo
     return grant
 
 
+def reserve_brand_dispatch(args: dict) -> None:
+    """Persist this slot as dispatching before the paid call.
+
+    The write is the reservation. If it fails, the caller must not dispatch.
+    A crash after the call and before the submit record leaves this reservation
+    on disk; a later read treats it as reconcile and does not send it again.
+    """
+    if not isinstance(args, dict) or not args.get("brand_slot"):
+        return
+    slot = str(args.get("brand_slot") or "")
+    stage = stage_of(slot)
+    rec = _stage_record(stage)
+    if rec is None:
+        raise BrandGrantPersistError("brand slot has no confirmation to reserve")
+    if slot in submitted_slots(stage) or slot in _held_slots(stage):
+        raise BrandGrantPersistError("brand slot is already reserved")
+    current = [str(item) for item in (rec.get("dispatching_slots") or [])]
+    current.append(slot)
+    rec["dispatching_slots"] = current
+    try:
+        _persist_grants()
+    except BrandGrantPersistError:
+        rec["dispatching_slots"] = [item for item in current if item != slot]
+        raise
+
+
 def submit_block_reason(args: dict, turn: object = None, *, now: float | None = None) -> str | None:
     """Why this brand generate must not run, or None when the frozen grant allows it."""
     if not isinstance(args, dict) or not args.get("brand_slot"):
         return None
     slot = str(args.get("brand_slot") or "")
-    if slot in unknown_slots(stage_of(slot)):
+    if slot in _held_slots(stage_of(slot)):
         return "reconcile"
     if slot_already_submitted(args):
         return "submitted"

@@ -521,3 +521,175 @@ async def test_same_execution_with_a_new_currency_or_quote_id_does_not_reuse_the
     finally:
         BOT_CHAT_ID.reset(token)
         brand.reset_for_tests()
+
+
+class _Crash(BaseException):
+    """Leaves send() the way a process kill after POST would: not an Exception."""
+
+
+def _logo_args(slot: str = "logo_a") -> dict:
+    return {
+        "skill": brand.SKILL, "brand_slot": slot, "prompt": slot,
+        "width": 2048, "height": 2048, "count": 1, "refs": ["shape:mood"],
+    }
+
+
+async def _confirmed_stage(monkeypatch):
+    rig = await _brand_provider(
+        monkeypatch, lambda: (0.03, "quote", "reserve", "q-reserve", "USD"))
+
+    def first(messages, n):
+        if n == 0:
+            return _stage_message()
+        return rig._reply("好")
+
+    rig.script = first
+    await rig.send("先确认")
+    assert rig.paid_mcp() == []
+    grant = brand._grant_of(2)
+    assert grant is not None
+    return rig, grant["expires_at"]
+
+
+async def test_crash_after_post_before_submit_record_is_not_sent_again(monkeypatch):
+    from test_agent_budget_391 import calls
+
+    token = BOT_CHAT_ID.set("c")
+    try:
+        rig, expires_at = await _confirmed_stage(monkeypatch)
+
+        def boom(_args):
+            raise _Crash("after post")
+
+        monkeypatch.setattr(brand, "note_brand_submitted", boom)
+
+        def second(messages, n):
+            if n == 0:
+                return _stage_message(_logo_call("logo_a"))
+            return rig._reply("好")
+
+        rig.script = second
+        rig.n = 0
+        with pytest.raises(_Crash):
+            await rig.send("提交后崩溃")
+        assert len(rig.paid_mcp()) == 1
+        assert "logo_a" in brand.dispatching_slots(2)
+
+        brand.drop_memory_for_tests()
+        assert brand.submit_block_reason(_logo_args(), _Turn()) == "reconcile"
+        assert brand._grant_of(2)["expires_at"] == expires_at
+
+        def third(messages, n):
+            if n == 0:
+                return calls(_logo_call("logo_a"))
+            return rig._reply("好")
+
+        rig.script = third
+        rig.n = 0
+        _res, events = await rig.send("重启后再试")
+        assert len(rig.paid_mcp()) == 1
+        assert len(rig.confirms) == 1
+        assert any("待核对" in (event.text or "") for event in events)
+        assert brand._grant_of(2)["expires_at"] == expires_at
+    finally:
+        BOT_CHAT_ID.reset(token)
+        brand.reset_for_tests()
+
+
+async def test_a_failed_dispatching_write_does_not_dispatch(monkeypatch):
+    from ComfyArt.api import memory
+
+    token = BOT_CHAT_ID.set("c")
+    try:
+        rig, expires_at = await _confirmed_stage(monkeypatch)
+        real = memory.atomic_write_json
+
+        def break_reserve(path, data):
+            chats = (data.get("chats") or {}) if isinstance(data, dict) else {}
+            for chat in chats.values():
+                for rec in ((chat or {}).get("quoted_stages") or {}).values():
+                    if "logo_a" in (rec.get("dispatching_slots") or []):
+                        raise OSError("disk full")
+            return real(path, data)
+
+        monkeypatch.setattr(memory, "atomic_write_json", break_reserve)
+
+        def second(messages, n):
+            if n == 0:
+                return _stage_message(_logo_call("logo_a"))
+            return rig._reply("好")
+
+        rig.script = second
+        rig.n = 0
+        _res, events = await rig.send("预留写不进去")
+        assert rig.paid_mcp() == []
+        assert "logo_a" not in brand.dispatching_slots(2)
+        assert "logo_a" not in brand.submitted_slots(2)
+        assert any("BrandGrantPersistError" in (event.text or "") for event in events)
+        assert brand._grant_of(2)["expires_at"] == expires_at
+    finally:
+        monkeypatch.undo()
+        BOT_CHAT_ID.reset(token)
+        brand.reset_for_tests()
+
+
+async def test_restart_after_submit_writes_fail_does_not_resend(monkeypatch):
+    from ComfyArt.api import memory
+    from test_agent_budget_391 import calls
+
+    token = BOT_CHAT_ID.set("c")
+    try:
+        rig, expires_at = await _confirmed_stage(monkeypatch)
+        real = memory.atomic_write_json
+        reserved = {"ok": False}
+
+        def break_after_reserve(path, data):
+            chats = (data.get("chats") or {}) if isinstance(data, dict) else {}
+            has_dispatch = False
+            for chat in chats.values():
+                for rec in ((chat or {}).get("quoted_stages") or {}).values():
+                    if "logo_a" in (rec.get("dispatching_slots") or []):
+                        has_dispatch = True
+            if has_dispatch and not reserved["ok"]:
+                reserved["ok"] = True
+                return real(path, data)
+            if reserved["ok"] and str(path).endswith("brand-confirm.json"):
+                raise OSError("disk full")
+            return real(path, data)
+
+        monkeypatch.setattr(memory, "atomic_write_json", break_after_reserve)
+
+        def second(messages, n):
+            if n == 0:
+                return _stage_message(_logo_call("logo_a"))
+            return rig._reply("好")
+
+        rig.script = second
+        rig.n = 0
+        failed, _events = await rig.send("提交记录写盘失败")
+        assert "disk full" in (failed.error or "")
+        assert len(rig.paid_mcp()) == 1
+
+        brand.drop_memory_for_tests()
+        assert brand.dispatching_slots(2) == {"logo_a"}
+        assert "logo_a" not in brand.unknown_slots(2)
+        assert "logo_a" not in brand.submitted_slots(2)
+        assert brand.submit_block_reason(_logo_args(), _Turn()) == "reconcile"
+        assert brand._grant_of(2)["expires_at"] == expires_at
+
+        def third(messages, n):
+            if n == 0:
+                return calls(_logo_call("logo_a"))
+            return rig._reply("好")
+
+        rig.script = third
+        rig.n = 0
+        _res, events = await rig.send("重启后同授权")
+        assert len(rig.paid_mcp()) == 1
+        assert len(rig.confirms) == 1
+        assert any("待核对" in (event.text or "") for event in events)
+        assert brand._grant_of(2)["expires_at"] == expires_at
+    finally:
+        monkeypatch.undo()
+        BOT_CHAT_ID.reset(token)
+        brand.reset_for_tests()

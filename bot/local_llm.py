@@ -2682,6 +2682,15 @@ class LocalLlmProvider(AgentProvider):
                 if run_for_plan is not None and is_single(
                         bound.get("skill"), str(bound.get("preset") or "")):
                     run_for_plan.single_image_gens = int(getattr(run_for_plan, "single_image_gens", 0) or 0) + 1
+            if name == "generate_image" and (it.get("args") or {}).get("brand_slot"):
+                from ..api.brand_identity import BrandGrantPersistError, reserve_brand_dispatch
+                try:
+                    reserve_brand_dispatch(it["args"])
+                except BrandGrantPersistError as exc:
+                    chunks[i] = await self._emit_result(
+                        it, f"[error] {type(exc).__name__}: {exc}", emit=emit, done=done,
+                        lang=lang, is_error=True)
+                    continue
             if name == "generate_image":
                 gate.consume_brand(it["args"])
             await run_mcp(i)
