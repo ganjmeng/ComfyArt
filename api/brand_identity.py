@@ -949,11 +949,35 @@ def missing_base_message(slot_id: str) -> str | None:
     en_slot = _QUOTE_NAME["en"].get(slot["id"], slot["id"])
     zh_names = "、".join(_QUOTE_NAME["zh"].get(item, item) for item in missing)
     en_names = ", ".join("moodboard" if item == "moodboard" else _QUOTE_NAME["en"].get(item, item) for item in missing)
-    return (
-        f"{zh_slot} 缺少{zh_names}底图，这一张暂时做不了。没有报价，也没有扣积分。"
-        f" / {en_slot} is missing its {en_names} base, so it can't be made right now. "
-        "No quote was made and nothing was charged."
-    )
+    if card_lang() == "en":
+        return (
+            f"{en_slot} is missing its {en_names} base, so it can't be made right now. "
+            "No quote was made and nothing was charged."
+        )
+    return _zh_gap([
+        zh_slot, "缺少", zh_names, "底图，这一张暂时做不了。没有报价，也没有扣积分。",
+    ])
+
+
+def _han(ch: str) -> bool:
+    return "\u4e00" <= ch <= "\u9fff"
+
+
+def _latin_or_digit(ch: str) -> bool:
+    return ch.isascii() and (ch.isalpha() or ch.isdigit())
+
+
+def _zh_gap(parts: list[str]) -> str:
+    """A space only where a Han character touches a Latin letter or digit."""
+    out = ""
+    for part in parts:
+        if not part:
+            continue
+        if out and ((_han(out[-1]) and _latin_or_digit(part[0]))
+                     or (_latin_or_digit(out[-1]) and _han(part[0]))):
+            out += " "
+        out += part
+    return out
 
 
 def stage_base_block(steps: list) -> str | None:

@@ -537,14 +537,32 @@ def test_stage1_stays_text_to_image_and_later_slots_refuse_without_a_base():
         bare = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})
         assert bare.get("model") != brand.QWEN_T2I
         assert "edit_model" not in bare
-        missing_c = (
-            "Logo 方向 C 缺少情绪板底图，这一张暂时做不了。没有报价，也没有扣积分。"
-            " / Logo direction C is missing its moodboard base, so it can't be made right now. "
-            "No quote was made and nothing was charged."
-        )
+        missing_c = "Logo 方向 C 缺少情绪板底图，这一张暂时做不了。没有报价，也没有扣积分。"
         assert bare["_brand_block"]["error"] == missing_c
         assert bare["_brand_block"]["user_message"] == missing_c
         assert "logo_c" not in bare["_brand_block"]["error"]
+        assert " / " not in missing_c
+
+        from ComfyArt.api import paid_guard
+        en_token = BOT_CHAT_ID.set("en-base")
+        paid_guard.begin_turn(
+            "en-base", text="logo without a base", provider_text="logo without a base", lang="en")
+        try:
+            english = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})
+            assert english["_brand_block"]["error"] == (
+                "Logo direction C is missing its moodboard base, so it can't be made right now. "
+                "No quote was made and nothing was charged."
+            )
+            brand._progress()["shapes"]["moodboard"] = "shape:mood"
+            spec_en = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})
+            assert spec_en["_brand_block"]["error"] == (
+                "Guideline card is missing its Logo direction A base, so it can't be made right now. "
+                "No quote was made and nothing was charged."
+            )
+        finally:
+            paid_guard.end_turn("en-base")
+            BOT_CHAT_ID.reset(en_token)
+            brand._progress()["shapes"].pop("moodboard", None)
 
         brand._progress()["shapes"]["moodboard"] = "shape:mood"
         logo = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})
@@ -553,11 +571,7 @@ def test_stage1_stays_text_to_image_and_later_slots_refuse_without_a_base():
         assert "_brand_block" not in logo
 
         spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})
-        missing_spec = (
-            "规范卡 缺少Logo 方向 A底图，这一张暂时做不了。没有报价，也没有扣积分。"
-            " / Guideline card is missing its Logo direction A base, so it can't be made right now. "
-            "No quote was made and nothing was charged."
-        )
+        missing_spec = "规范卡缺少 Logo 方向 A 底图，这一张暂时做不了。没有报价，也没有扣积分。"
         assert spec["_brand_block"]["error"] == missing_spec
         assert spec["_brand_block"]["user_message"] == missing_spec
         assert "logo_a" not in spec["_brand_block"]["error"]
@@ -880,11 +894,7 @@ async def test_a_logo_without_its_base_is_not_quoted_or_dispatched(monkeypatch):
         rig.n = 0
         _res, events = await rig.send("没有情绪板还要出 Logo")
         assert rig.paid_mcp() == []
-        missing_a = (
-            "Logo 方向 A 缺少情绪板底图，这一张暂时做不了。没有报价，也没有扣积分。"
-            " / Logo direction A is missing its moodboard base, so it can't be made right now. "
-            "No quote was made and nothing was charged."
-        )
+        missing_a = "Logo 方向 A 缺少情绪板底图，这一张暂时做不了。没有报价，也没有扣积分。"
         assert any((event.text or "") == missing_a for event in events)
         assert not any("[error]" in (event.text or "") or "logo_a" in (event.text or "") for event in events)
         assert brand._grant_of(2)["expires_at"] == expires_at
