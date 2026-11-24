@@ -257,10 +257,10 @@ async def test_uncertain_timeout_and_explicit_failure_never_resubmit(run, monkey
 
     monkeypatch.setattr(canvas, "submit_command", uncertain)
     args = {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "multi_angle_stage": "preview"}
-    with pytest.raises(TimeoutError):
-        await canvas._relay("generate_image")(args)
     result = await canvas._relay("generate_image")(args)
-    assert result["submitted"] is False and len(sent) == 1
+    assert result["status"] == "unknown" and result["submitted"] is False and len(sent) == 1
+    result = await canvas._relay("generate_image")(args)
+    assert result["submitted"] is False and result.get("multi_angle_replay") is True and len(sent) == 1
     # Explicit failure is also retained; the agent cannot invent a retry/new request id.
     _, root = ma._root("chat-ma")
     ma.submitted({"key": "preview"}, {"status": "failed", "submitted": False})
@@ -519,6 +519,9 @@ async def test_positive_app_stack_scripted_agent_real_asks_persistence_and_place
     async def no_price(*a, **k):
         return None
 
+    async def official_quote(*a, **k):
+        return (0.1, "quote", "live")
+
     async def no_models(*a):
         return []
 
@@ -528,13 +531,22 @@ async def test_positive_app_stack_scripted_agent_real_asks_persistence_and_place
     monkeypatch.setattr(provider, "_request_json", fake_request)
     monkeypatch.setattr(provider, "_mcp_call_tool", real_mcp)
     monkeypatch.setattr(provider, "_context_window", window)
+    def select_model(*args, **kwargs):
+        # Quote routing needs a model so the card is an official quote. The page
+        # submit keeps the previous unpinned choice.
+        import inspect
+        if any(frame.function == "quote_route" for frame in inspect.stack(0)[:6]):
+            return {"model": "mock-1002", "auto": True, "category": "auto",
+                    "reason": {"zh": "自动", "en": "Auto"}}
+        return None
+
     monkeypatch.setattr(provider, "_price_call", no_price)
-    monkeypatch.setattr(provider, "_price_one", no_price)
+    monkeypatch.setattr(provider, "_price_one", official_quote)
     monkeypatch.setattr(provider, "_models_for", no_models)
     monkeypatch.setattr(provider, "_run_store", lambda: None)
     monkeypatch.setattr(bot_tools, "broadcast", answer_broadcast)
     monkeypatch.setattr(canvas, "submit_command", page_supplier)
-    monkeypatch.setattr(canvas, "select_model", lambda *a, **k: None)
+    monkeypatch.setattr(canvas, "select_model", select_model)
     monkeypatch.setattr(canvas, "unregistered_model", lambda *a, **k: None)
     monkeypatch.setattr(canvas, "load_config", lambda: {"features": {}})
     token = BOT_CHAT_ID.set(cid)

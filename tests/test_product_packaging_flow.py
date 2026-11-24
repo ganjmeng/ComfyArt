@@ -531,6 +531,7 @@ def test_portrait_studio_and_self_check_match_pinned_sha256(path):
 # - portrait-studio redo/follow-up (#927): bot.portraitStudioPlan / Done / Redo
 # - #943: runStop.stillGenerating
 # - #936: models.minimaxH3Image (picker copy; the row itself is model_display.json)
+# - confirmed multi-angle progress card: bot.angle*
 BANNER_LOCALE = {"zh": "排版横幅文字", "en": "Set banner text"}
 PORTRAIT_LOCALE = {
     "zh": {
@@ -566,12 +567,44 @@ QUOTE_LINE_LOCALE = {
         "quote.lineartPreviewSize": "Line-art preview · {0}×{1} · {2}",
     },
 }
+ANGLE_PROGRESS_LOCALE = {
+    "zh": {
+        "bot.angleSummary": "预览 {0} + 成品 {1}/{2}",
+        "bot.angleGenerating": "生成中 · 预览 {0} + 成品 {1}/{2}",
+        "bot.angleInterrupted": "已中断 · 预览 {0} + 成品 {1}/{2}",
+        "bot.anglePreview": "预览",
+        "bot.angleFinal": "成品 {0}",
+        "bot.angleSlotDelivered": "已交付",
+        "bot.angleSlotGenerating": "生成中",
+        "bot.angleSlotPending": "待查询",
+        "bot.angleSlotFailed": "生成失败",
+        "bot.angleSlotWaiting": "未开始",
+        "bot.angleRetry": "重试",
+        "bot.angleRetryFinal": "只重试成品 {0}",
+        "bot.angleRetryPreview": "只重试预览",
+    },
+    "en": {
+        "bot.angleSummary": "Preview {0} + Finals {1}/{2}",
+        "bot.angleGenerating": "Generating · Preview {0} + Finals {1}/{2}",
+        "bot.angleInterrupted": "Interrupted · Preview {0} + Finals {1}/{2}",
+        "bot.anglePreview": "Preview",
+        "bot.angleFinal": "Final {0}",
+        "bot.angleSlotDelivered": "Delivered",
+        "bot.angleSlotGenerating": "Generating",
+        "bot.angleSlotPending": "Awaiting results",
+        "bot.angleSlotFailed": "Failed",
+        "bot.angleSlotWaiting": "Not started",
+        "bot.angleRetry": "Retry",
+        "bot.angleRetryFinal": "Retry final {0} only",
+        "bot.angleRetryPreview": "Retry the preview only",
+    },
+}
 LOCALE_EXTRAS = {
     lang: {"bot.composeBannerText": BANNER_LOCALE[lang], **PORTRAIT_LOCALE[lang],
            "runStop.stillGenerating": RUN_STOP_LOCALE[lang],
            "wsErr.userRatioUnsupported": RATIO_REFUSAL_LOCALE_994[lang],
            "models.minimaxH3Image": H3_IMAGE_LOCALE[lang],
-           **QUOTE_LINE_LOCALE[lang]}
+           **QUOTE_LINE_LOCALE[lang], **ANGLE_PROGRESS_LOCALE[lang]}
     for lang in ("zh", "en")
 }
 # Canonical locale JSON minus the extras above. #1003 keeps jobs.sizeNotice as the #924

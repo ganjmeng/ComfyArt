@@ -499,6 +499,11 @@
 .ca-plan__mark { flex: none; display: inline-flex; width: 14px; height: 14px; margin-top: 2px; border: 1.5px solid currentColor; border-radius: 50%; box-sizing: border-box; }
 .ca-plan__mark svg { width: 100%; height: 100%; }
 .ca-plan[data-live] .ca-plan__step[data-status="active"] .ca-plan__mark { border-color: var(--ca-text) transparent var(--ca-text) var(--ca-text); animation: ca-spin 1s linear infinite; }
+.ca-angle-progress { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 10px; background: var(--ca-field); font-size: 13px; }
+.ca-angle-progress__head { display: flex; align-items: center; justify-content: space-between; font-weight: 600; }
+.ca-angle-progress__row { display: flex; align-items: center; gap: 8px; line-height: 18px; color: var(--ca-muted); }
+.ca-angle-progress__row[data-state="delivered"], .ca-angle-progress__row[data-state="failed"] { color: var(--ca-text); }
+.ca-angle-progress__retry { margin-left: auto; }
 .ca-plan__step[data-status="done"] .ca-plan__mark { border: none; }
 .ca-chat__arg { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ca-muted); opacity: .8; }
 .ca-chat__io { display: flex; flex-direction: column; gap: 6px; }

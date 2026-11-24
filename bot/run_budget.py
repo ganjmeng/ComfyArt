@@ -598,6 +598,16 @@ def _generate_units(obs: StepObservation) -> int:
     if obs.tool != "generate_image" or not _charged_result(obs):
         return 0
     try:
+        payload = json.loads(obs.result)
+    except (TypeError, ValueError):
+        payload = None
+    # A replay or an unresolved hold did not submit a new image.
+    if isinstance(payload, dict) and (
+            payload.get("multi_angle_replay") or payload.get("multi_angle_hold")
+            or payload.get("status") in {"unknown", "blocked", "refused"}
+            or payload.get("submitted") is False):
+        return 0
+    try:
         return max(1, int(_call_args(obs).get("count") or 1))
     except (TypeError, ValueError):
         return 1
@@ -626,6 +636,15 @@ class ProgressTracker:
     plan_items: list[str] = field(default_factory=list)
     total_calls: int = 0
     gen_calls: int = 0
+    # Confirmed multi-angle plan (preview + deduped finals). Same confirmation id
+    # does not add again. 0 means this run has no confirmed plan, and gen_cap
+    # stays on the global default. The historical +2 slack is not added on top.
+    confirmed_id: str = ""
+    confirmed_generates: int = 0
+    confirmed_final_ids: list = field(default_factory=list)
+    confirmed_amount: float = 0.0
+    confirmed_units: int = 0
+    count_log: list = field(default_factory=list)
     # wait_generation is outside the 30-call cap; each task may wait up to 30 min or 120 polls.
     wait_max_s: float = 30 * 60
     wait_max_polls: int = 120
@@ -702,7 +721,51 @@ class ProgressTracker:
         per_plan = DEFAULT_PLANNED_IMAGES * max(1, len(self.plan_items))
         planned = max(self.planned_images, per_plan) if self.plan_items else (
             self.planned_images or DEFAULT_PLANNED_IMAGES)
+        if self.confirmed_generates > 0:
+            # Exact authorized images. Reaching this count is the legal batch;
+            # the default +2 is not extra paid authorization.
+            return int(self.confirmed_generates)
         return planned + 2
+
+    def apply_confirmed_plan(self, plan: dict) -> bool:
+        """Mirror the persisted plan. The ledger is what keeps registration idempotent."""
+        confirmation_id = str((plan or {}).get("confirmation_id") or "")
+        generates = int((plan or {}).get("generates") or 0)
+        final_ids = [str(i) for i in ((plan or {}).get("final_ids") or [])]
+        if not confirmation_id or generates <= 0:
+            return False
+        if (self.confirmed_id and self.confirmed_generates == generates
+                and self.confirmed_final_ids == final_ids):
+            return False
+        self.confirmed_id = confirmation_id
+        self.confirmed_final_ids = final_ids
+        self.confirmed_generates = generates
+        self.confirmed_amount = float(plan.get("amount") or 0)
+        self.confirmed_units = int(plan.get("units") or 0)
+        return True
+
+    def note_counts(self, point: str) -> dict:
+        row = {
+            "point": point,
+            "paid_calls": self.paid_calls,
+            "total_calls": self.total_calls,
+            "gen_calls": self.gen_calls,
+            "gen_cap": self.gen_cap(),
+            "planned_images": self.planned_images,
+            "plan_items": list(self.plan_items),
+        }
+        self.count_log.append(row)
+        return row
+
+    def image_over(self) -> bool:
+        """A confirmed plan stops only when a generate goes past the authorized count.
+
+        The legal batch lands on the count. That must not end the send before the
+        next turn can query those submitted tasks. Other runs still stop at the cap.
+        """
+        if self.confirmed_generates > 0:
+            return self.gen_calls > int(self.confirmed_generates)
+        return self.gen_calls >= self.gen_cap()
 
     def over_budget(self, obs: list[StepObservation]) -> bool:
         """#705/#729: stop at the exact call/image cap, never after cap+1.
@@ -725,7 +788,7 @@ class ProgressTracker:
                     self.plan_items.append(text)
         self.gen_calls += sum(_generate_units(o) for o in obs)
         return (self.paid_calls >= self.tool_calls_max or self.total_calls >= self.all_calls_max
-                or self.gen_calls >= self.gen_cap())
+                or self.image_over())
 
     def wait_timeout(self, obs: list[StepObservation], now: Optional[float] = None) -> bool:
         """#705: True once any task polled by wait_generation passes wait_max_s since its first poll or wait_max_polls."""

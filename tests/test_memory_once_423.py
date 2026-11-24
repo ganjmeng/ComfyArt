@@ -230,6 +230,12 @@ def test_locales_only_add_memory_retrieved_430():
         # #1003: quote-card face for the pending line-art preview. The visible
         # line is the size template with the call's width, height and ratio.
         "quote.lineartPreview", "quote.lineartPreviewSize",
+        # confirmed multi-angle progress card (not memory copy)
+        "bot.angleSummary", "bot.angleGenerating", "bot.angleInterrupted",
+        "bot.anglePreview", "bot.angleFinal",
+        "bot.angleSlotDelivered", "bot.angleSlotGenerating", "bot.angleSlotPending",
+        "bot.angleSlotFailed", "bot.angleSlotWaiting",
+        "bot.angleRetry", "bot.angleRetryFinal", "bot.angleRetryPreview",
     }
     for p, v in (("src/locales/zh.json", "记忆已读取"), ("src/locales/en.json", "Memory retrieved")):
         cur = json.loads(_src(p))
@@ -265,6 +271,32 @@ def test_locales_only_add_memory_retrieved_430():
         for index, value in enumerate((1152, 2048, "9:16")):
             text = text.replace("{" + str(index) + "}", str(value))
         assert text == face
+    assert zh["bot.angleSummary"] == "预览 {0} + 成品 {1}/{2}"
+    assert en["bot.angleSummary"] == "Preview {0} + Finals {1}/{2}"
+    assert zh["bot.angleGenerating"] == "生成中 · 预览 {0} + 成品 {1}/{2}"
+    assert en["bot.angleGenerating"] == "Generating · Preview {0} + Finals {1}/{2}"
+    assert zh["bot.angleInterrupted"] == "已中断 · 预览 {0} + 成品 {1}/{2}"
+    assert en["bot.angleInterrupted"] == "Interrupted · Preview {0} + Finals {1}/{2}"
+    assert zh["bot.anglePreview"] == "预览"
+    assert en["bot.anglePreview"] == "Preview"
+    assert zh["bot.angleFinal"] == "成品 {0}"
+    assert en["bot.angleFinal"] == "Final {0}"
+    assert zh["bot.angleSlotDelivered"] == "已交付"
+    assert en["bot.angleSlotDelivered"] == "Delivered"
+    assert zh["bot.angleSlotGenerating"] == "生成中"
+    assert en["bot.angleSlotGenerating"] == "Generating"
+    assert zh["bot.angleSlotPending"] == "待查询"
+    assert en["bot.angleSlotPending"] == "Awaiting results"
+    assert zh["bot.angleSlotFailed"] == "生成失败"
+    assert en["bot.angleSlotFailed"] == "Failed"
+    assert zh["bot.angleSlotWaiting"] == "未开始"
+    assert en["bot.angleSlotWaiting"] == "Not started"
+    assert zh["bot.angleRetry"] == "重试"
+    assert en["bot.angleRetry"] == "Retry"
+    assert zh["bot.angleRetryFinal"] == "只重试成品 {0}"
+    assert en["bot.angleRetryFinal"] == "Retry final {0} only"
+    assert zh["bot.angleRetryPreview"] == "只重试预览"
+    assert en["bot.angleRetryPreview"] == "Retry the preview only"
     assert zh["chatMessage.memoryUpdated"] == "记忆已更新" and en["chatMessage.memoryUpdated"] == "Memory updated"
     assert zh["chatMessage.memoryUpdating"] == "记忆更新中" and en["chatMessage.memoryUpdating"] == "Updating memory"
 

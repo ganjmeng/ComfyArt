@@ -117,6 +117,7 @@ export function AgentPanel({ editor, projectId, max, onMax, onCollapse, onError 
   onError: (msg: string) => void
 }) {
   const messages = useValue(messagesAtom)
+  const angleOwner = [...messages].reverse().find((m) => m.blocks.some((b) => b.type === 'multi_angle_progress'))
   const chat = useValue('current chat', () => (chatsAtom.get() ?? []).find((c) => c.id === chatIdAtom.get()) ?? null, [])
   const providers = useValue(providersAtom) ?? []
   const keyStatus = useValue(keyStatusAtom)
@@ -213,7 +214,7 @@ export function AgentPanel({ editor, projectId, max, onMax, onCollapse, onError 
           ? <UserMessage key={m.id} editor={editor} m={m} onBranch={canBranch && !busy ? () => void branchFrom(m.id).catch(fail) : undefined} />
           : (
             <div key={m.id} className={fading.has(m.id) ? 'ca-chat__bot ca-chat__bot--stopping' : 'ca-chat__bot'}>
-              <AssistantBlocks editor={editor} m={m} dockAsks />
+              <AssistantBlocks editor={editor} m={m} dockAsks suppressPlan={!!angleOwner && angleOwner.id !== m.id} />
               {/* #763: no streaming footer while a question is open / just answered or skipped and no reply text yet */}
               {(() => {
                 // #437: reasoning turns keep the live label on the Thought row; #769: never leave an empty Outputting box
