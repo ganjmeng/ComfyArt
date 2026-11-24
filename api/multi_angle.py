@@ -1111,7 +1111,11 @@ def record_wait(result: dict, chat_id: str = "") -> None:
         failed = [row for row in rows if row.get("error") or row.get("status") == "failed"
                   or row.get("generation_succeeded") is False]
         if len(shapes) == 1 and not failed:
-            entry.update(delivered=True, shapes=shapes)
+            entry.update(delivered=True, generation_succeeded=True, shapes=shapes)
+            stored = entry.get("result")
+            if isinstance(stored, dict):
+                stored["generation_succeeded"] = True
+                stored["delivered"] = True
             # #1003: keep the delivered file so finals can crop the selected cell server-side.
             urls = [u for row in rows if row.get("status") == "done"
                     for u in row.get("urls") or [] if isinstance(u, str) and u]
@@ -1124,6 +1128,10 @@ def record_wait(result: dict, chat_id: str = "") -> None:
             entry["delivered"] = False
             entry["status"] = "failed"
             entry["generation_succeeded"] = False
+            stored = entry.get("result")
+            if isinstance(stored, dict):
+                stored["generation_succeeded"] = False
+                stored["delivered"] = False
             _plan_slot(ledger, key, "failed", delivered=False)
             changed = True
     if changed:

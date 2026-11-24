@@ -8,7 +8,7 @@ main 72f387a8 still has the old plural body and must not be accepted.
 
 # Not a commit SHA. Binding is LOGICAL_SOURCE. Do not replace this with the delivery SHA.
 LOGICAL_GIT = "singular-price-input"
-LOGICAL_SOURCE = "3a5dd7df901ee01566278f4ee2365cf9ffa8f4b7558b910f642f4a57b96ab1bf"
+LOGICAL_SOURCE = "d4931680a5821526d8e09407005478a45eded84f4dd990d37906f9daa4afa01d"
 STALE_MAIN_GIT = "72f387a87ec31530b3e9ef2682f0fec33d74b11a"
 STALE_MAIN_SOURCE = "90cc5bd7c9883fa3eeea6037210931afc44464d75bf179dcd3959ebe45dc5c2f"
 

@@ -53,6 +53,7 @@ async def test_default_chain_queries_nine_finals_inside_send(monkeypatch, tmp_pa
         entry = ledger["final:" + panel]
         assert entry["status"] == "submitted" or entry.get("delivered") is True
         assert entry.get("delivered") is True
+        assert entry.get("generation_succeeded") is True
         assert entry["status"] != "failed"
     points = {row["point"]: row for row in plan["counts"]}
     assert _fields(points["before_confirm"])[:4] == (1, 4, 1, 6)
