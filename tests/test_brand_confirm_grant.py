@@ -7,38 +7,11 @@ import time
 
 import pytest
 
-from ComfyArt.api import bot_asks, brand_identity as brand, paid_guard, wavespeed
+from ComfyArt.api import bot_asks, brand_identity as brand, wavespeed
 from ComfyArt.api.bot_turns import ACTIVE_TURNS
-from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID, GUARD_CHAT_ID
+from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
 from ComfyArt.bot.local_llm import LocalLlmProvider
 from ComfyArt.bot.providers import TurnHandle, TurnRequest
-
-
-@pytest.fixture(autouse=True)
-def _restore_brand_confirm_state():
-    """Restart regressions share the grant file, the stage map, and the live-turn tables.
-
-    Put every one of them back after the test, including when the test raises.
-    A later file (the #418 confirm contract) reads those same tables.
-    """
-    brand.reset_for_tests()
-    chat = BOT_CHAT_ID.set("")
-    guard = GUARD_CHAT_ID.set("")
-    turns = dict(ACTIVE_TURNS)
-    guards = dict(paid_guard.TURNS)
-    pending = dict(bot_asks.PENDING)
-    try:
-        yield
-    finally:
-        BOT_CHAT_ID.reset(chat)
-        GUARD_CHAT_ID.reset(guard)
-        ACTIVE_TURNS.clear()
-        ACTIVE_TURNS.update(turns)
-        paid_guard.TURNS.clear()
-        paid_guard.TURNS.update(guards)
-        bot_asks.PENDING.clear()
-        bot_asks.PENDING.update(pending)
-        brand.reset_for_tests()
 
 
 class _Turn:
@@ -229,20 +202,17 @@ async def test_brand_card_expires_on_a_real_timer(monkeypatch):
     assert spec["expires_at"] - spec["created_at"] == pytest.approx(0.15)
     from ComfyArt.api.bot_turns import _TurnState
     ACTIVE_TURNS["c"] = _TurnState(TurnHandle(), "c", "m-timer")
-    try:
-        provider = LocalLlmProvider(base_url=lambda: "http://127.0.0.1:9/v1")
-        started = time.time()
-        choice = await provider._confirm_plan(
-            spec, TurnRequest(chat_id="c", user_text="确认", lang="zh"), TurnHandle(),
-        )
-        elapsed = time.time() - started
-        block = ACTIVE_TURNS["c"].blocks[-1]
-        assert choice == "expired"
-        assert block["status"] == "expired"
-        assert elapsed >= 0.1
-    finally:
-        ACTIVE_TURNS.pop("c", None)
-        brand.reset_for_tests()
+    provider = LocalLlmProvider(base_url=lambda: "http://127.0.0.1:9/v1")
+    started = time.time()
+    choice = await provider._confirm_plan(
+        spec, TurnRequest(chat_id="c", user_text="确认", lang="zh"), TurnHandle(),
+    )
+    elapsed = time.time() - started
+    block = ACTIVE_TURNS["c"].blocks[-1]
+    ACTIVE_TURNS.pop("c", None)
+    assert choice == "expired"
+    assert block["status"] == "expired"
+    assert elapsed >= 0.1
 
 
 async def test_prompt_change_before_submit_does_not_reuse_the_old_grant(monkeypatch):
