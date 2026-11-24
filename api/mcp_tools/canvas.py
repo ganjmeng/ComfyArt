@@ -660,6 +660,7 @@ def quote_route(action: str, args: dict, user_text: str | None = None, catalog: 
     clean = dict(args)
     multi_meta = None
     quoted_plan = None
+    quoted_snapshot = None
     if action == "generate_image":
         # #956 / #957: same validation as the tool; quotes use validated actual params.
         from ..bot_turns import resolve_loose_refs
@@ -680,7 +681,11 @@ def quote_route(action: str, args: dict, user_text: str | None = None, catalog: 
         clean.pop("multi_angle_stage", None)
         clean.pop("composition_id", None)
         clean.pop("composition_plan", None)
-        quoted_plan = (multi_meta or {}).get("composition_plan") if isinstance(multi_meta, dict) else None
+        if isinstance(multi_meta, dict):
+            quoted_plan = multi_meta.get("composition_plan")
+            snap = multi_meta.get("setup_snapshot")
+            if isinstance(snap, dict):
+                quoted_snapshot = snap
     if unregistered_model(action, clean):
         clean = {k: v for k, v in clean.items() if k not in ("model", "auto_model")}
     # Use the live/cached WaveSpeed catalog so exact-size skills (before-after, …)
@@ -736,6 +741,9 @@ def quote_route(action: str, args: dict, user_text: str | None = None, catalog: 
     # Display/persistence only. plan_quote pops this before pricing. Not a provider field.
     if quoted_plan:
         inputs["_quoted_plan"] = quoted_plan
+    # Same display/persistence channel as the plan. plan_quote pops this before pricing.
+    if quoted_snapshot:
+        inputs["_quoted_snapshot"] = quoted_snapshot
     return model, inputs
 
 

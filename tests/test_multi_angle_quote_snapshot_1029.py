@@ -1,0 +1,326 @@
+"""First quote persists the plan and the setup snapshot; Start may submit.
+
+Real LocalLlmProvider.send, real quote_detail, offline HTTP stand-in only.
+No server, no image, no ledger file, no credential.
+"""
+from __future__ import annotations
+
+import copy
+
+import aiohttp
+import pytest
+
+from multi_angle_plan_fixture import HEADPHONES_PLAN
+
+from ComfyArt.api import bot_asks, bot_turns, chat_store, multi_angle as ma, paid_guard, wavespeed
+from ComfyArt.api.mcp_tools import bot_tools, canvas
+from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
+from ComfyArt.bot.local_llm import LocalLlmProvider
+from ComfyArt.bot.providers import TurnHandle, TurnRequest
+from test_agent_budget_391 import calls, reply
+from test_multi_angle_stages_911 import DESC, REF
+
+PREVIEW = {"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL, "refs": [REF],
+           "multi_angle_stage": "preview"}
+QUOTE_GATE = "确认报价"
+
+
+class _Response:
+    def __init__(self, status: int, payload: dict):
+        self.status = status
+        self._payload = payload
+
+    async def json(self, content_type=None):
+        return self._payload
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *exc):
+        return False
+
+
+class _Session:
+    def __init__(self, records, catalog, mode):
+        self.records = records
+        self.catalog = catalog
+        self.mode = mode
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *exc):
+        return False
+
+    def get(self, url, **kwargs):
+        self.records.append(("GET", str(url).split("?", 1)[0], None))
+        if not str(url).endswith("/api/v3/models"):
+            raise aiohttp.ClientError("unexpected catalog request")
+        return _Response(200, {"data": [self.catalog]})
+
+    def post(self, url, **kwargs):
+        body = kwargs.get("json")
+        self.records.append(("POST", str(url).split("?", 1)[0], copy.deepcopy(body)))
+        if not str(url).endswith("/api/v3/model/price"):
+            raise aiohttp.ClientError("unexpected price request")
+        if self.mode == "transport":
+            raise aiohttp.ClientError("offline transport")
+        if self.mode == "error":
+            return _Response(200, {"code": 4005, "data": {}})
+        return _Response(200, {"code": 200, "data": {"discounted_price": 0.1, "price": 0.2}})
+
+
+def _session_factory(records, catalog, mode):
+    def factory(*args, **kwargs):
+        return _Session(records, catalog, mode)
+    return factory
+
+
+def _clear_price_cache():
+    wavespeed._catalog["models"] = {}
+    wavespeed._catalog["at"] = 0.0
+    wavespeed._catalog.pop("stale", None)
+    wavespeed._quotes.clear()
+
+
+async def _send(monkeypatch, *, mode="quote", choice="start", change_before_start=False, generate=True):
+    _clear_price_cache()
+    model_id = wavespeed.load_config()["features"]["image_edit"]["default"]
+    catalog = {
+        "model_id": model_id,
+        "base_price": 0.2,
+        "api_schema": {"api_schemas": [{"request_schema": {"properties": {
+            "images": {"type": "array"},
+            "size": {"type": "string"},
+        }}}]},
+    }
+    records = []
+    sent = []
+    seen_setup = []
+    tools = []
+    chat = chat_store.create_chat(user="default", project="quote-snapshot-1029", provider="local-llm")
+    cid = chat["id"]
+    chat_store.create_message(chat_id=cid, role="user", blocks=[
+        {"type": "skill", "name": ma.SKILL}, {"type": "text", "text": DESC},
+        {"type": "image", "url": REF}])
+    assistant = chat_store.create_message(chat_id=cid, role="assistant", blocks=[], status="running")
+    handle = TurnHandle()
+    state = bot_turns._TurnState(handle, cid, assistant["id"])
+    monkeypatch.setitem(bot_turns.ACTIVE_TURNS, cid, state)
+    script = [calls(("ask_user", {"prompt": "setup"}))]
+    if generate:
+        script.append(calls(("generate_image", PREVIEW)))
+    script.append(reply("done"))
+    provider = LocalLlmProvider(base_url=lambda: "http://mock-no-network/v1")
+    seen = {"n": 0}
+
+    async def fake_request(session, method, url, *, headers, json_body=None, timeout=120):
+        if (json_body or {}).get("method") == "tools/list":
+            return {"result": {"tools": [{"name": n, "inputSchema": {"type": "object", "properties": {}}}
+                                          for n in ("ask_user", "generate_image")]}}
+        if not str(url).endswith("/chat/completions"):
+            return {"data": [{"id": "mock-1029", "context_length": 32000}]}
+        item = script[min(seen["n"], len(script) - 1)]
+        seen["n"] += 1
+        return item
+
+    from ComfyArt.api import mcp
+
+    async def real_mcp(session, endpoint, name, arguments):
+        out = await mcp._tools_call({"name": name, "arguments": arguments})
+        text = next(b["text"] for b in out["content"] if b["type"] == "text")
+        tools.append((name, text))
+        return text, []
+
+    async def page(action, args, project, timeout, chat=""):
+        sent.append((action, copy.deepcopy(args)))
+        return {"ids": [f"holder:{len(sent)}"], "submitted": True}
+
+    def answer_broadcast(event, payload):
+        if event != "turn_ask":
+            return
+        if payload.get("kind") == "plan_quote":
+            if change_before_start:
+                _retarget_aspect(cid, "4:3")
+            if choice == "start":
+                bot_asks.validate_answer(payload, ["start"], "")
+                bot_asks.resolve_ask(payload["ask_id"], "answered", selected=["start"])
+            elif choice == "expired":
+                bot_asks.resolve_ask(payload["ask_id"], "expired")
+            else:
+                bot_asks.validate_answer(payload, ["cancel"], "")
+                bot_asks.resolve_ask(payload["ask_id"], "cancelled", selected=["cancel"])
+            return
+        seen_setup.append(payload)
+        answers = {ma.SOURCE: {"selected": ["single_front"]}, ma.ASPECT: {"selected": ["1:1"]}}
+        bot_asks.validate_answer(payload, [], "", answers)
+        bot_asks.resolve_ask(payload["ask_id"], "answered", answers=answers)
+
+    async def emit(event):
+        pass
+
+    monkeypatch.setattr(wavespeed.aiohttp, "ClientSession", _session_factory(records, catalog, mode))
+    monkeypatch.setattr(wavespeed, "_key", lambda: "offline-stand-in")
+    async def window(*_args):
+        return 32000
+
+    monkeypatch.setattr(provider, "_request_json", fake_request)
+    monkeypatch.setattr(provider, "_mcp_call_tool", real_mcp)
+    monkeypatch.setattr(provider, "_context_window", window)
+    monkeypatch.setattr(provider, "_run_store", lambda: None)
+    monkeypatch.setattr(bot_tools, "broadcast", answer_broadcast)
+    monkeypatch.setattr(canvas, "submit_command", page)
+    token = BOT_CHAT_ID.set(cid)
+    paid_guard.begin_turn(cid, text=DESC, provider_text=DESC)
+    try:
+        result = await provider.send(TurnRequest(
+            chat_id=cid,
+            user_text=f"Use the ComfyArt skill '{ma.SKILL}' for this task. {DESC}",
+            goal_text=DESC, lang="zh", mcp_endpoint="http://mock-no-network/mcp", model="mock-1029"),
+            emit, handle)
+    finally:
+        paid_guard.end_turn(cid)
+        BOT_CHAT_ID.reset(token)
+        bot_turns.ACTIVE_TURNS.pop(cid, None)
+        bot_asks.cancel_chat_asks(cid)
+        _clear_price_cache()
+    return {"cid": cid, "sent": sent, "http": records, "result": result,
+            "setup": seen_setup, "model_id": model_id, "tools": tools}
+
+
+def _retarget_aspect(cid: str, aspect: str) -> None:
+    state = bot_turns.ACTIVE_TURNS.get(cid)
+    if state is not None:
+        for block in state.blocks:
+            answers = block.get("answers") or {}
+            if isinstance(answers.get(ma.ASPECT), dict):
+                answers[ma.ASPECT]["selected"] = [aspect]
+    for row in chat_store.list_messages(cid):
+        blocks = copy.deepcopy(row.get("blocks") or [])
+        changed = False
+        for block in blocks:
+            answers = block.get("answers") or {}
+            if isinstance(answers.get(ma.ASPECT), dict):
+                answers[ma.ASPECT]["selected"] = [aspect]
+                changed = True
+        if changed:
+            chat_store.update_message(cid, row["id"], blocks=blocks)
+
+
+def _posts(records):
+    return [item for item in records if item[0] == "POST"]
+
+
+def _gets(records):
+    return [item for item in records if item[0] == "GET"]
+
+
+@pytest.mark.asyncio
+async def test_real_send_confirmed_start_submits_one_preview(monkeypatch):
+    out = await _send(monkeypatch)
+    gets, posts = _gets(out["http"]), _posts(out["http"])
+    assert len(gets) == 1 and gets[0][1].endswith("/api/v3/models")
+    assert len(posts) == 1 and posts[0][1].endswith("/api/v3/model/price")
+    assert set(posts[0][2]) == {"model_id", "input"}
+    assert isinstance(posts[0][2]["input"], dict)
+    assert posts[0][2]["model_id"] == out["model_id"]
+    setup = out["setup"][0]
+    source, aspect = setup["questions"]
+    assert source["id"] == ma.SOURCE and aspect["id"] == ma.ASPECT
+    assert not source.get("defaults") and not aspect.get("defaults")
+    assert aspect["allow_other"] is False and source["allow_other"] is True
+    assert all(not q.get("selected") for q in setup["questions"])
+    token = BOT_CHAT_ID.set(out["cid"])
+    try:
+        root = ma._root(out["cid"])[1]
+        ledger = root[ma.LEDGER]
+        assert root["answers"][ma.SOURCE]["selected"] == ["single_front"]
+        panels = ledger["composition_plan"]["panels"]
+        assert len(panels) == 9 and all(panel.get("content") for panel in panels)
+        assert ledger["setup_snapshot"]["aspect"]["selected"] == ["1:1"]
+        preview = ledger["setup_snapshot"]["preview"]
+        assert (preview["width"], preview["height"], preview["ratio"]) == (1152, 2048, "9:16")
+        quotes = [b for row in chat_store.list_messages(out["cid"]) for b in row["blocks"]
+                  if b.get("kind") == "plan_quote"]
+        assert quotes and quotes[-1]["status"] == "answered"
+        assert all(line["source"] == "quote" for line in quotes[-1]["lines"])
+    finally:
+        BOT_CHAT_ID.reset(token)
+    assert len(out["sent"]) == 1, (out["tools"], getattr(out["result"], "error", None))
+    page = out["sent"][0][1]
+    assert (page["width"], page["height"], page["ratio"]) == (1152, 2048, "9:16")
+    assert (page.get("edit_model") or page.get("model")) == out["model_id"]
+    token = BOT_CHAT_ID.set(out["cid"])
+    try:
+        _retarget_aspect(out["cid"], "3:4")
+        blocked = await canvas._relay("generate_image")(dict(PREVIEW))
+    finally:
+        BOT_CHAT_ID.reset(token)
+    assert blocked["submitted"] is False and "changed after submission" in blocked["error"]
+    assert len(out["sent"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_changed_aspect_before_start_does_not_submit(monkeypatch):
+    out = await _send(monkeypatch, change_before_start=True)
+    assert out["sent"] == [], out["tools"]
+    token = BOT_CHAT_ID.set(out["cid"])
+    try:
+        blocked = await canvas._relay("generate_image")(dict(PREVIEW))
+    finally:
+        BOT_CHAT_ID.reset(token)
+    assert blocked["submitted"] is False and "changed after submission" in blocked["error"]
+    assert QUOTE_GATE not in blocked["error"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("choice", ["cancel", "expired"])
+async def test_cancel_or_expired_quote_submits_nothing(monkeypatch, choice):
+    out = await _send(monkeypatch, choice=choice)
+    assert out["sent"] == []
+    token = BOT_CHAT_ID.set(out["cid"])
+    try:
+        blocked = await canvas._relay("generate_image")(dict(PREVIEW))
+    finally:
+        BOT_CHAT_ID.reset(token)
+    assert blocked["submitted"] is False and out["sent"] == []
+    assert QUOTE_GATE in blocked["error"]
+    assert "changed after submission" not in blocked["error"]
+
+
+@pytest.mark.asyncio
+async def test_no_quote_card_does_not_submit(monkeypatch):
+    out = await _send(monkeypatch, generate=False)
+    assert out["http"] == [] and out["sent"] == []
+    token = BOT_CHAT_ID.set(out["cid"])
+    try:
+        blocked = await canvas._relay("generate_image")(dict(PREVIEW))
+    finally:
+        BOT_CHAT_ID.reset(token)
+    assert blocked["submitted"] is False and out["sent"] == []
+    assert QUOTE_GATE in blocked["error"]
+    assert "changed after submission" not in blocked["error"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("mode,posts", [("error", 1), ("transport", 2)])
+async def test_failed_price_estimate_is_not_a_confirmed_quote(monkeypatch, mode, posts):
+    out = await _send(monkeypatch, mode=mode)
+    assert len(_gets(out["http"])) == 1
+    assert len(_posts(out["http"])) == posts
+    assert all(set(item[2]) == {"model_id", "input"} and isinstance(item[2]["input"], dict)
+               for item in _posts(out["http"]))
+    assert out["sent"] == []
+    token = BOT_CHAT_ID.set(out["cid"])
+    try:
+        quotes = [b for row in chat_store.list_messages(out["cid"]) for b in row["blocks"]
+                  if b.get("kind") == "plan_quote"]
+        assert quotes and quotes[-1]["lines"][0]["source"] == "estimate"
+        ledger = ma._root(out["cid"])[1][ma.LEDGER]
+        assert ledger.get("composition_plan") and "preview" not in ledger
+        blocked = await canvas._relay("generate_image")(dict(PREVIEW))
+    finally:
+        BOT_CHAT_ID.reset(token)
+    assert blocked["submitted"] is False and out["sent"] == []
+    assert QUOTE_GATE in blocked["error"]
+    assert "changed after submission" not in blocked["error"]

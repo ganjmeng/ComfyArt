@@ -169,11 +169,14 @@ def applies(args: dict, chat_id: str = "") -> bool:
     return named == SKILL or current == SKILL
 
 
-def remember_quoted_plan(plan: dict, chat_id: str = "") -> None:
+def remember_quoted_plan(plan: dict, chat_id: str = "", setup_snapshot: dict | None = None) -> None:
     """Store a validated preview plan on the setup card before the quote is confirmed.
 
-    This does not reserve a paid submission. Until the preview is reserved, a later
-    unsubmitted replan may replace it. Prompt prose is never written here.
+    This does not reserve a paid submission. The snapshot prepare just computed is
+    stored with the plan so a later generate can tell an unchanged confirmation
+    from a real source or aspect change. Until the preview is reserved, a later
+    unsubmitted replan may replace the plan. A snapshot that already differs is
+    left in place for that check. Prompt prose is never written here.
     """
     chat_id = chat_id or _chat_id()
     _, root = _root(chat_id)
@@ -183,10 +186,16 @@ def remember_quoted_plan(plan: dict, chat_id: str = "") -> None:
     if ledger.get("preview"):
         return
     clean = validate_plan(plan, require_content=True)
-    if ledger.get("composition_plan") == clean:
+    snap = copy.deepcopy(setup_snapshot) if isinstance(setup_snapshot, dict) else None
+    stored = ledger.get("setup_snapshot")
+    if isinstance(stored, dict) and snap is not None and stored != snap:
+        return
+    if ledger.get("composition_plan") == clean and (snap is None or stored == snap):
         return
     expected = copy.deepcopy(ledger)
     ledger["composition_plan"] = clean
+    if snap is not None:
+        ledger["setup_snapshot"] = snap
     _save(chat_id, ledger, expected)
 
 
@@ -264,10 +273,27 @@ def _selected_ids(block: dict) -> set[str]:
     return ids
 
 
+def _official_quote_lines(block: dict) -> bool:
+    """Price rows count only when every one is an official quote.
+
+    A card with no price rows stays confirmable. An estimate or unpriced row,
+    including a Start on a failed price call, is not a valid quote.
+    """
+    lines = block.get("lines")
+    if not isinstance(lines, list) or not lines:
+        return True
+    sources = [str(line.get("source") or "") for line in lines
+               if isinstance(line, dict) and "source" in line]
+    if not sources:
+        return True
+    return all(source == "quote" for source in sources)
+
+
 def quote_confirmed(chat_id: str = "") -> bool:
     """True only when the latest quote/approval card after setup is a live confirmation.
 
     An earlier Start does not survive a later cancelled, expired, or unanswered card.
+    A card whose price rows are estimates or unpriced is not a confirmation.
     """
     chat_id = chat_id or _chat_id()
     setup_row, _root_block = _root(chat_id)
@@ -281,7 +307,10 @@ def quote_confirmed(chat_id: str = "") -> bool:
         for block in row.get("blocks") or []:
             if block.get("type") == "ask" and block.get("kind") in QUOTE_KINDS:
                 latest = block
-    return bool(latest and latest.get("status") == "answered" and _selected_ids(latest) & QUOTE_CONFIRM_IDS)
+    return bool(
+        latest and latest.get("status") == "answered"
+        and _selected_ids(latest) & QUOTE_CONFIRM_IDS
+        and _official_quote_lines(latest))
 
 
 def require_confirmed_quote(meta: dict, chat_id: str = "") -> dict | None:
@@ -585,8 +614,20 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
         setup_snapshot = {"source": copy.deepcopy(source_answer), "aspect": copy.deepcopy(aspect_answer),
                           "final": final_spec, "preview": preview_spec,
                           "preview_request": copy.deepcopy(user_preview)}
-        if ledger and ledger.get("setup_snapshot") != setup_snapshot:
-            raise ValueError("Source/aspect changed after submission; 规格/来源已变更或旧记录缺少规格快照，请先核对原任务并显式开启新一轮，禁止付费重放 / Specification/source changed or legacy snapshot missing; reconcile existing work and start an explicit new skill run, do not replay paid work.")
+        # The first quote writes composition_plan before reserve() writes this
+        # snapshot. A plan-only ledger is not a submission and is not a change.
+        # A stored snapshot that differs, or a reserved stage with no snapshot, is.
+        stored_snapshot = ledger.get("setup_snapshot")
+        reserved = bool(ledger.get("preview")) or any(
+            isinstance(key, str) and key.startswith("final:") for key in ledger)
+        mismatch = ("Source/aspect changed after submission; 规格/来源已变更或旧记录缺少规格快照，"
+                    "请先核对原任务并显式开启新一轮，禁止付费重放 / Specification/source changed or "
+                    "legacy snapshot missing; reconcile existing work and start an explicit new skill "
+                    "run, do not replay paid work.")
+        if isinstance(stored_snapshot, dict) and stored_snapshot != setup_snapshot:
+            raise ValueError(mismatch)
+        if reserved and not isinstance(stored_snapshot, dict):
+            raise ValueError(mismatch)
     except (ValueError, ZeroDivisionError) as e:
         return args, _blocked(str(e))
     args["skill"] = SKILL

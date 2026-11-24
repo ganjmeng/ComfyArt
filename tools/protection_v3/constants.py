@@ -1,13 +1,14 @@
 """Identity pins for the offline startup adapter.
 
-LOGICAL_SOURCE is the api/bot/__init__.py digest after the singular price-body
-fix. It is not a git SHA. The delivery commit is not stored here.
-Parent main 72f387a8 still has the old plural body and must not be accepted.
+LOGICAL_SOURCE is the api/bot/__init__.py digest after the singular price body
+and the multi-angle quote snapshot join. It is not a git SHA. The delivery
+commit is not stored here. Parent main 72f387a8 still has the old plural body
+and must not be accepted.
 """
 
 # Not a commit SHA. Binding is LOGICAL_SOURCE. Do not replace this with the delivery SHA.
 LOGICAL_GIT = "singular-price-input"
-LOGICAL_SOURCE = "dda040bf341eabbd0163920a67e22248e10c8de985f85ab06112d55fe5c4a1c1"
+LOGICAL_SOURCE = "328d7217ed414eff83ef2cce28949b9c65d2fd3a167e00e9c038b5f3e70af240"
 STALE_MAIN_GIT = "72f387a87ec31530b3e9ef2682f0fec33d74b11a"
 STALE_MAIN_SOURCE = "90cc5bd7c9883fa3eeea6037210931afc44464d75bf179dcd3959ebe45dc5c2f"
 
