@@ -24,6 +24,7 @@ class SharedGuard:
         self.sockets = []
         self.observe = None
         self.attempts = []
+        self.price_reply = {"code": 200, "data": {"discounted_price": 0.1, "price": 0.2}}
         self._request = None
         self._start_connection = None
         self._getaddrinfo = None
@@ -91,7 +92,7 @@ class SharedGuard:
                 sock = owner.sockets[-1]
                 if owner.observe is not None:
                     await owner.observe(bound_method, bound_url, request_kwargs, bound_guard, sock)
-                return await _response_for(bound_method, bound_url, request_kwargs)
+                return await _response_for(bound_method, bound_url, request_kwargs, owner.price_reply)
 
             return await controlled_price_request(
                 session, method, url, kwargs, guard=guard, transport=transport, price_ips=price_ips,
@@ -144,16 +145,12 @@ def pair_factory(_addr_info):
     return left
 
 
-async def _response_for(method, url, kwargs):
+async def _response_for(method, url, _kwargs, price_reply):
     path = str(url).split("?", 1)[0]
     if path.endswith("/api/v3/models") and str(method).upper() == "GET":
         return OfflineResponse(200, {"data": [_CATALOG_MODEL]})
     if path.endswith("/api/v3/model/price") and str(method).upper() == "POST":
-        body = kwargs.get("json")
-        if isinstance(body, dict) and "inputs" in body and "input" not in body:
-            from tools.protection_v3.wrapper import PriceRequestDenied
-            raise PriceRequestDenied("inputs_plural_not_official")
-        return OfflineResponse(200, {"code": 200, "data": {"discounted_price": 0.1, "price": 0.2}})
+        return OfflineResponse(200, price_reply)
     from tools.protection_v3.wrapper import PriceRequestDenied
     raise PriceRequestDenied("offline_path_not_price")
 

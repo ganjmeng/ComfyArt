@@ -158,6 +158,20 @@ async def test_generate_image_relay_is_blocked_without_confirmed_quote(run):
     assert "quote" in result["error"].lower() or "报价" in result["error"]
     assert sent == []
     confirm_quote(rows)
+    confirm_quote(rows, status="cancelled", selected=("cancel",))
+    blocked = await canvas._relay("generate_image")({
+        "composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
+        "multi_angle_stage": "preview", "ratio": "1:1",
+    })
+    assert blocked["submitted"] is False and sent == []
+    rows.pop()
+    confirm_quote(rows, status="expired", selected=("start",))
+    expired = await canvas._relay("generate_image")({
+        "composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
+        "multi_angle_stage": "preview", "ratio": "1:1",
+    })
+    assert expired["submitted"] is False and sent == []
+    rows.pop()
     allowed = await canvas._relay("generate_image")({
         "composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
         "multi_angle_stage": "preview", "ratio": "1:1",

@@ -12,7 +12,7 @@ from pathlib import Path
 import aiohttp
 import pytest
 
-from tools.protection_v3.constants import LOGICAL_GIT, LOGICAL_SOURCE
+from tools.protection_v3.constants import LOGICAL_GIT, LOGICAL_SOURCE, STALE_MAIN_GIT, STALE_MAIN_SOURCE
 from tools.protection_v3.declaration import AuthorizationMissing, DeclarationError
 from tools.protection_v3.guard_loader import load_frozen_guard
 from tools.protection_v3.launcher import decide
@@ -72,6 +72,10 @@ def test_cli_stops_before_product_entry_and_rejects_recovery_tree():
         preflight(source_git="738ddbf19c71890ca1820f26e4a7e8852685ebd7", source_sha256=LOGICAL_SOURCE,
                   source_path=str(ROOT), home=HOME, port=8946, runtime_id=RUNTIME)
     assert old.value.code == "recovery_tree_is_not_main_product"
+    with pytest.raises(DeclarationError) as stale:
+        preflight(source_git=STALE_MAIN_GIT, source_sha256=STALE_MAIN_SOURCE,
+                  source_path=str(ROOT), home=HOME, port=8946, runtime_id=RUNTIME)
+    assert stale.value.code == "stale_main_source"
     assert decide(["--port", "8932"], env) == 2
 
 
@@ -86,11 +90,13 @@ def test_production_runner_is_refused_and_quote_detail_reaches_the_shared_guard(
         wavespeed._catalog.update(models={}, at=0.0)
         os.environ["WAVESPEED_API_KEY"] = "synthetic-offline-not-a-credential"
         try:
-            with pytest.raises(PriceRequestDenied) as denied:
-                await wavespeed.quote_detail("acme/offline-price", {"prompt": "cup"})
-            assert denied.value.reason == "inputs_plural_not_official"
+            price, source, reason = await wavespeed.quote_detail("acme/offline-price", {"prompt": "cup"})
+            assert (price, source, reason) == (0.1, "quote", "live")
             posts = [item for item in shared.attempts if item[0] == "POST"]
-            assert posts and sorted(posts[-1][2]) == ["inputs", "model_id"]
+            body = posts[-1][2]
+            assert set(body) == {"model_id", "input"} and isinstance(body["input"], dict)
+            assert "inputs" not in body
+            assert all(item[1].endswith("/api/v3/models") or item[1].endswith("/api/v3/model/price") for item in shared.attempts)
             assert shared.http_guard_ids and set(shared.http_guard_ids) == {id(shared.guard)}
             assert shared.connector_guard_ids and set(shared.connector_guard_ids) == {id(shared.guard)}
             for sock in shared.sockets:
@@ -119,53 +125,74 @@ def test_production_runner_is_refused_and_quote_detail_reaches_the_shared_guard(
     assert not Path(HOME).exists()
 
 
-def test_singular_aiohttp_request_revokes_on_success_error_and_cancel(monkeypatch):
+def test_quote_detail_caches_only_finite_nonnegative_amounts(monkeypatch):
     _deny_dns(monkeypatch)
 
     async def run():
         guard = load_frozen_guard()
-        state = {"mode": "ok"}
 
         async def startup(_prepared_value, shared):
+            import ComfyArt.api.wavespeed as wavespeed
+            wavespeed._quotes.clear()
+            wavespeed._catalog.update(models={}, at=0.0)
+            os.environ["WAVESPEED_API_KEY"] = "synthetic-offline-not-a-credential"
+            state = {"raise": None}
+
             async def observe(method, url, _kwargs, bound, sock):
                 if not str(url).endswith("/model/price"):
                     return
-                if state["mode"] == "error":
-                    raise aiohttp.ClientError("offline transport")
-                if state["mode"] == "cancel":
-                    raise asyncio.CancelledError()
-                assert bound.price_socket_allowed(sock, ("203.0.113.5", 443)) is True
+                assert bound is guard and bound.price_socket_allowed(sock, ("203.0.113.5", 443)) is True
+                if state["raise"] is not None:
+                    raise state["raise"]
 
             shared.observe = observe
+            try:
+                async def one(prompt, reply):
+                    wavespeed._quotes.clear()
+                    before = len(wavespeed._quotes)
+                    shared.price_reply = reply
+                    result = await wavespeed.quote_detail("acme/offline-price", {"prompt": prompt})
+                    return result, len(wavespeed._quotes) > before
 
-            async def once():
+                good, cached = await one("plus", {"code": 200, "data": {"discounted_price": 0.25}})
+                assert good == (0.25, "quote", "live") and cached
+                again = await wavespeed.quote_detail("acme/offline-price", {"prompt": "plus"})
+                assert again[2] == "cache"
+                zero, zero_cached = await one("zero", {"code": 200, "data": {"discounted_price": 0}})
+                assert zero == (0.0, "quote", "live") and zero_cached
+                for prompt, reply in (
+                    ("err", {"code": 4005, "message": "model not found", "data": {"discounted_price": 0}}),
+                    ("neg", {"code": 200, "data": {"discounted_price": -1}}),
+                    ("nan", {"code": 200, "data": {"discounted_price": float("nan")}}),
+                    ("inf", {"code": 200, "data": {"discounted_price": float("inf")}}),
+                    ("miss", {"code": 200}),
+                ):
+                    result, stored = await one(prompt, reply)
+                    assert result[1] != "quote" and stored is False
+                    assert not (result[1] == "quote" and result[0] == 0)
+                state["raise"] = aiohttp.ClientError("offline transport")
+                failed, stored = await one("down", {"code": 200, "data": {"discounted_price": 0}})
+                assert failed[1] != "quote" and stored is False
+                state["raise"] = asyncio.CancelledError()
+                with pytest.raises(asyncio.CancelledError):
+                    await one("stop", {"code": 200, "data": {"discounted_price": 0.1}})
+                assert guard.price_socket_allowed(shared.sockets[-1], ("203.0.113.5", 443)) is False
                 async with aiohttp.ClientSession() as session:
-                    async with session.post(PRICE, json={"model_id": "acme/offline-price", "input": {}}) as res:
-                        body = await res.json()
-                        return res.status, body["data"]["discounted_price"]
-
-            state["mode"] = "ok"
-            assert await once() == (200, 0.1)
-            ok_sock = shared.sockets[-1]
-            assert guard.price_socket_allowed(ok_sock, ("203.0.113.5", 443)) is False
-            state["mode"] = "error"
-            with pytest.raises(aiohttp.ClientError):
-                await once()
-            assert guard.price_socket_allowed(shared.sockets[-1], ("203.0.113.5", 443)) is False
-            state["mode"] = "cancel"
-            with pytest.raises(asyncio.CancelledError):
-                await once()
-            assert guard.price_socket_allowed(shared.sockets[-1], ("203.0.113.5", 443)) is False
-            for sock in shared.sockets:
-                sock.close()
-            return "done"
+                    with pytest.raises(PriceRequestDenied):
+                        async with session.post("https://api.wavespeed.ai/api/v3/balance", json={"model_id": "m", "inputs": {}}):
+                            pass
+                assert all("predictions" not in item[1] and "/turbo" not in item[1] for item in shared.attempts)
+            finally:
+                os.environ.pop("WAVESPEED_API_KEY", None)
+                for sock in shared.sockets:
+                    sock.close()
+            return "checked"
 
         result, shared = await connect_product(
             _prepared(), synthetic_test_authorization(_prepared()),
             startup=startup, price_ips=IPS, guard=guard,
         )
-        assert result == "done"
-        assert set(shared.http_guard_ids) == {id(guard)}
+        assert result == "checked" and set(shared.http_guard_ids) == {id(guard)}
 
     asyncio.run(run())
 
@@ -199,19 +226,25 @@ def test_child_and_peer_requests_stay_isolated(monkeypatch):
 
             shared.observe = observe
 
-            async def post(label):
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(PRICE, json={"model_id": label, "input": {}}) as res:
-                        return res.status
+            import ComfyArt.api.wavespeed as wavespeed
+            wavespeed._quotes.clear()
+            wavespeed._catalog.update(models={}, at=0.0)
+            os.environ["WAVESPEED_API_KEY"] = "synthetic-offline-not-a-credential"
 
-            first = asyncio.create_task(post("a"))
-            second = asyncio.create_task(post("b"))
-            assert await first == 200 and await second == 200
+            async def post(prompt):
+                price, source, _reason = await wavespeed.quote_detail("acme/offline-price", {"prompt": prompt})
+                return price, source
+
+            first = asyncio.create_task(post("left"))
+            second = asyncio.create_task(post("right"))
+            assert await first == (0.1, "quote") and await second == (0.1, "quote")
             release.set()
             await seen["child"]
             assert seen["during"] is True and seen["after"] is False and seen["same"] is True
             assert seen["peer"] is False
-            assert len(shared.sockets) == 2
+            posts = [item for item in shared.attempts if str(item[1]).endswith("/model/price")]
+            assert len(posts) == 2
+            assert all(set(item[2]) == {"model_id", "input"} for item in posts)
             for sock in shared.sockets:
                 assert guard.price_socket_allowed(sock, ("203.0.113.5", 443)) is False
                 sock.close()
@@ -235,8 +268,8 @@ def test_audit_hook_runs_in_a_subprocess_with_the_same_guard():
     assert proc.returncode == 0, proc.stderr
     report = json.loads(proc.stdout)
     assert report["unscoped"] == "denied"
-    assert report["quote_detail"] == "inputs_plural_not_official"
-    assert report["post_body_keys"] == ["inputs", "model_id"]
+    assert report["quote_detail"] == [0.1, "quote", "live"]
+    assert report["post_body_keys"] == ["input", "model_id"]
     assert report["shared"] is True
     assert report["sockets_revoked"] is True
     assert report["audit_guard"]

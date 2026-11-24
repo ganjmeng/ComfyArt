@@ -1,12 +1,15 @@
-"""Identity pins for the main-based offline startup adapter.
+"""Identity pins for the offline startup adapter.
 
-The product tree is origin/main at 72f387a8. That is not the d4a09666 digest
-and not an installed authorization. Tooling commits do not change this digest
-while api/, bot/, and __init__.py stay untouched.
+LOGICAL_SOURCE is the api/bot/__init__.py digest after the singular price-body
+fix. It is not a git SHA. The delivery commit is not stored here.
+Parent main 72f387a8 still has the old plural body and must not be accepted.
 """
 
-LOGICAL_GIT = "72f387a87ec31530b3e9ef2682f0fec33d74b11a"
-LOGICAL_SOURCE = "90cc5bd7c9883fa3eeea6037210931afc44464d75bf179dcd3959ebe45dc5c2f"
+# Not a commit SHA. Binding is LOGICAL_SOURCE. Do not replace this with the delivery SHA.
+LOGICAL_GIT = "singular-price-input"
+LOGICAL_SOURCE = "dda040bf341eabbd0163920a67e22248e10c8de985f85ab06112d55fe5c4a1c1"
+STALE_MAIN_GIT = "72f387a87ec31530b3e9ef2682f0fec33d74b11a"
+STALE_MAIN_SOURCE = "90cc5bd7c9883fa3eeea6037210931afc44464d75bf179dcd3959ebe45dc5c2f"
 
 # Earlier protection-recovery commits. They are not this product tree.
 RECOVERY_GIT = frozenset({
@@ -16,6 +19,7 @@ RECOVERY_GIT = frozenset({
     "a61d2464884ad84eab6483ff9be0d7e09e55e554",
     "732138ec210e142be4795004eee53edfbcd7fd83",
     "738ddbf19c71890ca1820f26e4a7e8852685ebd7",
+    "041f13009125f7605bb9254f06a6e470b4d03891",
 })
 RECOVERY_SOURCE = "530967f0412acdac93b438cd7b0965ee0767d408df068d596200b1af31a24931"
 
