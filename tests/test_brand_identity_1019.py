@@ -127,35 +127,51 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "色调" not in hint
     a = brand.fill_default({"brand_slot": "logo_a", "prompt": "方向A"})
     b = brand.fill_default({"brand_slot": "logo_b", "prompt": "方向B"})
-    c = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})
-    assert "STRUCTURE LOCK A" in a["prompt"] and "single-line" in a["prompt"]
-    assert "STRUCTURE LOCK B" in b["prompt"] and "circular seal" in b["prompt"]
-    assert "STRUCTURE LOCK C" in c["prompt"] and "cup-shaped" in c["prompt"]
+    c = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C STRUCTURE LOCK C"})
+    assert "single-line" in a["prompt"]
+    assert "circular seal" in b["prompt"]
+    assert "cup-shaped" in c["prompt"]
     assert "single-line" not in b["prompt"]
     assert "perched bird is the negative space inside the cup" in c["prompt"]
     assert "bird standing on a branch" in c["prompt"]
+    assert c["model"] == brand.QWEN_T2I
+    assert c["size_candidates"] == [brand.QWEN_T2I]
+    assert "edit_model" not in c
     for board in (a, b, c):
+        assert "STRUCTURE LOCK" not in board["prompt"]
+        assert "GUIDELINE LOCK" not in board["prompt"]
+        assert "LAYOUT LOCK" not in board["prompt"]
+        assert "APPLICATION LOCK" not in board["prompt"]
         assert "主组合, 符号构造, 横版, 小尺寸" in board["prompt"]
         assert "exactly once" in board["prompt"]
         assert "No other small text." in board["prompt"]
         assert "No bottom caption." in board["prompt"]
+        assert "Do not print an English instruction label." in board["prompt"]
         assert "Each of the four zone labels appears exactly once." in board["prompt"]
         assert "No empty placeholder box" in board["prompt"] and "no X box" in board["prompt"]
         assert "小尺寸 includes the symbol" in board["prompt"]
-    spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})
-    assert "exactly seven cells" in spec["prompt"]
+    spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范 GUIDELINE LOCK"})
+    assert "exactly seven sections" in spec["prompt"]
+    assert "Seven sections, not eight cells." in spec["prompt"]
     assert "标识, 色彩, 变体, 字体, 版式, 使用禁忌, 影像与材质" in spec["prompt"]
+    assert "变体 is one full-width band and appears once." in spec["prompt"]
+    assert "Do not draw a second 变体 section." in spec["prompt"]
+    assert "The 字体 heading is the two characters 字体." in spec["prompt"]
+    assert "Do not clip that heading to 字." in spec["prompt"]
     assert "No heading is repeated" in spec["prompt"] and "版式 appears once" in spec["prompt"]
     assert "版式 is one filled layout diagram" in spec["prompt"]
     assert "moodboard 色彩 cell" in spec["prompt"]
     assert "Chinese color name, and a percentage" in spec["prompt"]
-    assert "real Chinese brand name" in spec["prompt"] and "real English brand name" in spec["prompt"]
     assert "character for character" in spec["prompt"]
     assert "Do not drop a character" in spec["prompt"]
     assert "red X" in spec["prompt"]
-    assert "no invented words" in spec["prompt"]
-    assert "no body copy" in spec["prompt"] and "no sample English" in spec["prompt"]
-    assert "uses only those brand colors" in spec["prompt"]
+    assert "the mark in those brand colors only" in spec["prompt"]
+    for caption in brand._MISUSE_CAPTIONS + brand._IMAGE_CAPTIONS:
+        assert caption in spec["prompt"]
+    assert "do not print a bare percent sign" in spec["prompt"]
+    assert "do not print Latin fragments" in spec["prompt"]
+    assert "GUIDELINE LOCK" not in spec["prompt"]
+    assert "STRUCTURE LOCK" not in spec["prompt"]
     assert "title, subtitle" not in spec["prompt"]
     assert "最小尺寸" not in spec["prompt"]
     assert "#" not in spec["prompt"]
@@ -172,7 +188,16 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "must wear a cup sleeve" in cup["prompt"] and "杯套" in cup["prompt"]
     assert "A bare cup with no sleeve is wrong." in cup["prompt"]
     again = brand.fill_default({"brand_slot": "logo_a", "prompt": a["prompt"]})
-    assert again["prompt"].count("STRUCTURE LOCK A") == 1
+    assert "STRUCTURE LOCK" not in again["prompt"]
+    assert again["prompt"].count("one open single-line drawing") == 1
+    assert "APPLICATION LOCK" not in cup["prompt"] and "APPLICATION LOCK" not in store["prompt"]
+    leaked = brand.fill_default({
+        "brand_slot": "logo_c",
+        "prompt": "bottom caption STRUCTURE LOCK C: keep the cup",
+    })
+    assert "STRUCTURE LOCK" not in leaked["prompt"]
+    assert "keep the cup" in leaked["prompt"]
+    assert leaked["prompt"].count("cup-shaped") == 1
 
 
 def test_a_second_confirm_of_the_same_stage_does_not_double_the_total():
@@ -280,12 +305,21 @@ def test_closing_rules_are_in_the_skill_instructions():
     assert "does not state hex values" in skill
     assert "exact values are on the spec card" in skill
     assert "moodboard color cell" in skill
-    assert "no invented words" in skill
-    assert "no body copy" in skill and "cup sleeve" in skill
+    assert "Seven sections, not eight cells." in skill
+    assert "never clipped to 字" in skill
+    assert "cup sleeve" in skill
+    assert "不要拉伸或压缩标识比例" in skill
+    assert "自然柔光，干净高光不压暗" in skill
+    assert "STRUCTURE LOCK" not in skill
     assert "标识, 色彩, 变体, 字体, 版式, 使用禁忌, 影像与材质" in skill
     assert "#" not in skill
     hint = brand.default_hint()
     assert "矢量替换" in hint and "色值为屏幕估算" in hint
+    assert "Seven sections, not eight cells." in hint
+    assert "Do not clip that heading to 字." in hint
+    assert "不要拉伸或压缩标识比例" in hint
+    assert "自然柔光，干净高光不压暗" in hint
+    assert "STRUCTURE LOCK" not in hint
     assert "#" not in hint
 
 
