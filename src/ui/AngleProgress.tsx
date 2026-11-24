@@ -37,8 +37,8 @@ export function AngleProgress({ block, onRetry }: { block: AngleProgressBlock; o
       ? t('bot.angleGenerating', done, total)
       : t('bot.angleCount', done, total)
   return (
-    <div className="ca-angle" data-phase={block.phase || 'partial'} data-testid="angle-progress">
-      <div className="ca-angle__head">
+    <div className="ca-angle-progress" data-phase={block.phase || 'partial'} data-testid="angle-progress">
+      <div className="ca-angle-progress__head">
         <span>{t('bot.plan')}</span>
         <span className="ca-chat__status" data-testid="angle-progress-count">{head}</span>
       </div>
@@ -47,11 +47,11 @@ export function AngleProgress({ block, onRetry }: { block: AngleProgressBlock; o
         const name = slot.kind === 'preview' ? t('bot.anglePreview') : t('bot.angleFinal', slot.panel || slot.id)
         const failed = state === 'failed' && slot.retry !== false
         return (
-          <div key={slot.id} className="ca-angle__row" data-state={state} data-testid={`angle-slot-${slot.id}`}>
+          <div key={slot.id} className="ca-angle-progress__row" data-state={state} data-testid={`angle-slot-${slot.id}`}>
             <span>{name}</span>
             <span data-testid={`angle-state-${slot.id}`}>{t(STATE_KEY[state] ?? 'bot.angleSlotWaiting')}</span>
             {failed ? (
-              <button type="button" className="ca-angle__retry" data-testid={`angle-retry-${slot.id}`} onClick={() => onRetry?.(slot)}>
+              <button type="button" className="ca-angle-progress__retry" data-testid={`angle-retry-${slot.id}`} onClick={() => onRetry?.(slot)}>
                 {t('bot.angleRetry')}
               </button>
             ) : null}
