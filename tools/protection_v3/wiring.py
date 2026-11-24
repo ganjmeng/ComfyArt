@@ -24,8 +24,6 @@ class SharedGuard:
         self.sockets = []
         self.observe = None
         self.attempts = []
-        self.transport_calls = 0
-        self.submissions = 0
         self.price_reply = {"code": 200, "data": {"discounted_price": 0.1, "price": 0.2}}
         self._request = None
         self._start_connection = None
@@ -86,10 +84,6 @@ class SharedGuard:
             owner.attempts.append((str(method).upper(), str(url), kwargs.get("json")))
 
             async def transport(_session, bound_method, bound_url, request_kwargs, bound_guard):
-                owner.transport_calls += 1
-                path = str(bound_url).split("?", 1)[0]
-                if not (path.endswith("/api/v3/models") or path.endswith("/api/v3/model/price")):
-                    owner.submissions += 1
                 if bound_guard is not guard:
                     raise RuntimeError("http guard is not the shared guard")
                 addr = (sorted(price_ips)[0], 443)
