@@ -883,6 +883,8 @@
   "jobs.confirmEstimate": "Estimated: about {0} credits (live price unavailable; the actual charge may differ). Continue?",
   "jobs.confirmEstimateTier": "Estimated: about {0} credits for {1} (live price unavailable; the actual charge may differ). Continue?",
   "jobs.confirmOk": "Generate",
+  "jobs.quoteExpired": "This quote has expired. Request a new price.",
+  "jobs.fixedSlotSize": "Size is fixed and cannot be edited",
   "jobs.confirmSegLeft": "About {0} credits ({1} segmentation calls left; finished ones are not charged again). Continue?",
   "jobs.confirmSegMax": "Up to {0} credits (recognition plus up to {1} segmentation calls). Continue?",
   "jobs.confirmTitle": "Confirm cost",

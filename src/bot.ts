@@ -2,6 +2,7 @@ import { atom, react } from 'tldraw'
 
 import { api, setAgentPlanConfirmed } from './comfy'
 import { createQuoteAnswer } from './ui/quoteAnswer'
+import { brandConfirmClosed } from './brandQuoteCard'
 import { resultsAtom } from './jobs'
 import { notify } from './notices'
 import { onComfyEvent, onReconnect } from './ws'
@@ -48,6 +49,11 @@ export interface BotBlock {
   questions?: AskQuestion[]
   answers?: AskAnswers
   kind?: string
+  /** Brand quote cards only. The deadline is absolute and Start does not move it. */
+  brand_confirm?: boolean
+  expires_at?: number
+  size_locked?: boolean
+  quote_id?: string
   lines?: { text: string; price: string }[]
   total?: string
   total_label?: string
@@ -266,9 +272,15 @@ function mergePendingAsks(messages: BotMessage[], asks: Array<BotBlock & { messa
     const blocks = m.blocks.map((b) => {
       if (b.type !== 'ask' || !b.ask_id || !byId.has(b.ask_id)) return b
       seen.add(b.ask_id)
+      const a = byId.get(b.ask_id)!
+      const now = Date.now()
+      if (brandConfirmClosed(b, now) || brandConfirmClosed(a, now)) {
+        changed = true
+        const { message_id: _mid, ...rest } = a as BotBlock & { message_id?: string }
+        return { ...b, ...rest, type: 'ask' as const, status: 'expired' as const }
+      }
       if (b.status === 'pending') return b
       changed = true
-      const a = byId.get(b.ask_id)!
       const { message_id: _mid, ...rest } = a as BotBlock & { message_id?: string }
       return { ...rest, type: 'ask' as const, status: 'pending' as const }
     })
@@ -287,7 +299,8 @@ function mergePendingAsks(messages: BotMessage[], asks: Array<BotBlock & { messa
     if (!extra?.length) return m
     const blocks = extra.map((a) => {
       const { message_id: _mid, ...rest } = a
-      return { ...rest, type: 'ask' as const, status: 'pending' as const }
+      const status = brandConfirmClosed(a, Date.now()) ? 'expired' as const : 'pending' as const
+      return { ...rest, type: 'ask' as const, status }
     })
     return { ...m, blocks: [...m.blocks, ...blocks] }
   })

@@ -15,6 +15,7 @@ import { Markdown } from './Markdown'
 import { Thumb } from './TaskDetails'
 import { CopyButton } from './CopyButton'
 import { lang, t } from '../i18n'
+import { brandConfirmClosed } from '../brandQuoteCard'
 import { openMemoryDialog } from './MemoryDialog'
 import { stepState } from './stepState'
 import { readLocal, writeLocal } from '../localPrefs'
@@ -851,12 +852,33 @@ export function OverQuote({ b }: { b: BotBlock }) {
 /** #235: the plan total uses the same cost-confirm card as a single job. No second card, no new styles. */
 function PlanQuote({ b }: { b: BotBlock }) {
   const [error, setError] = useState('')
+  const [now, setNow] = useState(() => Date.now())
   const askId = b.ask_id
+  const closed = brandConfirmClosed(b, now)
+  useEffect(() => {
+    if (b.brand_confirm !== true || b.status !== 'pending' || typeof b.expires_at !== 'number') return
+    const wait = b.expires_at * 1000 - Date.now()
+    if (wait <= 0) {
+      setNow(Date.now())
+      return
+    }
+    const id = window.setTimeout(() => setNow(Date.now()), wait)
+    return () => window.clearTimeout(id)
+  }, [b.brand_confirm, b.status, b.expires_at])
+  if (closed) {
+    return (
+      <div className="ca-chat__memo" data-testid="brand-quote-expired">
+        <span className="ca-icon">{Icons.close}</span>
+        {t('jobs.quoteExpired')}
+      </div>
+    )
+  }
   const pending = b.status === 'pending'
   if (pending && askId) {
     const answer = quoteAnswer(askId)
-    return (
+    const card = (
       <>
+        {b.size_locked ? <p className="ca-chat__hint" data-testid="brand-fixed-size">{t('jobs.fixedSlotSize')}</p> : null}
         <ChatInlineConfirm
           title={t('jobs.confirmTitle')}
           desc={b.prompt ?? ''}
@@ -866,11 +888,16 @@ function PlanQuote({ b }: { b: BotBlock }) {
           total={b.total}
           testId="chat-inline-planquote"
           onConfirm={async () => {
+            if (brandConfirmClosed(b, Date.now())) {
+              setNow(Date.now())
+              return
+            }
             setAgentPlanConfirmed(true)
             try {
               await answer(['start'])
             } catch (e) {
               setAgentPlanConfirmed(false)
+              setNow(Date.now())
               setError(errorText(e))
               throw e
             }
@@ -883,6 +910,10 @@ function PlanQuote({ b }: { b: BotBlock }) {
         {error ? <div className="ca-chat__hint">{error}</div> : null}
       </>
     )
+    if (b.brand_confirm) {
+      return <div data-testid="brand-plan-quote" data-size-locked={b.size_locked ? 'true' : 'false'}>{card}</div>
+    }
+    return card
   }
   if (pending) return error ? <div className="ca-chat__hint">{error}</div> : null
   const started = b.status === 'answered' && (b.selected ?? []).includes('start')

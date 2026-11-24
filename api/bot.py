@@ -140,6 +140,8 @@ async def bot_get_chat(request: web.Request) -> web.Response:
         for m in messages:
             if m["id"] == state.message_id:
                 m["blocks"] = state.blocks
+    from .brand_identity import settle_restored_cards
+    settle_restored_cards(chat["id"], messages)
     chat["busy"] = state is not None
     return web.json_response({"chat": chat, "messages": messages})
 
@@ -328,7 +330,13 @@ async def bot_list_asks(request: web.Request) -> web.Response:
     if not bot_enabled():
         return bot_disabled()
     chat = _owned_chat(request)
-    asks = [bot_asks.pending_ask_to_block(a) for a in bot_asks.list_pending_for_chat(chat["id"])]
+    from .brand_identity import confirm_expired, settle_restored_cards
+    settle_restored_cards(chat["id"])
+    asks = []
+    for pending in bot_asks.list_pending_for_chat(chat["id"]):
+        if confirm_expired(pending.spec):
+            continue
+        asks.append(bot_asks.pending_ask_to_block(pending))
     return web.json_response({"asks": asks})
 
 
@@ -378,8 +386,10 @@ async def bot_answer_ask(request: web.Request) -> web.Response:
     needs_persist = ask.abandoned or ask.future_done()
     msg_id = ask.message_id
     ask_id = ask.id
-    if bot_asks.resolve_ask(ask.id, "answered", selected, other_text or None, answers) is None:
+    outcome = bot_asks.resolve_confirm_answer(ask, selected, other_text or None, answers)
+    if outcome == "lost":
         return error("ask not found or already resolved", 409)
+    status = "expired" if outcome == "expired" else "answered"
     if needs_persist and msg_id:
         msgs = chat_store.list_messages(chat["id"])
         target = next((m for m in msgs if m["id"] == msg_id), None)
@@ -387,23 +397,30 @@ async def bot_answer_ask(request: web.Request) -> web.Response:
             blocks = []
             for b in (target.get("blocks") or []):
                 if isinstance(b, dict) and b.get("type") == "ask" and b.get("ask_id") == ask_id:
-                    nb = {**b, "status": "answered", "selected": selected}
-                    if other_text:
-                        nb["other_text"] = other_text
-                    if answers is not None:
-                        nb["answers"] = answers
+                    nb = {**b, "status": status}
+                    if status == "answered":
+                        nb["selected"] = selected
+                        if other_text:
+                            nb["other_text"] = other_text
+                        if answers is not None:
+                            nb["answers"] = answers
                     blocks.append(nb)
                 else:
                     blocks.append(b)
             chat_store.update_message(chat["id"], msg_id, blocks=blocks)
             payload = {
                 "chat_id": chat["id"], "message_id": msg_id,
-                "ask_id": ask_id, "status": "answered",
-                "selected": selected, "other_text": other_text or None,
+                "ask_id": ask_id, "status": status,
+                "selected": selected if status == "answered" else None,
+                "other_text": other_text or None,
             }
-            if answers is not None:
+            if answers is not None and status == "answered":
                 payload["answers"] = answers
             broadcast("turn_ask_resolved", payload)
+    if outcome == "expired":
+        from .brand_identity import expired_text
+        lang = str((ask.spec or {}).get("lang") or "zh")
+        return error(expired_text(lang), 409)
     return web.json_response({"ok": True}, status=202)
 
 
