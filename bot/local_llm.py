@@ -2377,6 +2377,17 @@ class LocalLlmProvider(AgentProvider):
             return False, messages
         it["args"] = prepared
         claimed.add(str(prepared.get("brand_slot")))
+        # After the slot is bound, before the reservation and the provider submit.
+        # reserve_brand_dispatch puts the slot in _held_slots, and submit_block_reason
+        # treats that as reconcile, so this check has to run first. A refusal never
+        # reserves, never submits, and does not touch submitted_slots or the phase.
+        reason = submit_block_reason(it["args"], turn)
+        if reason:
+            claimed.discard(str(it["args"].get("brand_slot") or ""))
+            text = _SLOT_ALREADY[lang_key] if reason == "submitted" else submit_block_text(reason, lang)
+            messages = await self._emit_result(
+                it, text, emit=emit, done=done, lang=lang, is_error=True)
+            return False, messages
         try:
             reserve_brand_dispatch(it["args"])
         except BrandGrantPersistError as exc:
