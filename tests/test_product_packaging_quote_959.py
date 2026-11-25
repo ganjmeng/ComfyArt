@@ -461,7 +461,7 @@ def test_agent_loop_plan_gate_submits_all_four_with_the_real_anchor(monkeypatch)
     async def no_models(feature):
         raise AssertionError(f"a pinned packaging quote must not price the dearest {feature}")
 
-    async def confirm_plan(spec, turn, handle, *, run=None, messages=None):
+    async def confirm_plan(spec, turn, handle, *, run=None, messages=None, retire_previous=False):
         return "start"
 
     monkeypatch.setattr(rig.p, "_price_call", price_call)
