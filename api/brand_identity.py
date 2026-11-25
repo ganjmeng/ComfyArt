@@ -1531,6 +1531,9 @@ def annotate_quote_steps(steps: list, paid_args: list | None = None) -> list:
             args.setdefault("height", slot["height"])
             args.setdefault("ratio", slot["ratio"])
             args["skill"] = SKILL
+            # The plan gate compares the model's own arguments. This flag is not
+            # a tool argument; allow() adds a key with the stamped slot removed.
+            step["_slot_stamped"] = slot["id"]
         step["arguments"] = args
         out.append(step)
     return out

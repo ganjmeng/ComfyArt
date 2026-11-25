@@ -473,3 +473,85 @@ async def test_finished_brand_session_template_stays_on_the_quote_gate(monkeypat
     rig, asked = await _under_line(monkeypatch)
     await _assert_template_passthrough(rig, asked)
     assert brand._progress()["phase"] == "done"
+
+
+def _paid_prompts(rig):
+    return [str((args or {}).get("prompt") or "") for _name, args in rig.paid_mcp()]
+
+
+async def test_expired_grant_does_not_submit(monkeypatch):
+    """A grant 700s past its deadline does not pay the next generate."""
+    from test_brand_identity_1019 import _live_brand_run, _logos_ready, _quoted_generate, _short_logo_steps
+    brand.reset_for_tests()
+    token = BOT_CHAT_ID.set("c")
+    clock = {"t": 1_700_000_000.0}
+    monkeypatch.setattr(brand, "_clock", lambda: clock["t"])
+    try:
+        _logos_ready()
+
+        def script(messages, n):
+            if n == 0:
+                return calls(("quote_plan", {"steps": _short_logo_steps()}))
+            clock["t"] += 700
+            return calls(_quoted_generate("logo_a"))
+
+        rig, _res, _events, confirms, _submits = await _live_brand_run(monkeypatch, script)
+        assert confirms
+        assert rig.paid_mcp() == []
+        assert "logo_a" not in brand.submitted_slots(2)
+    finally:
+        BOT_CHAT_ID.reset(token)
+
+
+async def test_unquoted_prompt_does_not_submit(monkeypatch):
+    """A prompt that was not on the confirmed quote is not submitted in its place."""
+    from test_brand_identity_1019 import _live_brand_run, _logos_ready, _short_logo_steps
+    brand.reset_for_tests()
+    token = BOT_CHAT_ID.set("c")
+    try:
+        _logos_ready()
+        changed = "unquoted prompt that must not be sent"
+
+        def script(messages, n):
+            if n == 0:
+                return calls(("quote_plan", {"steps": _short_logo_steps()}))
+            return calls(("generate_image", {
+                "prompt": changed,
+                "skill": brand.SKILL,
+                "preset": "geometric",
+            }))
+
+        rig, _res, _events, confirms, _submits = await _live_brand_run(monkeypatch, script)
+        assert confirms
+        assert rig.paid_mcp() == []
+        assert changed not in _paid_prompts(rig)
+        assert "logo_a" not in brand.submitted_slots(2)
+    finally:
+        BOT_CHAT_ID.reset(token)
+
+
+async def test_fourth_unquoted_call_cannot_take_logo_a(monkeypatch):
+    """A generate beyond the quoted slots does not submit and does not take logo_a."""
+    from test_brand_identity_1019 import _live_brand_run, _logos_ready, _short_logo_steps
+    brand.reset_for_tests()
+    token = BOT_CHAT_ID.set("c")
+    try:
+        _logos_ready()
+        extra = "fourth call beyond the quoted slots"
+
+        def script(messages, n):
+            if n == 0:
+                return calls(("quote_plan", {"steps": _short_logo_steps()}))
+            return calls(("generate_image", {
+                "prompt": extra,
+                "skill": brand.SKILL,
+                "preset": "geometric",
+            }))
+
+        rig, _res, _events, confirms, _submits = await _live_brand_run(monkeypatch, script)
+        assert confirms
+        assert rig.paid_mcp() == []
+        assert extra not in _paid_prompts(rig)
+        assert "logo_a" not in brand.submitted_slots(2)
+    finally:
+        BOT_CHAT_ID.reset(token)
