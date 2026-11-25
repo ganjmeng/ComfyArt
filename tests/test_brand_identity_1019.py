@@ -158,6 +158,14 @@ def test_each_slot_prompt_locks_a_different_structure():
         assert old not in spec["prompt"], old
     assert "No heading is repeated" in spec["prompt"]
     assert "one filled layout diagram" in spec["prompt"]
+    assert "clear-space diagram" in spec["prompt"]
+    assert "minimum-use size" in spec["prompt"]
+    assert "not a separate panel" in spec["prompt"]
+    assert "typographic blocks" in spec["prompt"]
+    assert "not a color swatch" in spec["prompt"]
+    assert "four distinct misuses" in spec["prompt"]
+    assert "stretched or squeezed" in spec["prompt"]
+    assert "similar-colored ground" in spec["prompt"]
     assert "carries its full heading" in spec["prompt"] and "wordmark at three sizes" in spec["prompt"]
     assert "this panel contains no small text at all" in spec["prompt"]
     assert spec["prompt"].count("no small text at all") == 2
@@ -328,6 +336,10 @@ def test_spec_card_is_seven_lovart_panels_and_brand_prompts_have_no_lock_words()
     for old in OLD_SPEC_HEADINGS:
         assert old not in spec, old
     assert "carries its full heading" in spec and "wordmark at three sizes" in spec
+    assert "clear-space diagram" in spec and "minimum-use size" in spec
+    assert "not a separate panel" in spec
+    assert "typographic blocks" in spec and "not a color swatch" in spec
+    assert "four distinct misuses" in spec and "stretched or squeezed" in spec
     assert spec.count("no small text at all") == 2
     assert "使用禁忌 (this panel contains no small text at all" in spec
     assert "影像与材质 (this panel contains no small text at all" in spec
@@ -397,6 +409,8 @@ def test_closing_rules_are_in_the_skill_instructions():
     assert "no small text at all" in skill and "one garbled character is not acceptable" in skill
     assert "Do not print an English instruction label." in skill
     assert "carries its full heading" in skill and "wordmark at three sizes" in skill
+    assert "clear-space diagram" in skill and "minimum-use size" in skill
+    assert "typographic blocks" in skill and "four distinct misuses" in skill
     assert "wordmark appears exactly once per zone" in skill
     assert "#" not in skill
     hint = brand.default_hint()
