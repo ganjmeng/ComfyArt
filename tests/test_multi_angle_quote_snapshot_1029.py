@@ -225,6 +225,8 @@ async def _send(monkeypatch, *, mode="quote", choice="start", change_before_star
 
     monkeypatch.setattr(wavespeed.aiohttp, "ClientSession", _session_factory(records, catalog, mode))
     monkeypatch.setattr(wavespeed, "_key", lambda: "offline-stand-in")
+    # #1019 no-key branch quotes from the table without the price API; this stand-in has a key.
+    monkeypatch.setattr(wavespeed, "has_key", lambda: True)
     monkeypatch.setattr(provider, "_request_json", fake_request)
     monkeypatch.setattr(bot_tools, "broadcast", answer_broadcast)
     monkeypatch.setattr(canvas, "submit_command", page)
