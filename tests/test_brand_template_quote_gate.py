@@ -257,3 +257,114 @@ async def test_stage2_guideline_board_without_preset_or_slot_uses_quote_card(mon
     assert len(gens) == 1, gens
     assert not gens[0].get("preset")
     assert gens[0].get("brand_slot") == "moodboard"
+
+
+def _moodboard_phase():
+    """Card 1 answered: the default path is on the moodboard, nothing submitted."""
+    from test_brand_wrapup_1027 import _card1
+    brand.record_card_answer(_card1(), {
+        "bi_delivery": {"selected": ["A"]}, "bi_color": {"selected": ["A"]},
+        "bi_mark": {"selected": ["A"]}, "bi_source": {"selected": ["A"]},
+    })
+
+
+def _logos_phase():
+    """Moodboard placed and card 2 accepted. The open stage is the three logos."""
+    from ComfyArt.api.bot_asks import validate_spec
+    from ComfyArt.bot.skill_output import apply_generate
+    _moodboard_phase()
+    mood = apply_generate({"skill": brand.SKILL, "prompt": "board"}, brand.SKILL)
+    brand.record_submitted(mood, {"ids": ["h-mood"]})
+    brand.record_wait({"results": [{"id": "h-mood", "shapes": ["shape:mood"], "urls": ["/m.png"]}]})
+    brand.record_card_answer(validate_spec({
+        "questions": [{"id": "bi_moodboard", "prompt": "这张情绪板可以作为后续全套物料的视觉基准吗？",
+                       "options": [{"id": "A", "label": "就这版，通过"}]}],
+    }), {"bi_moodboard": {"selected": ["A"]}})
+
+
+def _preset_during_stage(messages, n):
+    if n == 0:
+        return calls(("generate_image", {
+            "prompt": "one direction",
+            "skill": brand.SKILL,
+            "preset": "geometric",
+        }))
+    return reply("done")
+
+
+def _mixed_logos(messages, n):
+    if n == 0:
+        return calls(
+            ("generate_image", {
+                "prompt": "logo a", "skill": brand.SKILL, "brand_slot": "logo_a",
+            }),
+            ("generate_image", {
+                "prompt": "direction b", "skill": brand.SKILL, "preset": "geometric",
+            }),
+            ("generate_image", {
+                "prompt": "direction c", "skill": brand.SKILL, "preset": "geometric",
+            }),
+        )
+    return reply("done")
+
+
+async def _active_rig(monkeypatch, script):
+    brand.reset_for_tests()
+    BOT_CHAT_ID.set("c")
+    rig = Rig(monkeypatch, script)
+    asked: list[dict] = []
+    brand_dispatch: list[dict] = []
+    original_brand = LocalLlmProvider._dispatch_one_confirmed_brand
+
+    async def local_price(model, inputs):
+        return (0.04, "quote", "test")
+
+    async def watch_confirm(self, spec, turn, handle, **kwargs):
+        asked.append(spec)
+        return "start"
+
+    async def watch_brand(self, it, *args, **kwargs):
+        brand_dispatch.append(dict(it.get("args") or {}))
+        return await original_brand(self, it, *args, **kwargs)
+
+    monkeypatch.setattr(rig.p, "_price_one", local_price)
+    monkeypatch.setattr(LocalLlmProvider, "_confirm_plan", watch_confirm)
+    monkeypatch.setattr(LocalLlmProvider, "_dispatch_one_confirmed_brand", watch_brand)
+    return rig, asked, brand_dispatch
+
+
+async def test_preset_during_active_default_stage_uses_grant_path(monkeypatch):
+    """One geometric generate, no brand_slot, while the moodboard stage is open.
+
+    The quote is stamped with the open slot, so after Start this is a grant
+    submit. It must not be a plain 1024 run_mcp of the template.
+    """
+    rig, asked, brand_dispatch = await _active_rig(monkeypatch, _preset_during_stage)
+    _moodboard_phase()
+    await rig.send("出一张", goal="")
+    gens = _gens(rig)
+    assert asked and all(spec.get("brand_confirm") is True for spec in asked)
+    assert len(brand_dispatch) == 1, brand_dispatch
+    assert brand_dispatch[0].get("preset") == "geometric"
+    assert not brand_dispatch[0].get("brand_slot")
+    assert len(gens) == 1, gens
+    assert gens[0].get("brand_slot") == "moodboard"
+    assert (gens[0].get("width"), gens[0].get("height")) == (2048, 1152)
+    assert "moodboard" in brand.submitted_slots(1)
+
+
+async def test_mixed_logo_batch_every_item_uses_grant_path(monkeypatch):
+    """phase=logos: logo_a plus two preset calls. None of them may take plain run_mcp."""
+    rig, asked, brand_dispatch = await _active_rig(monkeypatch, _mixed_logos)
+    _logos_phase()
+    await rig.send("三个方向", goal="")
+    gens = _gens(rig)
+    assert asked and all(spec.get("brand_confirm") is True for spec in asked)
+    assert len(brand_dispatch) == 3, brand_dispatch
+    assert all(row.get("skill") == brand.SKILL for row in brand_dispatch)
+    assert brand_dispatch[0].get("brand_slot") == "logo_a"
+    assert brand_dispatch[1].get("preset") == "geometric" and not brand_dispatch[1].get("brand_slot")
+    assert brand_dispatch[2].get("preset") == "geometric" and not brand_dispatch[2].get("brand_slot")
+    assert gens and all(row.get("brand_slot") for row in gens)
+    assert all((row.get("width"), row.get("height")) != (1024, 1024) for row in gens)
+    assert brand.submitted_slots(2)

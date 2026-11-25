@@ -2782,7 +2782,25 @@ class LocalLlmProvider(AgentProvider):
                 continue  # #419: stopped before this step was submitted: skip it, no row, no charge, no placeholder
             if name in PAID_TOOLS and getattr(loop.get("run"), "pending_stop", None) is not None:
                 continue  # the plan gate already stopped this run; do not submit the rest
-            if name in PAID_TOOLS and gate.blocks(name, it["args"]):
+            brand_call = False
+            if name == "generate_image":
+                from ..api.brand_identity import SKILL, is_template, steps_are_brand_stage
+                current_skill = str(getattr(loop.get("run"), "current_skill", "") or "")
+                call_args = it.get("args") or {}
+                skill = str(call_args.get("skill") or current_skill or "")
+                # An industry template (geometric, …) already has its stage size. The confirm
+                # grant is for a quoted brand_slot, the no-preset default path, and any
+                # generate in a batch whose quote steps are a brand stage. The stage check
+                # is not limited to an empty skill: a preset call beside a brand_slot, or
+                # a preset call whose quote was stamped with the open default-stage slot,
+                # still has to reserve that slot. A template with no brand progress and no
+                # brand_slot leaves steps_are_brand_stage false and stays on the quote gate.
+                # The plan-key gate runs after this. A stamped quote row no longer matches
+                # the tool args, and that refusal used to drop the call before the grant.
+                brand_call = bool(call_args.get("brand_slot")) or (
+                    skill == SKILL and not is_template(call_args.get("preset"))
+                ) or steps_are_brand_stage(brand_steps)
+            if name in PAID_TOOLS and not brand_call and gate.blocks(name, it["args"]):
                 # First block explains why. The same call blocked again stops the run
                 # instead of handing the model another "please quote_plan" result.
                 # A slot already submitted on this or an earlier turn is not a new quote.
@@ -2804,25 +2822,16 @@ class LocalLlmProvider(AgentProvider):
                     chunks[i] = await self._emit_result(
                         it, _PLAN_REFUSE[lang_key], emit=emit, done=done, lang=lang, is_error=True)
                 continue
+            if brand_call:
+                sent, chunks[i] = await self._dispatch_one_confirmed_brand(
+                    it, brand_steps, _brand_claimed,
+                    gate=gate, session=session, turn=turn, emit=emit, handle=handle,
+                    done=done, lang=lang, skill_cache=skill_cache, llm_model=llm_model,
+                    run=loop.get("run"), cache_hits=loop["cache_hits"])
+                if sent:
+                    ran.append(i)
+                continue
             if name == "generate_image":
-                from ..api.brand_identity import SKILL, is_template, steps_are_brand_stage
-                current_skill = str(getattr(loop.get("run"), "current_skill", "") or "")
-                call_args = it.get("args") or {}
-                skill = str(call_args.get("skill") or current_skill or "")
-                # An industry template (geometric, …) already has its stage size. The confirm
-                # grant is for a quoted brand_slot and for the no-preset default path.
-                brand_call = bool(call_args.get("brand_slot")) or (
-                    skill == SKILL and not is_template(call_args.get("preset"))
-                ) or (not skill and steps_are_brand_stage(brand_steps))
-                if brand_call:
-                    sent, chunks[i] = await self._dispatch_one_confirmed_brand(
-                        it, brand_steps, _brand_claimed,
-                        gate=gate, session=session, turn=turn, emit=emit, handle=handle,
-                        done=done, lang=lang, skill_cache=skill_cache, llm_model=llm_model,
-                        run=loop.get("run"), cache_hits=loop["cache_hits"])
-                    if sent:
-                        ran.append(i)
-                    continue
                 from ..api.brand_identity import submit_block_reason, submit_block_text
                 reason = submit_block_reason(it["args"], turn)
                 if reason == "submitted":
