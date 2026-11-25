@@ -204,6 +204,7 @@ async def test_slot_and_template_submits_only_through_brand_start(monkeypatch):
     assert brand.is_template(brand_dispatch[0].get("preset"))
     assert len(gens) == 1, gens
     assert gens[0].get("brand_slot") == "moodboard"
+    assert "moodboard" in brand.submitted_slots(1)
 
 
 def _stage2_board(messages, n):
@@ -367,4 +368,5 @@ async def test_mixed_logo_batch_every_item_uses_grant_path(monkeypatch):
     assert brand_dispatch[2].get("preset") == "geometric" and not brand_dispatch[2].get("brand_slot")
     assert gens and all(row.get("brand_slot") for row in gens)
     assert all((row.get("width"), row.get("height")) != (1024, 1024) for row in gens)
-    assert brand.submitted_slots(2)
+    recorded = brand.submitted_slots(2)
+    assert {str(row.get("brand_slot")) for row in gens} <= recorded
