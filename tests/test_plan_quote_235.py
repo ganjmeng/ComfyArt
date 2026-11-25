@@ -135,7 +135,8 @@ async def test_fully_unpriced_step_still_asks_without_a_fake_zero():
     assert quote.lines[1].price == "10 积分"
     assert quote.total_text == "部分未定价"
     assert "0 积分" not in quote.prompt and "约 10 积分" not in quote.prompt
-    assert "部分步骤暂未定价" in quote.prompt
+    assert "部分步骤暂时取不到价格" in quote.prompt
+    assert "确认后" not in quote.prompt and "按实际价格执行" not in quote.prompt
 
 
 async def test_an_estimate_line_prefixes_the_total():

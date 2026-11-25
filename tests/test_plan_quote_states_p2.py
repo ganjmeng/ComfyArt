@@ -64,11 +64,13 @@ def test_unpriced_card_has_reprice_and_cancel_and_no_number(browser, bundle, lan
     page = _open(browser, bundle, lang, "unpriced")
     secondary, primary, text = _buttons(page)
     assert secondary == cancel and primary == reprice
-    assert "未定价" in text or "Unpriced" in text
+    assert ("暂未定价" if lang == "zh" else "Not priced yet") in text
+    assert ("还没有开始，也没有扣积分" if lang == "zh" else "Nothing has started and no credits were used") in text
+    assert "确认费用" not in text and "Confirm cost" not in text
     prices = page.locator(".ca-panel__val").all_inner_texts()
     assert prices == (["未定价", "未定价"] if lang == "zh" else ["Unpriced", "Unpriced"])
     assert all(not any(ch.isdigit() for ch in p) and "约" not in p and "about" not in p.lower() for p in prices)
-    for word in ("开始", "Start", "Generate", "继续生成"):
+    for word in ("Start", "Generate", "继续生成", "确定开始"):
         assert word not in text
     page.locator("[data-testid=chat-inline-confirm-ok]").click()
     page.wait_for_function("() => globalThis.__choice === 'reprice'")
@@ -82,6 +84,8 @@ def test_estimate_card_has_reprice_and_no_start(browser, bundle, lang, cancel, r
     page = _open(browser, bundle, lang, "estimate")
     secondary, primary, text = _buttons(page)
     assert secondary == cancel and primary == reprice
+    assert ("价格暂不可用" if lang == "zh" else "Price unavailable") in text
+    assert "确认费用" not in text and "Confirm cost" not in text
     assert amount in text
     for word in ("开始", "Start", "Generate", "继续生成"):
         assert word not in text
@@ -94,6 +98,7 @@ def test_exact_quote_still_has_generate(browser, bundle, lang, cancel, ok):
     page = _open(browser, bundle, lang, "exact")
     secondary, primary, text = _buttons(page)
     assert secondary == cancel and primary == ok
+    assert ("确认费用" if lang == "zh" else "Confirm cost") in text
     assert "64" in text
     page.locator("[data-testid=chat-inline-confirm-ok]").click()
     page.wait_for_function("() => globalThis.__choice === 'start'")

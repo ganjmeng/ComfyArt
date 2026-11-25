@@ -569,8 +569,24 @@ QUOTE_LINE_LOCALE = {
 }
 # P2-1: unpriced / re-price copy. The rest of each locale file stays on LOCALE_BASE_SHA256.
 QUOTE_REPRICE_LOCALE = {
-    "zh": {"quote.reprice": "重新取价", "quote.unpriced": "未定价"},
-    "en": {"quote.reprice": "Re-price", "quote.unpriced": "Unpriced"},
+    "zh": {
+        "quote.reprice": "重新取价",
+        "quote.unpriced": "未定价",
+        "quote.unpricedTitle": "暂未定价",
+        "quote.estimateTitle": "价格暂不可用",
+        "quote.unpricedPrompt": "这次生成暂时取不到价格，还没有开始，也没有扣积分。可以重新取价，或取消。",
+        "quote.unpricedPromptMany": "这个任务共 {n} 步，暂时取不到价格，还没有开始，也没有扣积分。可以重新取价，或取消。",
+        "quote.unpricedPromptPartial": "这个任务共 {n} 步，其中部分步骤暂时取不到价格，还没有开始，也没有扣积分。可以重新取价，或取消。",
+    },
+    "en": {
+        "quote.reprice": "Re-price",
+        "quote.unpriced": "Unpriced",
+        "quote.unpricedTitle": "Not priced yet",
+        "quote.estimateTitle": "Price unavailable",
+        "quote.unpricedPrompt": "We couldn't get a price for this generation yet. Nothing has started and no credits were used. You can re-price or cancel.",
+        "quote.unpricedPromptMany": "This task has {n} steps. We couldn't get a price yet. Nothing has started and no credits were used. You can re-price or cancel.",
+        "quote.unpricedPromptPartial": "This task has {n} steps and some have no price yet. Nothing has started and no credits were used. You can re-price or cancel.",
+    },
 }
 ANGLE_PROGRESS_LOCALE = {
     "zh": {

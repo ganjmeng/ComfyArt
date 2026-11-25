@@ -48,7 +48,7 @@ export interface BotBlock {
   questions?: AskQuestion[]
   answers?: AskAnswers
   kind?: string
-  lines?: { text: string; price: string }[]
+  lines?: { text: string; price: string; source?: string }[]
   total?: string
   total_label?: string
   selected?: string[]

@@ -77,19 +77,28 @@ _PROMPT_ONE = {
     "zh": "这次生成预计约 {total} 积分，达到了你设置的 {threshold} 积分确认线。确定开始吗？",
     "en": "This generation will cost about {total} credits, at or above your {threshold} credits confirm limit. Start?",
 }
-# #968: an unpriced step forces a confirm card without claiming any amount (never "约 0 积分").
-_PROMPT_UNPRICED = {
-    "zh": "这个任务共 {n} 步，价格暂未确定，需要你确认后按实际价格执行。可以重新取价，或取消。",
-    "en": "This task has {n} steps with no price available. Re-price, or cancel.",
+# Unpriced cards have no Start. The description is the locale sentence: nothing has
+# started and no credits were used. It does not say the job will run after a confirm.
+_UNPRICED_PROMPT_KEY = {
+    "one": "quote.unpricedPrompt",
+    "all": "quote.unpricedPromptMany",
+    "partial": "quote.unpricedPromptPartial",
 }
-_PROMPT_PARTIAL_UNPRICED = {
-    "zh": "这个任务共 {n} 步，其中部分步骤暂未定价，需要你确认后按实际价格执行。可以重新取价，或取消。",
-    "en": "This task has {n} steps and some have no price available. Re-price, or cancel.",
-}
-_PROMPT_UNPRICED_ONE = {
-    "zh": "这次生成的价格暂未确定，需要你确认后按实际价格执行。可以重新取价，或取消。",
-    "en": "This generation has no price available. Re-price, or cancel.",
-}
+_locale_text: dict[str, dict] = {}
+
+
+def _ui(lang: str, key: str) -> str:
+    lang = "zh" if str(lang).lower().startswith("zh") else "en"
+    data = _locale_text.get(lang)
+    if data is None:
+        path = Path(__file__).resolve().parents[1] / "src" / "locales" / f"{lang}.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        _locale_text[lang] = data
+    return str(data[key])
+
+
+def _unpriced_prompt(kind: str, lang: str, n: int) -> str:
+    return _ui(lang, _UNPRICED_PROMPT_KEY[kind]).format(n=n)
 _REPRICE_OR_CANCEL = {"zh": "可以重新取价，或取消。", "en": "Re-price, or cancel."}
 _PRICE_KEYS = ("duration", "resolution", "aspect_ratio", "ratio", "size", "quality", "output_format", "frame_count", "frame_duration_ms")
 _DROP_ARG = ("fallback", "fallback_model", "model")
@@ -725,9 +734,8 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
     else:
         total_text = credits_text(total_credits, lang, approx=any_estimate)
     if any_unpriced:
-        template = (_PROMPT_UNPRICED_ONE if len(lines) == 1 else
-                    (_PROMPT_UNPRICED if all_unpriced else _PROMPT_PARTIAL_UNPRICED))
-        prompt = template[lang].format(n=len(lines))
+        kind = "one" if len(lines) == 1 else ("all" if all_unpriced else "partial")
+        prompt = _unpriced_prompt(kind, lang, len(lines))
     else:
         prompt = (_PROMPT_ONE if len(lines) == 1 else _PROMPT)[lang].format(
             n=len(lines), total=total_credits, threshold=ui_credits(threshold))

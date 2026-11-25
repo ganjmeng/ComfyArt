@@ -206,6 +206,10 @@ async def test_reject_codes_are_unpriced_with_reprice_and_cancel(slow_price, cod
     assert en is not None
     _assert_reprice_not_start(en, "en")
     assert en.lines[0].price == "Unpriced" and en.total_text == "Unpriced"
+    assert en.prompt == (
+        "We couldn't get a price for this generation yet. Nothing has started and no credits were used. "
+        "You can re-price or cancel."
+    )
     assert "about" not in en.total_text.lower()
 
 
@@ -218,6 +222,8 @@ async def test_a_5xx_price_error_retries_once_then_estimates_without_start(slow_
     card = await _quote_card(_provider()._price_one)
     assert card is not None and card.lines[0].price == "约 5 积分"
     assert "估算" in card.prompt or "约" in card.total_text
+    # The estimate card has no Start, so the description does not say confirm-then-run.
+    assert "确认后" not in card.prompt and "确定开始" not in card.prompt and "按实际价格执行" not in card.prompt
     _assert_reprice_not_start(card)
 
 
@@ -261,7 +267,8 @@ async def test_no_table_and_no_live_price_is_unpriced_never_a_number(slow_price)
     assert card.lines[0].price == "未定价"
     assert card.total_text == "未定价" and card.total_credits == 0
     assert "0" not in card.total_text and "0 积分" not in card.prompt
-    assert "按实际价格执行" in card.prompt
+    assert card.prompt == "这次生成暂时取不到价格，还没有开始，也没有扣积分。可以重新取价，或取消。"
+    assert "确认后" not in card.prompt and "按实际价格执行" not in card.prompt
     _assert_unpriced_card(card)
 
 
@@ -406,7 +413,8 @@ async def test_a_partly_unpriced_plan_has_no_numeric_total():
     assert [ln.price for ln in card.lines] == ["2 积分", "未定价"]
     assert card.total_text == "部分未定价" and card.total_credits == 2
     assert "2 积分" not in card.prompt and "约 2 积分" not in card.prompt
-    assert "部分步骤暂未定价" in card.prompt
+    assert "部分步骤暂时取不到价格" in card.prompt
+    assert "确认后" not in card.prompt and "按实际价格执行" not in card.prompt
     assert sum(ln.credits for ln in card.lines if not ln.unpriced) == 2
 
 

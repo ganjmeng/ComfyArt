@@ -230,8 +230,9 @@ def test_locales_only_add_memory_retrieved_430():
         # #1003: quote-card face for the pending line-art preview. The visible
         # line is the size template with the call's width, height and ratio.
         "quote.lineartPreview", "quote.lineartPreviewSize",
-        # P2-1: unpriced card and its Re-price button (not memory copy)
-        "quote.reprice", "quote.unpriced",
+        # P2-1: unpriced / estimate quote-card copy (not memory copy)
+        "quote.reprice", "quote.unpriced", "quote.unpricedTitle", "quote.estimateTitle",
+        "quote.unpricedPrompt", "quote.unpricedPromptMany", "quote.unpricedPromptPartial",
         # confirmed multi-angle progress card (not memory copy)
         "bot.angleSummary", "bot.angleGenerating", "bot.angleInterrupted",
         "bot.anglePreview", "bot.angleFinal",
@@ -261,7 +262,11 @@ def test_locales_only_add_memory_retrieved_430():
     assert zh["models.minimaxH3Image"] == "6 步出图，2K 下细节丰富，可带多张参考图"
     assert en["models.minimaxH3Image"] == "6-step generation with dense detail at 2K, takes several reference images"
     assert zh["quote.reprice"] == "重新取价" and zh["quote.unpriced"] == "未定价"
+    assert zh["quote.unpricedTitle"] == "暂未定价" and zh["quote.estimateTitle"] == "价格暂不可用"
+    assert zh["quote.unpricedPrompt"] == "这次生成暂时取不到价格，还没有开始，也没有扣积分。可以重新取价，或取消。"
     assert en["quote.reprice"] == "Re-price" and en["quote.unpriced"] == "Unpriced"
+    assert en["quote.unpricedTitle"] == "Not priced yet" and en["quote.estimateTitle"] == "Price unavailable"
+    assert en["quote.unpricedPrompt"] == "We couldn't get a price for this generation yet. Nothing has started and no credits were used. You can re-price or cancel."
     assert zh["quote.lineartPreview"] == "线稿预览"
     assert en["quote.lineartPreview"] == "Line-art preview"
     assert zh["quote.lineartPreviewSize"] == "线稿预览 · {0}×{1} · {2}"

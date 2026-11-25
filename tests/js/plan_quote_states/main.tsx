@@ -12,9 +12,7 @@ const repriceOnly = kind !== 'exact'
 
 const copy = {
   unpriced: {
-    desc: zh
-      ? '这次生成的价格暂未确定，需要你确认后按实际价格执行。可以重新取价，或取消。'
-      : 'The price for this generation is not set yet. Re-price, or cancel.',
+    desc: t('quote.unpricedPrompt'),
     lines: [{ text: 'GPT Image 2.6 Flare', price: zh ? '未定价' : 'Unpriced' }],
     total: zh ? '未定价' : 'Unpriced',
   },
@@ -40,7 +38,7 @@ const copy = {
 
 createRoot(document.getElementById('root')!).render(
   <ChatInlineConfirm
-    title={t('jobs.confirmTitle')}
+    title={repriceOnly ? (kind === 'unpriced' ? t('quote.unpricedTitle') : t('quote.estimateTitle')) : t('jobs.confirmTitle')}
     desc={copy.desc}
     okLabel={repriceOnly ? t('quote.reprice') : t('jobs.confirmOk')}
     cancelLabel={t('common.cancel')}

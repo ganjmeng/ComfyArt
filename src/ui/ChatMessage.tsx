@@ -847,6 +847,14 @@ export function OverQuote({ b }: { b: BotBlock }) {
   )
 }
 
+/** Exact quotes keep 「确认费用」. Unpriced and estimate cards have no Start, so their titles say so. */
+function planQuoteTitle(b: BotBlock, repriceOnly: boolean): string {
+  if (!repriceOnly) return t('jobs.confirmTitle')
+  const unpriced = (b.lines ?? []).some((l) => l.source === 'unpriced' || l.price === t('quote.unpriced'))
+    || b.total === t('quote.unpriced')
+  return unpriced ? t('quote.unpricedTitle') : t('quote.estimateTitle')
+}
+
 /** #235: the plan total uses the same cost-confirm card as a single job. No second card, no new styles.
  * An estimate or unpriced card has Re-price and Cancel (the same primary/secondary buttons). No Start. */
 function PlanQuote({ b }: { b: BotBlock }) {
@@ -860,7 +868,7 @@ function PlanQuote({ b }: { b: BotBlock }) {
       return (
         <>
           <ChatInlineConfirm
-            title={t('jobs.confirmTitle')}
+            title={planQuoteTitle(b, true)}
             desc={b.prompt ?? ''}
             okLabel={t('quote.reprice')}
             cancelLabel={t('common.cancel')}
