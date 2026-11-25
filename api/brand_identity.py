@@ -1560,6 +1560,187 @@ def session_default_stage_open() -> bool:
     return str(_progress().get("phase") or "") in {"moodboard", "logos", "finals"}
 
 
+def release_preset_stamp(steps: list) -> list:
+    """Drop a brand_slot that annotation stamped onto a preset quote row.
+
+    The call itself still has no slot. A preset during an open brand stage is a
+    template grant, not logo_a / the moodboard / a final.
+    """
+    out = []
+    for step in steps or []:
+        if not isinstance(step, dict):
+            out.append(step)
+            continue
+        step = dict(step)
+        args = step.get("arguments")
+        if (step.get("_slot_stamped") and step.get("tool") == "generate_image"
+                and isinstance(args, dict) and str(args.get("preset") or "").strip()):
+            args = dict(args)
+            args.pop("brand_slot", None)
+            step["arguments"] = args
+            step.pop("_slot_stamped", None)
+        out.append(step)
+    return out
+
+
+def is_brand_stage_template_call(args: dict) -> bool:
+    """skill + industry preset, no slot, while this chat is in a brand stage."""
+    if not isinstance(args, dict) or args.get("brand_slot"):
+        return False
+    if str(args.get("skill") or "") != SKILL or not is_template(args.get("preset")):
+        return False
+    return session_default_stage_open()
+
+
+def steps_include_brand_template(steps: list) -> bool:
+    for step in steps or []:
+        if not isinstance(step, dict) or step.get("tool") != "generate_image":
+            continue
+        args = step.get("arguments") if isinstance(step.get("arguments"), dict) else {}
+        if is_brand_stage_template_call(args):
+            return True
+    return False
+
+
+_TEMPLATE_STAGE = {
+    "zh": {"moodboard": "情绪板", "logos": "Logo", "finals": "成稿"},
+    "en": {"moodboard": "Moodboard", "logos": "Logo", "finals": "Finals"},
+}
+_TEMPLATE_NAME = {
+    "zh": {
+        "geometric": "几何", "handmade": "手作", "tech": "科技",
+        "beauty": "美妆", "foodbev": "餐饮", "pet": "宠物",
+    },
+    "en": {
+        "geometric": "Geometric", "handmade": "Handmade", "tech": "Tech",
+        "beauty": "Beauty", "foodbev": "Food and beverage", "pet": "Pet",
+    },
+}
+_TEMPLATE_EXTRA = {
+    "zh": {
+        "moodboard": "额外一张，不替换情绪板",
+        "logos": "额外一张，不替换方向 A/B/C",
+        "finals": "额外一张，不替换成稿物料",
+    },
+    "en": {
+        "moodboard": "One extra image. It does not replace the moodboard.",
+        "logos": "One extra image. It does not replace directions A/B/C.",
+        "finals": "One extra image. It does not replace the final deliverables.",
+    },
+}
+
+
+def template_quote_text(preset: str, lang: str, phase: str = "") -> str:
+    """Card row for one extra template image during an open brand stage.
+
+    zh logos + geometric is 「Logo 阶段 · 几何模板」 and 「额外一张，不替换方向 A/B/C」.
+    """
+    lang_key = "zh" if lang == "zh" else "en"
+    phase_id = str(phase or _progress().get("phase") or "")
+    stage = _TEMPLATE_STAGE[lang_key].get(phase_id) or phase_id
+    name = _TEMPLATE_NAME[lang_key].get(str(preset or "")) or str(preset or "")
+    extra = _TEMPLATE_EXTRA[lang_key].get(phase_id) or _TEMPLATE_EXTRA[lang_key]["logos"]
+    if lang_key == "zh":
+        title = f"{stage} 阶段 · {name}模板"
+    else:
+        title = f"{stage} stage · {name} template"
+    return f"{title}\n{extra}"
+
+
+def template_grant_key(args: dict) -> str:
+    """The call's own quote key. Not a default-flow slot id."""
+    from ..bot.plan_quote import canon_key
+    key = canon_key("generate_image", args if isinstance(args, dict) else {}, plan=True)
+    return json.dumps(key, ensure_ascii=False)
+
+
+def template_grants() -> dict:
+    saved = _progress().get("template_grants")
+    return dict(saved) if isinstance(saved, dict) else {}
+
+
+def remember_template_grants(steps: list, *, identity: dict, amount: float, currency: str,
+                             quote_id: str, created_at: float, expires_at: float) -> None:
+    """One template grant per quoted preset call. Slots and phase stay put.
+
+    A failed write leaves no grant and raises, so the caller submits nothing.
+    """
+    progress = _progress()
+    bucket = progress.setdefault("template_grants", {})
+    if not isinstance(bucket, dict):
+        bucket = {}
+        progress["template_grants"] = bucket
+    written: list[str] = []
+    previous = {key: bucket.get(key) for key in list(bucket)}
+    try:
+        for step in steps or []:
+            if not isinstance(step, dict) or step.get("tool") != "generate_image":
+                continue
+            args = step.get("arguments") if isinstance(step.get("arguments"), dict) else {}
+            if not is_brand_stage_template_call(args):
+                continue
+            key = template_grant_key(args)
+            bucket[key] = {
+                "type": "template",
+                "key": key,
+                "preset": str(args.get("preset") or ""),
+                "prompt": str(args.get("prompt") or ""),
+                "phase": str(progress.get("phase") or ""),
+                "amount": round(float(amount or 0), 4),
+                "currency": str(currency or BRAND_CURRENCY),
+                "quote_id": str(quote_id or ""),
+                "created_at": float(created_at),
+                "expires_at": float(expires_at),
+                "used": False,
+                "user": str(identity.get("user") or ""),
+                "project": str(identity.get("project") or ""),
+                "chat": str(identity.get("chat") or ""),
+            }
+            written.append(key)
+        if written:
+            _persist_grants()
+    except BrandGrantPersistError:
+        for key in written:
+            if key in previous:
+                bucket[key] = previous[key]
+            else:
+                bucket.pop(key, None)
+        raise
+
+
+def template_submit_block(args: dict, turn: object = None, *, now: float | None = None) -> str | None:
+    """Why this template grant must not pay, or None when this confirm still covers it."""
+    if not is_brand_stage_template_call(args):
+        return None
+    grant = (_progress().get("template_grants") or {}).get(template_grant_key(args))
+    if not isinstance(grant, dict) or grant.get("type") != "template":
+        return "unconfirmed"
+    if grant.get("used"):
+        return "submitted"
+    clock = _clock() if now is None else float(now)
+    exp = grant.get("expires_at")
+    if isinstance(exp, bool) or not isinstance(exp, (int, float)) or clock >= float(exp):
+        return "expired"
+    identity = turn_identity(turn)
+    if (str(grant.get("user") or "") != identity["user"]
+            or str(grant.get("project") or "") != identity["project"]
+            or str(grant.get("chat") or "") != identity["chat"]):
+        return "identity"
+    if str(grant.get("prompt") or "") != str(args.get("prompt") or ""):
+        return "mismatch"
+    if str(grant.get("preset") or "") != str(args.get("preset") or ""):
+        return "mismatch"
+    return None
+
+
+def mark_template_grant_used(args: dict) -> None:
+    grant = (_progress().get("template_grants") or {}).get(template_grant_key(args))
+    if not isinstance(grant, dict):
+        return
+    grant["used"] = True
+    _persist_grants()
+
+
 def cumulative_line(total_usd: float, lang: str) -> str:
     from ..bot.run_budget import ui_credits
     prev = float(_progress().get("spent") or 0)

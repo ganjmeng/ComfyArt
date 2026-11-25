@@ -703,8 +703,12 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         if label:
             parts.append(label)
         text = " · ".join(parts)
-        slot_id = str((step.get("arguments") or {}).get("brand_slot") or "")
-        if slot_id:
+        raw_args = step.get("arguments") or {}
+        from ..api.brand_identity import is_brand_stage_template_call, template_quote_text
+        if step["tool"] == "generate_image" and is_brand_stage_template_call(raw_args):
+            text = template_quote_text(str(raw_args.get("preset") or ""), lang)
+        slot_id = str(raw_args.get("brand_slot") or "")
+        if slot_id and not is_brand_stage_template_call(raw_args):
             from ..api.brand_identity import quote_line
             named = quote_line(slot_id, lang)
             if named:
@@ -729,9 +733,12 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         ask = True
     # #1019: each brand default-path stage shows its own quote card, even under
     # the $0.50 gate. The gate itself is unchanged for every other request.
-    from ..api.brand_identity import steps_are_brand_stage
+    from ..api.brand_identity import steps_are_brand_stage, steps_include_brand_template
     brand_stage = steps_are_brand_stage(prepared)
     if brand_stage and any(ln.units > 0 for ln in lines):
+        ask = True
+    # A preset during an open brand stage is its own confirm, even under $0.50.
+    if steps_include_brand_template(prepared) and any(ln.units > 0 for ln in lines):
         ask = True
     if len(lines) == 1 and not ask and not lines[0].unpriced:
         # #904: a known 0-credit (or under-line) single call runs as before. A single refusal

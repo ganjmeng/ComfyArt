@@ -2559,9 +2559,9 @@ class LocalLlmProvider(AgentProvider):
                      else [self._implicit_step(it, lang) for it in paid])
             if not isinstance(steps, list):
                 steps = []
-            from ..api.brand_identity import annotate_quote_steps
-            steps = annotate_quote_steps(
-                steps, [it["args"] for it in paid if it["name"] == "generate_image"])
+            from ..api.brand_identity import annotate_quote_steps, release_preset_stamp
+            steps = release_preset_stamp(annotate_quote_steps(
+                steps, [it["args"] for it in paid if it["name"] == "generate_image"]))
             brand_steps = steps if isinstance(steps, list) else []
             from ..api.brand_identity import stage_base_block
             # 重新取价 returns here. The next card is the same chain:
@@ -2637,10 +2637,26 @@ class LocalLlmProvider(AgentProvider):
                         decision = "done"
                     elif repeat == "reconcile":
                         decision = "reconcile"
-                    elif repeat == "continue":
+                    elif repeat == "continue" and (
+                            _brand.steps_include_brand_template(brand_steps)
+                            and not _brand.steps_are_brand_stage(brand_steps)):
+                        # A template call does not reuse stage_repeat=continue. It asks again.
+                        repeat = "new"
+                    if not decision and repeat == "continue":
                         # Arm once per confirmation. A later continue must not reset the remaining slots.
+                        if (_brand.steps_are_brand_stage(brand_steps)
+                                and not _brand.grant_still_authorizes(
+                                    brand_steps, turn, amount=quote.total,
+                                    currency=getattr(quote, "currency", "") or _brand.BRAND_CURRENCY,
+                                    quote_id=getattr(quote, "quote_id", "") or None)):
+                            repeat = "new"
+                    if decision:
+                        pass
+                    elif repeat == "continue":
                         gate.allow(quote, not single, brand_steps, fresh=False)
                         decision = "start"
+                    elif quote is None:
+                        decision = "passthrough"
                     elif not quote.ask:
                         gate.allow(quote, False)
                         decision = "start"
@@ -2683,6 +2699,21 @@ class LocalLlmProvider(AgentProvider):
                                 if not single:  # #418: one OK covers this call only; don't arm the plan gate
                                     gate.allow(quote, True, brand_steps, fresh=True)
                                 decision = "start"
+                                if _brand.steps_include_brand_template(brand_steps):
+                                    try:
+                                        created = _brand._clock()
+                                        _brand.remember_template_grants(
+                                            brand_steps,
+                                            identity=_brand.turn_identity(turn),
+                                            amount=quote.total,
+                                            currency=getattr(quote, "currency", "") or _brand.BRAND_CURRENCY,
+                                            quote_id=getattr(quote, "quote_id", "") or "",
+                                            created_at=created,
+                                            expires_at=created + _brand.BRAND_CONFIRM_TTL_S,
+                                        )
+                                    except _brand.BrandGrantPersistError as exc:
+                                        quote_error = f"[error] {type(exc).__name__}: {exc}"
+                                        decision = "error"
                             elif choice == "expired":
                                 decision = "expired"
                             elif choice == "requote":
@@ -2840,6 +2871,25 @@ class LocalLlmProvider(AgentProvider):
                 else:
                     chunks[i] = await self._emit_result(
                         it, _PLAN_REFUSE[lang_key], emit=emit, done=done, lang=lang, is_error=True)
+                continue
+            from ..api.brand_identity import is_brand_stage_template_call, template_submit_block
+            if name == "generate_image" and is_brand_stage_template_call(it["args"]):
+                # Own quote key, template type. Not a default slot, not submitted_slots.
+                reason = template_submit_block(it["args"], turn)
+                if reason:
+                    from ..api.brand_identity import expired_text, submit_block_text
+                    if reason == "expired":
+                        text = expired_text(lang)
+                    elif reason == "unconfirmed":
+                        text = _CONFIRM_UNSAVED_SHOWN[lang_key]
+                    else:
+                        text = submit_block_text(reason, lang)
+                    chunks[i] = await self._emit_result(
+                        it, text, emit=emit, done=done, lang=lang, is_error=True)
+                    continue
+                await run_mcp(i)
+                from ..api.brand_identity import mark_template_grant_used
+                mark_template_grant_used(it["args"])
                 continue
             if brand_call:
                 sent, chunks[i] = await self._dispatch_one_confirmed_brand(

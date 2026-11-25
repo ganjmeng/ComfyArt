@@ -348,8 +348,8 @@ async def _active_rig(monkeypatch, script):
 async def test_preset_during_active_default_stage_uses_grant_path(monkeypatch):
     """One geometric generate, no brand_slot, while the moodboard stage is open.
 
-    The quote is stamped with the open slot, so after Start this is a grant
-    submit. It must not be a plain 1024 run_mcp of the template.
+    It is a template grant keyed by this call. It does not take the moodboard
+    slot, write submitted_slots, or advance the phase.
     """
     rig, asked, brand_dispatch = await _active_rig(monkeypatch, _preset_during_stage)
     _moodboard_phase()
@@ -377,34 +377,51 @@ async def test_preset_during_active_default_stage_uses_grant_path(monkeypatch):
     monkeypatch.setattr(brand, "session_default_stage_open", watch_open)
     await rig.send("出一张", goal="")
     gens = _gens(rig)
-    assert seen["stage"] is True and seen["slots"] == ["moodboard"], seen
-    assert seen["session_calls"] == 0, seen
-    assert asked and all(spec.get("brand_confirm") is True for spec in asked)
-    assert len(brand_dispatch) == 1, brand_dispatch
-    assert brand_dispatch[0].get("preset") == "geometric"
-    assert not brand_dispatch[0].get("brand_slot")
+    assert seen["stage"] is False and seen["slots"] == [], seen
+    assert seen["session_calls"] >= 1, seen
+    texts = "\n".join(
+        str(line.get("text") or "")
+        for spec in asked for line in (spec.get("lines") or [])
+    )
+    assert "情绪板 阶段 · 几何模板" in texts, texts
+    assert "额外一张，不替换情绪板" in texts, texts
+    assert brand_dispatch == [], brand_dispatch
     assert len(gens) == 1, gens
-    assert gens[0].get("brand_slot") == "moodboard"
-    assert (gens[0].get("width"), gens[0].get("height")) == (2048, 1152)
-    assert "moodboard" in brand.submitted_slots(1)
+    assert gens[0].get("preset") == "geometric"
+    assert not gens[0].get("brand_slot")
+    grants = list(brand.template_grants().values())
+    assert len(grants) == 1 and grants[0].get("type") == "template", grants
+    assert grants[0].get("preset") == "geometric"
+    assert grants[0].get("prompt") == "one direction"
+    assert grants[0].get("used") is True
+    assert "moodboard" not in brand.submitted_slots(1)
+    assert brand._progress()["phase"] == "moodboard"
 
 
 async def test_mixed_logo_batch_every_item_uses_grant_path(monkeypatch):
-    """phase=logos: logo_a plus two preset calls. None of them may take plain run_mcp."""
+    """phase=logos: logo_a is the slot grant. The two presets are template grants."""
     rig, asked, brand_dispatch = await _active_rig(monkeypatch, _mixed_logos)
     _logos_phase()
     await rig.send("三个方向", goal="")
     gens = _gens(rig)
     assert asked and all(spec.get("brand_confirm") is True for spec in asked)
-    assert len(brand_dispatch) == 3, brand_dispatch
-    assert all(row.get("skill") == brand.SKILL for row in brand_dispatch)
+    texts = "\n".join(
+        str(line.get("text") or "")
+        for spec in asked for line in (spec.get("lines") or [])
+    )
+    assert "Logo 阶段 · 几何模板" in texts, texts
+    assert "额外一张，不替换方向 A/B/C" in texts, texts
+    assert len(brand_dispatch) == 1, brand_dispatch
     assert brand_dispatch[0].get("brand_slot") == "logo_a"
-    assert brand_dispatch[1].get("preset") == "geometric" and not brand_dispatch[1].get("brand_slot")
-    assert brand_dispatch[2].get("preset") == "geometric" and not brand_dispatch[2].get("brand_slot")
-    assert gens and all(row.get("brand_slot") for row in gens)
-    assert all((row.get("width"), row.get("height")) != (1024, 1024) for row in gens)
+    logos = [row for row in gens if row.get("brand_slot") == "logo_a"]
+    extras = [row for row in gens if row.get("preset") == "geometric" and not row.get("brand_slot")]
+    assert len(logos) == 1 and len(extras) == 2, gens
     recorded = brand.submitted_slots(2)
-    assert {str(row.get("brand_slot")) for row in gens} <= recorded
+    assert recorded == {"logo_a"}, recorded
+    assert brand._progress()["phase"] == "logos"
+    grants = list(brand.template_grants().values())
+    assert len(grants) == 2, grants
+    assert all(row.get("type") == "template" and row.get("used") is True for row in grants)
 
 
 async def _under_line(monkeypatch):
@@ -555,3 +572,165 @@ async def test_fourth_unquoted_call_cannot_take_logo_a(monkeypatch):
         assert "logo_a" not in brand.submitted_slots(2)
     finally:
         BOT_CHAT_ID.reset(token)
+
+
+def _line_text(asked) -> str:
+    return "\n".join(
+        str(line.get("text") or "")
+        for spec in asked for line in (spec.get("lines") or [])
+    )
+
+
+async def test_preset_submit_leaves_logo_a_for_its_own_card(monkeypatch):
+    """A confirmed template extra does not take logo_a. logo_a still quotes and submits."""
+    which = {"step": "preset"}
+
+    def script(messages, n):
+        if n != 0:
+            return reply("done")
+        if which["step"] == "preset":
+            return calls(("generate_image", {
+                "prompt": "extra mark", "skill": brand.SKILL, "preset": "geometric",
+            }))
+        return calls(("generate_image", {
+            "prompt": "logo a", "skill": brand.SKILL, "brand_slot": "logo_a",
+        }))
+
+    rig, asked, brand_dispatch = await _active_rig(monkeypatch, script)
+    _logos_phase()
+    await rig.send("加一张几何", goal="")
+    assert len(_gens(rig)) == 1
+    assert _gens(rig)[0].get("preset") == "geometric"
+    assert not _gens(rig)[0].get("brand_slot")
+    assert "Logo 阶段 · 几何模板" in _line_text(asked)
+    assert "额外一张，不替换方向 A/B/C" in _line_text(asked)
+    assert brand.submitted_slots(2) == set()
+    assert brand._progress()["phase"] == "logos"
+    which["step"] = "logo"
+    rig.n = 0
+    rig.mcp.clear()
+    asked.clear()
+    brand_dispatch.clear()
+    await rig.send("出方向 A", goal="")
+    assert any(spec.get("brand_confirm") is True for spec in asked), asked
+    assert len(_gens(rig)) == 1 and _gens(rig)[0].get("brand_slot") == "logo_a"
+    assert brand.submitted_slots(2) == {"logo_a"}
+    assert brand._progress()["phase"] == "logos"
+
+
+async def test_template_confirm_is_not_reused_across_turns(monkeypatch):
+    """The next identical preset call asks again. Cancel submits nothing."""
+    answers = {"n": 0}
+
+    def script(messages, n):
+        if n == 0:
+            return calls(("generate_image", {
+                "prompt": "same extra", "skill": brand.SKILL, "preset": "geometric",
+            }))
+        return reply("done")
+
+    brand.reset_for_tests()
+    BOT_CHAT_ID.set("c")
+    rig = Rig(monkeypatch, script)
+    asked: list[dict] = []
+
+    async def local_price(model, inputs):
+        return (0.04, "quote", "test")
+
+    async def watch_confirm(self, spec, turn, handle, **kwargs):
+        asked.append(spec)
+        answers["n"] += 1
+        return "start" if answers["n"] == 1 else "cancel"
+
+    monkeypatch.setattr(rig.p, "_price_one", local_price)
+    monkeypatch.setattr(LocalLlmProvider, "_confirm_plan", watch_confirm)
+    _logos_phase()
+    await rig.send("第一张", goal="")
+    assert len(rig.paid_mcp()) == 1
+    rig.n = 0
+    await rig.send("再来一张同样的", goal="")
+    assert len(asked) == 2, asked
+    assert len(rig.paid_mcp()) == 1
+
+
+async def test_changed_template_prompt_does_not_reuse_confirm(monkeypatch):
+    """A different prompt is not covered by the previous template grant."""
+    which = {"prompt": "first extra"}
+
+    def script(messages, n):
+        if n != 0:
+            return reply("done")
+        return calls(("generate_image", {
+            "prompt": which["prompt"], "skill": brand.SKILL, "preset": "geometric",
+        }))
+
+    answers = {"n": 0}
+    brand.reset_for_tests()
+    BOT_CHAT_ID.set("c")
+    rig = Rig(monkeypatch, script)
+    asked: list[dict] = []
+
+    async def local_price(model, inputs):
+        return (0.04, "quote", "test")
+
+    async def watch_confirm(self, spec, turn, handle, **kwargs):
+        asked.append(spec)
+        answers["n"] += 1
+        return "start" if answers["n"] == 1 else "cancel"
+
+    monkeypatch.setattr(rig.p, "_price_one", local_price)
+    monkeypatch.setattr(LocalLlmProvider, "_confirm_plan", watch_confirm)
+    _logos_phase()
+    await rig.send("第一张", goal="")
+    which["prompt"] = "changed extra that must not submit"
+    rig.n = 0
+    await rig.send("换一句", goal="")
+    prompts = [args.get("prompt") for _name, args in rig.paid_mcp()]
+    assert "changed extra that must not submit" not in prompts
+    assert len(asked) == 2
+    assert len(rig.paid_mcp()) == 1
+
+
+async def test_expired_template_grant_blocks_without_a_new_confirm(monkeypatch):
+    """An unused template grant past 700s does not authorize a submit."""
+    def script(messages, n):
+        if n == 0:
+            return calls(("generate_image", {
+                "prompt": "timed extra", "skill": brand.SKILL, "preset": "geometric",
+            }))
+        return reply("done")
+
+    rig, _asked, _dispatch = await _active_rig(monkeypatch, script)
+    _logos_phase()
+    await rig.send("加一张", goal="")
+    _name, args = rig.paid_mcp()[0]
+    saved = brand._progress()["template_grants"]
+    for grant in saved.values():
+        grant["used"] = False
+    assert brand.template_submit_block(args, now=float(next(iter(saved.values()))["expires_at"]) + 100) == "expired"
+    assert len(rig.paid_mcp()) == 1
+    assert brand.submitted_slots(2) == set()
+
+
+async def test_template_grant_write_failure_is_readable(monkeypatch):
+    """A grant that cannot be saved shows the user sentence and submits nothing."""
+    def script(messages, n):
+        if n == 0:
+            return calls(("generate_image", {
+                "prompt": "unsaved extra", "skill": brand.SKILL, "preset": "geometric",
+            }))
+        return reply("done")
+
+    rig, _asked, _dispatch = await _active_rig(monkeypatch, script)
+    _logos_phase()
+
+    def boom():
+        raise brand.BrandGrantPersistError("disk")
+
+    monkeypatch.setattr(brand, "_persist_grants", boom)
+    _res, events = await rig.send("加一张", goal="")
+    texts = "\n".join(getattr(ev, "text", "") or "" for ev in events)
+    assert "确认没有保存成功" in texts, texts
+    assert rig.paid_mcp() == []
+    assert brand.template_grants() == {}
+    assert brand._progress()["phase"] == "logos"
