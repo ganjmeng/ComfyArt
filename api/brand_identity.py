@@ -646,6 +646,7 @@ def _spec_lock() -> str:
         "Any text that does appear anywhere must be spelled correctly (one garbled character is not acceptable). "
         "Do not print an English instruction label."
         + (f" {hint_line.strip()}" if hint_line else "")
+        + " Paper ground, not black."
     )
 
 
@@ -1833,6 +1834,7 @@ def default_hint() -> str:
         "Do not write invented body copy. Do not invent English. "
         "Any text that does appear anywhere must be spelled correctly (one garbled character is not acceptable). "
         "Do not print an English instruction label. "
+        "Paper ground, not black. "
         "The storefront is the full shopfront, front view, with the names once on the fascia and an A-frame standing sign. "
         "The takeaway cup must wear a cup sleeve (杯套). A bare cup is wrong. "
         "Cup and bag print both the Chinese name and the English name. "

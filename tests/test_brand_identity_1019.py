@@ -357,6 +357,8 @@ def test_spec_card_is_seven_lovart_panels_and_brand_prompts_have_no_lock_words()
         assert banned not in spec, banned
     assert "one garbled character is not acceptable" in spec
     assert "Do not print an English instruction label." in spec
+    assert "Paper ground, not black." in spec
+    assert spec.rstrip().endswith("Paper ground, not black.")
     logo_c = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C STRUCTURE LOCK C"})["prompt"]
     assert "STRUCTURE LOCK" not in logo_c
     assert "主组合, 符号构造, 横版, 小尺寸" in logo_c
@@ -437,6 +439,7 @@ def test_closing_rules_are_in_the_skill_instructions():
     assert "最小使用尺寸" in skill and "最小尺寸" not in skill.replace("最小使用尺寸", "")
     assert "no small text at all" not in skill and "one garbled character is not acceptable" in skill
     assert "Do not print an English instruction label." in skill
+    assert "Paper ground, not black." in skill
     assert "full bilingual heading" in skill and "wordmark at three sizes" not in skill
     assert "Allowed on-card text includes the bilingual headings" in skill
     assert "陶土橘" not in skill and "栖木咖啡" not in skill
@@ -447,6 +450,12 @@ def test_closing_rules_are_in_the_skill_instructions():
     hint = brand.default_hint()
     assert "矢量替换" in hint and "色值为屏幕估算" in hint
     assert "#" not in hint
+    lock = brand._spec_lock()
+    assert "Paper ground, not black." in lock
+    assert lock.rstrip().endswith("Paper ground, not black.")
+    assert lock == brand.scrub_internal_marks(lock)
+    assert lock in hint
+    assert "Paper ground, not black." in hint
 
 
 def test_fallback_copy_does_not_name_one_brand():
