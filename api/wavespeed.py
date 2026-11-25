@@ -1549,10 +1549,6 @@ def duration_estimated(model: str, inputs: dict) -> bool:
     return model in DURATION_BILLED and media_seconds(inputs) is None
 
 
-# Official /api/v3/model/price HTTP 400 codes that also reject the submit (no fallback).
-PRICE_REJECT_CODES = frozenset({4005, 4006, 4007})
-
-
 class _Quoted(tuple):
     """#968: `(price, source)` — exactly the two elements `_quote` always answered — with the estimate
     `reason` carried beside them. Keeping the pair keeps every existing unpack and `_quote` patch working."""
@@ -1655,17 +1651,8 @@ async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
             async with aiohttp.ClientSession(headers=_headers()) as session:
                 async with session.post(f"{_base()}/api/v3/model/price", json=body,
                                         timeout=aiohttp.ClientTimeout(total=QUOTE_TIMEOUT_S)) as res:
-                    payload = await _json(res)
+                    payload = await _json(res) if res.status < 400 else None
                     if res.status >= 400:
-                        code = payload.get("code") if isinstance(payload, dict) else None
-                        if res.status < 500 and code in PRICE_REJECT_CODES:
-                            # Official pricing docs: 4005 price calculation failed, 4006 media
-                            # duration unreadable, 4007 image dimensions unreadable. The submit
-                            # is rejected the same way and there is no base-price fallback, so
-                            # do not show an estimate for a job that cannot run.
-                            log.warning("WaveSpeed price API %s code %s for %s %s; unpriced",
-                                        res.status, code, model, priced)
-                            return _Quoted(None, "unpriced", f"price_error_{code}")
                         if res.status >= 500 and attempt < QUOTE_RETRIES:
                             # #968: a 5xx can be transient (cold start / upstream blip): retry once.
                             log.warning("WaveSpeed price API %s for %s (attempt %d); retrying once",
