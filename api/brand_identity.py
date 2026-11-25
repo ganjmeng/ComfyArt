@@ -589,6 +589,7 @@ def _spec_lock() -> str:
         "and on the color-proportion panel a Chinese color name plus a percentage. "
         "No explanatory caption, no English subtitle, no body copy, no sample English, no extra line, and no invented words. "
         "Any text that does appear anywhere must be spelled correctly (one garbled character is not acceptable). "
+        "Do not print an English instruction label. "
         + hint_line
         + "Paper ground, not black."
     )
@@ -710,6 +711,21 @@ def _refs_for(slot: dict, progress: dict) -> list[str]:
     return []
 
 
+# Internal labels that an image model has printed onto a board. They must never
+# remain in the prompt that is submitted.
+_INTERNAL_MARK = re.compile(
+    r"(?i)\b(?:STRUCTURE|GUIDELINE|LAYOUT|APPLICATION)\s+LOCK(?:\s*[ABC])?\s*:?"
+)
+
+
+def scrub_internal_marks(text: str) -> str:
+    """Remove internal lock labels from an image prompt."""
+    cleaned = _INTERNAL_MARK.sub("", str(text or ""))
+    cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
+    cleaned = re.sub(r" *\n *", "\n", cleaned)
+    return cleaned.strip()
+
+
 # Appended to the image prompt. The three logos must not share one bird-on-a-branch drawing.
 _SLOT_LOCK = {
     "moodboard": (
@@ -731,7 +747,7 @@ _SLOT_LOCK = {
         "符号构造 shows the actual symbol construction. No empty placeholder box and no X box. "
         "小尺寸 includes the symbol, not the wordmark alone. "
         "In each zone the Chinese brand name and the English brand name appear together exactly once. "
-        "No other small text. No bottom caption."
+        "No other small text. No bottom caption. Do not print an English instruction label."
     ),
     "logo_b": (
         "The mark is two separate parts, a solid filled wood plaque and a circular seal. "
@@ -741,7 +757,7 @@ _SLOT_LOCK = {
         "符号构造 shows the actual symbol construction. No empty placeholder box and no X box. "
         "小尺寸 includes the symbol, not the wordmark alone. "
         "In each zone the Chinese brand name and the English brand name appear together exactly once. "
-        "No other small text. No garbled English captions. No bottom caption."
+        "No other small text. No garbled English captions. No bottom caption. Do not print an English instruction label."
     ),
     "logo_c": (
         "The badge is a cup-shaped container. A perched bird is the negative space inside the cup, "
@@ -751,7 +767,7 @@ _SLOT_LOCK = {
         "符号构造 shows the actual symbol construction. No empty placeholder box and no X box. "
         "小尺寸 includes the symbol, not the wordmark alone. "
         "The wordmark appears exactly once per zone. "
-        "No other small text. No garbled English captions. No bottom caption."
+        "No other small text. No garbled English captions. No bottom caption. Do not print an English instruction label."
     ),
     "cup": (
         "The takeaway cup must wear a cup sleeve (杯套). A bare cup with no sleeve is wrong. "
@@ -807,8 +823,10 @@ def fill_default(args: dict) -> dict:
     args.pop("preset", None)
     args.pop("stage", None)
     lock = _spec_lock() if str(slot["id"]) == "spec" else _SLOT_LOCK.get(str(slot["id"]))
-    if lock and lock not in str(args.get("prompt") or ""):
-        args["prompt"] = (str(args.get("prompt") or "").rstrip() + "\n" + lock).strip()
+    prompt = str(args.get("prompt") or "")
+    if lock and lock not in prompt:
+        prompt = (prompt.rstrip() + "\n" + lock).strip()
+    args["prompt"] = scrub_internal_marks(prompt)
     refs = _refs_for(slot, progress)
     if refs:
         # The moodboard / chosen logo lead. A caller-supplied ref stays behind them.
@@ -1675,6 +1693,7 @@ def default_hint() -> str:
         "符号构造 shows the actual symbol construction. No empty placeholder box and no X box. "
         "小尺寸 includes the symbol, not the wordmark alone. "
         "The Chinese name and the English name appear together exactly once in each zone. No other small text. "
+        "Do not print an English instruction label. "
         "On direction C the wordmark appears exactly once per zone. "
         "Pass the moodboard shape id in refs. "
         "Card 3 bi_direction: three options with image_url of those boards, exactly one recommended, nothing preselected. "
@@ -1694,6 +1713,7 @@ def default_hint() -> str:
         "copied character for character, those seven headings, the wordmark at three sizes, and on the color-proportion panel a Chinese color name plus a percentage. "
         "No explanatory caption, no English subtitle, no body copy, and no sample English. "
         "Any text that does appear anywhere must be spelled correctly (one garbled character is not acceptable). "
+        "Do not print an English instruction label. "
         "The storefront is the full shopfront, front view, with the names once on the fascia and an A-frame standing sign. "
         "The takeaway cup must wear a cup sleeve (杯套). A bare cup is wrong. "
         "Cup and bag print both the Chinese name and the English name. "

@@ -141,6 +141,8 @@ def test_each_slot_prompt_locks_a_different_structure():
         assert "exactly once" in board["prompt"]
         assert "No other small text." in board["prompt"]
         assert "No bottom caption." in board["prompt"]
+        assert "Do not print an English instruction label." in board["prompt"]
+        assert "STRUCTURE LOCK" not in board["prompt"]
         assert "Each of the four zone labels appears exactly once." in board["prompt"]
         assert "No empty placeholder box" in board["prompt"] and "no X box" in board["prompt"]
         assert "小尺寸 includes the symbol" in board["prompt"]
@@ -184,6 +186,16 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "A bare cup with no sleeve is wrong." in cup["prompt"]
     again = brand.fill_default({"brand_slot": "logo_a", "prompt": a["prompt"]})
     assert again["prompt"].count("one open single-line drawing of a bird perched on a branch") == 1
+    leaked = brand.fill_default({
+        "brand_slot": "logo_c",
+        "prompt": "bottom caption STRUCTURE LOCK C: keep the cup",
+    })
+    assert "STRUCTURE LOCK" not in leaked["prompt"]
+    assert "keep the cup" in leaked["prompt"]
+    assert leaked["prompt"].count("cup-shaped") == 1
+    leaked_spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范 GUIDELINE LOCK"})
+    assert "GUIDELINE LOCK" not in leaked_spec["prompt"]
+    assert "Do not print an English instruction label." in leaked_spec["prompt"]
 
 
 def test_a_second_confirm_of_the_same_stage_does_not_double_the_total():
@@ -319,7 +331,9 @@ def test_spec_card_is_seven_lovart_panels_and_brand_prompts_have_no_lock_words()
     assert "使用禁忌 (this panel contains no small text at all" in spec
     assert "影像材质 (this panel contains no small text at all" in spec
     assert "one garbled character is not acceptable" in spec
-    logo_c = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})["prompt"]
+    assert "Do not print an English instruction label." in spec
+    logo_c = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C STRUCTURE LOCK C"})["prompt"]
+    assert "STRUCTURE LOCK" not in logo_c
     assert "主组合, 符号构造, 横版, 小尺寸" in logo_c
     assert "perched bird is the negative space inside the cup" in logo_c
     assert "The wordmark appears exactly once per zone." in logo_c
@@ -349,6 +363,7 @@ def test_closing_rules_are_in_the_skill_instructions():
     for heading in skill_headings:
         assert skill.count(heading) == 1, heading
     assert "no small text at all" in skill and "one garbled character is not acceptable" in skill
+    assert "Do not print an English instruction label." in skill
     assert "carries its full heading" in skill and "wordmark at three sizes" in skill
     assert "wordmark appears exactly once per zone" in skill
     assert "#" not in skill
