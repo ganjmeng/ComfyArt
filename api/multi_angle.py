@@ -169,11 +169,14 @@ def applies(args: dict, chat_id: str = "") -> bool:
     return named == SKILL or current == SKILL
 
 
-def remember_quoted_plan(plan: dict, chat_id: str = "") -> None:
+def remember_quoted_plan(plan: dict, chat_id: str = "", setup_snapshot: dict | None = None) -> None:
     """Store a validated preview plan on the setup card before the quote is confirmed.
 
-    This does not reserve a paid submission. Until the preview is reserved, a later
-    unsubmitted replan may replace it. Prompt prose is never written here.
+    This does not reserve a paid submission. The snapshot prepare just computed is
+    stored with the plan so a later generate can tell an unchanged confirmation
+    from a real source or aspect change. Until the preview is reserved, a later
+    unsubmitted replan may replace the plan. A snapshot that already differs is
+    left in place for that check. Prompt prose is never written here.
     """
     chat_id = chat_id or _chat_id()
     _, root = _root(chat_id)
@@ -183,10 +186,16 @@ def remember_quoted_plan(plan: dict, chat_id: str = "") -> None:
     if ledger.get("preview"):
         return
     clean = validate_plan(plan, require_content=True)
-    if ledger.get("composition_plan") == clean:
+    snap = copy.deepcopy(setup_snapshot) if isinstance(setup_snapshot, dict) else None
+    stored = ledger.get("setup_snapshot")
+    if isinstance(stored, dict) and snap is not None and stored != snap:
+        return
+    if ledger.get("composition_plan") == clean and (snap is None or stored == snap):
         return
     expected = copy.deepcopy(ledger)
     ledger["composition_plan"] = clean
+    if snap is not None:
+        ledger["setup_snapshot"] = snap
     _save(chat_id, ledger, expected)
 
 
@@ -264,22 +273,44 @@ def _selected_ids(block: dict) -> set[str]:
     return ids
 
 
+def _official_quote_lines(block: dict) -> bool:
+    """Price rows count only when every one is an official quote.
+
+    A card with no price rows stays confirmable. An estimate or unpriced row,
+    including a Start on a failed price call, is not a valid quote.
+    """
+    lines = block.get("lines")
+    if not isinstance(lines, list) or not lines:
+        return True
+    sources = [str(line.get("source") or "") for line in lines
+               if isinstance(line, dict) and "source" in line]
+    if not sources:
+        return True
+    return all(source == "quote" for source in sources)
+
+
 def quote_confirmed(chat_id: str = "") -> bool:
-    """True when a plan_quote / run_approval card was confirmed after the setup card."""
+    """True only when the latest quote/approval card after setup is a live confirmation.
+
+    An earlier Start does not survive a later cancelled, expired, or unanswered card.
+    A card whose price rows are estimates or unpriced is not a confirmation.
+    """
     chat_id = chat_id or _chat_id()
     setup_row, _root_block = _root(chat_id)
     seen_setup = setup_row is None
+    latest = None
     for row in _messages(chat_id):
         if setup_row is not None and row.get("id") == setup_row.get("id"):
             seen_setup = True
         if not seen_setup:
             continue
         for block in row.get("blocks") or []:
-            if (block.get("type") == "ask" and block.get("kind") in QUOTE_KINDS
-                    and block.get("status") == "answered"
-                    and _selected_ids(block) & QUOTE_CONFIRM_IDS):
-                return True
-    return False
+            if block.get("type") == "ask" and block.get("kind") in QUOTE_KINDS:
+                latest = block
+    return bool(
+        latest and latest.get("status") == "answered"
+        and _selected_ids(latest) & QUOTE_CONFIRM_IDS
+        and _official_quote_lines(latest))
 
 
 def require_confirmed_quote(meta: dict, chat_id: str = "") -> dict | None:
@@ -583,8 +614,20 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
         setup_snapshot = {"source": copy.deepcopy(source_answer), "aspect": copy.deepcopy(aspect_answer),
                           "final": final_spec, "preview": preview_spec,
                           "preview_request": copy.deepcopy(user_preview)}
-        if ledger and ledger.get("setup_snapshot") != setup_snapshot:
-            raise ValueError("Source/aspect changed after submission; 规格/来源已变更或旧记录缺少规格快照，请先核对原任务并显式开启新一轮，禁止付费重放 / Specification/source changed or legacy snapshot missing; reconcile existing work and start an explicit new skill run, do not replay paid work.")
+        # The first quote writes composition_plan before reserve() writes this
+        # snapshot. A plan-only ledger is not a submission and is not a change.
+        # A stored snapshot that differs, or a reserved stage with no snapshot, is.
+        stored_snapshot = ledger.get("setup_snapshot")
+        reserved = bool(ledger.get("preview")) or any(
+            isinstance(key, str) and key.startswith("final:") for key in ledger)
+        mismatch = ("Source/aspect changed after submission; 规格/来源已变更或旧记录缺少规格快照，"
+                    "请先核对原任务并显式开启新一轮，禁止付费重放 / Specification/source changed or "
+                    "legacy snapshot missing; reconcile existing work and start an explicit new skill "
+                    "run, do not replay paid work.")
+        if isinstance(stored_snapshot, dict) and stored_snapshot != setup_snapshot:
+            raise ValueError(mismatch)
+        if reserved and not isinstance(stored_snapshot, dict):
+            raise ValueError(mismatch)
     except (ValueError, ZeroDivisionError) as e:
         return args, _blocked(str(e))
     args["skill"] = SKILL
@@ -635,6 +678,14 @@ def prepare(args: dict, chat_id: str = "") -> tuple[dict, dict | None]:
     if old:
         result = copy.deepcopy(old.get("result") or _blocked("Submission reserved/uncertain; reconcile existing task, never retry automatically."))
         result["multi_angle_replay"] = True
+        if old.get("status") == "failed" or old.get("generation_succeeded") is False:
+            result["generation_succeeded"] = False
+            result["delivered"] = False
+            result["status"] = "failed"
+        if old.get("status") == "unknown":
+            result["status"] = "unknown"
+            result["submitted"] = False
+            result["multi_angle_hold"] = True
         return args, result
     from .skill_param_guard import context_from_chat, _text_of
     uploads = context_from_chat(chat_id).uploads
@@ -758,6 +809,218 @@ def composition_crop(preview: dict, panel: str) -> dict:
             "sha256": info["sha256"], "ref": ref}
 
 
+def load_confirmed_plan(chat_id: str = "") -> dict:
+    chat_id = chat_id or _chat_id()
+    _, root = _root(chat_id)
+    plan = ((root or {}).get(LEDGER) or {}).get("confirmed_plan")
+    return copy.deepcopy(plan) if isinstance(plan, dict) else {}
+
+
+def register_confirmed_finals(chat_id: str, confirmation_id: str, final_ids: list,
+                              amount: float, units: int, slot_amounts: dict | None = None) -> dict:
+    """Persist preview + deduped finals under one confirmation id.
+
+    The same id, a repeated Start, or a later resume does not add those finals again.
+    The first confirmation wins. Slot rows are written in the same ledger save.
+    """
+    confirmation_id = str(confirmation_id or "")
+    ids: list[str] = []
+    for raw in final_ids or []:
+        panel = str(raw or "")
+        if panel in PANEL_IDS and panel not in ids:
+            ids.append(panel)
+    if not confirmation_id or not ids:
+        return {}
+    chat_id = chat_id or _chat_id()
+    _, root = _root(chat_id)
+    ledger = copy.deepcopy((root or {}).get(LEDGER) or {})
+    expected = copy.deepcopy(ledger)
+    existing = ledger.get("confirmed_plan")
+    if isinstance(existing, dict) and existing.get("confirmation_id"):
+        known_ids = [str(item) for item in existing.get("confirmation_ids") or [] if str(item)]
+        if existing["confirmation_id"] not in known_ids:
+            known_ids.insert(0, str(existing["confirmation_id"]))
+        # The same confirmation is a no-op. A later confirmation adds only panels
+        # that were not already authorized, so repeating k does not raise the count.
+        if confirmation_id in known_ids:
+            return copy.deepcopy(existing)
+        added = [panel for panel in ids if panel not in list(existing.get("final_ids") or [])]
+        if not added:
+            known_ids.append(confirmation_id)
+            existing["confirmation_ids"] = known_ids
+            ledger["confirmed_plan"] = existing
+            _save(chat_id, ledger, expected)
+            return copy.deepcopy(existing)
+        final_ids = list(existing.get("final_ids") or []) + added
+        amounts = dict(existing.get("slot_amounts") or {})
+        slots = dict(existing.get("slots") or {})
+        extra_amount = 0.0
+        for panel in added:
+            try:
+                amounts[panel] = round(float((slot_amounts or {}).get(panel) or 0), 6)
+            except (TypeError, ValueError):
+                amounts[panel] = 0.0
+            extra_amount += amounts[panel]
+            slots.setdefault(f"final:{panel}", {"status": "authorized"})
+        existing["final_ids"] = final_ids
+        existing["generates"] = 1 + len(final_ids)
+        existing["slot_amounts"] = amounts
+        existing["slots"] = slots
+        existing["amount"] = round(float(existing.get("amount") or 0) + extra_amount, 6)
+        existing["units"] = int(existing.get("units") or 0) + len(added)
+        existing["confirmation_ids"] = known_ids + [confirmation_id]
+        ledger["confirmed_plan"] = existing
+        _save(chat_id, ledger, expected)
+        return copy.deepcopy(existing)
+    amounts = {}
+    for panel in ids:
+        try:
+            amounts[panel] = round(float((slot_amounts or {}).get(panel) or 0), 6)
+        except (TypeError, ValueError):
+            amounts[panel] = 0.0
+    slots = {f"final:{panel}": {"status": "authorized"} for panel in ids}
+    reserved_generates = 0
+    preview = ledger.get("preview")
+    if isinstance(preview, dict) and preview.get("status") in {"reserved", "submitted", "unknown", "delivered", "failed"}:
+        slots["preview"] = {"status": preview.get("status"), "delivered": bool(preview.get("delivered"))}
+        reserved_generates = 1
+    plan = {
+        "confirmation_id": confirmation_id,
+        "preview": 1,
+        "final_ids": ids,
+        "generates": 1 + len(ids),
+        "amount": round(float(amount or 0), 6),
+        "units": int(units or 0),
+        "reserved_generates": reserved_generates,
+        "reserved_amount": 0.0,
+        "slot_amounts": amounts,
+        "slots": slots,
+    }
+    ledger["confirmed_plan"] = plan
+    _save(chat_id, ledger, expected)
+    return copy.deepcopy(plan)
+
+
+def persist_counts(chat_id: str, rows: list) -> None:
+    chat_id = chat_id or _chat_id()
+    _, root = _root(chat_id)
+    if root is None:
+        return
+    ledger = copy.deepcopy(root.get(LEDGER) or {})
+    plan = ledger.get("confirmed_plan")
+    if not isinstance(plan, dict):
+        return
+    expected = copy.deepcopy(ledger)
+    plan["counts"] = copy.deepcopy(list(rows or []))
+    _save(chat_id, ledger, expected)
+
+
+def batch_admission(chat_id: str, calls: list[dict]) -> list[dict]:
+    """Decide a whole generate batch before any submit. Does not write.
+
+    Already held slots may be queried again. A duplicate in this batch, a panel
+    outside the confirmed set, or a call past the confirmed count or amount is
+    refused and must not be submitted.
+    """
+    chat_id = chat_id or _chat_id()
+    _, root = _root(chat_id)
+    ledger = (root or {}).get(LEDGER) or {}
+    plan = ledger.get("confirmed_plan") if isinstance(ledger.get("confirmed_plan"), dict) else None
+    if plan is None:
+        return [{"index": call.get("index"), "ok": True} for call in calls]
+    held = int(plan.get("reserved_generates") or 0)
+    held_amount = float(plan.get("reserved_amount") or 0)
+    seen: set[str] = set()
+    out = []
+    for call in calls:
+        index = call.get("index")
+        if str(call.get("stage") or "") != "final":
+            out.append({"index": index, "ok": True})
+            continue
+        panel = str(call.get("composition_id") or "")
+        key = "final:" + panel
+        if key in seen:
+            out.append({"index": index, "refuse": _blocked(
+                "Duplicate composition in this confirmed batch; nothing newly submitted. / 同批重复构图，未提交。")})
+            continue
+        if key in ledger:
+            seen.add(key)
+            out.append({"index": index, "ok": True, "replay": True})
+            continue
+        if panel not in list(plan.get("final_ids") or []):
+            out.append({"index": index, "refuse": _blocked(
+                "This composition is outside the confirmed plan; nothing submitted. / 不在已确认计划内，未提交。")})
+            continue
+        try:
+            amt = float((plan.get("slot_amounts") or {}).get(panel) or 0)
+        except (TypeError, ValueError):
+            amt = 0.0
+        if held + 1 > int(plan.get("generates") or 0):
+            out.append({"index": index, "refuse": _blocked(
+                "Confirmed image count reached; nothing newly submitted. / 已达确认张数，未提交。")})
+            continue
+        if round(held_amount + amt, 6) > round(float(plan.get("amount") or 0) + 1e-4, 6):
+            out.append({"index": index, "refuse": _blocked(
+                "Confirmed amount reached; nothing newly submitted. / 已达确认金额，未提交。")})
+            continue
+        seen.add(key)
+        held += 1
+        held_amount = round(held_amount + amt, 6)
+        out.append({"index": index, "ok": True})
+    return out
+
+
+def _plan_slot(ledger: dict, key: str, status: str, **extra) -> None:
+    plan = ledger.get("confirmed_plan")
+    if not isinstance(plan, dict):
+        return
+    slots = plan.setdefault("slots", {})
+    prev = slots.get(key) if isinstance(slots.get(key), dict) else {}
+    slots[key] = {**prev, "status": status, **extra}
+
+
+def _hold_payload(reason: str) -> dict:
+    return {
+        "status": "unknown",
+        "submitted": False,
+        "generation_succeeded": None,
+        "multi_angle_hold": True,
+        "reconcile": "No trusted result; the reservation stays. Check the existing task before any new submit. Do not resend. / 没有可信结果，保留占位，先核对已有任务，不要重发。",
+        "reason": reason,
+    }
+
+
+def mark_unknown(meta: dict, reason: str = "", chat_id: str = "") -> dict:
+    """Keep a reserved slot unknown. Do not clear it and do not leave it free to resend."""
+    chat_id = chat_id or _chat_id()
+    _, root = _root(chat_id)
+    ledger = copy.deepcopy((root or {}).get(LEDGER) or {})
+    expected = copy.deepcopy(ledger)
+    key = meta["key"]
+    payload = _hold_payload(reason)
+    previous = ledger.get(key) if isinstance(ledger.get(key), dict) else {}
+    entry = {**previous, "status": "unknown", "result": payload}
+    if meta.get("composition_crop") and "composition_crop" not in entry:
+        entry["composition_crop"] = copy.deepcopy(meta["composition_crop"])
+    ledger[key] = entry
+    _plan_slot(ledger, key, "unknown")
+    _save(chat_id, ledger, expected)
+    return copy.deepcopy(payload)
+
+
+def trusted_submit(result: object) -> bool:
+    """A page result with task ids is trusted. A timeout never gets here.
+
+    `submitted: false`, an error, or no ids is not a result we can treat as submitted.
+    """
+    if not isinstance(result, dict) or result.get("error") or result.get("cancelled") is True:
+        return False
+    if result.get("submitted") is False or result.get("status") in {"failed", "unknown"}:
+        return False
+    ids = result.get("ids")
+    return isinstance(ids, list) and any(ids)
+
+
 def reserve(meta: dict, chat_id: str = "") -> dict | None:
     """Synchronous reservation immediately before dispatch (no await in between).
 
@@ -778,7 +1041,28 @@ def reserve(meta: dict, chat_id: str = "") -> dict | None:
     except ValueError as e:
         return _blocked(str(e))
     if key in ledger:
-        return copy.deepcopy(ledger[key].get("result") or _blocked("Already reserved; inspect existing task, do not submit again."))
+        held = copy.deepcopy(ledger[key].get("result") or _blocked(
+            "Submission reserved/uncertain; reconcile existing task, never retry automatically."))
+        if isinstance(held, dict):
+            held["multi_angle_replay"] = True
+        return held
+    confirmed = ledger.get("confirmed_plan") if isinstance(ledger.get("confirmed_plan"), dict) else None
+    if confirmed is not None and key.startswith("final:"):
+        panel = key.split(":", 1)[1]
+        if panel not in list(confirmed.get("final_ids") or []):
+            return _blocked("This composition is outside the confirmed plan; nothing submitted. / 不在已确认计划内，未提交。")
+        try:
+            amt = float((confirmed.get("slot_amounts") or {}).get(panel) or 0)
+        except (TypeError, ValueError):
+            amt = 0.0
+        held_n = int(confirmed.get("reserved_generates") or 0)
+        if held_n + 1 > int(confirmed.get("generates") or 0):
+            return _blocked("Confirmed image count reached; nothing newly submitted. / 已达确认张数，未提交。")
+        if round(float(confirmed.get("reserved_amount") or 0) + amt, 6) > round(float(confirmed.get("amount") or 0) + 1e-4, 6):
+            return _blocked("Confirmed amount reached; nothing newly submitted. / 已达确认金额，未提交。")
+        confirmed["reserved_generates"] = held_n + 1
+        confirmed["reserved_amount"] = round(float(confirmed.get("reserved_amount") or 0) + amt, 6)
+        _plan_slot(ledger, key, "reserved")
     if not ledger.get("preview"):
         ledger["composition_plan"] = plan  # unsubmitted plans may be replanned, never submitted ones
     for k in ("refs", "description", "source", "aspect", "setup_snapshot", "composition_plan"):
@@ -786,6 +1070,8 @@ def reserve(meta: dict, chat_id: str = "") -> dict | None:
     ledger[key] = {"status": "reserved"}
     if meta.get("composition_crop"):
         ledger[key]["composition_crop"] = copy.deepcopy(meta["composition_crop"])  # QA audit trail
+    if confirmed is not None:
+        _plan_slot(ledger, key, "reserved")
     _save(chat_id, ledger, expected)
     return None
 
@@ -798,7 +1084,153 @@ def submitted(meta: dict, result: dict, chat_id: str = "") -> None:
     ledger[meta["key"]] = {"status": "submitted", "result": copy.deepcopy(result)}
     if meta.get("composition_crop"):
         ledger[meta["key"]]["composition_crop"] = copy.deepcopy(meta["composition_crop"])
+    ids = result.get("ids") if isinstance(result, dict) else None
+    _plan_slot(ledger, meta["key"], "submitted", ids=list(ids or []) if isinstance(ids, list) else [])
     _save(chat_id, ledger, expected)
+
+
+_PROGRESS = "multi_angle_progress"
+
+
+def _entry_state(entry: dict, slot: dict, *, live: bool) -> str:
+    """One slot, from the ledger. A missing result is not a failure.
+
+    Delivered stays delivered. An explicit failure is the only retryable state.
+    While the turn is still running, a reserved or submitted slot is generating.
+    After a restart, a submitted or unknown slot that was not retrieved is
+    pending_query. Authorized and not started stays waiting.
+    """
+    status = str(entry.get("status") or slot.get("status") or "")
+    failed = status == "failed" or slot.get("status") == "failed" or entry.get("generation_succeeded") is False
+    delivered = (
+        not failed and (
+            entry.get("delivered") is True or slot.get("delivered") is True
+            or status == "delivered" or entry.get("generation_succeeded") is True
+        )
+    )
+    if delivered:
+        return "delivered"
+    if failed:
+        return "failed"
+    if status in {"submitted", "unknown", "reserved"}:
+        if live and status in {"submitted", "reserved"}:
+            return "generating"
+        return "pending_query"
+    return "waiting"
+
+
+def progress_view(chat_id: str = "", *, live: bool = False) -> dict | None:
+    """Authoritative card from confirmed_plan. Empty when nothing is confirmed.
+
+    Counts come from preview + final_ids and each slot. They are not the model
+    plan steps and not the default generation cap.
+    """
+    chat_id = chat_id or _chat_id()
+    _row, root = _root(chat_id)
+    if not isinstance(root, dict):
+        return None
+    ledger = root.get(LEDGER) or {}
+    plan = ledger.get("confirmed_plan")
+    if not isinstance(plan, dict) or not plan.get("confirmation_id"):
+        return None
+    final_ids: list[str] = []
+    for raw in plan.get("final_ids") or []:
+        panel = str(raw or "")
+        if panel in PANEL_IDS and panel not in final_ids:
+            final_ids.append(panel)
+    if not final_ids:
+        return None
+    slots_meta = plan.get("slots") if isinstance(plan.get("slots"), dict) else {}
+    slots = []
+    preview_entry = ledger.get("preview") if isinstance(ledger.get("preview"), dict) else {}
+    preview_slot = slots_meta.get("preview") if isinstance(slots_meta.get("preview"), dict) else {}
+    preview_state = _entry_state(preview_entry, preview_slot, live=live)
+    slots.append({"id": "preview", "kind": "preview", "state": preview_state, "retry": preview_state == "failed"})
+    done = 0
+    generating = False
+    started = False
+    for panel in final_ids:
+        key = "final:" + panel
+        entry = ledger.get(key) if isinstance(ledger.get(key), dict) else {}
+        meta = slots_meta.get(key) if isinstance(slots_meta.get(key), dict) else {}
+        state = _entry_state(entry, meta, live=live)
+        if state == "delivered":
+            done += 1
+        elif state == "generating":
+            generating = True
+        if state != "waiting":
+            started = True
+        slots.append({"id": key, "kind": "final", "panel": panel, "state": state, "retry": state == "failed"})
+    if done == len(final_ids):
+        phase = "done"
+    elif generating:
+        phase = "generating"
+    elif not started:
+        phase = "confirmed"
+    else:
+        phase = "partial"
+    try:
+        preview_count = int(plan.get("preview") or 1)
+    except (TypeError, ValueError):
+        preview_count = 1
+    return {
+        "type": _PROGRESS,
+        "confirmation_id": str(plan.get("confirmation_id")),
+        "preview": preview_count,
+        "final_total": len(final_ids),
+        "final_done": done,
+        "phase": phase,
+        "batch_retry": False,
+        "slots": slots,
+    }
+
+
+def _upsert_progress(blocks: list, view: dict) -> bool:
+    for index, block in enumerate(blocks):
+        if isinstance(block, dict) and block.get("type") == _PROGRESS:
+            if block == view:
+                return False
+            blocks[index] = view
+            return True
+    blocks.append(view)
+    return True
+
+
+def sync_progress(chat_id: str, *, live: bool) -> dict | None:
+    """Write the progress block onto the message that already carries it, or the setup card.
+
+    The write is a compare-and-swap of the blocks read above. A reservation that
+    lands between that read and the write wins: this call skips, leaves the live
+    blocks untouched, and the next sync rebuilds the card from the ledger.
+    """
+    chat_id = chat_id or _chat_id()
+    view = progress_view(chat_id, live=live)
+    if view is None:
+        return None
+    from . import chat_store
+    from .bot_turns import ACTIVE_TURNS, broadcast
+    state = ACTIVE_TURNS.get(chat_id)
+    messages = chat_store.list_messages(chat_id)
+    row, _root_block = _root(chat_id)
+    if row is None:
+        return None
+    host = None
+    for message in messages:
+        if any(isinstance(block, dict) and block.get("type") == _PROGRESS for block in message.get("blocks") or []):
+            host = message
+    if host is None:
+        host = row
+    expected = copy.deepcopy(host.get("blocks") or [])
+    live_here = state is not None and state.message_id == host["id"]
+    blocks = copy.deepcopy(state.blocks if live_here else expected)
+    if not _upsert_progress(blocks, view):
+        return view
+    if not chat_store.compare_message_blocks(chat_id, host["id"], expected, blocks):
+        return view
+    if live_here:
+        state.blocks[:] = blocks
+    broadcast("turn_multi_angle_progress", {"chat_id": chat_id, "message_id": host["id"], "block": view})
+    return view
 
 
 def record_wait(result: dict, chat_id: str = "") -> None:
@@ -809,25 +1241,47 @@ def record_wait(result: dict, chat_id: str = "") -> None:
     ledger = copy.deepcopy(root.get(LEDGER) or {})
     expected = copy.deepcopy(ledger)
     changed = False
-    for entry in ledger.values():
-        if not isinstance(entry, dict) or not entry.get("result", {}).get("ids"):
+    for key, entry in list(ledger.items()):
+        if not isinstance(entry, dict) or not isinstance(entry.get("result"), dict) or not entry["result"].get("ids"):
+            continue
+        if key == "confirmed_plan":
             continue
         ids = entry["result"]["ids"]
-        shapes = [s for row in result.get("results") or [] if row.get("id") in ids
-                  and not row.get("error") and row.get("status") == "done"
+        rows = [row for row in result.get("results") or [] if isinstance(row, dict) and row.get("id") in ids]
+        shapes = [s for row in rows if not row.get("error") and row.get("status") == "done"
                   and row.get("placed") is True and row.get("generation_succeeded") is not False
                   and row.get("delivered", 1) == 1
                   for s in row.get("shapes") or []]
-        if len(shapes) == 1:
-            entry.update(delivered=True, shapes=shapes)
+        failed = [row for row in rows if row.get("error") or row.get("status") == "failed"
+                  or row.get("generation_succeeded") is False]
+        if len(shapes) == 1 and not failed:
+            entry.update(delivered=True, generation_succeeded=True, shapes=shapes)
+            stored = entry.get("result")
+            if isinstance(stored, dict):
+                stored["generation_succeeded"] = True
+                stored["delivered"] = True
             # #1003: keep the delivered file so finals can crop the selected cell server-side.
-            urls = [u for row in result.get("results") or [] if row.get("id") in ids and row.get("status") == "done"
+            urls = [u for row in rows if row.get("status") == "done"
                     for u in row.get("urls") or [] if isinstance(u, str) and u]
             if len(urls) == 1:
                 entry["urls"] = urls
+            _plan_slot(ledger, key, "delivered", delivered=True)
+            changed = True
+        elif failed:
+            # This slot only. A missing row stays submitted, not delivered and not failed.
+            entry["delivered"] = False
+            entry["status"] = "failed"
+            entry["generation_succeeded"] = False
+            stored = entry.get("result")
+            if isinstance(stored, dict):
+                stored["generation_succeeded"] = False
+                stored["delivered"] = False
+            _plan_slot(ledger, key, "failed", delivered=False)
             changed = True
     if changed:
         _save(chat_id, ledger, expected)
+    from .bot_turns import ACTIVE_TURNS
+    sync_progress(chat_id, live=chat_id in ACTIVE_TURNS)
 
 
 def allow_selected_cap(args: dict, chat_id: str) -> None:

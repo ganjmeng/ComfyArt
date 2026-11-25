@@ -411,6 +411,9 @@ async def _run_turn(chat: dict, text: str, state: _TurnState, *,
         payload = _apply_event(state, ev)
         if payload is not None:
             payloads.append(payload)
+        if ev.t in ("tool_use", "tool_result"):
+            from . import multi_angle
+            multi_angle.sync_progress(chat_id, live=True)
         if not payloads:
             return
         now = time.monotonic()
@@ -464,6 +467,8 @@ async def _run_turn(chat: dict, text: str, state: _TurnState, *,
     if paid_stop:  # #142: the paid cap stopped this turn -> its notice, whatever the provider returned
         error, status = paid_stop, "error"
 
+    from . import multi_angle
+    multi_angle.sync_progress(chat_id, live=False)
     ACTIVE_TURNS.pop(chat_id, None)
     bot_asks.cancel_chat_asks(chat_id)
     token = result.resume_token if result else None

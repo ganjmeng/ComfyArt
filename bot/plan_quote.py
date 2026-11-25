@@ -486,6 +486,7 @@ class _StepPrice:
     height: Optional[int] = None
     ratio: str = ""
     quoted_plan: Optional[dict] = None
+    quoted_snapshot: Optional[dict] = None
 
 
 async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
@@ -504,6 +505,7 @@ async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
     routed = _route(router, tool, args, position) if router is not None and not step.get("svg_blocked") else None
     choice = None
     quoted_plan = None
+    quoted_snapshot = None
     stage_width = stage_height = None
     stage_ratio = ""
     if routed and isinstance(routed, tuple) and (routed[1] or {}).get("param_blocked"):
@@ -514,6 +516,7 @@ async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
         payload = dict(routed[1] or {})
         # Display-only. Never send the plan object to the pricer.
         quoted_plan = payload.pop("_quoted_plan", None)
+        quoted_snapshot = payload.pop("_quoted_snapshot", None)
         if isinstance(payload.get("width"), int) and isinstance(payload.get("height"), int):
             stage_width, stage_height = payload["width"], payload["height"]
         stage_ratio = str(payload.get("ratio") or "")
@@ -547,10 +550,14 @@ async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
         reason = "dearest_model"
     if amount is None:
         return _StepPrice(None, True, show, choice, None, units, SOURCE_UNPRICED, reason,
-                          stage_width, stage_height, stage_ratio, quoted_plan if isinstance(quoted_plan, dict) else None)
+                          stage_width, stage_height, stage_ratio,
+                          quoted_plan if isinstance(quoted_plan, dict) else None,
+                          quoted_snapshot if isinstance(quoted_snapshot, dict) else None)
     return _StepPrice(round(float(amount) * units, 6),
                       approx or source == SOURCE_ESTIMATE, show, choice, None, units, source, reason,
-                      stage_width, stage_height, stage_ratio, quoted_plan if isinstance(quoted_plan, dict) else None)
+                      stage_width, stage_height, stage_ratio,
+                      quoted_plan if isinstance(quoted_plan, dict) else None,
+                      quoted_snapshot if isinstance(quoted_snapshot, dict) else None)
 
 
 def _forces_quote_card(prepared: list[dict]) -> bool:
@@ -607,6 +614,7 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         return None
     lines: list[Line] = []
     quoted_plan = None
+    quoted_snapshot = None
     positions = _plan_positions(prepared)
     for step, position in zip(prepared, positions):
         if step.get("svg_blocked"):
@@ -647,6 +655,8 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
                     name = preview_size_line(lang, width, height, ratio)
             if isinstance(priced.quoted_plan, dict) and quoted_plan is None:
                 quoted_plan = priced.quoted_plan
+                if isinstance(priced.quoted_snapshot, dict):
+                    quoted_snapshot = priced.quoted_snapshot
         label = model_label(show) if show else AUTO_LABEL[lang]
         choice = routed_choice or _quote_choice(step, router)
         routed_id = str((choice or {}).get("edit_model") or (choice or {}).get("model") or "")
@@ -735,7 +745,7 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         prompt = brand_prompt(stage_credits, cum_credits, len(lines), lang, under_gate=under)
     if quoted_plan is not None:
         from ..api.multi_angle import remember_quoted_plan
-        remember_quoted_plan(quoted_plan)
+        remember_quoted_plan(quoted_plan, setup_snapshot=quoted_snapshot)
     return Quote(
         lines=lines, total=total, n=len(lines), ask=ask, lang=lang,
         prompt=prompt,

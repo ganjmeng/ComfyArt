@@ -158,6 +158,20 @@ async def test_generate_image_relay_is_blocked_without_confirmed_quote(run):
     assert "quote" in result["error"].lower() or "报价" in result["error"]
     assert sent == []
     confirm_quote(rows)
+    confirm_quote(rows, status="cancelled", selected=("cancel",))
+    blocked = await canvas._relay("generate_image")({
+        "composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
+        "multi_angle_stage": "preview", "ratio": "1:1",
+    })
+    assert blocked["submitted"] is False and sent == []
+    rows.pop()
+    confirm_quote(rows, status="expired", selected=("start",))
+    expired = await canvas._relay("generate_image")({
+        "composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
+        "multi_angle_stage": "preview", "ratio": "1:1",
+    })
+    assert expired["submitted"] is False and sent == []
+    rows.pop()
     allowed = await canvas._relay("generate_image")({
         "composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
         "multi_angle_stage": "preview", "ratio": "1:1",
@@ -383,6 +397,43 @@ async def test_quote_line_english_uses_the_pending_preview_size(run, monkeypatch
     ledger = ma._root("chat-ma")[1][ma.LEDGER]
     assert ledger["composition_plan"] == stored["composition_plan"]
     assert "preview" not in ledger  # stored before any paid reservation
+    assert set(ledger["setup_snapshot"]) >= {"source", "aspect", "final", "preview", "preview_request"}
+    assert ledger["setup_snapshot"]["preview"]["ratio"] == "9:16"
+    assert ledger["setup_snapshot"]["final"]["ratio"] == "1:1"
+
+
+def test_quote_only_plan_is_not_a_post_submission_change(run):
+    """The QA record shape: composition_plan persisted, setup_snapshot absent, nothing reserved."""
+    rows, _ = run
+    setup(rows, "1:1")
+    ma.remember_quoted_plan(HEADPHONES_PLAN)
+    args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
+                                "multi_angle_stage": "preview"})
+    assert blocked is None
+    ledger = ma._root("chat-ma")[1][ma.LEDGER]
+    assert "preview" not in ledger and "setup_snapshot" not in ledger
+    ma.remember_quoted_plan(HEADPHONES_PLAN, setup_snapshot=args["_multi_angle"]["setup_snapshot"])
+    ledger = ma._root("chat-ma")[1][ma.LEDGER]
+    assert ledger["setup_snapshot"]["final"]["ratio"] == "1:1"
+    assert ledger["setup_snapshot"]["preview"]["ratio"] == "9:16"
+    assert "preview" not in ledger
+    rows[1]["blocks"][0]["answers"][ma.ASPECT]["selected"] = ["4:3"]
+    _, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
+                             "multi_angle_stage": "preview"})
+    assert blocked["submitted"] is False and "changed after submission" in blocked["error"]
+
+
+def test_reserved_preview_missing_snapshot_stays_blocked(run):
+    rows, _ = run
+    setup(rows, "1:1")
+    args, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
+                                "multi_angle_stage": "preview"})
+    assert blocked is None
+    assert ma.reserve(args["_multi_angle"]) is None
+    rows[1]["blocks"][0][ma.LEDGER].pop("setup_snapshot")
+    _, blocked = ma.prepare({"composition_plan": HEADPHONES_PLAN, "skill": ma.SKILL,
+                             "multi_angle_stage": "preview"})
+    assert blocked["submitted"] is False and "changed after submission" in blocked["error"]
 
 
 def test_new_plan_requires_direction_free_content_and_prompt_cannot_substitute(run):

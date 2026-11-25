@@ -728,6 +728,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
         if not store.acquire_lease(resumed["id"], lease_owner, policy["lease_s"]):
             return TurnResult(error="this run is already being continued")
     k = policy["projection_window"]
+    continued = resumed is not None
     if resumed:
         st = resumed["state"]
         budget = RunBudget.restore(st["budget"], k=k, soft_fraction=policy["soft_fraction"], clock=clock)
@@ -1078,13 +1079,31 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                     from ..api.brand_identity import ensure_run_budget
                     ensure_run_budget(ctx.tracker, "brand-identity-director", "")
                     break
-            if ctx.tracker.over_budget(obs):  # #705: hard cap, no nudge (e.g. every step a new image, never done)
+            over = ctx.tracker.over_budget(obs)  # #705: hard cap, no nudge (e.g. every step a new image, never done)
+            if ctx.tracker.confirmed_generates:
+                point = ""
+                if any(o.tool == "generate_image" for o in obs) and not any(
+                        isinstance(row, dict) and row.get("point") == "after_dispatch"
+                        for row in ctx.tracker.count_log):
+                    point = "after_dispatch"
+                elif any(o.tool == "wait_generation" for o in obs):
+                    # Querying submitted tasks is not a new generate. A continued run
+                    # records that resume; the same send's own next turn records the query.
+                    wanted = "after_resume" if continued else "after_query"
+                    if not any(isinstance(row, dict) and row.get("point") == wanted
+                               for row in ctx.tracker.count_log):
+                        point = wanted
+                if point:
+                    ctx.tracker.note_counts(point)
+                    from ..api import multi_angle as _ma
+                    _ma.persist_counts(turn.chat_id, ctx.tracker.count_log)
+            if over:
                 _log.warning("[ComfyArt/agent] run %s over budget: %d calls, %d generate_image (cap %d/%d)", ctx.run_id,
                              ctx.tracker.total_calls, ctx.tracker.gen_calls, ctx.tracker.tool_calls_max, ctx.tracker.gen_cap())
                 # #729 stops the 300-call backstop on the call that reaches it. When that call is also
                 # the #391 step hard cap, keep the continuable hard_cap card instead of stuck:budget (#804).
                 paid_or_image = (ctx.tracker.paid_calls >= ctx.tracker.tool_calls_max
-                                 or ctx.tracker.gen_calls >= ctx.tracker.gen_cap())
+                                 or ctx.tracker.image_over())
                 if not paid_or_image and ctx.budget.used.steps >= ctx.budget.limits.hard_steps:
                     return await finish(Stop(StopReason.HARD_CAP, step=ctx.budget.used.steps),
                                         remaining=_remaining_steps(ctx))

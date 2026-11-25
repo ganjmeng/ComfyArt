@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { Editor } from 'tldraw'
 
-import { answerAsk, quoteAnswer, continueRun, outputsOf, toolLabel, toolName, type AskAnswers, type AskQuestion, type BotBlock, type BotMessage } from '../bot'
+import { answerAsk, quoteAnswer, continueRun, outputsOf, sendMessage, toolLabel, toolName, type AskAnswers, type AskQuestion, type BotBlock, type BotMessage } from '../bot'
+import { AngleProgress, type AngleSlot } from './AngleProgress'
 import { openBotSettingsWithLlmMode } from './AgentPicker'
 import { refFromUrl, setAgentPlanConfirmed } from '../comfy'
 import { draftAtom } from '../agent'
@@ -1192,11 +1193,17 @@ function DoneFeedback({ messageId }: { messageId: string }) {
   )
 }
 
-export function AssistantBlocks({ editor, m, dockAsks }: { editor: Editor; m: BotMessage; dockAsks?: boolean }) {
+function retryAngleSlot(slot: AngleSlot) {
+  const text = slot.kind === 'preview' ? t('bot.angleRetryPreview') : t('bot.angleRetryFinal', slot.panel || slot.id)
+  void sendMessage({ text, refs: [], docs: [], kits: [] })
+}
+
+export function AssistantBlocks({ editor, m, dockAsks, suppressPlan }: { editor: Editor; m: BotMessage; dockAsks?: boolean; suppressPlan?: boolean }) {
   const results = new Map(m.blocks.filter((b) => b.type === 'tool_result' && b.id).map((b) => [b.id, b]))
   const resultOf = (b: BotBlock, i: number) => (b.id ? results.get(b.id) : m.blocks[i + 1]?.type === 'tool_result' ? m.blocks[i + 1] : undefined)
   const isPlan = (b: BotBlock) => b.type === 'tool_use' && toolName(b.name) === 'update_plan'
   const plan = m.blocks.filter(isPlan).at(-1)
+  const angle = [...m.blocks].reverse().find((b) => b.type === 'multi_angle_progress')
   const done = m.status !== 'streaming'
   const quiet = askQuiet(m) // #763: no 输出中… shell while a question is open / just answered or skipped
   const outputs = done ? outputsOf(m.blocks.filter((b) => b.type !== 'task')) : []
@@ -1270,7 +1277,24 @@ export function AssistantBlocks({ editor, m, dockAsks }: { editor: Editor; m: Bo
     // #437: a finished turn has no 等待结果 row; model-name row → result images → text
     if (done && b.type === 'tool_use' && toolName(b.name) === 'wait_generation') return
     if (b.type === 'memory_updated' && b !== firstMem) return
+    if (b.type === 'multi_angle_progress') {
+      if (planShown) return
+      planShown = true
+      flushProc()
+      flush()
+      items.push(<AngleProgress key={`angle${i}`} block={b} onRetry={retryAngleSlot} />)
+      return
+    }
     if (isPlan(b)) {
+      if (angle || suppressPlan) {
+        if (angle && !planShown) {
+          planShown = true
+          flushProc()
+          flush()
+          items.push(<AngleProgress key={`angle${i}`} block={angle} onRetry={retryAngleSlot} />)
+        }
+        return
+      }
       if (planShown) return
       planShown = true
       flushProc()

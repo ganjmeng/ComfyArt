@@ -256,8 +256,18 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
         replay = multi_angle.reserve(multi_meta)
         if replay is not None:
             return replay
-    result = await submit_command(action, args, PROJECT.get(), timeout, chat=BOT_CHAT_ID.get())
+    try:
+        result = await submit_command(action, args, PROJECT.get(), timeout, chat=BOT_CHAT_ID.get())
+    except Exception as exc:
+        import asyncio
+        import aiohttp
+        if multi_meta is not None and isinstance(exc, (TimeoutError, asyncio.TimeoutError, aiohttp.ClientError, OSError)):
+            # The reservation stays. A timeout is not a free slot and is not a new submit.
+            return multi_angle.mark_unknown(multi_meta, type(exc).__name__)
+        raise
     if multi_meta is not None:
+        if not multi_angle.trusted_submit(result):
+            return multi_angle.mark_unknown(multi_meta, "untrusted")
         multi_angle.submitted(multi_meta, result)
     if packaging_run and isinstance(result, dict) and not result.get("cancelled"):
         # #963: image 1's returned shape is the anchor holder; wait_generation swaps in the placed shape.
@@ -683,6 +693,7 @@ def quote_route(action: str, args: dict, user_text: str | None = None, catalog: 
     clean = dict(args)
     multi_meta = None
     quoted_plan = None
+    quoted_snapshot = None
     if action == "generate_image":
         # #956 / #957: same validation as the tool; quotes use validated actual params.
         from ..bot_turns import resolve_loose_refs
@@ -703,7 +714,11 @@ def quote_route(action: str, args: dict, user_text: str | None = None, catalog: 
         clean.pop("multi_angle_stage", None)
         clean.pop("composition_id", None)
         clean.pop("composition_plan", None)
-        quoted_plan = (multi_meta or {}).get("composition_plan") if isinstance(multi_meta, dict) else None
+        if isinstance(multi_meta, dict):
+            quoted_plan = multi_meta.get("composition_plan")
+            snap = multi_meta.get("setup_snapshot")
+            if isinstance(snap, dict):
+                quoted_snapshot = snap
     if unregistered_model(action, clean):
         clean = {k: v for k, v in clean.items() if k not in ("model", "auto_model")}
     # Use the live/cached WaveSpeed catalog so exact-size skills (before-after, …)
@@ -759,6 +774,9 @@ def quote_route(action: str, args: dict, user_text: str | None = None, catalog: 
     # Display/persistence only. plan_quote pops this before pricing. Not a provider field.
     if quoted_plan:
         inputs["_quoted_plan"] = quoted_plan
+    # Same display/persistence channel as the plan. plan_quote pops this before pricing.
+    if quoted_snapshot:
+        inputs["_quoted_snapshot"] = quoted_snapshot
     return model, inputs
 
 
