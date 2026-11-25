@@ -2805,11 +2805,15 @@ class LocalLlmProvider(AgentProvider):
                         it, _PLAN_REFUSE[lang_key], emit=emit, done=done, lang=lang, is_error=True)
                 continue
             if name == "generate_image":
-                from ..api.brand_identity import SKILL, steps_are_brand_stage
+                from ..api.brand_identity import SKILL, is_template, steps_are_brand_stage
                 current_skill = str(getattr(loop.get("run"), "current_skill", "") or "")
-                skill = str((it.get("args") or {}).get("skill") or current_skill or "")
-                brand_call = bool((it.get("args") or {}).get("brand_slot")) or skill == SKILL or (
-                    not skill and steps_are_brand_stage(brand_steps))
+                call_args = it.get("args") or {}
+                skill = str(call_args.get("skill") or current_skill or "")
+                # An industry template (geometric, …) already has its stage size. The confirm
+                # grant is for a quoted brand_slot and for the no-preset default path.
+                brand_call = bool(call_args.get("brand_slot")) or (
+                    skill == SKILL and not is_template(call_args.get("preset"))
+                ) or (not skill and steps_are_brand_stage(brand_steps))
                 if brand_call:
                     sent, chunks[i] = await self._dispatch_one_confirmed_brand(
                         it, brand_steps, _brand_claimed,
