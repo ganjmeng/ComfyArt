@@ -795,8 +795,9 @@ def ref_ratio(sid: str, data: bytes | None) -> str | None:
 # touch the cursor. A real submit that omits ratio takes the next contract slot
 # (anchor, then extensions). This is not a call script and does not rewrite prompts.
 _SLOT_CURSOR: dict[tuple[str, str, int], int] = {}
-# chat id -> {"holders": {generate holder id: slot id}, "placed": {slot id: shape id}}
-_SLOT_PLACED: dict[str, dict] = {}
+# (chat id, id of the current turn guard) -> holders and placed shapes for that turn only.
+# A new guard on the same chat drops the previous turn, same as _SLOT_CURSOR.
+_SLOT_PLACED: dict[tuple[str, int], dict] = {}
 
 
 def reset_slot_state() -> None:
@@ -831,6 +832,17 @@ def _turn_key(sid: str) -> tuple[str, str, int]:
     for stale in [k for k in _SLOT_CURSOR if k[0] == sid and k[1] == chat and k != key]:
         del _SLOT_CURSOR[stale]
     return key
+
+
+def _placed_book(chat: str | None = None) -> dict:
+    """This turn's placed-slot book. A replaced guard drops the previous turn's book."""
+    from ..api.paid_guard import TURNS, resolve_guard_chat_id
+    chat_id = resolve_guard_chat_id() if chat is None else chat
+    guard = TURNS.get(chat_id)
+    key = (chat_id, id(guard) if guard is not None else 0)
+    for stale in [k for k in _SLOT_PLACED if k[0] == chat_id and k != key]:
+        del _SLOT_PLACED[stale]
+    return _SLOT_PLACED.setdefault(key, {"holders": {}, "placed": {}})
 
 
 def _slot_ratio_refusal(sid: str, ratio: str) -> dict:
@@ -918,7 +930,6 @@ def contract_ref_index(args: dict | None, plan_position: int | None = None) -> i
 
 def note_generated_slot(args: dict | None, result: dict | None) -> None:
     """Remember the holder id of the anchor slot so a later wait can bind its placed shape."""
-    from ..api.paid_guard import resolve_guard_chat_id
     args = args or {}
     sid = resolve(args.get("skill"))
     slots = slot_rows(sid)
@@ -931,8 +942,7 @@ def note_generated_slot(args: dict | None, result: dict | None) -> None:
     slot = next((s for s in slots if str(s.get("ratio")) == ratio and not s.get("ref_slot")), None)
     if slot is None:
         return
-    chat = resolve_guard_chat_id()
-    book = _SLOT_PLACED.setdefault(chat, {"holders": {}, "placed": {}})
+    book = _placed_book()
     if any(v == slot["id"] for v in book["holders"].values()):
         return
     book["holders"][str(ids[0])] = slot["id"]
@@ -940,9 +950,8 @@ def note_generated_slot(args: dict | None, result: dict | None) -> None:
 
 def note_placed_slots(payload: dict | None) -> None:
     """Bind a contract slot to the image shape wait_generation placed for its holder."""
-    from ..api.paid_guard import resolve_guard_chat_id
-    book = _SLOT_PLACED.get(resolve_guard_chat_id())
-    if not book or not isinstance(payload, dict):
+    book = _placed_book()
+    if not isinstance(payload, dict):
         return
     for row in payload.get("results") or []:
         if not isinstance(row, dict):
@@ -968,7 +977,7 @@ def placed_ref_for(chat_id: str, args: dict | None) -> str:
     index = int(slot.get("ref_index", 1))
     if not (isinstance(refs, list) and len(refs) == index + 1):
         return ""
-    book = _SLOT_PLACED.get(chat_id) or {}
+    book = _placed_book(chat_id)
     return str((book.get("placed") or {}).get(slot["ref_slot"]) or "")
 
 

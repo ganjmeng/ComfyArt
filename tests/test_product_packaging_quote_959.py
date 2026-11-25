@@ -398,6 +398,55 @@ def test_plan_gate_binds_the_placed_anchor_and_stays_strict(relay):
                          plan=True, plan_position=1))
 
 
+def test_same_chat_second_turn_binds_the_new_anchor(relay, monkeypatch):
+    """A new turn guard on the same chat must not keep the previous run's placed anchor.
+
+    The first run places one anchor. The second run, under a new guard, places another.
+    placed_ref_for is the new shape, and only an extension of that shape passes the plan gate.
+    """
+    chat, _answers = _chat()
+    quote, _, _ = _quote(chat["id"], _steps())
+    assert quote is not None
+    gate = _PlanGate(chat["id"])
+    gate.allow(quote, True)
+    shapes = {"h1": "shape:anchor-run-1", "h2": "shape:anchor-run-2"}
+    turn = {"holder": "h1"}
+
+    async def submit(action, args, project, timeout, chat=""):
+        if action == "wait_generation":
+            waited = str((args.get("ids") or [""])[0])
+            shape = shapes.get(waited, "")
+            return {"status": "done", "results": [{
+                "id": waited, "status": "done", "placed": True,
+                "generation_succeeded": True, "delivered": 1,
+                "shapes": [shape] if shape else []}]}
+        return {"ids": [turn["holder"]], "submitted": True,
+                "model": args.get("edit_model") or args.get("model")}
+
+    monkeypatch.setattr(canvas, "submit_command", submit)
+    anchor_args = _steps()[0]["arguments"]
+    ext_prompt = _steps()[1]["arguments"]["prompt"]
+
+    def place(holder: str) -> None:
+        turn["holder"] = holder
+        paid_guard.begin_turn(chat["id"], text="", provider_text="", lang="zh")
+        _execute(chat["id"], [dict(anchor_args)])
+        _wait(chat["id"], [holder])
+
+    from ComfyArt.bot.skill_output import placed_ref_for
+
+    place("h1")
+    first = {"prompt": ext_prompt, "skill": SKILL, "refs": [PRODUCT, shapes["h1"]], "count": 1}
+    assert placed_ref_for(chat["id"], first) == shapes["h1"]
+    assert gate.blocks("generate_image", first) is False
+
+    place("h2")
+    second = {"prompt": ext_prompt, "skill": SKILL, "refs": [PRODUCT, shapes["h2"]], "count": 1}
+    assert placed_ref_for(chat["id"], second) == shapes["h2"]
+    assert gate.blocks("generate_image", second) is False
+    assert gate.blocks("generate_image", first) is True
+
+
 def test_agent_loop_plan_gate_submits_all_four_with_the_real_anchor(monkeypatch):
     """Full built-in agent path ($0): quote_plan → Start → four real generate_image submits.
 
