@@ -858,31 +858,55 @@ _SLOT_LOCK = {
 }
 
 
+def _explicit_stage(args: dict) -> int:
+    raw = args.get("stage")
+    if raw is None or isinstance(raw, bool):
+        return 0
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return 0
+
+
 def fill_default(args: dict) -> dict:
     """Size, slot and refs for one default-path generate. Idempotent when brand_slot is already set.
 
     A missing card leaves `_brand_block` and does not submit. Template presets never reach here.
+    A stage-2 guideline board with no preset and no slot is the brand default stage: it is
+    quoted on the moodboard (the 16:9 board) instead of being refused for card 1. Phase and
+    batch stay put until a real card answer, so a cancelled quote does not skip card 1.
     """
     args = dict(args or {})
     progress = _progress()
     slot_id = str(args.get("brand_slot") or "")
     slot = _BY_ID.get(slot_id)
+    stage2_board = (
+        slot is None
+        and _explicit_stage(args) == 2
+        and not str(args.get("preset") or "").strip()
+        and not is_template(args.get("preset"))
+    )
     if slot is None:
         slot = _next_slot(progress)
+        blocked = ""
         if slot is None:
-            args["_brand_block"] = _block(str(progress["phase"]))
+            blocked = str(progress["phase"])
+        elif slot["stage"] == 2 and progress["phase"] != "logos":
+            blocked = "need_card2"
+        elif slot["stage"] == 3 and progress["phase"] != "finals":
+            blocked = "need_card3"
+        elif progress["phase"] == "need_card1":
+            blocked = "need_card1"
+        if blocked == "need_card1" and stage2_board:
+            # Quote this board. Do not consume the stage or advance the phase.
+            slot = _BY_ID["moodboard"]
+            args["brand_slot"] = slot["id"]
+        elif blocked:
+            args["_brand_block"] = _block(blocked)
             return args
-        if slot["stage"] == 2 and progress["phase"] != "logos":
-            args["_brand_block"] = _block("need_card2")
-            return args
-        if slot["stage"] == 3 and progress["phase"] != "finals":
-            args["_brand_block"] = _block("need_card3")
-            return args
-        if progress["phase"] == "need_card1":
-            args["_brand_block"] = _block("need_card1")
-            return args
-        args["brand_slot"] = slot["id"]
-        progress["batch"] = int(progress.get("batch") or 0) + 1
+        else:
+            args["brand_slot"] = slot["id"]
+            progress["batch"] = int(progress.get("batch") or 0) + 1
     args["skill"] = SKILL
     args["width"] = int(slot["width"])
     args["height"] = int(slot["height"])

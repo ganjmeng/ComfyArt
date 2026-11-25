@@ -204,3 +204,56 @@ async def test_slot_and_template_submits_only_through_brand_start(monkeypatch):
     assert brand.is_template(brand_dispatch[0].get("preset"))
     assert len(gens) == 1, gens
     assert gens[0].get("brand_slot") == "moodboard"
+
+
+def _stage2_board(messages, n):
+    """Guideline board: skill only, stage 2, no preset and no brand_slot."""
+    if n == 0:
+        return calls(("generate_image", {
+            "prompt": "guideline board for the chosen direction",
+            "skill": brand.SKILL,
+            "stage": 2,
+        }))
+    return reply("done")
+
+
+async def _board_rig(monkeypatch, *, start: bool):
+    brand.reset_for_tests()
+    BOT_CHAT_ID.set("c")
+    rig = Rig(monkeypatch, _stage2_board)
+    asked: list[dict] = []
+    original_confirm = LocalLlmProvider._confirm_plan
+
+    async def local_price(model, inputs):
+        return (0.04, "quote", "test")
+
+    async def watch_confirm(self, spec, turn, handle, **kwargs):
+        asked.append(spec)
+        if start:
+            return "start"
+        return await original_confirm(self, spec, turn, handle, **kwargs)
+
+    monkeypatch.setattr(rig.p, "_price_one", local_price)
+    monkeypatch.setattr(LocalLlmProvider, "_confirm_plan", watch_confirm)
+    return rig, asked
+
+
+async def test_stage2_guideline_board_without_preset_or_slot_uses_quote_card(monkeypatch):
+    """No preset and no brand_slot, stage 2: the brand default stage.
+
+    The price is under the confirm line. The call must still enter the brand
+    quote card and submit nothing. Start is what submits it.
+    """
+    held = await _board_rig(monkeypatch, start=False)
+    rig, asked = held
+    await rig.send("选第一个方向，直接出规范板", goal="")
+    assert _gens(rig) == []
+    assert asked and all(spec.get("brand_confirm") is True for spec in asked)
+
+    rig, asked = await _board_rig(monkeypatch, start=True)
+    await rig.send("选第一个方向，直接出规范板", goal="")
+    gens = _gens(rig)
+    assert asked and all(spec.get("brand_confirm") is True for spec in asked)
+    assert len(gens) == 1, gens
+    assert not gens[0].get("preset")
+    assert gens[0].get("brand_slot") == "moodboard"
