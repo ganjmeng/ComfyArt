@@ -297,15 +297,23 @@ def test_skill_text_carries_the_card_and_default_4():
     assert "exactly four options in this order: A 核心三件, B 延伸件, C 变体家族, D 技术件" in instr
     assert "a box or pouch has no 瓶标 or 多香型" in instr
     assert "image_plan" not in instr and "This image shows:" not in instr
-    assert "round-robin" not in instr and "call generate_image exactly" not in instr.lower()
+    assert "call generate_image exactly" not in instr.lower()
     assert LOVART_Q1_OPTS[0] in instr and LOVART_Q2_OPTS[0] in instr  # examples of live options
     assert instr.index('id "pk_product"') < instr.index('id "pk_color"') < instr.index('id "pk_scope"')
     assert "page_count 3, so the header is 1 of 3" in instr
     assert "min_selections 1, max_selections 4" in instr
     assert "Do not set defaults or recommended" in instr and "none is marked 推荐" in instr
-    assert "up to 3 extensions at 4:3" in instr and "count 1" in instr
-    assert "Image 1 is the anchor" in instr and "3:4" in instr and "4:3" in instr
-    assert "may omit extension slots" in instr
+    # Section 6 pins the default 4-image set and the A–D distribution from main.
+    assert "default 4 images, one generate_image call per image with count 1" in instr
+    assert "Image 1 is the anchor" in instr and "images 2-4 as extensions of the anchor" in instr
+    assert "One scope: the parts named in that option across the three images" in instr
+    assert "the outer box from several angles, the bottle label close up, the unboxing with the inner tray" in instr
+    assert "round-robin in A-D order, and a free-text answer counts as one more scope after D" in instr
+    assert "More than three scopes with A among them: image 1, the anchor, is A" in instr
+    assert "A+B+C+D is A / B / C / D" in instr
+    assert "pk_scope skipped or not answered: A." in instr
+    assert "Deliver fewer than 4 only when the user explicitly narrows the scope" in instr
+    assert "the default plan is these 4 images" in instr
     assert 'skill: "product-to-packaging"' in instr
     for needle in ("recommended: true", '"recommended"', "defaults: ["):
         assert needle not in instr
