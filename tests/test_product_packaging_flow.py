@@ -312,7 +312,7 @@ def test_skill_text_carries_the_card_and_default_4():
     assert "More than three scopes with A among them: image 1, the anchor, is A" in instr
     assert "A+B+C+D is A / B / C / D" in instr
     assert "pk_scope skipped or not answered: A." in instr
-    assert "Deliver fewer than 4 only when the user explicitly narrows the scope" in instr
+    assert "Deliver fewer than 4 only when the user explicitly asks for fewer images" in instr
     assert "the default plan is these 4 images" in instr
     assert 'skill: "product-to-packaging"' in instr
     for needle in ("recommended: true", '"recommended"', "defaults: ["):
