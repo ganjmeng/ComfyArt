@@ -21,10 +21,29 @@ onto white before the file is saved.
 """
 from __future__ import annotations
 
+import hashlib
 import io
 import re
+import time
+import uuid
 
 SKILL = "brand-identity-director"
+# Confirmation lifetime of a brand quote card. It starts when the card is created.
+# Pressing Start does not move it. 700s past creation is past this deadline.
+BRAND_CONFIRM_TTL_S = 600.0
+BRAND_CURRENCY = "USD"
+EXPIRED_TEXT = {
+    "zh": "报价已过期，请重新取价",
+    "en": "This quote has expired. Request a new price.",
+}
+FIXED_SIZE_NOTE = {
+    "zh": "尺寸固定，不可修改。",
+    "en": "Size is fixed and cannot be edited.",
+}
+_EXEC_SKIP = {
+    "brand_slot", "width", "height", "count", "prompt", "base", "refs", "mask",
+    "model", "edit_model", "skill", "stage", "preset", "_brand_block",
+}
 QWEN_T2I = "wavespeed-ai/qwen-image-2.0/text-to-image"
 QWEN_EDIT = "wavespeed-ai/qwen-image-2.0/edit"
 
@@ -440,6 +459,10 @@ _TURN: dict[str, dict] = {}
 BRAND_PLANNED_IMAGES = 8
 
 
+def _clock() -> float:
+    return time.time()
+
+
 def reset_for_tests() -> None:
     _PROGRESS.clear()
     _HELD_WRAPUP.clear()
@@ -572,8 +595,9 @@ def _spec_lock() -> str:
     return (
         "The spec card is exactly 7 panels. Each heading appears once, in this order: "
         "标识 (the approved mark), "
-        "色彩 (swatches sampled from the moodboard 色彩 cell; each swatch shows the color block, "
-        "a Chinese color name, and a percentage; main colors carry the bulk; any accent is at most about 5%; "
+        "色彩 (a proportional color strip sampled from the moodboard 色彩 cell; "
+        "ratios are shown only by the width of the swatches; no color-name label and no percentage text; "
+        "main colors carry the bulk; any accent is at most about 5%; "
         "do not print a color that is absent from that cell; do not copy a stored palette and do not invent hex values), "
         "变体 (the approved mark variants), "
         "字体 (this panel carries its full heading 字体, not clipped to 字, and shows the wordmark at three sizes; "
@@ -585,8 +609,8 @@ def _spec_lock() -> str:
         "影像与材质 (this panel contains no small text at all). "
         "No heading is repeated. No empty panel. Do not add an eighth panel. Do not clip a heading. "
         "The only words on the card are the real Chinese brand name and the real English brand name from the brief, "
-        "copied character for character, these seven headings, the wordmark at three sizes, "
-        "and on the color panel a Chinese color name plus a percentage. "
+        "copied character for character, these seven headings, and the wordmark at three sizes. "
+        "The color panel has no color-name label and no percentage text. "
         "No explanatory caption, no English subtitle, no body copy, no sample English, no extra line, and no invented words. "
         "Any text that does appear anywhere must be spelled correctly (one garbled character is not acceptable). "
         "Do not print an English instruction label. "
@@ -1562,7 +1586,9 @@ def note_brand_submitted(args: dict) -> None:
     done = list(rec.get("submitted_slots") or [])
     if slot not in done:
         done.append(slot)
+    prior_dispatching = [str(item) for item in (rec.get("dispatching_slots") or [])]
     rec["submitted_slots"] = done
+    rec["dispatching_slots"] = [item for item in prior_dispatching if item != slot]
     confirmed = {str(item[-1]) for item in (rec.get("fingerprint") or ()) if item}
     if confirmed and confirmed <= set(done):
         rec["dispatched"] = True
@@ -1700,8 +1726,8 @@ def default_hint() -> str:
         "Then exactly four deliverables, brand_slot spec, cup, bag (each 1536x2048 3:4) and storefront (2048x1152 16:9). "
         "refs are the chosen logo shape and the moodboard. The spec card is exactly 7 panels. Each heading appears once, in this order: "
         "标识 (the approved mark), "
-        "色彩 (swatches sampled from the moodboard 色彩 cell; each swatch has the color block, a Chinese color name, and a percentage; "
-        "main colors carry the bulk; any accent is at most about 5%; do not invent hex values), "
+        "色彩 (a proportional color strip sampled from the moodboard 色彩 cell; ratios are shown only by the width of the swatches; "
+        "no color-name label and no percentage text; main colors carry the bulk; any accent is at most about 5%; do not invent hex values), "
         "变体 (the approved mark variants), "
         "字体 (this panel carries its full heading 字体, not clipped to 字, and shows the wordmark at three sizes; "
         "every character of both names, character for character; Do not drop or substitute a character), "
@@ -1710,7 +1736,8 @@ def default_hint() -> str:
         "影像与材质 (this panel contains no small text at all). "
         "No heading is repeated. No empty panel. Do not add an eighth panel. Do not clip a heading. "
         "The only words are the Chinese brand name and the English brand name from the brief, "
-        "copied character for character, those seven headings, the wordmark at three sizes, and on the color panel a Chinese color name plus a percentage. "
+        "copied character for character, those seven headings, and the wordmark at three sizes. "
+        "The color panel has no color-name label and no percentage text. "
         "No explanatory caption, no English subtitle, no body copy, and no sample English. "
         "Any text that does appear anywhere must be spelled correctly (one garbled character is not acceptable). "
         "Do not print an English instruction label. "
@@ -1728,3 +1755,449 @@ def default_hint() -> str:
         "Do not put it in the same message as those generate_image calls. "
         "Never say the work is ready to produce (可直接投产)."
     )
+
+
+class BrandGrantPersistError(RuntimeError):
+    """The brand confirmation was not saved. Callers must not dispatch."""
+
+
+def session_default_stage_open() -> bool:
+    """This chat is on moodboard, logos, or finals."""
+    return str(_progress().get("phase") or "") in {"moodboard", "logos", "finals"}
+
+
+def is_brand_stage_template_call(args: dict) -> bool:
+    """skill + industry preset, no slot, while this chat is in a brand stage."""
+    if not isinstance(args, dict) or args.get("brand_slot"):
+        return False
+    if str(args.get("skill") or "") != SKILL or not is_template(args.get("preset")):
+        return False
+    return session_default_stage_open()
+
+
+def steps_include_brand_template(steps: list) -> bool:
+    for step in steps or []:
+        if not isinstance(step, dict) or step.get("tool") != "generate_image":
+            continue
+        args = step.get("arguments") if isinstance(step.get("arguments"), dict) else {}
+        if is_brand_stage_template_call(args):
+            return True
+    return False
+
+
+_TEMPLATE_STAGE = {
+    "zh": {"moodboard": "情绪板", "logos": "Logo", "finals": "成稿"},
+    "en": {"moodboard": "Moodboard", "logos": "Logo", "finals": "Finals"},
+}
+_TEMPLATE_NAME = {
+    "zh": {
+        "geometric": "几何", "handmade": "手作", "tech": "科技",
+        "beauty": "美妆", "foodbev": "餐饮", "pet": "宠物",
+    },
+    "en": {
+        "geometric": "Geometric", "handmade": "Handmade", "tech": "Tech",
+        "beauty": "Beauty", "foodbev": "Food and beverage", "pet": "Pet",
+    },
+}
+_TEMPLATE_EXTRA = {
+    "zh": {
+        "moodboard": "额外一张，不替换情绪板",
+        "logos": "额外一张，不替换方向 A/B/C",
+        "finals": "额外一张，不替换成稿物料",
+    },
+    "en": {
+        "moodboard": "One extra image. It does not replace the moodboard.",
+        "logos": "One extra image. It does not replace directions A/B/C.",
+        "finals": "One extra image. It does not replace the final deliverables.",
+    },
+}
+
+
+def template_quote_text(preset: str, lang: str, phase: str = "") -> str:
+    """Card row for one extra template image during an open brand stage."""
+    lang_key = "zh" if lang == "zh" else "en"
+    phase_id = str(phase or _progress().get("phase") or "")
+    stage = _TEMPLATE_STAGE[lang_key].get(phase_id) or phase_id
+    name = _TEMPLATE_NAME[lang_key].get(str(preset or "")) or str(preset or "")
+    extra = _TEMPLATE_EXTRA[lang_key].get(phase_id) or _TEMPLATE_EXTRA[lang_key]["logos"]
+    if lang_key == "zh":
+        title = f"{stage} 阶段 · {name}模板"
+    else:
+        title = f"{stage} stage · {name} template"
+    return f"{title}\n{extra}"
+
+
+def template_grant_key(args: dict) -> str:
+    """Prompt, preset, and skill. Size filled after the quote is not part of the key."""
+    import json
+    raw = args if isinstance(args, dict) else {}
+    return json.dumps({
+        "skill": str(raw.get("skill") or ""),
+        "preset": str(raw.get("preset") or ""),
+        "prompt": str(raw.get("prompt") or ""),
+    }, ensure_ascii=False, sort_keys=True)
+
+
+def template_grants() -> dict:
+    saved = _progress().get("template_grants")
+    return dict(saved) if isinstance(saved, dict) else {}
+
+
+def _persist_grants() -> None:
+    """The stage row already holds the grant. A failed write must raise before dispatch.
+
+    Disk hydrate of a restarted process is not this copy. A missing grant fails closed.
+    """
+    return None
+
+
+def remember_template_grants(steps: list, *, identity: dict, amount: float, currency: str,
+                             quote_id: str, created_at: float, expires_at: float) -> None:
+    progress = _progress()
+    bucket = progress.setdefault("template_grants", {})
+    if not isinstance(bucket, dict):
+        bucket = {}
+        progress["template_grants"] = bucket
+    written: list[str] = []
+    previous = {key: bucket.get(key) for key in list(bucket)}
+    try:
+        for step in steps or []:
+            if not isinstance(step, dict) or step.get("tool") != "generate_image":
+                continue
+            args = step.get("arguments") if isinstance(step.get("arguments"), dict) else {}
+            if not is_brand_stage_template_call(args):
+                continue
+            key = template_grant_key(args)
+            bucket[key] = {
+                "type": "template",
+                "key": key,
+                "preset": str(args.get("preset") or ""),
+                "prompt": str(args.get("prompt") or ""),
+                "phase": str(progress.get("phase") or ""),
+                "amount": round(float(amount or 0), 4),
+                "currency": str(currency or BRAND_CURRENCY),
+                "quote_id": str(quote_id or ""),
+                "created_at": float(created_at),
+                "expires_at": float(expires_at),
+                "used": False,
+                "user": str(identity.get("user") or ""),
+                "project": str(identity.get("project") or ""),
+                "chat": str(identity.get("chat") or ""),
+            }
+            written.append(key)
+        if written:
+            _persist_grants()
+    except BrandGrantPersistError:
+        for key in written:
+            if key in previous:
+                bucket[key] = previous[key]
+            else:
+                bucket.pop(key, None)
+        raise
+
+
+def template_submit_block(args: dict, turn: object = None, *, now: float | None = None) -> str | None:
+    """Why this template grant must not pay, or None when this confirm still covers it."""
+    if not is_brand_stage_template_call(args):
+        return None
+    grant = (_progress().get("template_grants") or {}).get(template_grant_key(args))
+    if not isinstance(grant, dict) or grant.get("type") != "template":
+        return "unconfirmed"
+    if grant.get("used"):
+        return "submitted"
+    clock = _clock() if now is None else float(now)
+    exp = grant.get("expires_at")
+    if isinstance(exp, bool) or not isinstance(exp, (int, float)) or clock >= float(exp):
+        return "expired"
+    identity = turn_identity(turn)
+    if (str(grant.get("user") or "") != identity["user"]
+            or str(grant.get("project") or "") != identity["project"]
+            or str(grant.get("chat") or "") != identity["chat"]):
+        return "identity"
+    if str(grant.get("prompt") or "") != str(args.get("prompt") or ""):
+        return "mismatch"
+    if str(grant.get("preset") or "") != str(args.get("preset") or ""):
+        return "mismatch"
+    return None
+
+
+def mark_template_grant_used(args: dict) -> None:
+    grant = (_progress().get("template_grants") or {}).get(template_grant_key(args))
+    if not isinstance(grant, dict):
+        return
+    grant["used"] = True
+
+
+def bind_brand_generate(args: dict, quote_steps: list | None = None, claimed: set | None = None) -> dict:
+    """Put a brand slot on this generate before it can be reserved."""
+    args = dict(args or {})
+    skill = str(args.get("skill") or "")
+    if skill and skill != SKILL and not args.get("brand_slot"):
+        return args
+    if not args.get("brand_slot"):
+        taken = claimed or set()
+        for step in quote_steps or []:
+            slot = str((step.get("arguments") or {}).get("brand_slot") or "") if isinstance(step, dict) else ""
+            if slot and slot not in taken:
+                args["brand_slot"] = slot
+                args["skill"] = SKILL
+                break
+    if str(args.get("skill") or "") == SKILL or args.get("brand_slot"):
+        return fill_default(args)
+    return args
+
+
+def expired_text(lang: str) -> str:
+    return EXPIRED_TEXT["zh" if lang == "zh" else "en"]
+
+
+def fixed_size_note(lang: str) -> str:
+    return FIXED_SIZE_NOTE["zh" if lang == "zh" else "en"]
+
+
+def confirm_expired(spec: object, now: float | None = None) -> bool:
+    if not isinstance(spec, dict) or spec.get("brand_confirm") is not True:
+        return False
+    exp = spec.get("expires_at")
+    if isinstance(exp, bool) or not isinstance(exp, (int, float)):
+        return True
+    clock = _clock() if now is None else float(now)
+    return clock >= float(exp)
+
+
+def turn_identity(turn: object = None, *, user: str = "", project: str = "", chat: str = "") -> dict:
+    if turn is not None:
+        user = user or str(getattr(turn, "owner_id", "") or "")
+        project = project or str(getattr(turn, "project_id", "") or "")
+        chat = chat or str(getattr(turn, "chat_id", "") or "")
+    return {
+        "user": user or "local",
+        "project": project or "local",
+        "chat": chat or _chat(),
+    }
+
+
+def _json_ready(value: object) -> object:
+    import json
+    return json.loads(json.dumps(value, ensure_ascii=False, sort_keys=True, default=str))
+
+
+def normalize_slot_execution(args: dict) -> dict | None:
+    raw = dict(args or {})
+    slot = _BY_ID.get(str(raw.get("brand_slot") or ""))
+    if slot is None:
+        return None
+    filled = fill_default(raw)
+    if filled.get("_brand_block"):
+        filled = {key: value for key, value in filled.items() if key != "_brand_block"}
+    return {
+        "slot": str(slot["id"]),
+        "stage": int(slot["stage"]),
+        "prompt": str(filled.get("prompt") or ""),
+        "width": int(filled["width"]) if str(filled.get("width") or "").isdigit() or isinstance(filled.get("width"), int) else int(slot["width"]),
+        "height": int(filled["height"]) if isinstance(filled.get("height"), int) else int(slot["height"]),
+    }
+
+
+def _execution_rows(steps: list) -> list[dict]:
+    by_slot: dict[str, dict] = {}
+    for step in steps or []:
+        args = step.get("arguments") if isinstance(step, dict) else None
+        row = normalize_slot_execution(args if isinstance(args, dict) else {})
+        if row is not None:
+            by_slot[row["slot"]] = row
+    return [by_slot[key] for key in sorted(by_slot)]
+
+
+def build_grant(steps: list, *, identity: dict, amount: float, currency: str,
+                quote_id: str, created_at: float, expires_at: float) -> dict:
+    body = {
+        "user": str(identity.get("user") or ""),
+        "project": str(identity.get("project") or ""),
+        "chat": str(identity.get("chat") or ""),
+        "stage": int(quoted_stage(steps) or 0),
+        "amount": round(float(amount or 0), 4),
+        "currency": str(currency or BRAND_CURRENCY),
+        "quote_id": str(quote_id or ""),
+        "created_at": float(created_at),
+        "expires_at": float(expires_at),
+        "slots": _execution_rows(steps),
+    }
+    encoded = __import__("json").dumps(body, ensure_ascii=False, sort_keys=True, default=str).encode()
+    body["digest"] = hashlib.sha256(encoded).hexdigest()
+    return _json_ready(body)
+
+
+def _grant_of(stage: int) -> dict | None:
+    rec = _stage_record(stage)
+    grant = rec.get("grant") if isinstance(rec, dict) else None
+    return grant if isinstance(grant, dict) else None
+
+
+def grant_digest_superseded(stage: int, digest: str) -> bool:
+    rec = _stage_record(stage)
+    if not isinstance(rec, dict) or not digest:
+        return False
+    return str(digest) in {str(item) for item in (rec.get("superseded_digests") or [])}
+
+
+def stamp_confirm_spec(spec: dict, steps: list, turn: object, *, amount: float, lang: str,
+                       currency: str | None = None, quote_id: str | None = None) -> dict:
+    """Freeze expiry and the quoted slots onto the card before it is shown."""
+    card = dict(spec or {})
+    created = _clock()
+    lang_key = "zh" if lang == "zh" else "en"
+    note = fixed_size_note(lang_key)
+    prompt = str(card.get("prompt") or "")
+    if note not in prompt:
+        card["prompt"] = prompt.rstrip() + note
+    card["brand_confirm"] = True
+    card["size_locked"] = True
+    card["created_at"] = created
+    card["expires_at"] = created + BRAND_CONFIRM_TTL_S
+    card["quote_id"] = str(quote_id or "") or uuid.uuid4().hex
+    card["currency"] = str(currency or BRAND_CURRENCY)
+    card["amount"] = round(float(amount or 0), 4)
+    frozen = build_grant(
+        steps,
+        identity=turn_identity(turn),
+        amount=card["amount"],
+        currency=card["currency"],
+        quote_id=card["quote_id"],
+        created_at=float(created),
+        expires_at=float(card["expires_at"]),
+    )
+    card["frozen"] = frozen
+    return card
+
+
+def commit_confirmed_grant(steps: list, spec: dict, turn: object, *, amount: float) -> dict | None:
+    """Store the snapshot the card already froze. Start does not rebuild it or move expires_at."""
+    del steps, amount
+    if not isinstance(spec, dict) or spec.get("brand_confirm") is not True:
+        return None
+    frozen = spec.get("frozen")
+    if not isinstance(frozen, dict) or not frozen.get("digest"):
+        return None
+    created = frozen.get("created_at")
+    expires = frozen.get("expires_at")
+    if isinstance(created, bool) or not isinstance(created, (int, float)):
+        return None
+    if isinstance(expires, bool) or not isinstance(expires, (int, float)):
+        return None
+    stage = int(frozen.get("stage") or 0)
+    if not stage:
+        return None
+    if grant_digest_superseded(stage, str(frozen.get("digest") or "")):
+        return None
+    identity = turn_identity(turn)
+    if (str(frozen.get("user") or "") != identity["user"]
+            or str(frozen.get("project") or "") != identity["project"]
+            or str(frozen.get("chat") or "") != identity["chat"]):
+        return None
+    grant = _json_ready(frozen)
+    progress = _progress()
+    done = progress.setdefault("quoted_stages", {})
+    rec = done.get(int(stage))
+    if not isinstance(rec, dict):
+        rec = {"amount": float(grant.get("amount") or 0), "fingerprint": None, "dispatched": False, "submitted_slots": []}
+        done[int(stage)] = rec
+    previous = rec.get("grant") if isinstance(rec.get("grant"), dict) else None
+    previous_exp = rec.get("expires_at")
+    rec["grant"] = grant
+    rec["expires_at"] = grant["expires_at"]
+    rec["amount"] = grant["amount"]
+    try:
+        _persist_grants()
+    except BrandGrantPersistError:
+        if previous is None:
+            rec.pop("grant", None)
+            rec.pop("expires_at", None)
+        else:
+            rec["grant"] = previous
+            rec["expires_at"] = previous_exp
+        raise
+    return grant
+
+
+def reserve_brand_dispatch(args: dict) -> None:
+    if not isinstance(args, dict) or not args.get("brand_slot"):
+        return
+    slot = str(args.get("brand_slot") or "")
+    stage = stage_of(slot)
+    rec = _stage_record(stage)
+    if rec is None:
+        raise BrandGrantPersistError("brand slot has no confirmation to reserve")
+    current = [str(item) for item in (rec.get("dispatching_slots") or [])]
+    if slot in submitted_slots(stage) or slot in current:
+        raise BrandGrantPersistError("brand slot is already reserved")
+    current.append(slot)
+    rec["dispatching_slots"] = current
+    try:
+        _persist_grants()
+    except BrandGrantPersistError:
+        rec["dispatching_slots"] = [item for item in current if item != slot]
+        raise
+
+
+def dispatching_slots(stage: int) -> set[str]:
+    rec = _stage_record(stage)
+    if rec is None:
+        return set()
+    return {str(slot) for slot in (rec.get("dispatching_slots") or [])}
+
+
+def _held_slots(stage: int) -> set[str]:
+    rec = _stage_record(stage)
+    unknown = set()
+    if isinstance(rec, dict):
+        unknown = {str(slot) for slot in (rec.get("unknown_slots") or [])}
+    return unknown | dispatching_slots(stage)
+
+
+def submit_block_reason(args: dict, turn: object = None, *, now: float | None = None) -> str | None:
+    """Why this brand generate must not run, or None when the frozen grant still allows the slot.
+
+    The default-path construction prompt may be longer than the quote line. That
+    difference is not a mismatch. Expiry, identity, a slot already submitted, and
+    a reservation already held are. A template call is ``template_submit_block``.
+    """
+    if not isinstance(args, dict) or not args.get("brand_slot"):
+        return None
+    slot = str(args.get("brand_slot") or "")
+    if slot in _held_slots(stage_of(slot)):
+        return "reconcile"
+    if slot_already_submitted(args):
+        return "submitted"
+    stage = stage_of(args.get("brand_slot"))
+    grant = _grant_of(stage)
+    if grant is None:
+        return "unconfirmed"
+    clock = _clock() if now is None else float(now)
+    if confirm_expired({**grant, "brand_confirm": True}, clock):
+        return "expired"
+    identity = turn_identity(turn)
+    if (str(grant.get("user") or "") != identity["user"]
+            or str(grant.get("project") or "") != identity["project"]
+            or str(grant.get("chat") or "") != identity["chat"]):
+        return "identity"
+    return None
+
+
+def submit_block_text(reason: str, lang: str) -> str:
+    lang_key = "zh" if lang == "zh" else "en"
+    if reason == "expired":
+        return expired_text(lang_key)
+    if reason == "reconcile":
+        if lang_key == "zh":
+            return "该槽位已生成但确认记录未能落盘，状态待核对，不会自动重发。"
+        return ("This slot was generated but the confirmation record was not saved. "
+                "It is pending review and will not be sent again.")
+    if reason == "unconfirmed":
+        if lang_key == "zh":
+            return "确认没有保存成功，没有开始，也没有扣积分。请重新取价。"
+        return "The confirmation was not saved. Nothing started and nothing was charged. Request a new price."
+    if lang_key == "zh":
+        return "参数已变化，上一张确认失效。请重新取价。已提交的槽位不会重跑。"
+    return ("The parameters changed, so the previous confirmation is no longer valid. "
+            "Request a new price. Submitted slots will not run again.")

@@ -163,7 +163,9 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert spec["prompt"].count("no small text at all") == 2
     assert "one garbled character is not acceptable" in spec["prompt"]
     assert "moodboard 色彩 cell" in spec["prompt"]
-    assert "Chinese color name, and a percentage" in spec["prompt"]
+    assert "no color-name label and no percentage text" in spec["prompt"]
+    assert "Chinese color name" not in spec["prompt"]
+    assert "percentage" not in spec["prompt"].replace("no percentage text", "")
     assert "real Chinese brand name" in spec["prompt"] and "real English brand name" in spec["prompt"]
     assert "character for character" in spec["prompt"]
     assert "Do not drop a character" in spec["prompt"]
@@ -366,6 +368,9 @@ def test_spec_card_is_seven_lovart_panels_and_brand_prompts_have_no_lock_words()
                 assert heading in assembled, heading
             for old in OLD_SPEC_HEADINGS:
                 assert old not in assembled, old
+            assert "no color-name label and no percentage text" in assembled
+            assert "Chinese color name" not in assembled
+            assert "plus a percentage" not in assembled
         if slot == "logo_c":
             assert "cup-shaped" in assembled
             assert "The wordmark appears exactly once per zone." in assembled
@@ -713,7 +718,7 @@ def _logo_calls():
 
 
 async def _brand_turn(monkeypatch, script, *, unit_price: float = 0.03, threshold: float | None = None,
-                      user_text: str = "做三个方向"):
+                      user_text: str = "做三个方向", answers: list[str] | None = None):
     """One scripted turn. Pricing and MCP are local; WaveSpeed submit is counted and refused."""
     from ComfyArt.api import wavespeed
     from ComfyArt.bot.providers import TurnHandle
@@ -745,7 +750,10 @@ async def _brand_turn(monkeypatch, script, *, unit_price: float = 0.03, threshol
 
     async def yes(spec, turn, handle, **kwargs):
         confirms.append(spec)
-        return "start"
+        if not answers:
+            return "start"
+        idx = len(confirms) - 1
+        return answers[idx] if idx < len(answers) else "cancel"
 
     monkeypatch.setattr(rig.p, "_confirm_plan", yes)
     _res, events = await rig.send(user_text, goal="", handle=TurnHandle())
@@ -1131,9 +1139,15 @@ async def _preset_turns(monkeypatch, *, skill: bool, batched: bool, unit_price: 
 
 @pytest.mark.parametrize("with_skill", [True, False])
 async def test_logos_preset_single_below_line_submits_without_confirm(monkeypatch, with_skill):
-    """Below the line: two single preset calls, 0 confirms, both submit."""
+    """Below the line: no skill still submits with 0 confirms.
+
+    A skill preset during an open brand stage confirms every call, including under $0.50.
+    """
     rows = await _preset_turns(monkeypatch, skill=with_skill, batched=False, unit_price=0.03, turns=2)
-    assert rows == [(0, 1), (0, 1)]
+    if with_skill:
+        assert rows == [(1, 1), (1, 1)]
+    else:
+        assert rows == [(0, 1), (0, 1)]
 
 
 @pytest.mark.parametrize("with_skill", [True, False])
@@ -1146,9 +1160,15 @@ async def test_logos_preset_single_above_line_each_submit_confirms(monkeypatch, 
 
 @pytest.mark.parametrize("with_skill", [True, False])
 async def test_logos_preset_batch_below_line_submits_without_confirm(monkeypatch, with_skill):
-    """Below the line: one batch of two preset calls, 0 confirms, both submit."""
+    """Below the line: no skill submits the batch with 0 confirms.
+
+    A skill preset batch during an open brand stage confirms once, then both submit.
+    """
     rows = await _preset_turns(monkeypatch, skill=with_skill, batched=True, unit_price=0.03, turns=1)
-    assert rows == [(0, 2)]
+    if with_skill:
+        assert rows == [(1, 2)]
+    else:
+        assert rows == [(0, 2)]
 
 
 @pytest.mark.parametrize("with_skill", [True, False])
@@ -1267,6 +1287,141 @@ async def test_default_eight_image_path_with_skill_start_line_is_unchanged(monke
         assert submits == []
         texts = _tool_texts(events, "generate_image")
         assert len(texts) == 1 and "下一阶段" in texts[0]
+    finally:
+        BOT_CHAT_ID.reset(token)
+
+
+def _logo_a_script(messages, n):
+    from test_agent_budget_391 import calls, reply
+    if n == 0:
+        return calls(("generate_image", {
+            "prompt": "logo a",
+            "skill": brand.SKILL,
+            "brand_slot": "logo_a",
+        }))
+    return reply("done")
+
+
+async def test_prompt_mutated_after_binding_does_not_submit(monkeypatch):
+    """A confirmed logo_a whose prompt changes after bind submits nothing."""
+    from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
+
+    real_bind = brand.bind_brand_generate
+
+    def bind(args, quote_steps=None, claimed=None):
+        prepared = real_bind(args, quote_steps, claimed)
+        if isinstance(prepared, dict):
+            prepared["prompt"] = "mutated after binding"
+        return prepared
+
+    monkeypatch.setattr(brand, "bind_brand_generate", bind)
+    token = BOT_CHAT_ID.set("c")
+    try:
+        _logos_ready()
+        rig, events, confirms, submits = await _brand_turn(monkeypatch, _logo_a_script, threshold=0.5)
+        prompts = [args.get("prompt") for _name, args in rig.paid_mcp()]
+        texts = "\n".join(_tool_texts(events, "generate_image"))
+        assert confirms
+        assert prompts == []
+        assert submits == []
+        assert "参数已变化" in texts
+        assert brand.submitted_slots(2) == set()
+        assert list((brand._stage_record(2) or {}).get("dispatching_slots") or []) == []
+        assert brand._progress()["phase"] == "logos"
+        saved = [str(row.get("prompt") or "") for row in ((brand._grant_of(2) or {}).get("slots") or [])]
+        assert saved and all(row.startswith("logo a") for row in saved)
+        assert all("mutated after binding" not in row for row in saved)
+    finally:
+        BOT_CHAT_ID.reset(token)
+
+
+async def test_grant_expired_at_dispatch_does_not_submit(monkeypatch):
+    """The grant is still valid at the pre-bind check and expired before submit."""
+    from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
+
+    armed = {"jump": False}
+    real_clock = brand._clock
+    real_block = brand.submit_block_reason
+
+    def clock():
+        now = real_clock()
+        return now + 700 if armed["jump"] else now
+
+    def block(args, turn=None, now=None):
+        result = real_block(args, turn, now=now)
+        armed["jump"] = True
+        return result
+
+    monkeypatch.setattr(brand, "_clock", clock)
+    monkeypatch.setattr(brand, "submit_block_reason", block)
+    token = BOT_CHAT_ID.set("c")
+    try:
+        _logos_ready()
+        rig, events, confirms, submits = await _brand_turn(monkeypatch, _logo_a_script, threshold=0.5)
+        texts = "\n".join(_tool_texts(events, "generate_image"))
+        assert confirms
+        assert rig.paid_mcp() == []
+        assert submits == []
+        assert "报价已过期" in texts
+        assert brand.submitted_slots(2) == set()
+        assert list((brand._stage_record(2) or {}).get("dispatching_slots") or []) == []
+        assert brand._progress()["phase"] == "logos"
+    finally:
+        BOT_CHAT_ID.reset(token)
+
+
+async def test_confirmed_logo_a_submits_once_and_is_recorded(monkeypatch):
+    """A normal confirmed default logo_a still submits once and records the slot."""
+    from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
+
+    token = BOT_CHAT_ID.set("c")
+    try:
+        _logos_ready()
+        rig, _events, confirms, submits = await _brand_turn(monkeypatch, _logo_a_script, threshold=0.5)
+        gens = [args for _name, args in rig.paid_mcp()]
+        assert confirms
+        assert submits == []
+        assert len(gens) == 1
+        assert gens[0].get("brand_slot") == "logo_a"
+        assert str(gens[0].get("prompt") or "").startswith("logo a")
+        assert brand.submitted_slots(2) == {"logo_a"}
+        assert brand._progress()["phase"] == "logos"
+    finally:
+        BOT_CHAT_ID.reset(token)
+
+
+async def test_changed_template_prompt_does_not_submit(monkeypatch):
+    """A skill preset whose prompt is not the confirmed one does not submit."""
+    from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
+    from test_agent_budget_391 import calls, reply
+
+    token = BOT_CHAT_ID.set("c")
+    try:
+        _logos_ready()
+
+        def script(messages, n):
+            if n == 0:
+                return calls(("generate_image", {
+                    "prompt": "one direction",
+                    "skill": brand.SKILL,
+                    "preset": "geometric",
+                }))
+            return calls(("generate_image", {
+                "prompt": "changed after confirm",
+                "skill": brand.SKILL,
+                "preset": "geometric",
+            }))
+
+        rig, events, confirms, submits = await _brand_turn(
+            monkeypatch, script, threshold=0.5, answers=["start", "cancel"])
+        prompts = [str(args.get("prompt") or "") for _name, args in rig.paid_mcp()]
+        texts = "\n".join(_tool_texts(events, "generate_image"))
+        assert confirms
+        assert submits == []
+        assert any(p.startswith("one direction") for p in prompts)
+        assert not any("changed after confirm" in p for p in prompts)
+        assert "参数已变化" in texts or len(confirms) >= 2
+        assert brand.submitted_slots(2) == set()
     finally:
         BOT_CHAT_ID.reset(token)
 

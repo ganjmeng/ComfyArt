@@ -75,6 +75,11 @@ _PROMPT_ONE = {
     "zh": "这次生成预计约 {total} 积分，达到了你设置的 {threshold} 积分确认线。确定开始吗？",
     "en": "This generation will cost about {total} credits, at or above your {threshold} credits confirm limit. Start?",
 }
+# Official below-line brand template card only. Other cards keep _PROMPT_ONE.
+_BRAND_TEMPLATE_UNDER = {
+    "zh": "这次生成 {total} 积分。品牌阶段每次生成都需要你确认，确定开始吗？",
+    "en": "This generation is {total} credits. Every generation in the brand stage needs your confirmation. Start now?",
+}
 # #968: an unpriced step forces a confirm card without claiming any amount (never "约 0 积分").
 _PROMPT_UNPRICED = {
     "zh": "这个任务共 {n} 步，价格暂未确定，需要你确认后按实际价格执行。确定开始吗？",
@@ -673,8 +678,12 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         if label:
             parts.append(label)
         text = " · ".join(parts)
-        slot_id = str((step.get("arguments") or {}).get("brand_slot") or "")
-        if slot_id:
+        raw_args = step.get("arguments") or {}
+        from ..api.brand_identity import is_brand_stage_template_call, template_quote_text
+        if step["tool"] == "generate_image" and is_brand_stage_template_call(raw_args):
+            text = template_quote_text(str(raw_args.get("preset") or ""), lang)
+        slot_id = str(raw_args.get("brand_slot") or "")
+        if slot_id and not is_brand_stage_template_call(raw_args):
             from ..api.brand_identity import quote_line
             named = quote_line(slot_id, lang)
             if named:
@@ -699,9 +708,14 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         ask = True
     # #1019: each brand default-path stage shows its own quote card, even under
     # the $0.50 gate. The gate itself is unchanged for every other request.
-    from ..api.brand_identity import steps_are_brand_stage
+    from ..api.brand_identity import steps_are_brand_stage, steps_include_brand_template
     brand_stage = steps_are_brand_stage(prepared)
+    template_stage = steps_include_brand_template(prepared)
     if brand_stage and any(ln.units > 0 for ln in lines):
+        ask = True
+    # A preset during an open brand stage is its own confirm, even under $0.50.
+    # A preset with no skill stays on the ordinary under-line gate.
+    if template_stage and any(ln.units > 0 for ln in lines):
         ask = True
     if len(lines) == 1 and not ask and not lines[0].unpriced:
         # #904: a known 0-credit (or under-line) single call runs as before. A single refusal
@@ -730,6 +744,13 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
     else:
         prompt = (_PROMPT_ONE if len(lines) == 1 else _PROMPT)[lang].format(
             n=len(lines), total=total_credits, threshold=ui_credits(threshold))
+        # Brand template row, under the line, every row an official quote.
+        # An estimate or unpriced row keeps the sentence above. A brand-slot
+        # card keeps brand_prompt below.
+        if (not brand_stage and template_stage
+                and total < float(threshold) and lines
+                and all(ln.source == SOURCE_QUOTE and not ln.unpriced for ln in lines)):
+            prompt = _BRAND_TEMPLATE_UNDER[lang].format(total=total_credits)
     if any(ln.reason == "list_price" for ln in lines):
         question = "确定开始吗？" if lang == "zh" else "Start?"
         gap = "" if lang == "zh" else " "  # en: "…lower. Start?", never "…lower.Start?"
