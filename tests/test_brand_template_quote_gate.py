@@ -239,25 +239,36 @@ async def _board_rig(monkeypatch, *, start: bool):
     return rig, asked
 
 
-async def test_stage2_guideline_board_without_preset_or_slot_uses_quote_card(monkeypatch):
-    """No preset and no brand_slot, stage 2: the brand default stage.
+async def test_stage2_guideline_board_without_preset_or_slot_stops_at_card1(monkeypatch):
+    """No preset and no brand_slot, stage 2, phase still need_card1.
 
-    The price is under the confirm line. The call must still enter the brand
-    quote card and submit nothing. Start is what submits it.
+    fill_default blocks with the card-1 question. There is no quote card and
+    nothing is submitted, including when a confirm answer would have been start.
     """
-    held = await _board_rig(monkeypatch, start=False)
-    rig, asked = held
-    await rig.send("选第一个方向，直接出规范板", goal="")
-    assert _gens(rig) == []
-    assert asked and all(spec.get("brand_confirm") is True for spec in asked)
+    brand.reset_for_tests()
+    BOT_CHAT_ID.set("c")
+    assert brand._progress()["phase"] == "need_card1"
+    filled = apply_generate({
+        "skill": brand.SKILL,
+        "prompt": "guideline board for the chosen direction",
+        "stage": 2,
+    }, brand.SKILL)
+    block = filled.get("_brand_block") or {}
+    assert block.get("submitted") is False
+    assert "问询卡 1" in str(block.get("error") or "")
+    assert "Card 1 has not been answered" in str(block.get("error") or "")
+    assert brand._progress()["phase"] == "need_card1"
 
-    rig, asked = await _board_rig(monkeypatch, start=True)
-    await rig.send("选第一个方向，直接出规范板", goal="")
-    gens = _gens(rig)
-    assert asked and all(spec.get("brand_confirm") is True for spec in asked)
-    assert len(gens) == 1, gens
-    assert not gens[0].get("preset")
-    assert gens[0].get("brand_slot") == "moodboard"
+    for start in (False, True):
+        rig, asked = await _board_rig(monkeypatch, start=start)
+        _res, events = await rig.send("选第一个方向，直接出规范板", goal="")
+        texts = "\n".join(getattr(ev, "text", "") or "" for ev in events)
+        assert _gens(rig) == []
+        assert asked == [], asked
+        assert not any(getattr(ev, "t", "") == "ask" for ev in events)
+        assert "问询卡 1" in texts
+        assert "确认费用" not in texts
+        assert brand._progress()["phase"] == "need_card1"
 
 
 def _moodboard_phase():
@@ -462,3 +473,85 @@ async def test_finished_brand_session_template_stays_on_the_quote_gate(monkeypat
     rig, asked = await _under_line(monkeypatch)
     await _assert_template_passthrough(rig, asked)
     assert brand._progress()["phase"] == "done"
+
+
+def _paid_prompts(rig):
+    return [str((args or {}).get("prompt") or "") for _name, args in rig.paid_mcp()]
+
+
+async def test_expired_grant_does_not_submit(monkeypatch):
+    """A grant 700s past its deadline does not pay the next generate."""
+    from test_brand_identity_1019 import _live_brand_run, _logos_ready, _quoted_generate, _short_logo_steps
+    brand.reset_for_tests()
+    token = BOT_CHAT_ID.set("c")
+    clock = {"t": 1_700_000_000.0}
+    monkeypatch.setattr(brand, "_clock", lambda: clock["t"])
+    try:
+        _logos_ready()
+
+        def script(messages, n):
+            if n == 0:
+                return calls(("quote_plan", {"steps": _short_logo_steps()}))
+            clock["t"] += 700
+            return calls(_quoted_generate("logo_a"))
+
+        rig, _res, _events, confirms, _submits = await _live_brand_run(monkeypatch, script)
+        assert confirms
+        assert rig.paid_mcp() == []
+        assert "logo_a" not in brand.submitted_slots(2)
+    finally:
+        BOT_CHAT_ID.reset(token)
+
+
+async def test_unquoted_prompt_does_not_submit(monkeypatch):
+    """A prompt that was not on the confirmed quote is not submitted in its place."""
+    from test_brand_identity_1019 import _live_brand_run, _logos_ready, _short_logo_steps
+    brand.reset_for_tests()
+    token = BOT_CHAT_ID.set("c")
+    try:
+        _logos_ready()
+        changed = "unquoted prompt that must not be sent"
+
+        def script(messages, n):
+            if n == 0:
+                return calls(("quote_plan", {"steps": _short_logo_steps()}))
+            return calls(("generate_image", {
+                "prompt": changed,
+                "skill": brand.SKILL,
+                "preset": "geometric",
+            }))
+
+        rig, _res, _events, confirms, _submits = await _live_brand_run(monkeypatch, script)
+        assert confirms
+        assert rig.paid_mcp() == []
+        assert changed not in _paid_prompts(rig)
+        assert "logo_a" not in brand.submitted_slots(2)
+    finally:
+        BOT_CHAT_ID.reset(token)
+
+
+async def test_fourth_unquoted_call_cannot_take_logo_a(monkeypatch):
+    """A generate beyond the quoted slots does not submit and does not take logo_a."""
+    from test_brand_identity_1019 import _live_brand_run, _logos_ready, _short_logo_steps
+    brand.reset_for_tests()
+    token = BOT_CHAT_ID.set("c")
+    try:
+        _logos_ready()
+        extra = "fourth call beyond the quoted slots"
+
+        def script(messages, n):
+            if n == 0:
+                return calls(("quote_plan", {"steps": _short_logo_steps()}))
+            return calls(("generate_image", {
+                "prompt": extra,
+                "skill": brand.SKILL,
+                "preset": "geometric",
+            }))
+
+        rig, _res, _events, confirms, _submits = await _live_brand_run(monkeypatch, script)
+        assert confirms
+        assert rig.paid_mcp() == []
+        assert extra not in _paid_prompts(rig)
+        assert "logo_a" not in brand.submitted_slots(2)
+    finally:
+        BOT_CHAT_ID.reset(token)
