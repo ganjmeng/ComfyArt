@@ -1771,6 +1771,13 @@ def flatten_opaque(data: bytes) -> bytes:
     return buf.getvalue()
 
 
+# Stable checklist names for the default path. The active item is the stage being quoted.
+PLAN_MOODBOARD = "Moodboard"
+PLAN_LOGOS = "Logo directions"
+PLAN_DELIVERABLES = "Deliverables"
+PLAN_ITEMS = (PLAN_MOODBOARD, PLAN_LOGOS, PLAN_DELIVERABLES)
+
+
 def default_hint() -> str:
     return (
         "When no industry template was selected, this is the brand-identity default path, "
@@ -1820,6 +1827,13 @@ def default_hint() -> str:
         "The takeaway cup must wear a cup sleeve (杯套). A bare cup is wrong. "
         "Cup and bag print both the Chinese name and the English name. "
         "Do not emit a separate palette image or a type specimen. "
+        "Before any image, call update_plan with exactly these three items, in this order, "
+        "and keep these names for the whole run: "
+        f"\"{PLAN_MOODBOARD}\" for the one moodboard, \"{PLAN_LOGOS}\" for the three logo boards, "
+        f"\"{PLAN_DELIVERABLES}\" for the four deliverables. "
+        "Call update_plan again whenever the active stage changes: mark the stage you are about to quote as active, "
+        "and mark that stage done after its images are placed. "
+        "Do not rename an item, add an item, or drop an item. "
         "Quote each stage once, before it runs (moodboard, then the three logos, then the four deliverables). "
         "Do not send a second quote card for a stage that was already confirmed, and do not quote all eight on one card. "
         "The closing message has three parts: a delivery list, an honest-limits paragraph, and a next-step suggestion. "
