@@ -1296,6 +1296,10 @@ def annotate_quote_steps(steps: list, paid_args: list | None = None) -> list:
     recognized, a sub-$0.50 stage can skip the card, and every row reads as
     the model name. Slots already on the generate calls win; otherwise the
     current stage supplies them. Other skills are left untouched.
+
+    An industry preset does not go through fill_default, so the submit args
+    have no brand_slot. Stamping one onto the quote only makes the next call
+    look like stage_repeat "continue" and skip its own confirm.
     """
     phase = str(_progress().get("phase") or "")
     paid = [a for a in (paid_args or []) if isinstance(a, dict)]
@@ -1317,6 +1321,12 @@ def annotate_quote_steps(steps: list, paid_args: list | None = None) -> list:
         args = dict(step.get("arguments") or {})
         skill = str(args.get("skill") or "")
         if skill and skill != SKILL and not args.get("brand_slot"):
+            out.append(step)
+            continue
+        # fill_default runs only when there is no preset. A preset call (with
+        # or without skill) must keep the quote fingerprint empty so each
+        # paid call above the confirm line asks on its own.
+        if str(args.get("preset") or "").strip():
             out.append(step)
             continue
         if not args.get("brand_slot") and cursor < len(queue):

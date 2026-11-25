@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import io
 
+import pytest
 from PIL import Image
 
 from ComfyArt.api import brand_identity as brand
@@ -669,7 +670,7 @@ def _logo_calls():
     )
 
 
-async def _brand_turn(monkeypatch, script):
+async def _brand_turn(monkeypatch, script, *, unit_price: float = 0.03, threshold: float | None = None):
     """One scripted turn. Pricing and MCP are local; WaveSpeed submit is counted and refused."""
     from ComfyArt.api import wavespeed
     from ComfyArt.bot.providers import TurnHandle
@@ -683,12 +684,14 @@ async def _brand_turn(monkeypatch, script):
         raise AssertionError("wavespeed.submit must not run in this test")
 
     monkeypatch.setattr(wavespeed, "submit", submit)
+    if threshold is not None:
+        monkeypatch.setattr(wavespeed, "confirm_usd", lambda: threshold)
     confirms: list = []
     rig = Rig(monkeypatch, script)
     monkeypatch.setattr(rig.p, "_run_policy", lambda: resolve_policy(env={"COMFYART_AGENT_BUDGET_LOOP": "0"}))
 
     async def price(model, inputs):
-        return (0.03, "quote", "test-stage")
+        return (unit_price, "quote", "test-stage")
 
     monkeypatch.setattr(rig.p, "_price_one", price)
 
@@ -1034,6 +1037,86 @@ async def test_stop_interrupts_before_the_next_brand_generate(monkeypatch):
         assert res.run["stop"]["reason"] == "user_stop"
     finally:
         BOT_CHAT_ID.reset(token)
+
+
+def _preset_generate(prompt: str, *, skill: bool) -> tuple[str, dict]:
+    """One industry-template generate. `skill` False omits the skill key entirely."""
+    args = {"prompt": prompt, "preset": "geometric"}
+    if skill:
+        args["skill"] = brand.SKILL
+    return ("generate_image", args)
+
+
+async def _preset_turns(monkeypatch, *, skill: bool, batched: bool, unit_price: float, turns: int = 1):
+    """phase=logos preset calls. Returns one (confirms, paid submits) pair per turn.
+
+    MCP stands in for the provider, so a submit is a generate_image that the plan
+    gate allowed. wavespeed.submit stays at 0.
+    """
+    from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
+    from test_agent_budget_391 import calls, reply
+
+    token = BOT_CHAT_ID.set("c")
+    try:
+        _logos_ready()
+        assert brand._progress().get("phase") == "logos"
+        rows = []
+        for turn in range(turns):
+            if batched:
+                items = (
+                    _preset_generate(f"mark {turn}a", skill=skill),
+                    _preset_generate(f"mark {turn}b", skill=skill),
+                )
+            else:
+                items = (_preset_generate(f"mark {turn}", skill=skill),)
+
+            def script(messages, n, items=items):
+                if n == 0:
+                    return calls(*items)
+                return reply("好")
+
+            rig, _events, confirms, submits = await _brand_turn(
+                monkeypatch, script, unit_price=unit_price, threshold=0.5)
+            paid = rig.paid_mcp()
+            assert submits == []
+            assert all("brand_slot" not in args for _name, args in paid)
+            rows.append((len(confirms), len(paid)))
+        return rows
+    finally:
+        BOT_CHAT_ID.reset(token)
+
+
+@pytest.mark.parametrize("with_skill", [True, False])
+async def test_logos_preset_single_below_line_submits_without_confirm(monkeypatch, with_skill):
+    """Below the line: two single preset calls, 0 confirms, both submit."""
+    rows = await _preset_turns(monkeypatch, skill=with_skill, batched=False, unit_price=0.03, turns=2)
+    assert rows == [(0, 1), (0, 1)]
+
+
+@pytest.mark.parametrize("with_skill", [True, False])
+async def test_logos_preset_single_above_line_each_submit_confirms(monkeypatch, with_skill):
+    """Above the line: each single preset submit has its own confirm. Reuse is the P1."""
+    rows = await _preset_turns(monkeypatch, skill=with_skill, batched=False, unit_price=0.60, turns=2)
+    assert rows == [(1, 1), (1, 1)]
+    assert sum(c for c, _s in rows) == sum(s for _c, s in rows) == 2
+
+
+@pytest.mark.parametrize("with_skill", [True, False])
+async def test_logos_preset_batch_below_line_submits_without_confirm(monkeypatch, with_skill):
+    """Below the line: one batch of two preset calls, 0 confirms, both submit."""
+    rows = await _preset_turns(monkeypatch, skill=with_skill, batched=True, unit_price=0.03, turns=1)
+    assert rows == [(0, 2)]
+
+
+@pytest.mark.parametrize("with_skill", [True, False])
+async def test_logos_preset_batch_above_line_does_not_reuse_confirm(monkeypatch, with_skill):
+    """Above the line a batch confirms once for the calls quoted together, then both submit.
+
+    A later batch confirms again (confirms stay 1, not 0). stage_repeat=continue,
+    the P1, would submit that later batch on the earlier confirm.
+    """
+    rows = await _preset_turns(monkeypatch, skill=with_skill, batched=True, unit_price=0.60, turns=2)
+    assert rows == [(1, 2), (1, 2)]
 
 
 def test_failed_generate_row_renders_the_tool_error_sentence():
