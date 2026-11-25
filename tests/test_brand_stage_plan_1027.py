@@ -79,10 +79,13 @@ def test_default_entry_payload_requires_three_stable_plan_items():
     assert "Call update_plan again whenever the active stage changes" in payload
     assert "Do not rename an item, add an item, or drop an item." in payload
     assert "Quote each stage once, before it runs" in payload
+    assert brand.PLAN_ITEMS == ("情绪板", "Logo 方向", "交付物")
     for name in brand.PLAN_ITEMS:
         assert f'"{name}"' in payload
     assert payload.index(f'"{brand.PLAN_MOODBOARD}"') < payload.index(f'"{brand.PLAN_LOGOS}"')
     assert payload.index(f'"{brand.PLAN_LOGOS}"') < payload.index(f'"{brand.PLAN_DELIVERABLES}"')
+    for old in ('"Moodboard"', '"Logo directions"', '"Deliverables"'):
+        assert old not in payload, old
     # A selected industry template keeps its own output lock and is not this protocol.
     templated = run_hint(brand.SKILL, "", preset_id="geometric")
     assert "call update_plan with exactly these three items" not in templated

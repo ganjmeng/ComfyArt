@@ -1774,9 +1774,10 @@ def flatten_opaque(data: bytes) -> bytes:
 
 
 # Stable checklist names for the default path. The active item is the stage being quoted.
-PLAN_MOODBOARD = "Moodboard"
-PLAN_LOGOS = "Logo directions"
-PLAN_DELIVERABLES = "Deliverables"
+# These are the Plan UI labels and match the Chinese quote card: 情绪板, Logo 方向, 交付物.
+PLAN_MOODBOARD = "情绪板"
+PLAN_LOGOS = "Logo 方向"
+PLAN_DELIVERABLES = "交付物"
 PLAN_ITEMS = (PLAN_MOODBOARD, PLAN_LOGOS, PLAN_DELIVERABLES)
 
 
