@@ -2797,8 +2797,8 @@ class LocalLlmProvider(AgentProvider):
                 # a preset call whose quote was stamped with the open default-stage slot,
                 # still has to reserve that slot. A template with no brand progress and no
                 # brand_slot leaves steps_are_brand_stage false and stays on the quote gate.
-                # The plan-key gate runs after this. A stamped quote row no longer matches
-                # the tool args, and that refusal used to drop the call before the grant.
+                # The plan gate runs before brand dispatch for every paid call.
+                # steps_are_brand_stage stays unconditional.
                 # session_default_stage_open is only the backup for a quote that was not
                 # stamped. It reads this chat's progress, and only moodboard/logos/finals.
                 stage_term = steps_are_brand_stage(brand_steps)
@@ -2808,7 +2808,7 @@ class LocalLlmProvider(AgentProvider):
                 brand_call = bool(call_args.get("brand_slot")) or (
                     skill == SKILL and not is_template(call_args.get("preset"))
                 ) or stage_term or session_term
-            if name in PAID_TOOLS and not brand_call and gate.blocks(name, it["args"]):
+            if name in PAID_TOOLS and gate.blocks(name, it["args"]):
                 # First block explains why. The same call blocked again stops the run
                 # instead of handing the model another "please quote_plan" result.
                 # A slot already submitted on this or an earlier turn is not a new quote.
