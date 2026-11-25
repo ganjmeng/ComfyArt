@@ -570,23 +570,27 @@ def _spec_lock() -> str:
             f"{hint}. It does not add a color. "
         )
     return (
-        "GUIDELINE LOCK: exactly seven cells, each heading once, in this order: "
-        "标识, 色彩, 变体, 字体, 版式, 使用禁忌, 影像与材质. "
-        "No heading is repeated. 版式 appears once. No empty cell. "
+        "The spec card is exactly 7 panels. Each heading appears once, in this order: "
+        "最小尺寸 (the mark at its smallest readable size), "
+        "变体 (the approved mark variants), "
+        "色彩比例 (swatches sampled from the moodboard 色彩 cell; each swatch shows the color block, "
+        "a Chinese color name, and a percentage; main colors carry the bulk; any accent is at most about 5%; "
+        "do not print a color that is absent from that cell; do not copy a stored palette and do not invent hex values), "
+        "字体层级 (this panel carries its full heading and shows the wordmark at three sizes; "
+        "the Chinese brand name and the English brand name are copied character for character; "
+        "Do not drop a character and do not substitute a character), "
+        "版式 (one filled layout diagram and nothing else), "
+        "使用禁忌 (this panel contains no small text at all; uses only those brand colors; "
+        "a red X through each misuse; do not recolor the mark; no other colors), "
+        "影像材质 (this panel contains no small text at all). "
+        "No heading is repeated. No empty panel. "
         "The only words on the card are the real Chinese brand name and the real English brand name from the brief, "
-        "copied character for character, the seven headings, and on 色彩 a Chinese color name plus a percentage. "
+        "copied character for character, these seven headings, the wordmark at three sizes, "
+        "and on the color-proportion panel a Chinese color name plus a percentage. "
         "No explanatory caption, no English subtitle, no body copy, no sample English, no extra line, and no invented words. "
-        "字体 prints the Chinese brand name character for character, every character, and the English brand name character for character. "
-        "Do not drop a character and do not substitute a character. "
-        "色彩 is a row of swatches sampled from the moodboard 色彩 cell. "
-        "Each swatch shows the color block, a Chinese color name, and a percentage. "
-        "Main colors carry the bulk. Any accent is at most about 5%. "
-        "Do not print a color that is absent from that cell. Do not copy a stored palette and do not invent hex values. "
+        "Any text that does appear anywhere must be spelled correctly (one garbled character = FAIL). "
         + hint_line
-        + "使用禁忌 uses only those brand colors. It draws the mark in those brand colors only, with a red X through each misuse. "
-        "Do not recolor the mark. No other colors. "
-        "版式 is one filled layout diagram and nothing else. "
-        "Paper ground, not black."
+        + "Paper ground, not black."
     )
 
 
@@ -709,7 +713,7 @@ def _refs_for(slot: dict, progress: dict) -> list[str]:
 # Appended to the image prompt. The three logos must not share one bird-on-a-branch drawing.
 _SLOT_LOCK = {
     "moodboard": (
-        "LAYOUT LOCK: exactly 3 equal columns and 3 equal rows, nine cells in row order from the top left. "
+        "The board is exactly 3 equal columns and 3 equal rows, nine cells in row order from the top left. "
         "Each cell has exactly one Chinese label and is filled with an image that matches that label. "
         "One label per cell. Never put several labels in one cell, and never join labels with a separator "
         "such as ｜, |, /, 、, or +. No empty cell, no blank cell, no merged cell. "
@@ -720,7 +724,7 @@ _SLOT_LOCK = {
         "Exactly three cells in each row. Warm paper ground, not a black field."
     ),
     "logo_a": (
-        "STRUCTURE LOCK A: the mark is one open single-line drawing of a bird perched on a branch. "
+        "The mark is one open single-line drawing of a bird perched on a branch. "
         "No filled plaque, no circular seal, no cup silhouette. "
         "The sheet has exactly four labelled zones, in this order: 主组合, 符号构造, 横版, 小尺寸. "
         "Each of the four zone labels appears exactly once. "
@@ -730,7 +734,7 @@ _SLOT_LOCK = {
         "No other small text. No bottom caption."
     ),
     "logo_b": (
-        "STRUCTURE LOCK B: two separate parts, a solid filled wood plaque AND a circular seal. "
+        "The mark is two separate parts, a solid filled wood plaque and a circular seal. "
         "Not a line-drawing bird standing on a branch. "
         "The sheet has exactly four labelled zones, in this order: 主组合, 符号构造, 横版, 小尺寸. "
         "Each of the four zone labels appears exactly once. "
@@ -740,27 +744,27 @@ _SLOT_LOCK = {
         "No other small text. No garbled English captions. No bottom caption."
     ),
     "logo_c": (
-        "STRUCTURE LOCK C: the badge is a cup-shaped container. A perched bird is the negative space inside the cup, "
+        "The badge is a cup-shaped container. A perched bird is the negative space inside the cup, "
         "not a bird standing on a branch outside it. Not a circular seal, not a wood plaque. "
         "The sheet has exactly four labelled zones, in this order: 主组合, 符号构造, 横版, 小尺寸. "
         "Each of the four zone labels appears exactly once. "
         "符号构造 shows the actual symbol construction. No empty placeholder box and no X box. "
         "小尺寸 includes the symbol, not the wordmark alone. "
-        "In each zone the Chinese brand name and the English brand name appear together exactly once. "
+        "The wordmark appears exactly once per zone. "
         "No other small text. No garbled English captions. No bottom caption."
     ),
     "cup": (
-        "APPLICATION LOCK: the takeaway cup must wear a cup sleeve (杯套). A bare cup with no sleeve is wrong. "
-        "The print is a complete bilingual lockup: "
-        "the Chinese brand name AND the English brand name, both readable. Do not print the English name alone. "
+        "The takeaway cup must wear a cup sleeve (杯套). A bare cup with no sleeve is wrong. "
+        "The print shows the Chinese brand name AND the English brand name, both readable. "
+        "Do not print the English name alone. "
         "No extra English captions. A real cup on a light ground, not a black void."
     ),
     "bag": (
-        "APPLICATION LOCK: paper bag. Complete bilingual lockup, Chinese name and English name both readable. "
+        "Paper bag. The Chinese name and the English name are both readable. "
         "Not English only. No garbled captions. Real paper, not a black void."
     ),
     "storefront": (
-        "APPLICATION LOCK: the full shopfront, front view, the facade filling the frame edge to edge. "
+        "The full shopfront, front view, the facade filling the frame edge to edge. "
         "The fascia carries the Chinese brand name and the English brand name once. "
         "An A-frame standing sign stands on the pavement in front of the entrance. "
         "Not a hanging-sign close-up. No garbled small type."
@@ -1634,19 +1638,25 @@ def default_hint() -> str:
         "符号构造 shows the actual symbol construction. No empty placeholder box and no X box. "
         "小尺寸 includes the symbol, not the wordmark alone. "
         "The Chinese name and the English name appear together exactly once in each zone. No other small text. "
+        "On direction C the wordmark appears exactly once per zone. "
         "Pass the moodboard shape id in refs. "
         "Card 3 bi_direction: three options with image_url of those boards, exactly one recommended, nothing preselected. "
         "Then exactly four deliverables, brand_slot spec, cup, bag (each 1536x2048 3:4) and storefront (2048x1152 16:9). "
-        "refs are the chosen logo shape and the moodboard. The spec card is exactly seven cells, each heading once: "
-        "标识, 色彩, 变体, 字体, 版式, 使用禁忌, 影像与材质. "
-        "No heading is repeated. The only words are the Chinese brand name and the English brand name from the brief, "
-        "copied character for character, those seven headings, and on 色彩 a Chinese color name plus a percentage. "
+        "refs are the chosen logo shape and the moodboard. The spec card is exactly 7 panels. Each heading appears once, in this order: "
+        "最小尺寸 (the mark at its smallest readable size), "
+        "变体 (the approved mark variants), "
+        "色彩比例 (swatches sampled from the moodboard 色彩 cell; each swatch has the color block, a Chinese color name, and a percentage; "
+        "main colors carry the bulk; any accent is at most about 5%; do not invent hex values), "
+        "字体层级 (this panel carries its full heading and shows the wordmark at three sizes; "
+        "every character of both names, character for character; Do not drop or substitute a character), "
+        "版式 (one filled layout diagram and nothing else), "
+        "使用禁忌 (this panel contains no small text at all; uses only those brand colors and draws a red X through each misuse), "
+        "影像材质 (this panel contains no small text at all). "
+        "No heading is repeated. No empty panel. "
+        "The only words are the Chinese brand name and the English brand name from the brief, "
+        "copied character for character, those seven headings, the wordmark at three sizes, and on the color-proportion panel a Chinese color name plus a percentage. "
         "No explanatory caption, no English subtitle, no body copy, and no sample English. "
-        "色彩 samples the moodboard 色彩 cell. Each swatch has the color block, a Chinese color name, and a percentage. "
-        "Main colors carry the bulk. Any accent is at most about 5%. Do not invent hex values. "
-        "字体 prints every character of both names. Do not drop or substitute a character. "
-        "使用禁忌 uses only those brand colors and draws a red X through each misuse. No other colors. "
-        "版式 is one filled layout diagram. "
+        "Any text that does appear anywhere must be spelled correctly (one garbled character = FAIL). "
         "The storefront is the full shopfront, front view, with the names once on the fascia and an A-frame standing sign. "
         "The takeaway cup must wear a cup sleeve (杯套). A bare cup is wrong. "
         "Cup and bag print both the Chinese name and the English name. "

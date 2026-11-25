@@ -992,7 +992,7 @@ def _preset_hint(sid: str, preset_id: str, user_text: str) -> str:
             "one per distinct direction (different shape language, palette and type); then stop and ask "
             "the user to choose one. Do not render stage 2 before they pick. Stage 2, only after they pick "
             "a direction (or say you decide): exactly 1 guideline board with the main mark, horizontal and "
-            "stacked lockups, black-and-white versions and basic usage examples; pass stage=2. "
+            "stacked arrangements of the mark and the name, black-and-white versions and basic usage examples; pass stage=2. "
             f"Every generate_image passes skill={sid!r} and preset={preset!r}, count=1; total exactly "
             f"{total} images, never a 5th and never 4 in one round." + override
         )

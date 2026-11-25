@@ -128,12 +128,13 @@ def test_each_slot_prompt_locks_a_different_structure():
     a = brand.fill_default({"brand_slot": "logo_a", "prompt": "方向A"})
     b = brand.fill_default({"brand_slot": "logo_b", "prompt": "方向B"})
     c = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})
-    assert "STRUCTURE LOCK A" in a["prompt"] and "single-line" in a["prompt"]
-    assert "STRUCTURE LOCK B" in b["prompt"] and "circular seal" in b["prompt"]
-    assert "STRUCTURE LOCK C" in c["prompt"] and "cup-shaped" in c["prompt"]
+    assert "one open single-line drawing" in a["prompt"] and "single-line" in a["prompt"]
+    assert "solid filled wood plaque and a circular seal" in b["prompt"] and "circular seal" in b["prompt"]
+    assert "cup-shaped" in c["prompt"]
     assert "single-line" not in b["prompt"]
     assert "perched bird is the negative space inside the cup" in c["prompt"]
     assert "bird standing on a branch" in c["prompt"]
+    assert "The wordmark appears exactly once per zone." in c["prompt"]
     for board in (a, b, c):
         assert "主组合, 符号构造, 横版, 小尺寸" in board["prompt"]
         assert "exactly once" in board["prompt"]
@@ -143,10 +144,20 @@ def test_each_slot_prompt_locks_a_different_structure():
         assert "No empty placeholder box" in board["prompt"] and "no X box" in board["prompt"]
         assert "小尺寸 includes the symbol" in board["prompt"]
     spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})
-    assert "exactly seven cells" in spec["prompt"]
-    assert "标识, 色彩, 变体, 字体, 版式, 使用禁忌, 影像与材质" in spec["prompt"]
-    assert "No heading is repeated" in spec["prompt"] and "版式 appears once" in spec["prompt"]
-    assert "版式 is one filled layout diagram" in spec["prompt"]
+    headings = ["最小尺寸", "变体", "色彩比例", "字体层级", "版式", "使用禁忌", "影像材质"]
+    assert "exactly 7 panels" in spec["prompt"]
+    assert spec["prompt"].count("exactly 7 panels") == 1
+    positions = [spec["prompt"].index(heading) for heading in headings]
+    assert positions == sorted(positions)
+    for heading in headings:
+        assert spec["prompt"].count(heading) == 1, heading
+    assert "影像与材质" not in spec["prompt"]
+    assert "No heading is repeated" in spec["prompt"]
+    assert "one filled layout diagram" in spec["prompt"]
+    assert "carries its full heading" in spec["prompt"] and "wordmark at three sizes" in spec["prompt"]
+    assert "this panel contains no small text at all" in spec["prompt"]
+    assert spec["prompt"].count("no small text at all") == 2
+    assert "one garbled character = FAIL" in spec["prompt"]
     assert "moodboard 色彩 cell" in spec["prompt"]
     assert "Chinese color name, and a percentage" in spec["prompt"]
     assert "real Chinese brand name" in spec["prompt"] and "real English brand name" in spec["prompt"]
@@ -157,7 +168,6 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "no body copy" in spec["prompt"] and "no sample English" in spec["prompt"]
     assert "uses only those brand colors" in spec["prompt"]
     assert "title, subtitle" not in spec["prompt"]
-    assert "最小尺寸" not in spec["prompt"]
     assert "#" not in spec["prompt"]
     assert "moodboard 色彩 cell" in hint
     assert "Do not state hex values" in hint and "exact values are on the spec card" in hint
@@ -167,12 +177,12 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "A-frame standing sign" in store["prompt"]
     assert "Not a hanging-sign close-up" in store["prompt"]
     cup = brand.fill_default({"brand_slot": "cup", "prompt": "杯"})
-    assert "使用禁忌" in spec["prompt"] and "影像与材质" in spec["prompt"]
+    assert "使用禁忌" in spec["prompt"] and "影像材质" in spec["prompt"]
     assert "Chinese brand name AND the English brand name" in cup["prompt"]
     assert "must wear a cup sleeve" in cup["prompt"] and "杯套" in cup["prompt"]
     assert "A bare cup with no sleeve is wrong." in cup["prompt"]
     again = brand.fill_default({"brand_slot": "logo_a", "prompt": a["prompt"]})
-    assert again["prompt"].count("STRUCTURE LOCK A") == 1
+    assert again["prompt"].count("one open single-line drawing of a bird perched on a branch") == 1
 
 
 def test_a_second_confirm_of_the_same_stage_does_not_double_the_total():
@@ -269,6 +279,56 @@ def test_flatten_puts_alpha_on_white_and_leaves_opaque_bytes():
         assert img.getpixel((0, 0)) == (255, 255, 255)
 
 
+SPEC_HEADINGS = ("最小尺寸", "变体", "色彩比例", "字体层级", "版式", "使用禁忌", "影像材质")
+# Printable directive tokens. "Output lock:" stays the injected hint marker the app strips
+# before it reads the user's own words; it is not an all-caps token on the image prompt.
+_LOCK_DIRECTIVE = __import__("re").compile(r"\b(?:[A-Z]{2,} +)+LOCK\b")
+
+
+def _brand_prompt_sources() -> list[tuple[str, str]]:
+    import json
+    from pathlib import Path
+
+    from ComfyArt.bot.skill_output import run_hint
+
+    root = Path("src")
+    skills = (root / "skills.ts").read_text(encoding="utf-8")
+    start = skills.index("id: 'brand-identity-director'")
+    skill = skills[start:skills.index("id: 'packaging-design-director'", start)]
+    copy = json.loads((root / "data/copy-748.json").read_text(encoding="utf-8"))["brand-identity-director"]
+    texts = [("skill", skill), ("copy-748", json.dumps(copy, ensure_ascii=False))]
+    texts.append(("default-hint", brand.default_hint()))
+    for pid in ("geometric", "handmade", "tech", "beauty", "foodbev", "pet"):
+        texts.append((f"hint:{pid}", run_hint(brand.SKILL, "", preset_id=pid)))
+    for slot in ("moodboard", "logo_a", "logo_b", "logo_c", "spec", "cup", "bag", "storefront"):
+        filled = brand.fill_default({"brand_slot": slot, "prompt": "栖木"})
+        texts.append((slot, filled["prompt"]))
+    return texts
+
+
+def test_spec_card_is_seven_lovart_panels_and_brand_prompts_have_no_lock_words():
+    spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})["prompt"]
+    assert "exactly 7 panels" in spec
+    assert [spec.index(heading) for heading in SPEC_HEADINGS] == sorted(spec.index(heading) for heading in SPEC_HEADINGS)
+    for heading in SPEC_HEADINGS:
+        assert spec.count(heading) == 1, heading
+    assert "影像与材质" not in spec and "标识," not in spec
+    assert "carries its full heading" in spec and "wordmark at three sizes" in spec
+    assert spec.count("no small text at all") == 2
+    assert "使用禁忌 (this panel contains no small text at all" in spec
+    assert "影像材质 (this panel contains no small text at all" in spec
+    assert "one garbled character = FAIL" in spec
+    logo_c = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})["prompt"]
+    assert "主组合, 符号构造, 横版, 小尺寸" in logo_c
+    assert "perched bird is the negative space inside the cup" in logo_c
+    assert "The wordmark appears exactly once per zone." in logo_c
+    for name, text in _brand_prompt_sources():
+        assert _LOCK_DIRECTIVE.search(text) is None, name
+        assert "lockup" not in text.lower(), name
+        assert "STRUCTURE LOCK" not in text and "GUIDELINE LOCK" not in text
+        assert "LAYOUT LOCK" not in text and "APPLICATION LOCK" not in text
+
+
 def test_closing_rules_are_in_the_skill_instructions():
     from pathlib import Path
     text = Path("src/skills.ts").read_text(encoding="utf-8")
@@ -282,7 +342,14 @@ def test_closing_rules_are_in_the_skill_instructions():
     assert "moodboard color cell" in skill
     assert "no invented words" in skill
     assert "no body copy" in skill and "cup sleeve" in skill
-    assert "标识, 色彩, 变体, 字体, 版式, 使用禁忌, 影像与材质" in skill
+    skill_headings = ["最小尺寸", "变体", "色彩比例", "字体层级", "版式", "使用禁忌", "影像材质"]
+    assert "exactly 7 panels" in skill
+    assert [skill.index(heading) for heading in skill_headings] == sorted(skill.index(heading) for heading in skill_headings)
+    for heading in skill_headings:
+        assert skill.count(heading) == 1, heading
+    assert "no small text at all" in skill and "one garbled character = FAIL" in skill
+    assert "carries its full heading" in skill and "wordmark at three sizes" in skill
+    assert "wordmark appears exactly once per zone" in skill
     assert "#" not in skill
     hint = brand.default_hint()
     assert "矢量替换" in hint and "色值为屏幕估算" in hint
