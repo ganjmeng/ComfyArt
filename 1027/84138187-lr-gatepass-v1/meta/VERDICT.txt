@@ -1,0 +1,104 @@
+Paid L/R verdict — ComfyArt PR #1027
+Times are Asia/Shanghai (CST, UTC+8).
+
+SHA under test (git ls-remote verified before the runner and unchanged at start):
+  841381871526f85aae53a38897f9208cf90f9b83
+  branch cursor/brand-gate-followup-6654
+  parent 740b5c6f0e560cde88785f5902424d13a8d6ebfe
+  base main 8d17bd77bd5e0246cc4250b9edd0269c7c99772e
+  PR https://github.com/ganjmeng/ComfyArt/pull/1027
+Project / chat (new session, default brand path, not the 3+1 template, started at card 1):
+  project 1baa954c
+  chat 8484bc12b6de4e47afe94ca0664d2ae4
+  app http://127.0.0.1:8942/comfyart/?project=1baa954c
+Evidence: /workspace/qa-1027-handoff/84138187-v1/paid/lr-gatepass-v1/
+  (did not overwrite paid/NOT_RUN.txt or older handoffs)
+
+PRIMARY VERDICT
+- 规范卡 / spec vs gold spec.png: FAIL
+- Logo C vs gold logo-c.png: FAIL
+- Other six (moodboard, logo_a, logo_b, cup, bag, storefront) vs the same gold folder: REGRESSION (all six generated newly on this SHA; none reused from f4087fa6 or earlier)
+
+This is not a merge / Ready signal. Official GATE=1 had already passed on this SHA and was not re-run. #1046 was not gated or spent on.
+
+TIMES
+  ls-remote + WaveSpeed balance preflight: 2026-11-26 05:50:42 CST (balance 18.836708 USD)
+  Isolated server start (port 8942, fresh user dir): 2026-11-26 05:55:31 CST
+  Runner start (new chat): 2026-11-26 05:57:00 CST
+  Quote 1 confirmed (moodboard, 3 credits): 2026-11-26 05:57:21 CST
+  Quote 2 UI click (did not land; see notes): 2026-11-26 05:58:15 CST
+  Quote 2 API reconfirm (same 9-credit logo quote): 2026-11-26 06:03:02 CST
+  Card 3 answered A; quote 3 confirmed (12 credits): 2026-11-26 06:03:58 CST
+  All 8 WaveSpeed outputs on disk: 2026-11-26 06:05 CST
+  Assistant wrap-up done; transcript dumped: 2026-11-26 06:06 CST
+  Post-run balance: 2026-11-26 06:07:55 CST (18.596708 USD)
+
+MODEL AND SIZES
+  Path: official default brand-identity path; WaveSpeed; UI Auto.
+  Moodboard generate_image call included model wavespeed-ai/qwen-image-2.0/text-to-image (Auto resolved, then passed through).
+  Logo and deliverable generate_image calls did not pass a model in the tool args; the server filled wavespeed-ai/qwen-image-2.0/edit.
+  No skill pin or api/auto_models.json change. COMFYART_AGENT_BUDGET_LOOP was never set. No wallet top-up. No merge, no Ready, no GitHub PR comment, no app-source commit.
+
+  moodboard   2048x1152  t2i   pred 925cb3cb56f34635936fd53082492c11  file orig/moodboard.png
+  logo_a      2048x2048  edit  pred 55ec63fad42d48a8976d061e9fdbe4d6  file orig/logo_a.png
+  logo_b      2048x2048  edit  pred e2e6e28774874cf2958d5ee05bbd4350  file orig/logo_b.png
+  logo_c      2048x2048  edit  pred 12a2e3603d0946539b2f5bb5494aac3c  file orig/logo_c.png
+  spec        1536x2048  edit  pred 6d488e78394b409f8ca9d807a8da9c7d  file orig/spec.png
+  cup         1536x2048  edit  pred 5d368fc6998e49b4bb8bd72fddc41cbb  file orig/cup.png
+  bag         1536x2048  edit  pred fc271aa67a45451f833d75e134284fa2  file orig/bag.png
+  storefront  2048x1152  edit  pred 85395e369fb14d12848cf556965e4ad8  file orig/storefront.png
+
+SPEND
+  Planned band 3 / 9 / 12. Hard stop 30. Did not stop over 30.
+  Quoted: moodboard 3 (cum 3); logos 9 (UI cum 12); deliverables 12 (UI cum 21).
+  Confirmed stage sum: 24 credits.
+  WaveSpeed wallet: 18.836708 -> 18.596708 USD, delta 0.24 USD = 24 credits (1 credit = $0.01). Matches the 8x3 quote, not the last card's displayed cumulative 21.
+  The last-quote cumulative of 21 is an accounting inconsistency (the still-pending logo ask in the API had said 累计 9, then 9+12=21). Actual debit is 24. No further spend after that.
+
+BRIEF AND CARD ANSWERS
+  Brief (from tests/test_brand_identity_e2e_1019.py and review-1027 sessions):
+  品牌名：栖木咖啡（QIMU COFFEE）。社区精品咖啡店，目标人群 25–35 岁城市白领，关键词：温暖、自然、手作。需要 logo 与基础品牌视觉系统。
+
+  Intended letters (OPTIONS.txt), from inspecting the Lovart golds:
+  Card 1: bi_delivery A only; bi_color A (暖土色为主 + 低饱和靛蓝点缀, because the gold has terracotta/caramel/rice/dark-roast PLUS indigo accent — not pure-earth B); bi_mark A (符号+中英字标); bi_source A.
+  Card 2: A confirm.
+  Card 3: A 单线鸟停枝 (gold applications use the line-bird mark, not the cup-badge).
+
+  Live card 1 / card 2 did not show the locked _CARD1_ZH / _CARD2_ZH wording. On this SHA, _live_options keeps the model's Chinese labels when the option count matches, and uses the locked labels only as fallback. We still clicked letter A on each page, as specified for the locked skeleton:
+    delivery A live text: 「Logo 与基础系统」（规范卡 / 杯袋 / 门头 were B/C/D — not packed into A）
+    color A live text: 「暖木棕 + 米白」（no indigo in the label; C was 陶土橘 + 燕麦）
+    mark A live text: 「栖鸟与枝 / 单线小鸟停在枝上」
+    source A live text: 「没有，从零开始」
+  The default 3-stage plan still produced all 8 images (quote 3 listed 规范卡 / 外带杯与杯套 / 纸袋 / 门店门头).
+  Card 3 lock did apply: displayed 「单线鸟停枝」, and we selected A. (Model raw copy had recommended C; it was not preselected.)
+
+规范卡 vs gold — FAIL (layout, crop, type, and locked copy)
+  Layout / crop / atmosphere: gold is a dense 7-panel editorial board on a warm paper field with dark vignetting. Ours is a sparse poster-like board on a flat cream field with almost no vignette. The composition does not follow the gold.
+  Headings: bilingual titles are present, but not the locked 7-title set in order. Visible headings are 标识 / LOGO, 色彩 / COLOR, 变体 / VARIANTS, 版式 / TYPE, 使用禁忌 / MISUSE, 影像与材质 / IMAGE. 「版式 / TYPE」 mixes the 版式 and 字体 titles (TYPE should belong to 字体; LAYOUT to 版式). There is no 字体 / TYPE heading and no typographic hierarchy panel of the gold's density (pt sizes, tracking, stacked 栖木咖啡 / QIMU COFFEE). That is fewer than seven correct panels, and it is not the locked order.
+  「最小使用尺寸」 appears only as quoted words under the mark, with no size diagram or ≥20 mm / 90 mm cup annotation. It is not a separate 8th panel, but it is also not a useful in-panel annotation like the gold.
+  Color panel: swatches are wood-texture tiles, not flat sampled chips. Labels are garbled (変彩 18%, 亜体 10%, 栖本 20%, 稠非 29%, 色体 55%) — not Chinese color names, no 主色/辅助/底色/点缀 roles, percentages sum to 132%, no indigo chip. Gold is 陶土橘 35% / 焦糖棕 25% / 燕麦奶白 25% / 深焙棕 12% / 低饱和靛蓝 3%.
+  使用禁忌 / MISUSE and 影像与材质 / IMAGE keep short captions (we did not treat “no small text” as a pass), but the captions are wrong or garbled (「使用禁忌 + 版懽庇」, 「最土色为主 + 低饱和靛蓝点缀」). Misuse is two color tiles with red X marks, not gold-style mark-misuse diagrams.
+  Paper ground, not black: cream paper, not a black field. Fail on matching the gold's warm paper + vignette, not on a black-ground regression.
+  Brand CN/EN is spelled correctly where the mark appears: 栖木咖啡 / QIMU COFFEE. Other body words on the card are not spelled correctly (変彩 / 亜体 / 栖本 / 稠非 / 主为胧 / 版懽庇). No local font overlay or grey caption box was added; all type is in the generated pixels.
+  Did not use any f4087fa6 / #1046 visual contrast to change the locked brief.
+
+Logo C vs gold logo-c.png — FAIL
+  Gold C is a cup-shaped badge (vessel silhouette, no handle) with the bird as negative space, plus construction, indigo and terracotta reversals, lid-sticker / emboss / small-size and horizontal lockups.
+  Ours uses the required four-zone board (主组合 / 符号构造 / 横版 / 小尺寸) and a cream paper ground, and spells 栖木咖啡 / QIMU COFFEE correctly, but the mark itself is a literal handled coffee-cup illustration with a positively drawn bird inside, not a cup-badge / negative-space construction. Missing indigo reversal, terracotta badge, geometry overlay of the vessel, and the gold's small-size set (图标 / 杯盖贴 / 压印). Layout, mark construction, and crop do not match the gold.
+
+OTHER SIX — generated, regression vs gold
+  moodboard: 3x3 structure and 栖木咖啡 / QIMU COFFEE are in the right direction. Color cell has no indigo chip or 「暖土为主 · 靛蓝点缀」 annotation; storefront tile is wood, not the gold indigo fascia; layout tile has tiny dense type instead of the gold wireframe; stamp is 「栖木」 only.
+  logo_a: four zones present; bird is a fuller illustrated bird, not the gold's single continuous-line construction; small-size badge set (square / circle / reverse) is missing.
+  logo_b: wooden plaque + circular mark are present, but the gold's indigo rubber-stamp wordmark is missing; the plaque is a realistic block rather than the gold's solid signboard.
+  cup: sleeve is present; 栖木咖啡 / QIMU COFFEE and the A bird are readable. Gold set (terracotta cup + iced cup + laid-out sleeve with indigo rule) is reduced to one white cup; no indigo accent.
+  bag: kraft bag, rope handles, bilingual name and bird are present. Missing the second bag, the indigo side stripe, and the peeking coffee pack of the gold.
+  storefront: bilingual name and bird are on the fascia; A-frame and hanging sign exist. Fascia is wood, not the gold indigo band that carries the horizontal lockup — a clear color-system regression.
+
+NOTES / PROCESS
+  First Playwright launch failed on missing PIL before any Go click (no spend). Relaunch used /workspace/ca-venv (Playwright + PIL).
+  Logo quote: clicking chat-inline-confirm-ok at 05:58:15 CST did not resolve the pending plan_quote (still pending at 06:02, API prompt said 累计 9). Reconfirmed once via POST /comfyart/bot/chats/{cid}/asks/70b0e2c4db3440398be6bfd0c567bcf9/answer {selected:["start"]} at 06:03:02 CST, HTTP 202 {"ok": true}. The same 9-credit quote then submitted the three logo tasks. Deliverable confirm via the UI click did land (no leftover pending ask; four jobs ran).
+  Isolated runtime: /workspace/review-1027/runtime-84138187 with a fresh ComfyUI/user (the original 26bf data.db / ledger was not opened or written). Server on 127.0.0.1:8942 only. The older 8940 26bf server was left alone.
+  Matrix and stale-card rules were not in scope for this spend.
+  Wrap-up copy used 「交付清单」, not the e2e fixture string 「本次交付清单」.
+
+NO GitHub PR comment was posted. No merge, no Ready, no pin into app source, no force-push, no room message.

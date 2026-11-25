@@ -1,0 +1,34 @@
+Paid L/R option record — PR #1027 SHA 841381871526f85aae53a38897f9208cf90f9b83
+Times are Asia/Shanghai (CST, UTC+8).
+Brief (tests/test_brand_identity_e2e_1019.py and review-1027 sessions, identical):
+品牌名：栖木咖啡（QIMU COFFEE）。社区精品咖啡店，目标人群 25–35 岁城市白领，关键词：温暖、自然、手作。需要 logo 与基础品牌视觉系统。
+
+New chat, default brand-identity path, start at card 1 (not mid-flow, not 3+1 template).
+Card labels from api/brand_identity.py _CARD1_ZH / _CARD2_ZH / _CARD3_ZH on this SHA.
+Selections were chosen by inspecting Lovart gold /workspace/lovart-originals/2wplut92uozk/, not by blindly copying older “all A” sessions.
+
+Card 1
+- bi_delivery: A only — 核心套装：Logo + 规范卡 + 外带杯/杯套 + 纸袋 + 门头
+  (core 8-image set). Did not add B/C/D; gold run is this set, no menu/social/card extras required.
+- bi_color: A — 暖土色为主 + 低饱和靛蓝点缀
+  Gold moodboard is explicitly labeled “色彩 / 暖土为主 · 靛蓝点缀” with an indigo swatch (~10% on the board).
+  Gold spec lists 陶土橘 35% / 焦糖棕 25% / 燕麦奶白 25% / 深焙棕 12% / 低饱和靛蓝 3%（点缀）.
+  Applications use that indigo accent (storefront fascia, bag side stripe, cup-sleeve rule).
+  Option B is “纯暖土色系” (warm earth only) and would drop the indigo accent, so it does not match the gold.
+  Option C (sage green) is not in the gold.
+- bi_mark: A — 图形符号 + 中英文字标
+  Gold mark is the bird-on-branch symbol plus 栖木咖啡 / QIMU COFFEE, not a wordmark-only lockup and not primarily a round seal.
+- bi_source: A — 没有实拍图，用 AI 生成示意场景与容器
+  (locked by the paid-path brief; gold scenes are generated, not uploaded photos.)
+
+Card 2 bi_moodboard: A — 就这版，通过
+  Only A (or Skip) may continue; pick A to confirm the board.
+
+Card 3 bi_direction: A — 单线鸟停枝
+  Default path still generates logo_a, logo_b, and logo_c before this card.
+  Primary L/R for logo C remains vs logo-c.png (cup-shaped negative space).
+  Gold applications (spec, cup, bag, storefront, and the moodboard application tiles) all use the
+  single-line bird-on-branch mark from logo-a.png, not the cup-badge from logo-c.png.
+  Therefore select A so the four deliverables follow the gold’s chosen mark, not C.
+
+Budget: quote first each stage, expected 3 / 9 / 12 credits (moodboard / 3 logos / 4 deliverables), hard stop if quoted or actual would exceed 30. WaveSpeed, no named model, no top-up, no COMFYART_AGENT_BUDGET_LOOP, no original-ledger edits.

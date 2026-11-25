@@ -1,0 +1,138 @@
+{
+  "moodboard": {
+    "file": "ws_925cb3cb56f3_0.png",
+    "pred": "925cb3cb56f34635936fd53082492c11",
+    "model": "wavespeed-ai/qwen-image-2.0/text-to-image",
+    "gold": "moodboard.png",
+    "ours_path": "/workspace/qa-1027-handoff/84138187-v1/paid/lr-gatepass-v1/orig/moodboard.png",
+    "ours_size": [
+      2048,
+      1152
+    ],
+    "ours_sha256": "233e579bc1ce23982b8c9b9a42cb8af46a6573b24a34ddf9e172a5428b09f76f",
+    "gold_path": "/workspace/lovart-originals/2wplut92uozk/moodboard.png",
+    "gold_size": [
+      2048,
+      1152
+    ]
+  },
+  "logo_a": {
+    "file": "ws_55ec63fad42d_0.png",
+    "pred": "55ec63fad42d48a8976d061e9fdbe4d6",
+    "model": "wavespeed-ai/qwen-image-2.0/edit",
+    "gold": "logo-a.png",
+    "ours_path": "/workspace/qa-1027-handoff/84138187-v1/paid/lr-gatepass-v1/orig/logo_a.png",
+    "ours_size": [
+      2048,
+      2048
+    ],
+    "ours_sha256": "a92328faf5d567afba68e474ad4b9e439848ce08dd67f033c9f043cdeedf30f6",
+    "gold_path": "/workspace/lovart-originals/2wplut92uozk/logo-a.png",
+    "gold_size": [
+      2048,
+      2048
+    ]
+  },
+  "logo_b": {
+    "file": "ws_e2e6e2877487_0.png",
+    "pred": "e2e6e28774874cf2958d5ee05bbd4350",
+    "model": "wavespeed-ai/qwen-image-2.0/edit",
+    "gold": "logo-b.png",
+    "ours_path": "/workspace/qa-1027-handoff/84138187-v1/paid/lr-gatepass-v1/orig/logo_b.png",
+    "ours_size": [
+      2048,
+      2048
+    ],
+    "ours_sha256": "4b8d118b8b67ee3bef1a42f2d258cbcae1ab6b70ae840f132a560ce5aab0b6df",
+    "gold_path": "/workspace/lovart-originals/2wplut92uozk/logo-b.png",
+    "gold_size": [
+      2048,
+      2048
+    ]
+  },
+  "logo_c": {
+    "file": "ws_12a2e3603d09_0.png",
+    "pred": "12a2e3603d0946539b2f5bb5494aac3c",
+    "model": "wavespeed-ai/qwen-image-2.0/edit",
+    "gold": "logo-c.png",
+    "ours_path": "/workspace/qa-1027-handoff/84138187-v1/paid/lr-gatepass-v1/orig/logo_c.png",
+    "ours_size": [
+      2048,
+      2048
+    ],
+    "ours_sha256": "4c0fc900ade8fca175dc3cb59ae74f6890bf223a910e8d60b57f174a5c61d429",
+    "gold_path": "/workspace/lovart-originals/2wplut92uozk/logo-c.png",
+    "gold_size": [
+      2048,
+      2048
+    ]
+  },
+  "spec": {
+    "file": "ws_6d488e78394b_0.png",
+    "pred": "6d488e78394b409f8ca9d807a8da9c7d",
+    "model": "wavespeed-ai/qwen-image-2.0/edit",
+    "gold": "spec.png",
+    "ours_path": "/workspace/qa-1027-handoff/84138187-v1/paid/lr-gatepass-v1/orig/spec.png",
+    "ours_size": [
+      1536,
+      2048
+    ],
+    "ours_sha256": "d3b362a67f92c19a62169fdc4bf249742681a92030d3d30529aa334ba2a0576f",
+    "gold_path": "/workspace/lovart-originals/2wplut92uozk/spec.png",
+    "gold_size": [
+      1536,
+      2048
+    ]
+  },
+  "cup": {
+    "file": "ws_5d368fc6998e_0.png",
+    "pred": "5d368fc6998e49b4bb8bd72fddc41cbb",
+    "model": "wavespeed-ai/qwen-image-2.0/edit",
+    "gold": "cup.png",
+    "ours_path": "/workspace/qa-1027-handoff/84138187-v1/paid/lr-gatepass-v1/orig/cup.png",
+    "ours_size": [
+      1536,
+      2048
+    ],
+    "ours_sha256": "dd05a926fde3499950b5f4f46aa7c4c1a233ae9aebb8c28bbb0f94fc9f586393",
+    "gold_path": "/workspace/lovart-originals/2wplut92uozk/cup.png",
+    "gold_size": [
+      1536,
+      2048
+    ]
+  },
+  "bag": {
+    "file": "ws_fc271aa67a45_0.png",
+    "pred": "fc271aa67a45451f833d75e134284fa2",
+    "model": "wavespeed-ai/qwen-image-2.0/edit",
+    "gold": "bag.png",
+    "ours_path": "/workspace/qa-1027-handoff/84138187-v1/paid/lr-gatepass-v1/orig/bag.png",
+    "ours_size": [
+      1536,
+      2048
+    ],
+    "ours_sha256": "a8622544fca6d50b52ba6090d21d43baaf8d532187a189fd589b85472e784024",
+    "gold_path": "/workspace/lovart-originals/2wplut92uozk/bag.png",
+    "gold_size": [
+      1536,
+      2048
+    ]
+  },
+  "storefront": {
+    "file": "ws_85395e369fb1_0.png",
+    "pred": "85395e369fb14d12848cf556965e4ad8",
+    "model": "wavespeed-ai/qwen-image-2.0/edit",
+    "gold": "storefront.png",
+    "ours_path": "/workspace/qa-1027-handoff/84138187-v1/paid/lr-gatepass-v1/orig/storefront.png",
+    "ours_size": [
+      2048,
+      1152
+    ],
+    "ours_sha256": "894d3cacc9fa8e2411a3b9527b76655a0cfb905839db53a6cf5827c310146c08",
+    "gold_path": "/workspace/lovart-originals/2wplut92uozk/storefront.png",
+    "gold_size": [
+      2048,
+      1152
+    ]
+  }
+}

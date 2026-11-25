@@ -1,0 +1,51 @@
+{
+  "sha": "841381871526f85aae53a38897f9208cf90f9b83",
+  "started_at": "2026-11-26 05:57:00 CST",
+  "hard_stop_credits": 30,
+  "quoted": [
+    {
+      "stage": "moodboard",
+      "parsed": {
+        "stage": 3,
+        "cumulative": 3,
+        "totals": [
+          3
+        ],
+        "raw": "确认费用\n\n这个阶段共 1 张。本阶段 3 积分，累计 3 积分（含本阶段）。确定开始吗？尺寸固定，不可修改。\n\n情绪板 2048×1152 16:9\n3 积分\n总价\n3 积分\n取消\n继续生成"
+      },
+      "at": "2026-11-26 05:57:21 CST"
+    },
+    {
+      "stage": "logos",
+      "parsed": {
+        "stage": 9,
+        "cumulative": 12,
+        "totals": [
+          9
+        ],
+        "raw": "确认费用\n\n这个阶段共 3 张。本阶段 9 积分，累计 12 积分（含本阶段）。确定开始吗？尺寸固定，不可修改。\n\nLogo 方向 A 2048×2048 1:1\n3 积分\nLogo 方向 B 2048×2048 1:1\n3 积分\nLogo 方向 C 2048×2048 1:1\n3 积分\n总价\n9 积分\n取消\n继续生成"
+      },
+      "at": "2026-11-26 05:58:15 CST"
+    },
+    {
+      "stage": "deliverables",
+      "parsed": {
+        "stage": 12,
+        "cumulative": 21,
+        "totals": [
+          12
+        ],
+        "raw": "确认费用\n\n这个阶段共 4 张。本阶段 12 积分，累计 21 积分（含本阶段）。确定开始吗？尺寸固定，不可修改。\n\n规范卡 1536×2048 3:4\n3 积分\n外带杯与杯套 1536×2048 3:4\n3 积分\n纸袋 1536×2048 3:4\n3 积分\n门店门头 2048×1152 16:9\n3 积分\n总价\n12 积分\n取消\n继续生成"
+      },
+      "at": "2026-11-26 06:03:58 CST"
+    }
+  ],
+  "confirmed_credits": 24,
+  "stopped": false,
+  "ended_at": "2026-11-26 06:08:46 CST",
+  "actual_wavespeed_usd_delta": 0.24,
+  "actual_credits": 24,
+  "balance_before_usd": 18.836708,
+  "balance_after_usd": 18.596708,
+  "hard_stop_triggered": false
+}
