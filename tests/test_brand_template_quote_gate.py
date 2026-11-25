@@ -11,6 +11,7 @@ from __future__ import annotations
 from ComfyArt.api import brand_identity as brand
 from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
 from ComfyArt.bot.local_llm import LocalLlmProvider
+from ComfyArt.bot.skill_output import apply_generate
 from test_agent_budget_391 import Rig, calls, reply
 
 LOCK = (
@@ -119,3 +120,87 @@ async def test_template_preset_start_is_what_submits_the_over_line_call(monkeypa
     assert asked, "start was not a confirm-gate answer"
     assert len(gens) == 3, gens
     assert all(a.get("preset") == "geometric" and not a.get("brand_slot") for a in gens)
+
+
+def _keep_preset_beside_slot(args, current_skill, **kwargs):
+    """Leave the model's preset on a call that also names a brand slot.
+
+    ``fill_default`` drops ``preset`` before ``brand_call`` reads the args. Putting
+    it back is what lets a template-first reorder of that predicate be visible:
+    ``geometric`` stays on the args, and ``brand_slot`` must still win.
+    """
+    sent_preset = str((args or {}).get("preset") or "")
+    sent_slot = str((args or {}).get("brand_slot") or "")
+    out = apply_generate(args, current_skill, **kwargs)
+    if (sent_slot and brand.is_template(sent_preset) and isinstance(out, dict)
+            and out.get("brand_slot")):
+        out["preset"] = sent_preset
+    return out
+
+
+def _slot_and_preset(messages, n):
+    if n == 0:
+        return calls(("generate_image", {
+            "prompt": "moodboard",
+            "skill": brand.SKILL,
+            "brand_slot": "moodboard",
+            "preset": "geometric",
+        }))
+    return reply("done")
+
+
+async def _slot_rig(monkeypatch, *, start: bool):
+    assert brand.is_template("geometric")
+    brand.reset_for_tests()
+    BOT_CHAT_ID.set("c")
+    rig = Rig(monkeypatch, _slot_and_preset)
+    asked: list[dict] = []
+    brand_dispatch: list[dict] = []
+    original_confirm = LocalLlmProvider._confirm_plan
+    original_brand = LocalLlmProvider._dispatch_one_confirmed_brand
+
+    async def local_price(model, inputs):
+        return (0.04, "quote", "test")
+
+    async def watch_confirm(self, spec, turn, handle, **kwargs):
+        asked.append(spec)
+        if start:
+            return "start"
+        return await original_confirm(self, spec, turn, handle, **kwargs)
+
+    async def watch_brand(self, it, *args, **kwargs):
+        brand_dispatch.append(dict(it.get("args") or {}))
+        return await original_brand(self, it, *args, **kwargs)
+
+    monkeypatch.setattr(rig.p, "_price_one", local_price)
+    monkeypatch.setattr("ComfyArt.bot.skill_output.apply_generate", _keep_preset_beside_slot)
+    monkeypatch.setattr(LocalLlmProvider, "_confirm_plan", watch_confirm)
+    monkeypatch.setattr(LocalLlmProvider, "_dispatch_one_confirmed_brand", watch_brand)
+    return rig, asked, brand_dispatch
+
+
+async def test_slot_and_template_without_confirmation_does_not_submit(monkeypatch):
+    """brand_slot plus a template preset is still a brand grant, not a cheap passthrough.
+
+    The price is under the confirm line. A template with no slot would submit.
+    This call must show the brand card and submit nothing until Start.
+    """
+    rig, asked, brand_dispatch = await _slot_rig(monkeypatch, start=False)
+    await rig.send("做品牌", goal="")
+    assert _gens(rig) == []
+    assert brand_dispatch == []
+    assert asked and all(spec.get("brand_confirm") is True for spec in asked)
+
+
+async def test_slot_and_template_submits_only_through_brand_start(monkeypatch):
+    """Start on that brand card is what submits, through the confirmed-brand dispatch."""
+    rig, asked, brand_dispatch = await _slot_rig(monkeypatch, start=True)
+    await rig.send("做品牌", goal="")
+    gens = _gens(rig)
+    assert asked and all(spec.get("brand_confirm") is True for spec in asked)
+    assert len(brand_dispatch) == 1, brand_dispatch
+    assert brand_dispatch[0].get("brand_slot") == "moodboard"
+    assert brand_dispatch[0].get("preset") == "geometric"
+    assert brand.is_template(brand_dispatch[0].get("preset"))
+    assert len(gens) == 1, gens
+    assert gens[0].get("brand_slot") == "moodboard"
