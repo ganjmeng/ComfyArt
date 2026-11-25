@@ -21,10 +21,32 @@ onto white before the file is saved.
 """
 from __future__ import annotations
 
+import contextvars
+import hashlib
 import io
+import json
 import re
+import time
+import uuid
 
 SKILL = "brand-identity-director"
+# Confirmation lifetime of a brand quote card. It starts when the card is created
+# and is not the quote-cache TTL. Pressing Start does not move it.
+BRAND_CONFIRM_TTL_S = 600.0
+BRAND_CURRENCY = "USD"
+EXPIRED_TEXT = {
+    "zh": "报价已过期，请重新取价",
+    "en": "This quote has expired. Request a new price.",
+}
+FIXED_SIZE_NOTE = {
+    "zh": "尺寸固定，不可修改。",
+    "en": "Size is fixed and cannot be edited.",
+}
+_GRANT_FILE = "brand-confirm.json"
+_EXEC_SKIP = {
+    "brand_slot", "width", "height", "count", "prompt", "base", "refs", "mask",
+    "model", "edit_model", "skill", "stage", "preset", "_brand_block",
+}
 QWEN_T2I = "wavespeed-ai/qwen-image-2.0/text-to-image"
 QWEN_EDIT = "wavespeed-ai/qwen-image-2.0/edit"
 
@@ -440,13 +462,40 @@ _TURN: dict[str, dict] = {}
 BRAND_PLANNED_IMAGES = 8
 
 
+def _clock() -> float:
+    return time.time()
+
+
 def reset_for_tests() -> None:
     _PROGRESS.clear()
     _HELD_WRAPUP.clear()
     _TURN.clear()
+    _write_grant_file({"chats": {}})
+
+
+def drop_memory_for_tests() -> None:
+    """Forget the in-memory stage rows so the next read comes back from disk."""
+    _PROGRESS.clear()
+
+
+# Set for the life of one chat's turn or stored re-quote. Two sessions must not
+# share the anonymous bucket. Empty means "no chat in scope".
+_BRAND_CHAT: contextvars.ContextVar[str] = contextvars.ContextVar("comfyart_brand_chat", default="")
+
+
+def brand_progress_scope(chat_id: str):
+    """Bind brand progress to this chat. Reset the returned token when the work ends."""
+    return _BRAND_CHAT.set(str(chat_id or ""))
+
+
+def reset_brand_progress_scope(token) -> None:
+    _BRAND_CHAT.reset(token)
 
 
 def _chat() -> str:
+    scoped = str(_BRAND_CHAT.get() or "")
+    if scoped:
+        return scoped
     try:
         from . import paid_guard
         chat = str(paid_guard.resolve_guard_chat_id() or "")
@@ -472,6 +521,7 @@ def _progress() -> dict:
             "spent": 0.0,
             "batch": 0,
         }
+        _hydrate_grants(chat, row)
     return row
 
 
@@ -852,7 +902,123 @@ def fill_default(args: dict) -> dict:
         # The moodboard / chosen logo lead. A caller-supplied ref stays behind them.
         extra = [str(r) for r in (args.get("refs") or []) if str(r) not in refs]
         args["refs"] = refs + extra
+    stage_n = int(slot["stage"])
+    held = str(slot["id"]) in submitted_slots(stage_n) or str(slot["id"]) in _held_slots(stage_n)
+    missing = None if held else missing_base_message(str(slot["id"]))
+    if missing or (held and not (args.get("refs") or args.get("base"))):
+        # Stage 2/3 never become a text-to-image call when the base shape is absent.
+        # A slot already reserved stays without a model; the submit gate reports it.
+        args.pop("model", None)
+        args.pop("edit_model", None)
+        args.pop("auto_model", None)
+        args.pop("size_candidates", None)
+        if missing:
+            args["_brand_block"] = {
+                "status": "failed",
+                "submitted": False,
+                "generation_succeeded": False,
+                "error": missing,
+                "user_message": missing,
+            }
+        return args
     return pin_exact_model(args)
+
+
+def missing_base_message(slot_id: str) -> str | None:
+    """Why a stage 2/3 repair slot cannot be quoted or submitted, or None when its bases are present.
+
+    Stage 1 (the moodboard) is a text-to-image and is not checked here. Stage 2 needs the
+    moodboard shape. Stage 3 needs that shape and the chosen logo shape. A missing one is
+    a refusal, not a silent text-to-image.
+    """
+    slot = _BY_ID.get(str(slot_id or ""))
+    if slot is None or int(slot["stage"]) < 2:
+        return None
+    progress = _progress()
+    shapes = progress.get("shapes") or {}
+    missing: list[str] = []
+    if not str(shapes.get("moodboard") or ""):
+        missing.append("moodboard")
+    if int(slot["stage"]) >= 3:
+        chosen = str(progress.get("chosen") or "logo_a")
+        if not str(shapes.get(chosen) or ""):
+            missing.append(chosen)
+    if not missing:
+        return None
+    zh_slot = _QUOTE_NAME["zh"].get(slot["id"], slot["id"])
+    en_slot = _QUOTE_NAME["en"].get(slot["id"], slot["id"])
+    zh_names = "、".join(_QUOTE_NAME["zh"].get(item, item) for item in missing)
+    en_names = ", ".join("moodboard" if item == "moodboard" else _QUOTE_NAME["en"].get(item, item) for item in missing)
+    if card_lang() == "en":
+        return (
+            f"{en_slot} is missing its {en_names} base, so it can't be made right now. "
+            "No quote was made and nothing was charged."
+        )
+    return _zh_gap([
+        zh_slot, "缺少", zh_names, "底图，这一张暂时做不了。没有报价，也没有扣积分。",
+    ])
+
+
+def _han(ch: str) -> bool:
+    return "\u4e00" <= ch <= "\u9fff"
+
+
+def _latin_or_digit(ch: str) -> bool:
+    return ch.isascii() and (ch.isalpha() or ch.isdigit())
+
+
+def _zh_gap(parts: list[str]) -> str:
+    """A space only where a Han character touches a Latin letter or digit."""
+    out = ""
+    for part in parts:
+        if not part:
+            continue
+        if out and ((_han(out[-1]) and _latin_or_digit(part[0]))
+                     or (_latin_or_digit(out[-1]) and _han(part[0]))):
+            out += " "
+        out += part
+    return out
+
+
+def stage_base_block(steps: list) -> str | None:
+    """The first stage 2/3 slot in this quote whose required shape is missing.
+
+    A slot already submitted, dispatching, or unknown is left to that record.
+    It is not priced again and it is not turned into a text-to-image call.
+    """
+    for step in steps or []:
+        slot = _slot_id_of(step)
+        stage = stage_of(slot)
+        if slot and (slot in submitted_slots(stage) or slot in _held_slots(stage)):
+            continue
+        message = missing_base_message(slot)
+        if message:
+            return message
+    return None
+
+
+def bind_brand_generate(args: dict, quote_steps: list | None = None, claimed: set | None = None) -> dict:
+    """Put a brand slot on this generate before it can be reserved.
+
+    Quote annotation fills the quote steps only. The generate_image arguments can
+    still omit brand_slot. Copy the next quoted slot, or the stage's next slot,
+    and then apply the same base-shape refusal as a direct fill.
+    """
+    args = dict(args or {})
+    skill = str(args.get("skill") or "")
+    if skill and skill != SKILL and not args.get("brand_slot"):
+        return args
+    if not args.get("brand_slot"):
+        taken = claimed or set()
+        for step in quote_steps or []:
+            slot = _slot_id_of(step)
+            if slot and slot not in taken:
+                args["brand_slot"] = slot
+                args["skill"] = SKILL
+                break
+    if str(args.get("skill") or "") == SKILL or args.get("brand_slot"):
+        return fill_default(args)
+    return args
 
 
 def pin_exact_model(args: dict) -> dict:
@@ -1365,6 +1531,9 @@ def annotate_quote_steps(steps: list, paid_args: list | None = None) -> list:
             args.setdefault("height", slot["height"])
             args.setdefault("ratio", slot["ratio"])
             args["skill"] = SKILL
+            # The plan gate compares the model's own arguments. This flag is not
+            # a tool argument; allow() adds a key with the stamped slot removed.
+            step["_slot_stamped"] = slot["id"]
         step["arguments"] = args
         out.append(step)
     return out
@@ -1379,6 +1548,197 @@ def steps_are_brand_stage(steps: list) -> bool:
         if args.get("brand_slot"):
             slots.append(args["brand_slot"])
     return bool(slots) and same_stage(slots)
+
+
+def session_default_stage_open() -> bool:
+    """This chat is on moodboard, logos, or finals.
+
+    The chat is ``_chat()``: ``brand_progress_scope`` first, then the guard chat.
+    ``need_card1`` and ``done`` are not open stages, so a finished or reset
+    session does not keep a template call on the grant path.
+    """
+    return str(_progress().get("phase") or "") in {"moodboard", "logos", "finals"}
+
+
+def release_preset_stamp(steps: list) -> list:
+    """Drop a brand_slot that annotation stamped onto a preset quote row.
+
+    The call itself still has no slot. A preset during an open brand stage is a
+    template grant, not logo_a / the moodboard / a final.
+    """
+    out = []
+    for step in steps or []:
+        if not isinstance(step, dict):
+            out.append(step)
+            continue
+        step = dict(step)
+        args = step.get("arguments")
+        if (step.get("_slot_stamped") and step.get("tool") == "generate_image"
+                and isinstance(args, dict) and str(args.get("preset") or "").strip()):
+            args = dict(args)
+            args.pop("brand_slot", None)
+            step["arguments"] = args
+            step.pop("_slot_stamped", None)
+        out.append(step)
+    return out
+
+
+def is_brand_stage_template_call(args: dict) -> bool:
+    """skill + industry preset, no slot, while this chat is in a brand stage."""
+    if not isinstance(args, dict) or args.get("brand_slot"):
+        return False
+    if str(args.get("skill") or "") != SKILL or not is_template(args.get("preset")):
+        return False
+    return session_default_stage_open()
+
+
+def steps_include_brand_template(steps: list) -> bool:
+    for step in steps or []:
+        if not isinstance(step, dict) or step.get("tool") != "generate_image":
+            continue
+        args = step.get("arguments") if isinstance(step.get("arguments"), dict) else {}
+        if is_brand_stage_template_call(args):
+            return True
+    return False
+
+
+_TEMPLATE_STAGE = {
+    "zh": {"moodboard": "情绪板", "logos": "Logo", "finals": "成稿"},
+    "en": {"moodboard": "Moodboard", "logos": "Logo", "finals": "Finals"},
+}
+_TEMPLATE_NAME = {
+    "zh": {
+        "geometric": "几何", "handmade": "手作", "tech": "科技",
+        "beauty": "美妆", "foodbev": "餐饮", "pet": "宠物",
+    },
+    "en": {
+        "geometric": "Geometric", "handmade": "Handmade", "tech": "Tech",
+        "beauty": "Beauty", "foodbev": "Food and beverage", "pet": "Pet",
+    },
+}
+_TEMPLATE_EXTRA = {
+    "zh": {
+        "moodboard": "额外一张，不替换情绪板",
+        "logos": "额外一张，不替换方向 A/B/C",
+        "finals": "额外一张，不替换成稿物料",
+    },
+    "en": {
+        "moodboard": "One extra image. It does not replace the moodboard.",
+        "logos": "One extra image. It does not replace directions A/B/C.",
+        "finals": "One extra image. It does not replace the final deliverables.",
+    },
+}
+
+
+def template_quote_text(preset: str, lang: str, phase: str = "") -> str:
+    """Card row for one extra template image during an open brand stage.
+
+    zh logos + geometric is 「Logo 阶段 · 几何模板」 and 「额外一张，不替换方向 A/B/C」.
+    """
+    lang_key = "zh" if lang == "zh" else "en"
+    phase_id = str(phase or _progress().get("phase") or "")
+    stage = _TEMPLATE_STAGE[lang_key].get(phase_id) or phase_id
+    name = _TEMPLATE_NAME[lang_key].get(str(preset or "")) or str(preset or "")
+    extra = _TEMPLATE_EXTRA[lang_key].get(phase_id) or _TEMPLATE_EXTRA[lang_key]["logos"]
+    if lang_key == "zh":
+        title = f"{stage} 阶段 · {name}模板"
+    else:
+        title = f"{stage} stage · {name} template"
+    return f"{title}\n{extra}"
+
+
+def template_grant_key(args: dict) -> str:
+    """The call's own quote key. Not a default-flow slot id."""
+    from ..bot.plan_quote import canon_key
+    key = canon_key("generate_image", args if isinstance(args, dict) else {}, plan=True)
+    return json.dumps(key, ensure_ascii=False)
+
+
+def template_grants() -> dict:
+    saved = _progress().get("template_grants")
+    return dict(saved) if isinstance(saved, dict) else {}
+
+
+def remember_template_grants(steps: list, *, identity: dict, amount: float, currency: str,
+                             quote_id: str, created_at: float, expires_at: float) -> None:
+    """One template grant per quoted preset call. Slots and phase stay put.
+
+    A failed write leaves no grant and raises, so the caller submits nothing.
+    """
+    progress = _progress()
+    bucket = progress.setdefault("template_grants", {})
+    if not isinstance(bucket, dict):
+        bucket = {}
+        progress["template_grants"] = bucket
+    written: list[str] = []
+    previous = {key: bucket.get(key) for key in list(bucket)}
+    try:
+        for step in steps or []:
+            if not isinstance(step, dict) or step.get("tool") != "generate_image":
+                continue
+            args = step.get("arguments") if isinstance(step.get("arguments"), dict) else {}
+            if not is_brand_stage_template_call(args):
+                continue
+            key = template_grant_key(args)
+            bucket[key] = {
+                "type": "template",
+                "key": key,
+                "preset": str(args.get("preset") or ""),
+                "prompt": str(args.get("prompt") or ""),
+                "phase": str(progress.get("phase") or ""),
+                "amount": round(float(amount or 0), 4),
+                "currency": str(currency or BRAND_CURRENCY),
+                "quote_id": str(quote_id or ""),
+                "created_at": float(created_at),
+                "expires_at": float(expires_at),
+                "used": False,
+                "user": str(identity.get("user") or ""),
+                "project": str(identity.get("project") or ""),
+                "chat": str(identity.get("chat") or ""),
+            }
+            written.append(key)
+        if written:
+            _persist_grants()
+    except BrandGrantPersistError:
+        for key in written:
+            if key in previous:
+                bucket[key] = previous[key]
+            else:
+                bucket.pop(key, None)
+        raise
+
+
+def template_submit_block(args: dict, turn: object = None, *, now: float | None = None) -> str | None:
+    """Why this template grant must not pay, or None when this confirm still covers it."""
+    if not is_brand_stage_template_call(args):
+        return None
+    grant = (_progress().get("template_grants") or {}).get(template_grant_key(args))
+    if not isinstance(grant, dict) or grant.get("type") != "template":
+        return "unconfirmed"
+    if grant.get("used"):
+        return "submitted"
+    clock = _clock() if now is None else float(now)
+    exp = grant.get("expires_at")
+    if isinstance(exp, bool) or not isinstance(exp, (int, float)) or clock >= float(exp):
+        return "expired"
+    identity = turn_identity(turn)
+    if (str(grant.get("user") or "") != identity["user"]
+            or str(grant.get("project") or "") != identity["project"]
+            or str(grant.get("chat") or "") != identity["chat"]):
+        return "identity"
+    if str(grant.get("prompt") or "") != str(args.get("prompt") or ""):
+        return "mismatch"
+    if str(grant.get("preset") or "") != str(args.get("preset") or ""):
+        return "mismatch"
+    return None
+
+
+def mark_template_grant_used(args: dict) -> None:
+    grant = (_progress().get("template_grants") or {}).get(template_grant_key(args))
+    if not isinstance(grant, dict):
+        return
+    grant["used"] = True
+    _persist_grants()
 
 
 def cumulative_line(total_usd: float, lang: str) -> str:
@@ -1496,8 +1856,22 @@ def stage_repeat(steps: list) -> str:
     return "continue"
 
 
+def _merge_fingerprint(old: object, new: tuple) -> tuple:
+    by_slot = {}
+    for row in old or ():
+        if row:
+            by_slot[str(row[-1])] = tuple(row)
+    for row in new:
+        by_slot[str(row[-1])] = tuple(row)
+    return tuple(sorted(by_slot.values()))
+
+
 def remember_stage_plan(steps: list, *, fresh: bool) -> None:
-    """Store the plan the user just confirmed. A new confirm clears the dispatched flag."""
+    """Store the plan the user just confirmed.
+
+    A new confirm replaces the fingerprint of the slots on this card. Slots that
+    were already submitted stay submitted and are not cleared.
+    """
     stage = quoted_stage(steps)
     fp = stage_fingerprint(steps)
     if not stage or not fp:
@@ -1513,10 +1887,20 @@ def remember_stage_plan(steps: list, *, fresh: bool) -> None:
         }
         done[int(stage)] = rec
     if fresh or not rec.get("fingerprint"):
-        rec["fingerprint"] = fp
+        prior = [str(slot) for slot in (rec.get("submitted_slots") or [])]
+        if fresh and prior and rec.get("fingerprint"):
+            rec["fingerprint"] = _merge_fingerprint(rec.get("fingerprint"), fp)
+        else:
+            rec["fingerprint"] = fp
         if fresh:
-            rec["dispatched"] = False
-            rec["submitted_slots"] = []
+            if prior:
+                rec["submitted_slots"] = prior
+                confirmed = {str(row[-1]) for row in rec["fingerprint"] if row}
+                rec["dispatched"] = bool(confirmed) and confirmed <= set(prior)
+            else:
+                rec["dispatched"] = False
+                rec["submitted_slots"] = []
+    _persist_grants()
 
 
 def mark_stage_dispatched(steps: list) -> None:
@@ -1534,7 +1918,11 @@ def mark_stage_dispatched(steps: list) -> None:
 
 
 def note_brand_submitted(args: dict) -> None:
-    """One confirmed slot was submitted. The stage is done only after every confirmed slot is."""
+    """One confirmed slot was submitted. The stage is done only after every confirmed slot is.
+
+    If the record cannot be saved, the slot stays unknown. It is not a clean submit
+    and it is not sent again.
+    """
     row = brand_gate_row(args)
     if row is None:
         return
@@ -1545,10 +1933,27 @@ def note_brand_submitted(args: dict) -> None:
     done = list(rec.get("submitted_slots") or [])
     if slot not in done:
         done.append(slot)
+    prior_dispatching = [str(item) for item in (rec.get("dispatching_slots") or [])]
     rec["submitted_slots"] = done
+    rec["dispatching_slots"] = [item for item in prior_dispatching if item != slot]
     confirmed = {str(item[-1]) for item in (rec.get("fingerprint") or ()) if item}
     if confirmed and confirmed <= set(done):
         rec["dispatched"] = True
+    try:
+        _persist_grants()
+    except BrandGrantPersistError:
+        rec["submitted_slots"] = [item for item in done if item != slot]
+        rec["dispatching_slots"] = list(prior_dispatching)
+        unknown = [str(item) for item in (rec.get("unknown_slots") or [])]
+        if slot not in unknown:
+            unknown.append(slot)
+        rec["unknown_slots"] = unknown
+        rec["dispatched"] = False
+        try:
+            _persist_grants()
+        except BrandGrantPersistError:
+            pass
+        raise
 
 
 def submitted_slots(stage: int) -> set[str]:
@@ -1564,6 +1969,562 @@ def slot_already_submitted(args: dict) -> bool:
     if row is None:
         return False
     return str(row[-1]) in submitted_slots(stage_of(row[-1]))
+
+
+def expired_text(lang: str) -> str:
+    return EXPIRED_TEXT["zh" if lang == "zh" else "en"]
+
+
+def fixed_size_note(lang: str) -> str:
+    return FIXED_SIZE_NOTE["zh" if lang == "zh" else "en"]
+
+
+def confirm_expired(spec: object, now: float | None = None) -> bool:
+    """A brand card with no deadline, or a deadline that has been reached, is closed.
+
+    Other skills do not carry brand_confirm and are left alone.
+    """
+    if not isinstance(spec, dict) or spec.get("brand_confirm") is not True:
+        return False
+    exp = spec.get("expires_at")
+    if isinstance(exp, bool) or not isinstance(exp, (int, float)):
+        return True
+    clock = _clock() if now is None else float(now)
+    return clock >= float(exp)
+
+
+def turn_identity(turn: object = None, *, user: str = "", project: str = "", chat: str = "") -> dict:
+    if turn is not None:
+        user = user or str(getattr(turn, "owner_id", "") or "")
+        project = project or str(getattr(turn, "project_id", "") or "")
+        chat = chat or str(getattr(turn, "chat_id", "") or "")
+    return {
+        "user": user or "local",
+        "project": project or "local",
+        "chat": chat or _chat(),
+    }
+
+
+def _step_args(step: object) -> dict:
+    if not isinstance(step, dict) or step.get("tool") != "generate_image":
+        return {}
+    args = step.get("arguments")
+    return dict(args) if isinstance(args, dict) else {}
+
+
+def _slot_id_of(step: object) -> str:
+    return str(_step_args(step).get("brand_slot") or "")
+
+
+def unknown_slots(stage: int) -> set[str]:
+    """Slots whose submit was not durably recorded. They are not sent again."""
+    rec = _stage_record(stage)
+    if rec is None:
+        return set()
+    return {str(slot) for slot in (rec.get("unknown_slots") or [])}
+
+
+def dispatching_slots(stage: int) -> set[str]:
+    """Slots reserved on disk before the paid call. A restart leaves them unsent."""
+    rec = _stage_record(stage)
+    if rec is None:
+        return set()
+    return {str(slot) for slot in (rec.get("dispatching_slots") or [])}
+
+
+def _held_slots(stage: int) -> set[str]:
+    """Unknown and dispatching both mean the paid call must not be sent again."""
+    return unknown_slots(stage) | dispatching_slots(stage)
+
+
+def unsubmitted_steps(steps: list) -> list:
+    """Keep the caller's prompt, base, and references. Drop slots already submitted.
+
+    A slot whose record is unknown or still dispatching is not quoted again and is not sent again.
+    """
+    stage = quoted_stage(steps)
+    done = submitted_slots(stage) if stage else set()
+    held = _held_slots(stage) if stage else set()
+    out = []
+    for step in steps or []:
+        if not isinstance(step, dict):
+            continue
+        if step.get("tool") != "generate_image":
+            out.append(step)
+            continue
+        slot = _slot_id_of(step)
+        if slot and (slot in done or slot in held):
+            continue
+        out.append(step)
+    return out
+
+
+def only_reconcile_left(steps: list) -> bool:
+    """True when every slot is submitted or held, and at least one is held.
+
+    Held is an unknown submit record or a dispatching reservation that never
+    became a saved submit. Neither is sent again.
+    """
+    slots = [slot for slot in (_slot_id_of(step) for step in (steps or [])) if slot]
+    if not slots:
+        return False
+    stage = quoted_stage(steps)
+    done = submitted_slots(stage)
+    held = _held_slots(stage)
+    return all(slot in done or slot in held for slot in slots) and any(slot in held for slot in slots)
+
+
+def all_slots_submitted(steps: list) -> bool:
+    slots = [slot for slot in (_slot_id_of(step) for step in (steps or [])) if slot]
+    if not slots:
+        return False
+    done = submitted_slots(quoted_stage(steps))
+    return all(slot in done for slot in slots)
+
+
+def normalize_slot_execution(args: dict) -> dict | None:
+    """The execution this brand slot will actually submit.
+
+    Invalid width, height, count, and model inputs are folded to the slot lock
+    before they are compared, so a 1024 request on a 2048 slot is the same
+    execution. Prompt, base, ordered references, and mask are kept as submitted.
+    """
+    raw = dict(args or {})
+    slot = _BY_ID.get(str(raw.get("brand_slot") or ""))
+    if slot is None:
+        return None
+    filled = fill_default(raw)
+    if filled.get("_brand_block"):
+        # The quote can still name the slot. The missing base is not a text-to-image execution.
+        filled = {key: value for key, value in filled.items() if key != "_brand_block"}
+        for key in ("model", "edit_model", "auto_model", "size_candidates"):
+            filled.pop(key, None)
+    params = {}
+    for key in sorted(filled):
+        if key in _EXEC_SKIP:
+            continue
+        value = filled[key]
+        if isinstance(value, (str, int, float, bool)) or value is None:
+            params[key] = value
+        elif isinstance(value, list) and all(isinstance(item, (str, int, float, bool)) or item is None for item in value):
+            params[key] = list(value)
+    refs = [str(item) for item in (filled.get("refs") or [])]
+    return {
+        "slot": str(slot["id"]),
+        "stage": int(slot["stage"]),
+        "model": str(filled.get("edit_model") or filled.get("model") or ""),
+        "base": str(filled.get("base") or ""),
+        "refs": refs,
+        "mask": str(filled.get("mask") or ""),
+        "width": int(filled["width"]),
+        "height": int(filled["height"]),
+        "count": int(filled.get("count") or 1),
+        "prompt": str(filled.get("prompt") or ""),
+        "params": params,
+    }
+
+
+def _json_ready(value: object) -> object:
+    return json.loads(json.dumps(value, ensure_ascii=False, sort_keys=True, default=str))
+
+
+def _execution_rows(steps: list) -> list[dict]:
+    by_slot: dict[str, dict] = {}
+    for step in steps or []:
+        row = normalize_slot_execution(_step_args(step))
+        if row is not None:
+            by_slot[row["slot"]] = row
+    return [by_slot[key] for key in sorted(by_slot)]
+
+
+def build_grant(steps: list, *, identity: dict, amount: float, currency: str,
+                quote_id: str, created_at: float, expires_at: float) -> dict:
+    body = {
+        "user": str(identity.get("user") or ""),
+        "project": str(identity.get("project") or ""),
+        "chat": str(identity.get("chat") or ""),
+        "stage": int(quoted_stage(steps) or 0),
+        "amount": round(float(amount or 0), 4),
+        "currency": str(currency or BRAND_CURRENCY),
+        "quote_id": str(quote_id or ""),
+        "created_at": float(created_at),
+        "expires_at": float(expires_at),
+        "slots": _execution_rows(steps),
+    }
+    encoded = json.dumps(body, ensure_ascii=False, sort_keys=True, default=str).encode()
+    body["digest"] = hashlib.sha256(encoded).hexdigest()
+    return _json_ready(body)
+
+
+def _grant_of(stage: int) -> dict | None:
+    rec = _stage_record(stage)
+    grant = rec.get("grant") if isinstance(rec, dict) else None
+    return grant if isinstance(grant, dict) else None
+
+
+def invalidate_grant(stage: int) -> None:
+    """Drop the authorization. Submitted slots and the stage fingerprint stay."""
+    rec = _stage_record(stage)
+    if not isinstance(rec, dict) or "grant" not in rec:
+        return
+    rec.pop("grant", None)
+    rec.pop("expires_at", None)
+    _persist_grants()
+
+
+def supersede_brand_card(steps: list, spec: dict) -> list:
+    """Retire this card and return the slots a new quote may list.
+
+    Submitted and held slots stay out via ``unsubmitted_steps``. The old snapshot
+    cannot be committed again. Prompts and parameters on the open slots are the
+    caller's own.
+    """
+    opened = unsubmitted_steps(steps)
+    stage = quoted_stage(steps) or quoted_stage(opened)
+    digest = ""
+    if isinstance(spec, dict):
+        frozen = spec.get("frozen")
+        if isinstance(frozen, dict):
+            digest = str(frozen.get("digest") or "")
+            stage = stage or int(frozen.get("stage") or 0)
+    if not stage:
+        return opened
+    progress = _progress()
+    done = progress.setdefault("quoted_stages", {})
+    rec = done.get(int(stage))
+    if not isinstance(rec, dict):
+        rec = {
+            "amount": 0.0,
+            "fingerprint": None,
+            "dispatched": False,
+            "submitted_slots": [],
+        }
+        done[int(stage)] = rec
+    dead = [str(item) for item in (rec.get("superseded_digests") or [])]
+    if digest and digest not in dead:
+        dead.append(digest)
+    rec["superseded_digests"] = dead
+    if isinstance(rec.get("grant"), dict):
+        invalidate_grant(int(stage))
+    else:
+        rec.pop("expires_at", None)
+        _persist_grants()
+    return opened
+
+
+def grant_digest_superseded(stage: int, digest: str) -> bool:
+    rec = _stage_record(stage)
+    if not isinstance(rec, dict) or not digest:
+        return False
+    return str(digest) in {str(item) for item in (rec.get("superseded_digests") or [])}
+
+
+def grant_still_authorizes(steps: list, turn: object = None, *, now: float | None = None,
+                           amount: float | None = None, currency: str | None = None,
+                           quote_id: str | None = None) -> bool:
+    """True when the open slots and this quote still match the frozen grant.
+
+    A width that normalizes back to the slot size still matches. A different
+    prompt, base, reference list, or mask does not. The same execution with a
+    different amount, currency, or quote id does not continue the old grant.
+    This is not stage_fingerprint.
+    """
+    stage = quoted_stage(steps)
+    grant = _grant_of(stage)
+    if grant is None:
+        return False
+    clock = _clock() if now is None else float(now)
+    if confirm_expired(grant, clock) or confirm_expired({**grant, "brand_confirm": True}, clock):
+        return False
+    identity = turn_identity(turn)
+    if str(grant.get("user") or "") != identity["user"]:
+        return False
+    if str(grant.get("project") or "") != identity["project"]:
+        return False
+    if str(grant.get("chat") or "") != identity["chat"]:
+        return False
+    if amount is not None and round(float(amount or 0), 4) != round(float(grant.get("amount") or 0), 4):
+        return False
+    if currency is not None and str(currency or "") != str(grant.get("currency") or ""):
+        return False
+    if quote_id is not None and str(quote_id or "") != str(grant.get("quote_id") or ""):
+        return False
+    saved = {str(row.get("slot")): row for row in (grant.get("slots") or []) if isinstance(row, dict)}
+    open_rows = _execution_rows(unsubmitted_steps(steps))
+    if not open_rows:
+        return False
+    for row in open_rows:
+        previous = saved.get(row["slot"])
+        if previous is None or _json_ready(previous) != _json_ready(row):
+            return False
+    return True
+
+
+def stamp_confirm_spec(spec: dict, steps: list, turn: object, *, amount: float, lang: str,
+                       currency: str | None = None, quote_id: str | None = None) -> dict:
+    """Freeze the execution and the quote onto the card before it is shown.
+
+    The snapshot is the only baseline Start and submit may reuse. Later reference
+    changes are not read back into it.
+    """
+    card = dict(spec or {})
+    created = _clock()
+    lang_key = "zh" if lang == "zh" else "en"
+    note = fixed_size_note(lang_key)
+    prompt = str(card.get("prompt") or "")
+    if note not in prompt:
+        card["prompt"] = prompt.rstrip() + note
+    card["brand_confirm"] = True
+    card["size_locked"] = True
+    card["created_at"] = created
+    card["expires_at"] = created + BRAND_CONFIRM_TTL_S
+    card["quote_id"] = str(quote_id or "") or uuid.uuid4().hex
+    card["currency"] = str(currency or BRAND_CURRENCY)
+    card["amount"] = round(float(amount or 0), 4)
+    card["lang"] = lang_key
+    if str(card.get("price_state") or "") in {"estimate", "unpriced"}:
+        card["options"] = [
+            {"id": "requote", "label": "重新取价" if lang_key == "zh" else "Request a new price"},
+            {"id": "cancel", "label": "取消" if lang_key == "zh" else "Cancel"},
+        ]
+    else:
+        card["options"] = [
+            {"id": "start", "label": "开始" if lang_key == "zh" else "Start"},
+            {"id": "cancel", "label": "取消" if lang_key == "zh" else "Cancel"},
+        ]
+    frozen = build_grant(
+        steps,
+        identity=turn_identity(turn),
+        amount=card["amount"],
+        currency=card["currency"],
+        quote_id=card["quote_id"],
+        created_at=float(created),
+        expires_at=float(card["expires_at"]),
+    )
+    card["frozen"] = frozen
+    card["frozen_slots"] = list(frozen.get("slots") or [])
+    # The steps the card quoted, so a later re-quote can keep the same prompt
+    # and parameters. They are not part of the frozen grant.
+    card["brand_steps"] = _json_ready(list(steps or []))
+    return card
+
+
+def commit_confirmed_grant(steps: list, spec: dict, turn: object, *, amount: float) -> dict | None:
+    """Store the snapshot the card already froze. Start does not rebuild it or move expires_at.
+
+    ``steps`` and ``amount`` are not a new baseline. A missing snapshot is not an authorization.
+    A failed write leaves no grant and raises.
+    """
+    del steps, amount
+    if not isinstance(spec, dict) or spec.get("brand_confirm") is not True:
+        return None
+    frozen = spec.get("frozen")
+    if not isinstance(frozen, dict) or not frozen.get("slots") or not frozen.get("digest"):
+        return None
+    created = frozen.get("created_at")
+    expires = frozen.get("expires_at")
+    if isinstance(created, bool) or not isinstance(created, (int, float)):
+        return None
+    if isinstance(expires, bool) or not isinstance(expires, (int, float)):
+        return None
+    stage = int(frozen.get("stage") or 0)
+    if not stage:
+        return None
+    if grant_digest_superseded(stage, str(frozen.get("digest") or "")):
+        return None
+    identity = turn_identity(turn)
+    if (str(frozen.get("user") or "") != identity["user"]
+            or str(frozen.get("project") or "") != identity["project"]
+            or str(frozen.get("chat") or "") != identity["chat"]):
+        return None
+    grant = _json_ready(frozen)
+    progress = _progress()
+    done = progress.setdefault("quoted_stages", {})
+    rec = done.get(int(stage))
+    if not isinstance(rec, dict):
+        rec = {"amount": float(grant.get("amount") or 0), "fingerprint": None, "dispatched": False, "submitted_slots": []}
+        done[int(stage)] = rec
+    previous = rec.get("grant") if isinstance(rec.get("grant"), dict) else None
+    previous_exp = rec.get("expires_at")
+    rec["grant"] = grant
+    rec["expires_at"] = grant["expires_at"]
+    rec["amount"] = grant["amount"]
+    try:
+        _persist_grants()
+    except BrandGrantPersistError:
+        if previous is None:
+            rec.pop("grant", None)
+            rec.pop("expires_at", None)
+        else:
+            rec["grant"] = previous
+            rec["expires_at"] = previous_exp
+        raise
+    return grant
+
+
+def reserve_brand_dispatch(args: dict) -> None:
+    """Persist this slot as dispatching before the paid call.
+
+    The write is the reservation. If it fails, the caller must not dispatch.
+    A crash after the call and before the submit record leaves this reservation
+    on disk; a later read treats it as reconcile and does not send it again.
+    """
+    if not isinstance(args, dict) or not args.get("brand_slot"):
+        return
+    slot = str(args.get("brand_slot") or "")
+    stage = stage_of(slot)
+    rec = _stage_record(stage)
+    if rec is None:
+        raise BrandGrantPersistError("brand slot has no confirmation to reserve")
+    if slot in submitted_slots(stage) or slot in _held_slots(stage):
+        raise BrandGrantPersistError("brand slot is already reserved")
+    current = [str(item) for item in (rec.get("dispatching_slots") or [])]
+    current.append(slot)
+    rec["dispatching_slots"] = current
+    try:
+        _persist_grants()
+    except BrandGrantPersistError:
+        rec["dispatching_slots"] = [item for item in current if item != slot]
+        raise
+
+
+def submit_block_reason(args: dict, turn: object = None, *, now: float | None = None) -> str | None:
+    """Why this brand generate must not run, or None when the frozen grant allows it."""
+    if not isinstance(args, dict) or not args.get("brand_slot"):
+        return None
+    slot = str(args.get("brand_slot") or "")
+    if slot in _held_slots(stage_of(slot)):
+        return "reconcile"
+    if slot_already_submitted(args):
+        return "submitted"
+    stage = stage_of(args.get("brand_slot"))
+    grant = _grant_of(stage)
+    if grant is None:
+        return "unconfirmed"
+    clock = _clock() if now is None else float(now)
+    if confirm_expired({**grant, "brand_confirm": True}, clock):
+        return "expired"
+    identity = turn_identity(turn)
+    if (str(grant.get("user") or "") != identity["user"]
+            or str(grant.get("project") or "") != identity["project"]
+            or str(grant.get("chat") or "") != identity["chat"]):
+        return "identity"
+    row = normalize_slot_execution(args)
+    saved = {str(item.get("slot")): item for item in (grant.get("slots") or []) if isinstance(item, dict)}
+    if row is None or _json_ready(saved.get(row["slot"])) != _json_ready(row):
+        return "mismatch"
+    return None
+
+
+def submit_block_text(reason: str, lang: str) -> str:
+    lang_key = "zh" if lang == "zh" else "en"
+    if reason == "expired":
+        return expired_text(lang_key)
+    if reason == "reconcile":
+        if lang_key == "zh":
+            return "该槽位已生成但确认记录未能落盘，状态待核对，不会自动重发。"
+        return ("This slot was generated but the confirmation record was not saved. "
+                "It is pending review and will not be sent again.")
+    if lang_key == "zh":
+        return "参数已变化，上一张确认失效。请重新取价。已提交的槽位不会重跑。"
+    return ("The parameters changed, so the previous confirmation is no longer valid. "
+            "Request a new price. Submitted slots will not run again.")
+
+
+def _grant_path() -> str:
+    from ._common import app_path
+    return app_path(_GRANT_FILE)
+
+
+def _read_grant_file() -> dict:
+    path = _grant_path()
+    try:
+        with open(path, encoding="utf-8") as handle:
+            raw = json.load(handle)
+    except (OSError, ValueError):
+        return {"chats": {}}
+    if not isinstance(raw, dict) or not isinstance(raw.get("chats"), dict):
+        return {"chats": {}}
+    return raw
+
+
+class BrandGrantPersistError(RuntimeError):
+    """The brand confirmation file was not saved. Callers must not dispatch."""
+
+
+def _write_grant_file(payload: dict) -> None:
+    try:
+        from .memory import atomic_write_json
+        atomic_write_json(_grant_path(), payload)
+    except BrandGrantPersistError:
+        raise
+    except Exception as exc:
+        raise BrandGrantPersistError(str(exc) or "brand confirmation could not be saved") from exc
+
+
+def _json_stages(stages: dict) -> dict:
+    out = {}
+    for key, rec in (stages or {}).items():
+        if isinstance(rec, dict):
+            out[str(int(key))] = _json_ready(rec)
+    return out
+
+
+def _persist_grants() -> None:
+    disk = _read_grant_file()
+    chats = dict(disk.get("chats") or {})
+    for chat, row in _PROGRESS.items():
+        stages = row.get("quoted_stages") or {}
+        if stages:
+            chats[str(chat)] = {"quoted_stages": _json_stages(stages)}
+        else:
+            chats.pop(str(chat), None)
+    _write_grant_file({"chats": chats})
+
+
+def _hydrate_grants(chat: str, row: dict) -> None:
+    saved = (_read_grant_file().get("chats") or {}).get(str(chat)) or {}
+    stages = saved.get("quoted_stages") if isinstance(saved, dict) else None
+    if not isinstance(stages, dict) or not stages:
+        return
+    thawed = {}
+    for key, rec in stages.items():
+        try:
+            stage = int(key)
+        except (TypeError, ValueError):
+            continue
+        if isinstance(rec, dict):
+            thawed[stage] = rec
+    if thawed:
+        row["quoted_stages"] = thawed
+
+
+def settle_restored_cards(chat_id: str, messages: list | None = None, *, now: float | None = None) -> list:
+    """Close due brand cards before a restored session is rendered.
+
+    The stored block is already expired on the way out, so the first paint is
+    not a Start button. A pending ask for that card is removed in the same pass.
+    """
+    from . import bot_asks, chat_store
+    clock = _clock() if now is None else float(now)
+    for ask in list(bot_asks.PENDING.values()):
+        if ask.chat_id == chat_id and confirm_expired(ask.spec, clock):
+            bot_asks.resolve_ask(ask.id, "expired")
+    if not messages:
+        return messages or []
+    for message in messages:
+        blocks = message.get("blocks") if isinstance(message, dict) else None
+        if not isinstance(blocks, list):
+            continue
+        changed = False
+        for index, block in enumerate(blocks):
+            if (isinstance(block, dict) and block.get("type") == "ask"
+                    and block.get("status") == "pending" and confirm_expired(block, clock)):
+                blocks[index] = {**block, "status": "expired"}
+                changed = True
+        if changed and message.get("id"):
+            chat_store.update_message(chat_id, message["id"], blocks=blocks)
+    return messages
 
 
 _STAGE_DONE = {
@@ -1599,10 +2560,12 @@ def note_confirmed(total_usd: float, units: int = 0, stage: int = 0) -> None:
             rec["amount"] = amount
         else:
             done[key] = {"amount": amount, "fingerprint": None, "dispatched": False}
+        _persist_grants()
         return
     if key:
         done[key] = {"amount": amount, "fingerprint": None, "dispatched": False}
     progress["spent"] = round(float(progress.get("spent") or 0) + amount, 4)
+    _persist_grants()
     if units <= 0:
         return
     try:

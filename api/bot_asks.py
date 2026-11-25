@@ -1028,6 +1028,29 @@ def abandon_ask(ask_id: str) -> None:
     _store_delete(ask_id)
 
 
+def resolve_confirm_answer(ask: PendingAsk, selected: Optional[list[str]],
+                           other_text: Optional[str] = None,
+                           answers: Optional[dict] = None, *,
+                           now: Optional[float] = None) -> str:
+    """One winner for a brand Start.
+
+    A brand Start at or after expires_at resolves the card as expired. A second
+    call, or a timeout that already popped the ask, loses. Other cards answer
+    as before.
+    """
+    from .brand_identity import confirm_expired
+    clock = time.time() if now is None else float(now)
+    selected = list(selected or [])
+    if (isinstance(ask.spec, dict) and ask.spec.get("brand_confirm") is True
+            and "start" in selected and confirm_expired(ask.spec, clock)):
+        if resolve_ask(ask.id, "expired") is None:
+            return "lost"
+        return "expired"
+    if resolve_ask(ask.id, "answered", selected, other_text, answers) is None:
+        return "lost"
+    return "answered"
+
+
 def resolve_ask(ask_id: str, status: str,
                 selected: Optional[list[str]] = None,
                 other_text: Optional[str] = None,

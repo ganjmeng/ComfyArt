@@ -569,13 +569,40 @@ QUOTE_LINE_LOCALE = {
 }
 # #1019: brand dialog with no tile selected. Not the first template's name.
 DEFAULT_WORKFLOW_LOCALE = {"zh": "默认流程", "en": "Default workflow"}
+# Brand quote cards: expired copy and the fixed-size notice. The base hash stays put.
+BRAND_QUOTE_LOCALE = {
+    "zh": {
+        "jobs.quoteExpired": "报价已过期，请重新取价",
+        "jobs.fixedSlotSize": "尺寸固定，不可修改",
+        "jobs.brandStart": "开始",
+        "jobs.requote": "重新取价",
+        "jobs.quoteDeadline": "报价 10 分钟内有效，截止 {0}（北京时间）",
+        "jobs.quoteRequoted": "已重新取价，此报价已失效",
+        "jobs.brandTemplateTitle": "{stage} 阶段 · {name}模板",
+        "jobs.brandTemplateExtraMoodboard": "额外一张，不替换情绪板",
+        "jobs.brandTemplateExtraLogos": "额外一张，不替换方向 A/B/C",
+        "jobs.brandTemplateExtraFinals": "额外一张，不替换成稿物料",
+    },
+    "en": {
+        "jobs.quoteExpired": "This quote has expired. Request a new price.",
+        "jobs.fixedSlotSize": "Size is fixed and cannot be edited",
+        "jobs.brandStart": "Start",
+        "jobs.requote": "Request a new price",
+        "jobs.quoteDeadline": "This quote is valid for 10 minutes, until {0} (Beijing time).",
+        "jobs.quoteRequoted": "A new price was requested. This quote is no longer valid.",
+        "jobs.brandTemplateTitle": "{stage} stage · {name} template",
+        "jobs.brandTemplateExtraMoodboard": "One extra image. It does not replace the moodboard.",
+        "jobs.brandTemplateExtraLogos": "One extra image. It does not replace directions A/B/C.",
+        "jobs.brandTemplateExtraFinals": "One extra image. It does not replace the final deliverables.",
+    },
+}
 LOCALE_EXTRAS = {
     lang: {"bot.composeBannerText": BANNER_LOCALE[lang], **PORTRAIT_LOCALE[lang],
            "runStop.stillGenerating": RUN_STOP_LOCALE[lang],
            "wsErr.userRatioUnsupported": RATIO_REFUSAL_LOCALE_994[lang],
            "models.minimaxH3Image": H3_IMAGE_LOCALE[lang],
            "skillRun.defaultWorkflow": DEFAULT_WORKFLOW_LOCALE[lang],
-           **QUOTE_LINE_LOCALE[lang]}
+           **QUOTE_LINE_LOCALE[lang], **BRAND_QUOTE_LOCALE[lang]}
     for lang in ("zh", "en")
 }
 # Canonical locale JSON minus the extras above. #1003 keeps jobs.sizeNotice as the #924

@@ -134,9 +134,13 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "single-line" not in b["prompt"]
     assert "perched bird is the negative space inside the cup" in c["prompt"]
     assert "bird standing on a branch" in c["prompt"]
-    assert c["model"] == brand.QWEN_T2I
-    assert c["size_candidates"] == [brand.QWEN_T2I]
+    assert c.get("model") != brand.QWEN_T2I
     assert "edit_model" not in c
+    missing_c = "Logo 方向 C 缺少情绪板底图，这一张暂时做不了。没有报价，也没有扣积分。"
+    assert c["_brand_block"]["error"] == missing_c
+    assert c["_brand_block"]["user_message"] == missing_c
+    assert "logo_c" not in c["_brand_block"]["error"]
+    assert "[error]" not in c["_brand_block"]["error"]
     for board in (a, b, c):
         assert "STRUCTURE LOCK" not in board["prompt"]
         assert "GUIDELINE LOCK" not in board["prompt"]
@@ -766,16 +770,22 @@ async def test_a_changed_fingerprint_asks_again_using_spend_before(monkeypatch):
 
         def first_script(messages, n):
             if n == 0:
-                return calls(*_logo_calls())
+                return calls(("quote_plan", {"steps": _three_logos()}))
             return reply("好")
 
         await _brand_turn(monkeypatch, first_script)
         assert brand._progress()["spent"] == 0.09
 
         changed = [
-            _logo_plan(slot, width=1024, height=1024, edit_model="other-model")
+            _logo_plan(
+                slot, width=1024, height=1024, edit_model="other-model",
+                prompt=f"changed prompt {slot}", base=f"http://127.0.0.1/base-{slot}.png",
+            )
             for slot in ("logo_a", "logo_b", "logo_c")
-        ] + [_logo_plan("logo_a", width=1024, height=1024, edit_model="other-model")]
+        ] + [_logo_plan(
+            "logo_a", width=1024, height=1024, edit_model="other-model",
+            prompt="changed prompt logo_a extra", base="http://127.0.0.1/base-logo_a.png",
+        )]
         assert brand.stage_repeat(changed) == "new"
 
         def replan(messages, n):
@@ -833,6 +843,12 @@ def _long_generate(slot: str):
     })
 
 
+def _quoted_generate(slot: str):
+    """The generate that repeats the confirmed quote arguments, not a new prompt."""
+    step = next(item for item in _short_logo_steps() if item["arguments"]["brand_slot"] == slot)
+    return ("generate_image", dict(step["arguments"]))
+
+
 async def _live_brand_run(monkeypatch, script, handle=None):
     """One agent-loop turn. The plan gate is created once and kept across model steps."""
     from ComfyArt.api import wavespeed
@@ -869,7 +885,7 @@ async def _live_brand_run(monkeypatch, script, handle=None):
 
 
 async def test_short_quote_then_long_generates_submit_once_each(monkeypatch):
-    """The stage-2 failure: quote_plan alone, then one generate_image per later step."""
+    """Quote once, then submit each slot with those same arguments."""
     from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
     from test_agent_budget_391 import calls, reply
 
@@ -882,7 +898,7 @@ async def test_short_quote_then_long_generates_submit_once_each(monkeypatch):
             if n == 0:
                 return calls(("quote_plan", {"steps": _short_logo_steps()}))
             if 1 <= n <= 3:
-                return calls(_long_generate(slots[n - 1]))
+                return calls(_quoted_generate(slots[n - 1]))
             return reply("好")
 
         rig, _res, events, confirms, submits = await _live_brand_run(monkeypatch, script)
@@ -890,7 +906,8 @@ async def test_short_quote_then_long_generates_submit_once_each(monkeypatch):
         assert submits == []
         paid = rig.paid_mcp()
         assert [args["brand_slot"] for _name, args in paid] == list(slots)
-        assert all("LONG PROMPT" in args["prompt"] for _name, args in paid)
+        assert all("Logo direction" in args["prompt"] for _name, args in paid)
+        assert all("LONG PROMPT" not in args["prompt"] for _name, args in paid)
         assert all(e.t != "tool_result" or "请先调用 quote_plan" not in e.text for e in events)
         assert brand.stage_repeat(_short_logo_steps()) == "done"
     finally:
@@ -908,7 +925,7 @@ async def test_a_partial_stage_resumes_only_the_unsubmitted_slots(monkeypatch):
 
         def first(messages, n):
             if n == 0:
-                return calls(("quote_plan", {"steps": _short_logo_steps()}), _long_generate("logo_a"))
+                return calls(("quote_plan", {"steps": _short_logo_steps()}), _quoted_generate("logo_a"))
             return reply("好")
 
         rig, _res, _events, confirms, submits = await _live_brand_run(monkeypatch, first)
@@ -922,14 +939,16 @@ async def test_a_partial_stage_resumes_only_the_unsubmitted_slots(monkeypatch):
             if n == 0:
                 return calls(
                     ("quote_plan", {"steps": _short_logo_steps()}),
-                    _long_generate("logo_a"),
-                    _long_generate("logo_b"),
-                    _long_generate("logo_c"),
+                    _quoted_generate("logo_a"),
+                    _quoted_generate("logo_b"),
+                    _quoted_generate("logo_c"),
                 )
             return reply("好")
 
         rig, _res, events, confirms, submits = await _live_brand_run(monkeypatch, again)
-        assert confirms == []
+        # The remaining two slots are a new price, so the old grant is not reused.
+        assert len(confirms) == 1
+        assert [row["slot"] for row in confirms[0]["frozen_slots"]] == ["logo_b", "logo_c"]
         assert submits == []
         assert [args["brand_slot"] for _name, args in rig.paid_mcp()] == ["logo_b", "logo_c"]
         assert "已经提交过了" in " ".join(_tool_texts(events, "generate_image"))
@@ -946,6 +965,9 @@ async def test_plan_gate_stops_when_the_same_call_is_blocked_twice(monkeypatch):
     token = BOT_CHAT_ID.set("c")
     try:
         _logos_ready()
+        # The base shapes are present, so this unquoted spec is stopped by the plan gate
+        # rather than by the missing-base refusal.
+        brand._progress()["shapes"]["logo_a"] = "shape:logo_a"
         extra = {"calls": 0}
 
         def script(messages, n):

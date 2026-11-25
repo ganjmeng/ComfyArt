@@ -24,8 +24,10 @@ def test_inline_card_has_no_modal_scrim():
 
 
 def test_inline_primary_uses_jobs_confirm_ok():
-    """消息内主钮文案走 jobs.confirmOk（继续生成），不用 Start/Confirm 硬编码。"""
+    """消息内主钮文案走 locale，不用 Start/Confirm 硬编码。品牌实价是「开始」。"""
     assert "okLabel={t('jobs.confirmOk')}" in CHAT or 'okLabel={t("jobs.confirmOk")}' in CHAT
-    assert CHAT.count("okLabel={t('jobs.confirmOk')}") + CHAT.count('okLabel={t("jobs.confirmOk")}') >= 2
+    assert "t('jobs.confirmOk')" in CHAT
+    assert "t('jobs.brandStart')" in CHAT
+    assert "t('jobs.requote')" in CHAT
     assert "okLabel={copy.confirm}" not in CHAT
     assert "okLabel={startLabel" not in CHAT

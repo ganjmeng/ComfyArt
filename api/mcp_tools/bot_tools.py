@@ -18,7 +18,8 @@ def bot_turn_state():
 
 async def _await_ask(chat_id: str, state, spec: dict, *,
                      timeout: float | None = None,
-                     keep_pending_on_timeout: bool = False, wait_forever: bool = False) -> dict:
+                     keep_pending_on_timeout: bool = False, wait_forever: bool = False,
+                     retire_ask_id: str = "") -> dict:
     ask = bot_asks.create_ask(chat_id, state.message_id, spec)
     block = {"type": "ask", "ask_id": ask.id, "status": "pending", **spec}
     state.blocks.append(block)
@@ -27,6 +28,19 @@ async def _await_ask(chat_id: str, state, spec: dict, *,
         "chat_id": chat_id, "message_id": state.message_id,
         "ask_id": ask.id, **spec,
     })
+    # The new card is already stored. Only then does the previous card collapse.
+    if retire_ask_id:
+        for older in state.blocks:
+            if isinstance(older, dict) and older.get("ask_id") == retire_ask_id:
+                older["status"] = "answered"
+                older["selected"] = ["requote"]
+                older["replaced_by"] = ask.id
+        chat_store.update_message(chat_id, state.message_id, blocks=state.blocks)
+        broadcast("turn_ask_resolved", {
+            "chat_id": chat_id, "message_id": state.message_id,
+            "ask_id": retire_ask_id, "status": "answered",
+            "selected": ["requote"], "replaced_by": ask.id,
+        })
     try:
         outcome = await asyncio.wait_for(
             asyncio.shield(ask.future),

@@ -2,6 +2,7 @@ import { atom, react } from 'tldraw'
 
 import { api, setAgentPlanConfirmed } from './comfy'
 import { createQuoteAnswer } from './ui/quoteAnswer'
+import { brandConfirmClosed } from './brandQuoteCard'
 import { resultsAtom } from './jobs'
 import { notify } from './notices'
 import { onComfyEvent, onReconnect } from './ws'
@@ -48,7 +49,16 @@ export interface BotBlock {
   questions?: AskQuestion[]
   answers?: AskAnswers
   kind?: string
-  lines?: { text: string; price: string }[]
+  /** Brand quote cards only. The deadline is absolute and Start does not move it. */
+  brand_confirm?: boolean
+  expires_at?: number
+  size_locked?: boolean
+  quote_id?: string
+  lines?: { text: string; price: string; source?: string }[]
+  /** quote, estimate, or unpriced. Estimate and unpriced brand cards do not offer Start. */
+  price_state?: string
+  /** Set by the server once the replacement card is stored. The old card then has no buttons. */
+  replaced_by?: string
   total?: string
   total_label?: string
   selected?: string[]
@@ -266,9 +276,15 @@ function mergePendingAsks(messages: BotMessage[], asks: Array<BotBlock & { messa
     const blocks = m.blocks.map((b) => {
       if (b.type !== 'ask' || !b.ask_id || !byId.has(b.ask_id)) return b
       seen.add(b.ask_id)
+      const a = byId.get(b.ask_id)!
+      const now = Date.now()
+      if (brandConfirmClosed(b, now) || brandConfirmClosed(a, now)) {
+        changed = true
+        const { message_id: _mid, ...rest } = a as BotBlock & { message_id?: string }
+        return { ...b, ...rest, type: 'ask' as const, status: 'expired' as const }
+      }
       if (b.status === 'pending') return b
       changed = true
-      const a = byId.get(b.ask_id)!
       const { message_id: _mid, ...rest } = a as BotBlock & { message_id?: string }
       return { ...rest, type: 'ask' as const, status: 'pending' as const }
     })
@@ -287,7 +303,8 @@ function mergePendingAsks(messages: BotMessage[], asks: Array<BotBlock & { messa
     if (!extra?.length) return m
     const blocks = extra.map((a) => {
       const { message_id: _mid, ...rest } = a
-      return { ...rest, type: 'ask' as const, status: 'pending' as const }
+      const status = brandConfirmClosed(a, Date.now()) ? 'expired' as const : 'pending' as const
+      return { ...rest, type: 'ask' as const, status }
     })
     return { ...m, blocks: [...m.blocks, ...blocks] }
   })
@@ -354,6 +371,37 @@ export async function stopTurn() {
 /** #391: resume a paused run from its server-side checkpoint (409 when another Continue won). */
 export async function continueRun(runId: string, lang: string) {
   await json(`/comfyart/bot/runs/${runId}/continue`, send({ lang }))
+}
+
+/** Estimate and expired brand cards. The server re-quotes and shows the new card. */
+const requoteInflight = new Set<string>()
+
+export async function requoteBrandCard(askId: string) {
+  const chat = currentChat()
+  if (!chat || !askId) throw new Error('Missing quote conversation')
+  // A second click while the first request is open returns without a new post.
+  if (requoteInflight.has(askId)) return
+  requoteInflight.add(askId)
+  const { brandRequoteRequest } = await import('./brandQuoteCard')
+  const req = brandRequoteRequest(chat.id, askId)
+  let res: Response
+  try {
+    res = await api(req.path, send(req.body))
+  } catch (e) {
+    requoteInflight.delete(askId)
+    throw e
+  }
+  const body = await res.json().catch(() => ({})) as { ok?: boolean }
+  // 409 means this card was already replaced or is no longer requotable.
+  if (res.status === 409) return
+  if (!res.ok) {
+    requoteInflight.delete(askId)
+    throw new Error(wsBodyError(body, t('err.requestFailed', res.status)))
+  }
+  if (!body || body.ok !== true) {
+    requoteInflight.delete(askId)
+    throw new Error('Quote acknowledgement missing')
+  }
 }
 
 /** Capture before opening a quote: switching chats must not redirect an approval. */
@@ -478,7 +526,7 @@ const reducers: Record<string, (e: any) => void> = {
     if ((chatsAtom.get() ?? []).some((c) => c.id === e.chat_id)) void notify({ kind: 'suggestion', title: t('bot.agentIsWaitingForYour'), body: e.prompt, chat: e.chat_id })
   },
   turn_ask_resolved: (e) => patchMessages(e.chat_id, e.message_id, (m) => ({
-    ...m, blocks: m.blocks.map((b) => (b.type === 'ask' && b.ask_id === e.ask_id ? { ...b, status: e.status, selected: e.selected ?? b.selected, other_text: e.other_text ?? b.other_text, answers: e.answers ?? b.answers } : b)),
+    ...m, blocks: m.blocks.map((b) => (b.type === 'ask' && b.ask_id === e.ask_id ? { ...b, status: e.status, selected: e.selected ?? b.selected, other_text: e.other_text ?? b.other_text, answers: e.answers ?? b.answers, replaced_by: e.replaced_by ?? b.replaced_by } : b)),
   })),
   turn_done: (e) => {
     setAgentPlanConfirmed(false)

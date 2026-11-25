@@ -15,6 +15,7 @@ export function ChatInlineConfirm({
   lines,
   totalLabel,
   total,
+  footnote,
   onConfirm,
   onCancel,
   testId = 'chat-inline-confirm',
@@ -26,6 +27,7 @@ export function ChatInlineConfirm({
   lines?: ChatConfirmLine[]
   totalLabel?: string
   total?: string
+  footnote?: string
   onConfirm: () => Promise<void> | void
   onCancel: () => void
   testId?: string
@@ -100,6 +102,7 @@ export function ChatInlineConfirm({
           <span className="ca-panel__val">{total}</span>
         </div>
       ) : null}
+      {footnote ? <p className="ca-chat__hint" data-testid="brand-quote-deadline">{footnote}</p> : null}
       {busy || uncertain ? (
         <p role="status" aria-live="polite" className="ca-chat-confirm__status" data-testid="chat-inline-confirm-status">
           {t(busy ? 'jobs.submittingConfirm' : 'jobs.submissionUncertain')}

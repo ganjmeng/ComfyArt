@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { Editor } from 'tldraw'
 
-import { answerAsk, quoteAnswer, continueRun, outputsOf, toolLabel, toolName, type AskAnswers, type AskQuestion, type BotBlock, type BotMessage } from '../bot'
+import { answerAsk, quoteAnswer, continueRun, outputsOf, requoteBrandCard, toolLabel, toolName, type AskAnswers, type AskQuestion, type BotBlock, type BotMessage } from '../bot'
 import { openBotSettingsWithLlmMode } from './AgentPicker'
 import { refFromUrl, setAgentPlanConfirmed } from '../comfy'
 import { draftAtom } from '../agent'
@@ -15,6 +15,7 @@ import { Markdown } from './Markdown'
 import { Thumb } from './TaskDetails'
 import { CopyButton } from './CopyButton'
 import { lang, t } from '../i18n'
+import { brandCardPresentation, brandConfirmClosed, brandDeadlineClock, brandQuoteAction } from '../brandQuoteCard'
 import { openMemoryDialog } from './MemoryDialog'
 import { stepState } from './stepState'
 import { readLocal, writeLocal } from '../localPrefs'
@@ -851,26 +852,105 @@ export function OverQuote({ b }: { b: BotBlock }) {
 /** #235: the plan total uses the same cost-confirm card as a single job. No second card, no new styles. */
 function PlanQuote({ b }: { b: BotBlock }) {
   const [error, setError] = useState('')
+  const [now, setNow] = useState(() => Date.now())
+  const [requoted, setRequoted] = useState(false)
+  const requoteLock = useRef(false)
   const askId = b.ask_id
-  const pending = b.status === 'pending'
+  const present = b.brand_confirm ? brandCardPresentation(b, now) : null
+  const closed = brandConfirmClosed(b, now)
+  useEffect(() => {
+    if (b.brand_confirm !== true || b.status !== 'pending' || typeof b.expires_at !== 'number') return
+    const wait = b.expires_at * 1000 - Date.now()
+    if (wait <= 0) {
+      setNow(Date.now())
+      return
+    }
+    const id = window.setTimeout(() => setNow(Date.now()), wait)
+    return () => window.clearTimeout(id)
+  }, [b.brand_confirm, b.status, b.expires_at])
+  if (requoted || present?.face === 'superseded') {
+    return (
+      <div className="ca-chat__memo" data-testid="brand-quote-superseded">
+        {t('jobs.quoteRequoted')}
+      </div>
+    )
+  }
+  if (closed && present?.face !== 'pending') {
+    return (
+      <div className="ca-chat__memo" data-testid="brand-quote-expired">
+        <span className="ca-icon">{Icons.close}</span>
+        {t('jobs.quoteExpired')}
+        <button
+          type="button"
+          className="ca-panel__primary"
+          data-testid="brand-quote-requote"
+          disabled={requoted}
+          onClick={() => {
+            if (requoteLock.current) return
+            requoteLock.current = true
+            setRequoted(true)
+            void requoteBrandCard(b.ask_id || '').catch((e) => {
+              requoteLock.current = false
+              setRequoted(false)
+              setError(errorText(e))
+            })
+          }}
+        >
+          {t('jobs.requote')}
+        </button>
+        {error ? <div className="ca-chat__hint">{error}</div> : null}
+      </div>
+    )
+  }
+  const pending = b.status === 'pending' || present?.face === 'pending'
   if (pending && askId) {
     const answer = quoteAnswer(askId)
-    return (
+    const brandAction = b.brand_confirm ? brandQuoteAction(b.price_state) : 'start'
+    const okLabel = !b.brand_confirm
+      ? t('jobs.confirmOk')
+      : brandAction === 'requote'
+        ? t('jobs.requote')
+        : t('jobs.brandStart')
+    const deadline = b.brand_confirm && typeof b.expires_at === 'number' && Number.isFinite(b.expires_at)
+      ? t('jobs.quoteDeadline', brandDeadlineClock(b.expires_at))
+      : undefined
+    const card = (
       <>
         <ChatInlineConfirm
           title={t('jobs.confirmTitle')}
           desc={b.prompt ?? ''}
-          okLabel={t('jobs.confirmOk')}
+          okLabel={okLabel}
           lines={b.lines ?? []}
           totalLabel={b.total_label}
           total={b.total}
+          footnote={deadline}
           testId="chat-inline-planquote"
           onConfirm={async () => {
+            if (brandConfirmClosed(b, Date.now())) {
+              setNow(Date.now())
+              return
+            }
+            if (brandAction === 'requote') {
+              if (requoteLock.current) return
+              requoteLock.current = true
+              setRequoted(true)
+              try {
+                await requoteBrandCard(askId)
+              } catch (e) {
+                requoteLock.current = false
+                setRequoted(false)
+                setNow(Date.now())
+                setError(errorText(e))
+                throw e
+              }
+              return
+            }
             setAgentPlanConfirmed(true)
             try {
               await answer(['start'])
             } catch (e) {
               setAgentPlanConfirmed(false)
+              setNow(Date.now())
               setError(errorText(e))
               throw e
             }
@@ -883,6 +963,10 @@ function PlanQuote({ b }: { b: BotBlock }) {
         {error ? <div className="ca-chat__hint">{error}</div> : null}
       </>
     )
+    if (b.brand_confirm) {
+      return <div data-testid="brand-plan-quote" data-size-locked={b.size_locked ? 'true' : 'false'}>{card}</div>
+    }
+    return card
   }
   if (pending) return error ? <div className="ca-chat__hint">{error}</div> : null
   const started = b.status === 'answered' && (b.selected ?? []).includes('start')
