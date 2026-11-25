@@ -163,11 +163,9 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert spec["prompt"].count("no small text at all") == 2
     assert "one garbled character is not acceptable" in spec["prompt"]
     assert "moodboard 色彩 cell" in spec["prompt"]
-    assert "each swatch is labeled with a Chinese color name and a percentage" in spec["prompt"]
-    assert "any accent is at most about 5%" in spec["prompt"]
-    assert "no color-name label" not in spec["prompt"]
-    assert "no percentage text" not in spec["prompt"]
-    assert "ratios are shown only by the width" not in spec["prompt"]
+    assert "no color-name label and no percentage text" in spec["prompt"]
+    assert "Chinese color name" not in spec["prompt"]
+    assert "percentage" not in spec["prompt"].replace("no percentage text", "")
     assert "real Chinese brand name" in spec["prompt"] and "real English brand name" in spec["prompt"]
     assert "character for character" in spec["prompt"]
     assert "Do not drop a character" in spec["prompt"]
@@ -370,11 +368,9 @@ def test_spec_card_is_seven_lovart_panels_and_brand_prompts_have_no_lock_words()
                 assert heading in assembled, heading
             for old in OLD_SPEC_HEADINGS:
                 assert old not in assembled, old
-            assert "each swatch is labeled with a Chinese color name and a percentage" in assembled
-            assert "any accent is at most about 5%" in assembled
-            assert "no color-name label" not in assembled
-            assert "no percentage text" not in assembled
-            assert "ratios are shown only by the width" not in assembled
+            assert "no color-name label and no percentage text" in assembled
+            assert "Chinese color name" not in assembled
+            assert "plus a percentage" not in assembled
         if slot == "logo_c":
             assert "cup-shaped" in assembled
             assert "The wordmark appears exactly once per zone." in assembled
@@ -391,11 +387,6 @@ def test_closing_rules_are_in_the_skill_instructions():
     assert "does not state hex values" in skill
     assert "exact values are on the spec card" in skill
     assert "moodboard color cell" in skill
-    assert "each swatch is labeled with a Chinese color name and a percentage" in skill
-    assert "any accent is at most about 5%" in skill
-    assert "no color-name label" not in skill
-    assert "no percentage text" not in skill
-    assert "ratios are shown only by the width" not in skill
     assert "no invented words" in skill
     assert "no body copy" in skill and "cup sleeve" in skill
     skill_headings = ["标识", "色彩", "变体", "字体", "版式", "使用禁忌", "影像与材质"]
