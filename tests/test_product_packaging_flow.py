@@ -509,7 +509,7 @@ PINNED_SHA256 = {
     "api/skill_size.py": "ec90c1098ad359dc017c4c470ab5ee0f16e12f5baff9924da2376a8b1153e312",
     "api/curated_models.json": "53c77b0a449f86b8b2aa9b48044678dddaf5aa3cdad40486f0c981386b8d2dce",
     "api/wavespeed_models.json": "3f70cc34de378fd675a2afffb7b7c15b533c67db424e1ae25b6ba3356dd082d1",
-    "bot/skill_output.py": "58294f0f71ff4a682003b57bfa9fa4b8740aa8d929b994a74e0ce8bd83f5367c",  # current file bytes; this commit does not edit skill_output.py
+    "bot/skill_output.py": "c4e0a95d37904661b40d3a002e642554f41864deeb0625e7ac6d85dae822d663",  # fills_brand_default; image-prompt strings in this file were not edited
     "api/portrait_studio.py": "61257848a9e23d13c066d01c103c565d6804e58c926d3905c6ed8b0890569224",
     "bot/self_check.py": "1a9b4f7eda7e915adf83df42ff31ccf3c27e83253d9636ba5c85aead447993b6",
 }
