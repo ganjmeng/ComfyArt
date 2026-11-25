@@ -908,6 +908,12 @@ def _short_logo_steps():
     return steps
 
 
+def _quoted_generate(slot: str):
+    """The generate that repeats the confirmed quote arguments, not a new prompt."""
+    step = next(item for item in _short_logo_steps() if item["arguments"]["brand_slot"] == slot)
+    return ("generate_image", dict(step["arguments"]))
+
+
 def _long_generate(slot: str):
     return ("generate_image", {
         "prompt": (

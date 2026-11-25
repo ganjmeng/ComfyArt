@@ -161,6 +161,15 @@ def credit_alloc(amounts: list[Optional[float]], total_credits: int) -> list[int
     return credits
 
 
+def _pricer_quote_identity(answer: object) -> tuple[str, str]:
+    """Optional ``(currency, quote_id)`` carried after ``(amount, source, reason)``."""
+    if not isinstance(answer, tuple):
+        return "", ""
+    quote_id = str(answer[3] or "") if len(answer) >= 4 else ""
+    currency = str(answer[4] or "") if len(answer) >= 5 else ""
+    return currency, quote_id
+
+
 def price_source(answer: object) -> tuple[Optional[float], str, str]:
     """#968: normalize a pricer answer into `(amount, source, reason)`.
 
@@ -347,6 +356,8 @@ class Quote:
     total_credits: int = 0
     # Validated multi-angle preview plan, stored with the pending quote. Prompt prose is not this.
     composition_plan: Optional[dict] = None
+    currency: str = "USD"
+    quote_id: str = ""
 
     def ask_spec(self) -> dict:
         lang = _lang(self.lang)
@@ -363,10 +374,19 @@ class Quote:
             "lines": [{"text": ln.text, "price": ln.price, "source": ln.source} for ln in self.lines],
             "total_label": self.total_label,
             "total": self.total_text,
+            "price_state": self.price_state,
         }
         if self.composition_plan:
             spec["composition_plan"] = self.composition_plan
         return spec
+
+    @property
+    def price_state(self) -> str:
+        if any(ln.unpriced for ln in self.lines):
+            return "unpriced"
+        if any(ln.source == SOURCE_ESTIMATE for ln in self.lines):
+            return "estimate"
+        return "quote"
 
     def started_result(self) -> str:
         """No prices: the card already showed them, and an under-threshold start shows none."""
@@ -492,6 +512,8 @@ class _StepPrice:
     ratio: str = ""
     quoted_plan: Optional[dict] = None
     quoted_snapshot: Optional[dict] = None
+    currency: str = ""
+    quote_key: str = ""
 
 
 async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
@@ -537,8 +559,10 @@ async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
     show = model
     source, reason = SOURCE_QUOTE, ""
     amount: Optional[float] = None
+    currency, quote_key = "", ""
     if model:
         answer = await pricer(model, inputs)
+        currency, quote_key = _pricer_quote_identity(answer)
         amount, source, reason = price_source(answer)
         if amount is None and answer is None:
             # #235 legacy: a pricer with no answer at all prices the dearest model of that type, labelled 约.
@@ -557,12 +581,14 @@ async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
         return _StepPrice(None, True, show, choice, None, units, SOURCE_UNPRICED, reason,
                           stage_width, stage_height, stage_ratio,
                           quoted_plan if isinstance(quoted_plan, dict) else None,
-                          quoted_snapshot if isinstance(quoted_snapshot, dict) else None)
+                          quoted_snapshot if isinstance(quoted_snapshot, dict) else None,
+                          currency, quote_key)
     return _StepPrice(round(float(amount) * units, 6),
                       approx or source == SOURCE_ESTIMATE, show, choice, None, units, source, reason,
                       stage_width, stage_height, stage_ratio,
                       quoted_plan if isinstance(quoted_plan, dict) else None,
-                      quoted_snapshot if isinstance(quoted_snapshot, dict) else None)
+                      quoted_snapshot if isinstance(quoted_snapshot, dict) else None,
+                      currency, quote_key)
 
 
 def _forces_quote_card(prepared: list[dict]) -> bool:
@@ -620,6 +646,8 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
     lines: list[Line] = []
     quoted_plan = None
     quoted_snapshot = None
+    priced_currency = ""
+    priced_keys: list[str] = []
     positions = _plan_positions(prepared)
     for step, position in zip(prepared, positions):
         if step.get("svg_blocked"):
@@ -641,6 +669,10 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
             ))
             continue
         amount, approx, source, reason = priced.amount, priced.approx, priced.source, priced.reason
+        if priced.currency:
+            priced_currency = priced.currency
+        if priced.quote_key:
+            priced_keys.append(priced.quote_key)
         unpriced = amount is None
         name = step["text"] or step["tool"]
         if step["tool"] == "generate_image":
@@ -755,7 +787,13 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         question = "确定开始吗？" if lang == "zh" else "Start?"
         gap = "" if lang == "zh" else " "  # en: "…lower. Start?", never "…lower.Start?"
         prompt = prompt.replace(question, f"{LIST_PRICE_EXPLAIN[lang]}{gap}{question}")
-    if brand_stage and not any_unpriced:
+    if brand_stage and any_estimate and not any_unpriced:
+        prompt = (f"预计约 {total_credits} 积分，实时价暂不可用。" if lang == "zh"
+                  else f"About {total_credits} credits. The live price is unavailable.")
+    elif brand_stage and any_unpriced:
+        question = "确定开始吗？" if lang == "zh" else "Start?"
+        prompt = prompt.replace(question, "").strip()
+    elif brand_stage and not any_unpriced:
         from ..api.brand_identity import brand_prompt, quoted_stage, spend_before
         from .run_budget import ui_credits as _ui_credits
         stage = quoted_stage(prepared)
@@ -774,4 +812,7 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         keys=[ln.key for ln in lines], cancel_text=CANCEL_TEXT[lang],
         units=sum(ln.units for ln in lines), total_credits=total_credits,
         composition_plan=quoted_plan,
+        currency=priced_currency or "USD",
+        quote_id=(priced_keys[0] if priced_keys and all(key == priced_keys[0] for key in priced_keys)
+                  else "|".join(priced_keys) if priced_keys else ""),
     )

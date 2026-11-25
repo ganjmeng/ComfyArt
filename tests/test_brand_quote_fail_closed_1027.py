@@ -135,17 +135,20 @@ async def test_quote_build_exception_does_not_generate(monkeypatch, budget, stag
     generated, events, res = await _run(
         monkeypatch, budget=budget, price="production", confirm="production", stage=stage)
     assert generated == []
+    # The chat shows the product sentence. The exception stays on the turn error.
     text = "\n".join(e.text for e in events if e.t == "delta" and e.text)
-    assert "quote build failed" in text
+    assert "没有开始" in text or "Nothing started" in text
+    assert "quote build failed" in (res.error or "")
     assert res.error
 
 
 @pytest.mark.parametrize("budget", [True, False], ids=["agent_loop", "local_llm"])
 async def test_confirm_timeout_does_not_generate(monkeypatch, budget):
-    generated, events, _res = await _run(monkeypatch, budget=budget, price="ask", confirm="timeout")
+    generated, events, res = await _run(monkeypatch, budget=budget, price="ask", confirm="timeout")
     assert generated == []
     text = "\n".join(e.text for e in events if e.t == "delta" and e.text)
-    assert "TimeoutError" in text or "confirm timed out" in text
+    assert "没有开始" in text or "Nothing started" in text
+    assert "TimeoutError" in (res.error or "") or "confirm timed out" in (res.error or "")
 
 
 @pytest.mark.parametrize("budget", [True, False], ids=["agent_loop", "local_llm"])
