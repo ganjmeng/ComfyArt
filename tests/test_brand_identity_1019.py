@@ -961,8 +961,8 @@ async def _live_brand_run(monkeypatch, script, handle=None):
     return rig, res, events, confirms, submits
 
 
-async def test_short_quote_then_long_generates_submit_once_each(monkeypatch):
-    """The stage-2 failure: quote_plan alone, then one generate_image per later step."""
+async def test_short_quote_then_confirmed_generates_submit_once_each(monkeypatch):
+    """quote_plan alone, then one generate of that confirmed snapshot per later step."""
     from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
     from test_agent_budget_391 import calls, reply
 
@@ -975,7 +975,7 @@ async def test_short_quote_then_long_generates_submit_once_each(monkeypatch):
             if n == 0:
                 return calls(("quote_plan", {"steps": _short_logo_steps()}))
             if 1 <= n <= 3:
-                return calls(_long_generate(slots[n - 1]))
+                return calls(_quoted_generate(slots[n - 1]))
             return reply("好")
 
         rig, _res, events, confirms, submits = await _live_brand_run(monkeypatch, script)
@@ -983,7 +983,8 @@ async def test_short_quote_then_long_generates_submit_once_each(monkeypatch):
         assert submits == []
         paid = rig.paid_mcp()
         assert [args["brand_slot"] for _name, args in paid] == list(slots)
-        assert all("LONG PROMPT" in args["prompt"] for _name, args in paid)
+        assert all("Logo direction" in args["prompt"] for _name, args in paid)
+        assert all("LONG PROMPT" not in args["prompt"] for _name, args in paid)
         assert all(e.t != "tool_result" or "请先调用 quote_plan" not in e.text for e in events)
         assert brand.stage_repeat(_short_logo_steps()) == "done"
     finally:
@@ -1001,7 +1002,7 @@ async def test_a_partial_stage_resumes_only_the_unsubmitted_slots(monkeypatch):
 
         def first(messages, n):
             if n == 0:
-                return calls(("quote_plan", {"steps": _short_logo_steps()}), _long_generate("logo_a"))
+                return calls(("quote_plan", {"steps": _short_logo_steps()}), _quoted_generate("logo_a"))
             return reply("好")
 
         rig, _res, _events, confirms, submits = await _live_brand_run(monkeypatch, first)
@@ -1015,9 +1016,9 @@ async def test_a_partial_stage_resumes_only_the_unsubmitted_slots(monkeypatch):
             if n == 0:
                 return calls(
                     ("quote_plan", {"steps": _short_logo_steps()}),
-                    _long_generate("logo_a"),
-                    _long_generate("logo_b"),
-                    _long_generate("logo_c"),
+                    _quoted_generate("logo_a"),
+                    _quoted_generate("logo_b"),
+                    _quoted_generate("logo_c"),
                 )
             return reply("好")
 

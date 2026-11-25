@@ -2351,7 +2351,7 @@ class LocalLlmProvider(AgentProvider):
         The second ``submit_block_reason`` runs after the slot is bound and before
         ``reserve_brand_dispatch``. A prompt replaced during bind is a mismatch.
         A grant that expires between the two checks does not reserve or submit.
-        The default-path construction prompt may still be longer than the quote line.
+        The prompt must still be the assembled snapshot that was confirmed.
         """
         from ..api.brand_identity import (
             BrandGrantPersistError, bind_brand_generate, note_brand_submitted,

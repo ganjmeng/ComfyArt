@@ -2274,10 +2274,7 @@ def grant_still_authorizes(steps: list, turn: object = None, *, now: float | Non
         previous = saved.get(row["slot"])
         if previous is None:
             return False
-        if _json_ready(previous) == _json_ready(row):
-            continue
-        quiet = {**row, "prompt": previous.get("prompt")}
-        if _json_ready(previous) != _json_ready(quiet):
+        if _json_ready(previous) != _json_ready(row):
             return False
     return True
 
@@ -2351,9 +2348,8 @@ def normalize_slot_execution(args: dict) -> dict | None:
     """The execution this brand slot will actually submit.
 
     Invalid width, height, count, and model inputs fold to the slot lock before
-    they are compared. Prompt, base, ordered references, and mask stay as submitted.
-    A longer construction prompt for the same slot, base, and references is still
-    this execution: the quote line is shorter than the image prompt.
+    they are compared. Prompt, base, ordered references, and mask are the assembled
+    request. A longer or different model-written prompt is a different execution.
     """
     raw = dict(args or {})
     slot = _BY_ID.get(str(raw.get("brand_slot") or ""))
@@ -2404,8 +2400,26 @@ def _execution_rows(steps: list) -> list[dict]:
     return [by_slot[key] for key in sorted(by_slot)]
 
 
+def _assembled_quote_steps(steps: list) -> list:
+    """Program assembly of each default-path slot before that request is frozen."""
+    out = []
+    for step in steps or []:
+        if not isinstance(step, dict) or step.get("tool") != "generate_image":
+            out.append(step)
+            continue
+        args = step.get("arguments") if isinstance(step.get("arguments"), dict) else {}
+        if not args.get("brand_slot") or str(args.get("preset") or "").strip():
+            out.append(step)
+            continue
+        step = dict(step)
+        step["arguments"] = assemble_confirmed_request(args)
+        out.append(step)
+    return out
+
+
 def build_grant(steps: list, *, identity: dict, amount: float, currency: str,
                 quote_id: str, created_at: float, expires_at: float) -> dict:
+    steps = _assembled_quote_steps(steps)
     body = {
         "user": str(identity.get("user") or ""),
         "project": str(identity.get("project") or ""),
@@ -2558,12 +2572,30 @@ def _held_slots(stage: int) -> set[str]:
     return unknown | dispatching_slots(stage)
 
 
+def assemble_confirmed_request(args: dict) -> dict:
+    """The model-bound request for one default-path slot, before it is quoted.
+
+    ``fill_default`` appends that slot's lock to the text already on the request.
+    A missing base is not assembled here; ``stage_base_block`` reports it.
+    Calling this again on the result does not add a second lock.
+    """
+    if not isinstance(args, dict) or not args.get("brand_slot"):
+        return dict(args or {})
+    if str(args.get("preset") or "").strip():
+        return dict(args)
+    filled = fill_default(args)
+    if filled.get("_brand_block"):
+        return dict(args)
+    return filled
+
+
 def submit_block_reason(args: dict, turn: object = None, *, now: float | None = None) -> str | None:
     """Why this brand generate must not run, or None when the frozen grant still allows the slot.
 
-    The default-path construction prompt may be longer than the quote line. That
-    difference is not a mismatch. Expiry, identity, a slot already submitted, and
-    a reservation already held are. A template call is ``template_submit_block``.
+    The prompt must be the assembled snapshot the human confirmed. Replacing it
+    or appending to it is a mismatch. Expiry, identity, a slot already submitted,
+    and a reservation already held are mismatches of a different kind. A template
+    call is ``template_submit_block``.
     """
     if not isinstance(args, dict) or not args.get("brand_slot"):
         return None
@@ -2590,11 +2622,7 @@ def submit_block_reason(args: dict, turn: object = None, *, now: float | None = 
     if row is None or frozen is None:
         return "mismatch"
     if _json_ready(frozen) != _json_ready(row):
-        # Same slot, base, references, mask, and normalized size: the image prompt
-        # may be the longer construction sheet that follows the short quote line.
-        quiet = {**row, "prompt": frozen.get("prompt")}
-        if _json_ready(frozen) != _json_ready(quiet):
-            return "mismatch"
+        return "mismatch"
     return None
 
 
