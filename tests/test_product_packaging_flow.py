@@ -567,6 +567,24 @@ QUOTE_LINE_LOCALE = {
         "quote.lineartPreviewSize": "Line-art preview · {0}×{1} · {2}",
     },
 }
+# Canvas confirm copy for an unpriced or estimate card. These keys already existed;
+# their sentences now match the agent card and no longer say confirm-then-run.
+CONFIRM_GATE_LOCALE = {
+    "zh": {
+        "jobs.confirmEstimate": "这次生成预计约 {0} 积分。实时价格暂不可用，按未打折标价估算，实际扣费可能更低。可以重新取价，或取消。",
+        "jobs.confirmEstimateGif": "这次生成预计约 {0} 积分。GIF {1}。实时价格暂不可用，按未打折标价估算，实际扣费可能更低。可以重新取价，或取消。",
+        "jobs.confirmEstimateTier": "这次生成预计约 {0} 积分（{1}）。实时价格暂不可用，按未打折标价估算，实际扣费可能更低。可以重新取价，或取消。",
+        "jobs.confirmUnpriced": "这次生成暂时取不到价格，还没有开始，也没有扣积分。可以重新取价，或取消。",
+        "jobs.confirmUnpricedGif": "这次生成暂时取不到价格，还没有开始，也没有扣积分。GIF {0}。可以重新取价，或取消。",
+    },
+    "en": {
+        "jobs.confirmEstimate": "This generation is estimated at about {0} credits. The live price is unavailable; this is an undiscounted list-price estimate and the actual charge may be lower. Re-price, or cancel.",
+        "jobs.confirmEstimateGif": "This generation is estimated at about {0} credits. GIF {1}. The live price is unavailable; this is an undiscounted list-price estimate and the actual charge may be lower. Re-price, or cancel.",
+        "jobs.confirmEstimateTier": "This generation is estimated at about {0} credits ({1}). The live price is unavailable; this is an undiscounted list-price estimate and the actual charge may be lower. Re-price, or cancel.",
+        "jobs.confirmUnpriced": "We couldn't get a price for this generation yet. Nothing has started and no credits were used. You can re-price or cancel.",
+        "jobs.confirmUnpricedGif": "We couldn't get a price for this generation yet. Nothing has started and no credits were used. GIF {0}. You can re-price or cancel.",
+    },
+}
 # P2-1: unpriced / re-price copy. The rest of each locale file stays on LOCALE_BASE_SHA256.
 QUOTE_REPRICE_LOCALE = {
     "zh": {
@@ -625,14 +643,15 @@ LOCALE_EXTRAS = {
            "runStop.stillGenerating": RUN_STOP_LOCALE[lang],
            "wsErr.userRatioUnsupported": RATIO_REFUSAL_LOCALE_994[lang],
            "models.minimaxH3Image": H3_IMAGE_LOCALE[lang],
-           **QUOTE_LINE_LOCALE[lang], **QUOTE_REPRICE_LOCALE[lang], **ANGLE_PROGRESS_LOCALE[lang]}
+           **QUOTE_LINE_LOCALE[lang], **QUOTE_REPRICE_LOCALE[lang], **CONFIRM_GATE_LOCALE[lang],
+           **ANGLE_PROGRESS_LOCALE[lang]}
     for lang in ("zh", "en")
 }
 # Canonical locale JSON minus the extras above. #1003 keeps jobs.sizeNotice as the #924
 # smaller sentence and does not add a larger or actual-size sentence.
 LOCALE_BASE_SHA256 = {
-    "src/locales/zh.json": "c42f08ae2811e9669d393efab7761cc32397b9b9222d8f5b39aad2ad13d16f0b",
-    "src/locales/en.json": "8254a69fc1a4b480cd4fcc0e260b5a9f389199cb4bcdcf742e2e673b78c41d01",
+    "src/locales/zh.json": "6529087e521b89b5387246bd9227ebfb01715a3cf1f02f8e21faadf1e5e3035a",
+    "src/locales/en.json": "36353ecc0db30f071d704a05dcb7c75e2bbed4d8c9e94d2018c3a933590dc166",
 }
 
 

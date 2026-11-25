@@ -1865,8 +1865,15 @@ async def estimate(inputs: dict) -> dict:
         if feature == "structure_control" and price is not None:
             extra = await _steps_price(inputs)  # depth / sam3 map calls are paid too (#80)
             price = None if extra is None else round(float(price) + extra, 6)
+    # A non-quote always asks, including an estimate under the confirm line.
+    if source != "quote":
+        confirm_flag = True
+    elif price is None:
+        confirm_flag = confirm_usd() == 0
+    else:
+        confirm_flag = needs_confirm(price)
     out = {"price": price, "currency": "USD", "source": source, "confirm_usd": confirm_usd(),
-           "confirm": needs_confirm(price) if price is not None else (source == "unpriced" or confirm_usd() == 0)}
+           "confirm": confirm_flag}
     if not isinstance(inputs.get("scenes"), list):
         out["model"] = model  # #825: quote names the same id submit will POST
         if model_choice:
@@ -2172,23 +2179,30 @@ async def submit(inputs: dict) -> str:
     lora_payload(_schema(meta).get("properties") or {}, inputs)  # #202: bad URL / unsupported model fails before any quote
     if feature == "segment" or model == SAM3_MODEL:
         inputs = await seg_prompts(inputs)
-    if not inputs.get("confirmed"):
-        splits = _seg_max_splits(inputs) if feature == "structure_control" else None
-        capped = feature == "structure_control" and "caption" in _map_steps(inputs)
-        price, source = await quote(model, inputs)
-        if feature == "structure_control" and price is not None:
-            extra = await _steps_price(inputs)
-            price = None if extra is None else round(float(price) + extra, 6)
-        gif_note = inputs.get("gif_note") if isinstance(inputs.get("gif_note"), str) else ""
-        gif_body = _gif_confirm(inputs)
-        if price is not None and needs_confirm(price):
-            # expensive job: the page asks and resubmits with confirmed=true; #159 an estimate is labelled as one
-            raise WaveSpeedError(f"{model} costs about ${price} per run; confirm to continue", 409, confirm=float(price), seg_splits=splits, seg_capped=capped,
-                                 estimate=source == "estimate", tier=tier_label(await priced_inputs(model, inputs)), gif_note=gif_note, model=model, gif=gif_body, model_choice=model_choice)
-        if source == "unpriced":
-            # #159: no price for the submitted tier: never guess one, always ask (no amount, the tier is named)
+    # Re-price even when the client says confirmed. confirmed only lets an official
+    # quote through. An estimate or an unpriced tier is 409 and is not submitted.
+    splits = _seg_max_splits(inputs) if feature == "structure_control" else None
+    capped = feature == "structure_control" and "caption" in _map_steps(inputs)
+    price, source = await quote(model, inputs)
+    if feature == "structure_control" and price is not None:
+        extra = await _steps_price(inputs)
+        if extra is None:
+            price, source = None, "unpriced"
+        else:
+            price = round(float(price) + extra, 6)
+    gif_note = inputs.get("gif_note") if isinstance(inputs.get("gif_note"), str) else ""
+    gif_body = _gif_confirm(inputs)
+    if source != "quote" or price is None:
+        tier = tier_label(await priced_inputs(model, inputs))
+        if price is None or source == "unpriced":
             raise WaveSpeedError(f"{model}: no price for this tier; confirm to continue", 409, unpriced=True,
-                                 tier=tier_label(await priced_inputs(model, inputs)), gif_note=gif_note, model=model, gif=gif_body, model_choice=model_choice)
+                                 tier=tier, gif_note=gif_note, model=model, gif=gif_body, model_choice=model_choice)
+        raise WaveSpeedError(f"{model} costs about ${price} per run; confirm to continue", 409, confirm=float(price), seg_splits=splits, seg_capped=capped,
+                             estimate=True, tier=tier, gif_note=gif_note, model=model, gif=gif_body, model_choice=model_choice)
+    if not inputs.get("confirmed") and needs_confirm(price):
+        # Official quote at or over the line: the page asks and resubmits with confirmed=true.
+        raise WaveSpeedError(f"{model} costs about ${price} per run; confirm to continue", 409, confirm=float(price), seg_splits=splits, seg_capped=capped,
+                             tier=tier_label(await priced_inputs(model, inputs)), gif_note=gif_note, model=model, gif=gif_body, model_choice=model_choice)
     async with aiohttp.ClientSession(headers=_headers()) as session:
         payload = await build_payload(session, _schema(meta), await _prepare(session, model, inputs), model)
         _submits.append(time.time())

@@ -30,11 +30,11 @@ async def test_transcribe_route_request_shape_and_quote(ws, bot_client, media):
     ws["outputs"] = ["hi"]
     ws["prices"][WHISPER] = BASE
     res = await bot_client.post("/comfyart/wavespeed/transcribe", json={"src": AUDIO})
-    assert res.status == 200 and (await res.json())["text"] == "hi"
-    model, payload = ws["submits"][0]
-    assert model == WHISPER and payload["audio"].startswith("https://cdn.test/")
-    assert "duration" not in payload  # #185: the length prices the job only, never submitted (schema has none)
-    assert ws["quotes"] == [{"model_id": WHISPER, "input": {"duration": 60}}]  # #185: unknown length -> 60 s fallback
+    # Unknown length is priced at 60s and labelled estimate, so the route does not submit.
+    # A known duration still submits; that payload shape is test_transcribe_route_prices_with_page_duration.
+    body = await res.json()
+    assert res.status == 409 and body["error"]["estimate"] is True and ws["submits"] == []
+    assert ws["quotes"] == [{"model_id": WHISPER, "input": {"duration": 60}}]
 
 
 async def test_caption_route_request_shape_and_quote(ws, bot_client, media):

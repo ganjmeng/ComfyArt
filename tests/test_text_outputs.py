@@ -28,7 +28,8 @@ def media(fresh_user_dir):
 ])
 async def test_transcribe_reads_text_shapes(ws, bot_client, media, out, text):
     ws["outputs"] = [out]
-    res = await bot_client.post("/comfyart/wavespeed/transcribe", json={"src": AUDIO})
+    # A known length is an official quote under the line, so the text parser still runs.
+    res = await bot_client.post("/comfyart/wavespeed/transcribe", json={"src": AUDIO, "duration": 10})
     assert res.status == 200, await res.text()
     assert (await res.json())["text"] == text
 
@@ -42,14 +43,15 @@ async def test_caption_reads_object_output(ws, bot_client, media):
 @pytest.mark.parametrize("route,src", [("transcribe", AUDIO), ("caption", PIC)])
 async def test_completed_without_text_is_an_error(ws, bot_client, media, route, src):
     ws["outputs"] = [""]
-    res = await bot_client.post(f"/comfyart/wavespeed/{route}", json={"src": src})
+    body = {"src": src, **({"duration": 10} if route == "transcribe" else {})}
+    res = await bot_client.post(f"/comfyart/wavespeed/{route}", json=body)
     assert res.status >= 400
     assert "without output" in (await res.text())
 
 
 async def test_completed_with_blank_object_is_an_error(ws, bot_client, media):
     ws["outputs"] = [{"text": "  "}]
-    res = await bot_client.post("/comfyart/wavespeed/transcribe", json={"src": AUDIO})
+    res = await bot_client.post("/comfyart/wavespeed/transcribe", json={"src": AUDIO, "duration": 10})
     assert res.status >= 400 and "without text" in (await res.text())
 
 

@@ -639,9 +639,10 @@ async def test_transcribe_route(ws, bot_client, fresh_user_dir):
     path.write_bytes(b"audio")
     ws["outputs"] = ["你好世界"]
     res = await bot_client.post("/comfyart/wavespeed/transcribe", json={"src": "/api/view?filename=voice.webm&subfolder=&type=input"})
-    assert res.status == 200, await res.text()
-    assert (await res.json())["text"] == "你好世界"
-    assert ws["submits"][0][0] == "wavespeed-ai/openai-whisper-turbo"
+    # Unknown length is the 60s duration estimate, not an official quote, so nothing is submitted.
+    body = await res.json()
+    assert res.status == 409 and body["error"]["estimate"] is True and not ws["submits"]
+    assert ws["quotes"][-1]["input"]["duration"] == 60
 
 
 async def test_storyboard_chains_last_frame_and_concats(ws, monkeypatch):

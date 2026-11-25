@@ -80,11 +80,17 @@ async def test_price_api_4005_default_tier_is_unpriced(seed, monkeypatch):
     assert e.value.status == 409 and e.value.unpriced and not e.value.estimate and not seed["submits"]
     body = json.loads(wavespeed._respond_error(e.value).body)["error"]
     assert body["unpriced"] is True and body["confirm_usd"] is None and "estimate" not in body and body["tier"] == "720p · 5s"
-    await wavespeed.submit({**job, "confirmed": True})
-    assert seed["submits"][-1][1]["resolution"] == "720p"
-    for lang, text in (("zh", "暂时查不到准确价格，继续会按 {0} 实际扣费，确定继续吗？"), ("en", "Couldn't get the exact price; continuing will be charged at the actual rate for {0}. Continue?")):
+    with pytest.raises(wavespeed.WaveSpeedError) as again:
+        await wavespeed.submit({**job, "confirmed": True})
+    assert again.value.status == 409 and again.value.unpriced and not seed["submits"]
+    assert seed["quotes"][-1]["input"]["resolution"] == "720p"
+    for lang, text in (
+        ("zh", "这次生成暂时取不到价格，还没有开始，也没有扣积分。可以重新取价，或取消。"),
+        ("en", "We couldn't get a price for this generation yet. Nothing has started and no credits were used. You can re-price or cancel."),
+    ):
         loc = _loc(lang)
-        assert loc["jobs.confirmUnpriced"] == text and "$" not in text and "0.24" not in text
+        assert loc["jobs.confirmUnpriced"] == text == loc["quote.unpricedPrompt"]
+        assert "$" not in text and "0.24" not in text and "继续会" not in text and "Continue?" not in text
 
 
 async def test_price_5xx_default_tier_is_an_estimate(seed, monkeypatch):
@@ -93,18 +99,20 @@ async def test_price_5xx_default_tier_is_an_estimate(seed, monkeypatch):
     job = {**JOB, "resolution": "1K"}
     est = await wavespeed.estimate(job)
     assert est["source"] == "estimate" and est["price"] == 0.24 and est["tier"] == "720p · 5s"
-    monkeypatch.setattr(wavespeed, "confirm_usd", lambda: 0.0)  # 0 = always confirm, so the dialog shows
+    # Default $0.50 line. $0.24 is under it and is still 409, because it is an estimate.
+    assert wavespeed.confirm_usd() == pytest.approx(0.5)
     with pytest.raises(wavespeed.WaveSpeedError) as e:
         await wavespeed.submit(job)
     assert e.value.status == 409 and e.value.estimate and e.value.tier == "720p · 5s" and not seed["submits"]
     body = json.loads(wavespeed._respond_error(e.value).body)["error"]
     assert body["estimate"] is True and body["tier"] == "720p · 5s" and body["confirm_usd"] == 0.24
-    await wavespeed.submit({**job, "confirmed": True})
-    assert seed["submits"][-1][1]["resolution"] == body["tier"].split(" · ")[0]
-    for lang, word in (("zh", "估算价"), ("en", "Estimated")):
-        text = _loc(lang)["jobs.confirmEstimateTier"].replace("{0}", "0.24").replace("{1}", body["tier"])
-        assert word in text and "720p · 5s" in text and "0.24" in text
-        assert word in _loc(lang)["wsKey.estimatedTag"]
+    with pytest.raises(wavespeed.WaveSpeedError) as again:
+        await wavespeed.submit({**job, "confirmed": True})
+    assert again.value.status == 409 and again.value.estimate and not seed["submits"]
+    assert seed["quotes"][-1]["input"]["resolution"] == "720p"
+    for lang, phrase in (("zh", "实时价格暂不可用"), ("en", "live price is unavailable")):
+        text = _loc(lang)["jobs.confirmEstimateTier"].replace("{0}", "24").replace("{1}", body["tier"])
+        assert phrase in text and "720p · 5s" in text and "确定继续" not in text and "Continue?" not in text
 
 
 @pytest.mark.parametrize("res,dur,tier", [("1080p", 5, "1080p · 5s"), ("4k", 5, "4k · 5s"), ("720p", 10, "720p · 10s")])
@@ -120,10 +128,15 @@ async def test_price_api_4005_other_tier_shows_no_amount_and_always_asks(seed, m
     assert e.value.status == 409 and not seed["submits"]
     body = json.loads(wavespeed._respond_error(e.value).body)["error"]
     assert body["unpriced"] is True and body["confirm_usd"] is None and body["tier"] == tier and "estimate" not in body
-    await wavespeed.submit({**job, "confirmed": True})
-    sent = seed["submits"][-1][1]
-    assert f"{sent['resolution']} · {sent['duration']}s" == tier  # dialog tier == submitted tier
-    for lang, text in (("zh", "暂时查不到准确价格，继续会按 {0} 实际扣费，确定继续吗？"), ("en", "Couldn't get the exact price; continuing will be charged at the actual rate for {0}. Continue?")):
+    with pytest.raises(wavespeed.WaveSpeedError) as again:
+        await wavespeed.submit({**job, "confirmed": True})
+    assert again.value.status == 409 and again.value.unpriced and not seed["submits"]
+    quoted = seed["quotes"][-1]["input"]
+    assert f"{quoted['resolution']} · {quoted['duration']}s" == tier
+    for lang, text in (
+        ("zh", "这次生成暂时取不到价格，还没有开始，也没有扣积分。可以重新取价，或取消。"),
+        ("en", "We couldn't get a price for this generation yet. Nothing has started and no credits were used. You can re-price or cancel."),
+    ):
         loc = _loc(lang)
         assert loc["jobs.confirmUnpriced"] == text and "$" not in text and "$" not in loc["wsKey.unpricedTag"]
     assert _loc("en")["wsKey.unpriced"] == "Exact price unavailable; you'll confirm before generating"

@@ -96,10 +96,23 @@ export async function previewControl(src: string, mode: RefMode, res: number): P
     }
   }
   let res1 = await send({ inputs })
-  if (res1.r.status === 409) {
-    const price = res1.conf?.error?.confirm_usd
-    if (typeof price !== 'number' || !(await askCost(price, res1.conf?.error?.seg_splits, res1.conf?.error?.seg_capped))) throw new CostDeclined()
+  while (res1.r.status === 409) {
+    const err = res1.conf?.error ?? {}
+    const price = err.confirm_usd
+    const repriceOnly = !!err.unpriced || !!err.estimate
+    if (!(typeof price === 'number' || err.unpriced)) throw new CostDeclined()
+    const detail = {
+      tier: typeof err.tier === 'string' ? err.tier : undefined,
+      unpriced: !!err.unpriced,
+      estimate: !!err.estimate,
+    }
+    if (!(await askCost(typeof price === 'number' ? price : null, err.seg_splits, err.seg_capped, '', detail))) throw new CostDeclined()
+    if (repriceOnly) {
+      res1 = await send({ inputs })
+      continue
+    }
     res1 = await send({ inputs: { ...inputs, confirmed: true } })
+    break
   }
   if (!res1.blob) throw new Error(wsBodyError(res1.err, `preview failed: ${res1.r.status}`))
   const url = URL.createObjectURL(res1.blob)

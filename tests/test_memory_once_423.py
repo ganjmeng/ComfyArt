@@ -119,8 +119,8 @@ def test_block_carries_no_undo_payload():
 # #935: the origin/main locale bytes are pinned as a canonical-JSON sha256 per file.
 # The test still compares every non-memory key; only the source of the baseline changed.
 LOCALE_NORMALIZED_SHA256 = {
-    "src/locales/zh.json": "c17a956096a202147c7ef735da273a81d93211ed4d133423488f999c55bf4b20",
-    "src/locales/en.json": "73dc5cf753dd752f1037b4815695ef62282260a0f0289cda026224f2c478071e",
+    "src/locales/zh.json": "caf481ccc2e92ea398487c5a0f44a0b92a80a1d5c8fc4d49083bb29761b8cd82",
+    "src/locales/en.json": "338287b00723230017ae51e7552a11e9fdba2dd6fe85ff1e0669e2ea465052ef",
 }
 
 
@@ -233,6 +233,8 @@ def test_locales_only_add_memory_retrieved_430():
         # P2-1: unpriced / estimate quote-card copy (not memory copy)
         "quote.reprice", "quote.unpriced", "quote.unpricedTitle", "quote.estimateTitle",
         "quote.unpricedPrompt", "quote.unpricedPromptMany", "quote.unpricedPromptPartial",
+        "jobs.confirmEstimate", "jobs.confirmEstimateGif", "jobs.confirmEstimateTier",
+        "jobs.confirmUnpriced", "jobs.confirmUnpricedGif",
         # confirmed multi-angle progress card (not memory copy)
         "bot.angleSummary", "bot.angleGenerating", "bot.angleInterrupted",
         "bot.anglePreview", "bot.angleFinal",

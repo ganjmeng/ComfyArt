@@ -610,12 +610,29 @@ def _pixel(value: object) -> Optional[int]:
     return None
 
 
-def _needs_ask(total: float, threshold: float, unknown_price: bool) -> bool:
-    """#904: a known 0-credit plan does not ask; an unknown price always does.
+def _under_line_estimate_prompt(lang: str, n: int, total_credits: int, *, list_price: bool) -> str:
+    """Estimate card under the confirm line. It must not say the line was reached."""
+    if lang == "zh":
+        head = (f"这次生成预计约 {total_credits} 积分。" if n == 1
+                else f"这个任务共 {n} 步，预计约 {total_credits} 积分。")
+        gap = ""
+    else:
+        head = (f"This generation is estimated at about {total_credits} credits. " if n == 1
+                else f"This task has {n} steps and is estimated at about {total_credits} credits. ")
+        gap = " "
+    if list_price:
+        return f"{head}{LIST_PRICE_EXPLAIN[lang]}{gap}{_REPRICE_OR_CANCEL[lang]}"
+    return f"{head}{_REPRICE_OR_CANCEL[lang]}"
 
+
+def _needs_ask(total: float, threshold: float, unknown_price: bool) -> bool:
+    """#904: a known 0-credit plan does not ask; a non-quote billable line always does.
+
+    `unknown_price` is any billable line that is unpriced or not an official quote.
     `threshold == 0` keeps its settings contract "0 = always confirm" (it asks even for a known 0,
     until product approves a copy change). A priced 0 is a fact; a missing price (#968
-    source=unpriced) is not 0 and must never be approved silently.
+    source=unpriced) is not 0 and must never be approved silently. An estimate is not an
+    official quote, so it asks even when the amount is under the line.
     """
     if unknown_price or threshold == 0:
         return True
@@ -707,10 +724,12 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
             units=units, source=source, reason=reason, credits=0,
         ))
     total = round(sum(ln.amount for ln in lines), 4)
-    # #904: only a billable line with an unknown price (#968 source=unpriced) forces the card.
+    # A billable line that is unpriced or not an official quote always asks, even under the line.
     # A blocked/refused step has units 0 (it makes no paid call), so it must not force one.
-    unknown_price = any(ln.unpriced and ln.units > 0 for ln in lines)
-    ask = _needs_ask(total, threshold, unknown_price)
+    # Only a purely official-quote total under the line skips the card.
+    non_quote = any(ln.units > 0 and (ln.unpriced or ln.source != SOURCE_QUOTE) for ln in lines)
+    meets_line = _needs_ask(total, threshold, False)
+    ask = _needs_ask(total, threshold, non_quote)
     if _forces_quote_card(prepared) and any(ln.units > 0 for ln in lines):
         ask = True
     if len(lines) == 1 and not ask and not lines[0].unpriced:
@@ -736,6 +755,11 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
     if any_unpriced:
         kind = "one" if len(lines) == 1 else ("all" if all_unpriced else "partial")
         prompt = _unpriced_prompt(kind, lang, len(lines))
+    elif non_quote and not meets_line:
+        # The card is here because a line is not an official quote, not because the
+        # total reached the confirm line. Do not say that it did.
+        prompt = _under_line_estimate_prompt(
+            lang, len(lines), total_credits, list_price=any(ln.reason == "list_price" for ln in lines))
     else:
         prompt = (_PROMPT_ONE if len(lines) == 1 else _PROMPT)[lang].format(
             n=len(lines), total=total_credits, threshold=ui_credits(threshold))

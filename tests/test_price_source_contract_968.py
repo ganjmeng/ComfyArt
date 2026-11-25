@@ -39,6 +39,8 @@ CATALOG = json.loads((FIX / "wavespeed_catalog_subset.json").read_text())
 FLARE_T2I = "openai/gpt-image-2.6-flare/text-to-image"
 LIST_USD = 0.05       # published medium/1k cell (undiscounted) — the fallback number
 DISCOUNT_USD = 0.045  # priced once the price API answers: the amount actually charged
+# Product default confirm line. Not 0: 0 means always confirm and hides an under-line estimate.
+DEFAULT_LINE = wavespeed.DEFAULT_CONFIRM_CREDITS / 100
 
 
 async def _no_models(feature):
@@ -114,7 +116,7 @@ async def slow_price(monkeypatch, fresh_user_dir):
 
 
 async def _quote_card(pricer) -> object:
-    return await build_quote([_step()], "zh", threshold=0.0, pricer=pricer, models_for=_no_models)
+    return await build_quote([_step()], "zh", threshold=DEFAULT_LINE, pricer=pricer, models_for=_no_models)
 
 
 # ---- the bug: a slow price API must never render as an exact price ----
@@ -159,7 +161,10 @@ async def test_price_timeout_card_is_estimate_labelled_list_price_and_retries_on
 
 async def test_a_healthy_price_api_stays_an_exact_quote(slow_price):
     slow_price["hang"] = False
-    card = await _quote_card(_provider()._price_one)
+    # Under the default line a single official quote still has no card.
+    assert await _quote_card(_provider()._price_one) is None
+    # The same quote, once it meets the line, is exact: no 约, no list-price tag.
+    card = await build_quote([_step()], "zh", threshold=DISCOUNT_USD, pricer=_provider()._price_one, models_for=_no_models)
     assert card is not None
     line = card.lines[0]
     assert line.source == SOURCE_QUOTE and not line.approx and not line.unpriced
@@ -202,7 +207,7 @@ async def test_reject_codes_are_unpriced_with_reprice_and_cancel(slow_price, cod
     assert card is not None and card.ask
     assert card.lines[0].unpriced and card.lines[0].source == SOURCE_UNPRICED
     _assert_unpriced_card(card)
-    en = await build_quote([_step()], "en", threshold=0.0, pricer=_provider()._price_one, models_for=_no_models)
+    en = await build_quote([_step()], "en", threshold=DEFAULT_LINE, pricer=_provider()._price_one, models_for=_no_models)
     assert en is not None
     _assert_reprice_not_start(en, "en")
     assert en.lines[0].price == "Unpriced" and en.total_text == "Unpriced"
@@ -235,7 +240,7 @@ async def test_timeout_with_a_schema_mismatch_is_unpriced(slow_price):
     assert reason == "schema_mismatch"
     assert price != LIST_USD
     card = await build_quote(
-        [_step_with({"quality": "ultra"})], "zh", threshold=0.0,
+        [_step_with({"quality": "ultra"})], "zh", threshold=DEFAULT_LINE,
         pricer=_provider()._price_one, models_for=_no_models)
     assert card is not None
     _assert_unpriced_card(card)
@@ -248,7 +253,7 @@ async def test_5xx_with_a_schema_mismatch_is_unpriced(slow_price):
     assert (price, source, reason) == (None, SOURCE_UNPRICED, "schema_mismatch")
     assert slow_price["price_posts"] == 2
     card = await build_quote(
-        [_step_with({"quality": "not-a-tier"})], "zh", threshold=0.0,
+        [_step_with({"quality": "not-a-tier"})], "zh", threshold=DEFAULT_LINE,
         pricer=_provider()._price_one, models_for=_no_models)
     assert card is not None
     _assert_unpriced_card(card)
@@ -287,7 +292,7 @@ async def test_959_healthy_path_total_is_the_usd_sum_rounded_once():
         return amounts[ids.index(model)]
 
     steps = [_step(mid, f"图 {i}", f"p{i}") for i, mid in enumerate(ids)]
-    card = await build_quote(steps, "zh", threshold=0.0, pricer=pricer, models_for=_no_models)
+    card = await build_quote(steps, "zh", threshold=DEFAULT_LINE, pricer=pricer, models_for=_no_models)
     assert card is not None
     assert card.total == pytest.approx(0.4545)
     assert card.total_credits == ui_credits(card.total) == 46
@@ -296,7 +301,7 @@ async def test_959_healthy_path_total_is_the_usd_sum_rounded_once():
     assert "预计约 46 积分" in card.prompt
     assert [ln.source for ln in card.lines] == [SOURCE_QUOTE] * 4
 
-    en = await build_quote(steps, "en", threshold=0.0, pricer=pricer, models_for=_no_models)
+    en = await build_quote(steps, "en", threshold=DEFAULT_LINE, pricer=pricer, models_for=_no_models)
     assert en is not None and en.total_text == "46 credits" and sum(ln.credits for ln in en.lines) == 46
 
 
@@ -306,7 +311,7 @@ async def test_a_4_x_0_115_plan_is_46_not_48():
         return 0.115
 
     steps = [_step("acme/poster", f"图 {i}", f"p{i}") for i in range(4)]
-    card = await build_quote(steps, "zh", threshold=0.0, pricer=pricer, models_for=_no_models)
+    card = await build_quote(steps, "zh", threshold=DEFAULT_LINE, pricer=pricer, models_for=_no_models)
     assert card is not None
     assert card.total == pytest.approx(0.46)
     assert card.total_credits == ui_credits(card.total) == 46
@@ -314,7 +319,7 @@ async def test_a_4_x_0_115_plan_is_46_not_48():
     assert [ln.credits for ln in card.lines] == [12, 12, 11, 11]  # largest-remainder split
     assert card.total_text == "46 积分" and "预计约 46 积分" in card.prompt
 
-    en = await build_quote(steps, "en", threshold=0.0, pricer=pricer, models_for=_no_models)
+    en = await build_quote(steps, "en", threshold=DEFAULT_LINE, pricer=pricer, models_for=_no_models)
     assert en is not None and en.total_text == "46 credits"
     assert sum(ln.credits for ln in en.lines) == 46
 
@@ -324,7 +329,7 @@ async def test_en_list_price_copy_is_short_and_has_a_space_after_the_full_stop()
     async def pricer(_model, _inputs):
         return 0.05, "estimate", "list_price"
 
-    en = await build_quote([_step()], "en", threshold=0.0, pricer=pricer, models_for=_no_models)
+    en = await build_quote([_step()], "en", threshold=DEFAULT_LINE, pricer=pricer, models_for=_no_models)
     assert en is not None
     assert " · cap · " in en.lines[0].text
     assert "may be lower. Re-price, or cancel." in en.prompt
@@ -333,7 +338,7 @@ async def test_en_list_price_copy_is_short_and_has_a_space_after_the_full_stop()
     assert re.search(r"\.[A-Z]", en.prompt) is None  # every en full stop is followed by a space
     assert [o["id"] for o in en.ask_spec()["options"]] == ["reprice", "cancel"]
 
-    zh = await build_quote([_step()], "zh", threshold=0.0, pricer=pricer, models_for=_no_models)
+    zh = await build_quote([_step()], "zh", threshold=DEFAULT_LINE, pricer=pricer, models_for=_no_models)
     assert zh is not None
     assert " · 上限 · " in zh.lines[0].text
     assert "实际扣费可能更低。可以重新取价，或取消。" in zh.prompt
@@ -346,7 +351,7 @@ async def test_a_mixed_estimate_and_quote_total_is_approx():
         return 0.115 if model == "acme/a" else (0.115, "estimate", "list_price")
 
     steps = [_step("acme/a", "A"), _step("acme/b", "B")]
-    card = await build_quote(steps, "zh", threshold=0.0, pricer=pricer, models_for=_no_models)
+    card = await build_quote(steps, "zh", threshold=DEFAULT_LINE, pricer=pricer, models_for=_no_models)
     assert card is not None
     assert card.total == pytest.approx(0.23)
     assert card.total_credits == ui_credits(card.total) == 23
@@ -367,7 +372,7 @@ async def test_959_fallback_card_total_is_the_usd_sum_marked_approx():
         return (amounts[i], "estimate", "list_price") if i == 0 else amounts[i]
 
     steps = [_step(mid, f"棚拍 {i + 1}", f"p{i}") for i, mid in enumerate(ids)]
-    card = await build_quote(steps, "zh", threshold=0.0, pricer=pricer, models_for=_no_models)
+    card = await build_quote(steps, "zh", threshold=DEFAULT_LINE, pricer=pricer, models_for=_no_models)
     assert card is not None
     assert card.total == pytest.approx(0.466)
     assert card.total_credits == ui_credits(card.total) == 47
@@ -388,7 +393,7 @@ async def test_an_unknown_source_is_never_exact():
     async def unknown_without_number(_model, _inputs):
         return None, "unknown"
 
-    card = await build_quote([_step("acme/token")], "zh", threshold=0.0,
+    card = await build_quote([_step("acme/token")], "zh", threshold=DEFAULT_LINE,
                              pricer=unknown_with_number, models_for=_no_models)
     assert card is not None
     assert card.lines[0].source == SOURCE_ESTIMATE and card.lines[0].approx
