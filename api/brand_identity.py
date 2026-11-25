@@ -1289,7 +1289,9 @@ def _remaining_slot_ids(phase: str) -> list[str]:
     return [slot for slot in ids if slot not in shapes and slot not in inflight]
 
 
-def annotate_quote_steps(steps: list, paid_args: list | None = None) -> list:
+def annotate_quote_steps(steps: list, paid_args: list | None = None, *,
+                         current_skill: str = "", user_text: str | None = None,
+                         current_preset: str = "") -> list:
     """Stamp brand slots onto a quote the model wrote itself.
 
     A quote_plan call often omits brand_slot. Without it the stage is not
@@ -1297,9 +1299,9 @@ def annotate_quote_steps(steps: list, paid_args: list | None = None) -> list:
     the model name. Slots already on the generate calls win; otherwise the
     current stage supplies them. Other skills are left untouched.
 
-    An industry preset does not go through fill_default, so the submit args
-    have no brand_slot. Stamping one onto the quote only makes the next call
-    look like stage_repeat "continue" and skip its own confirm.
+    A quote with no submit this turn keeps that stamping. A turn that does
+    submit stamps a slot only when the call will go through fill_default.
+    The skill id and preset resolution are the same ones apply_generate uses.
     """
     phase = str(_progress().get("phase") or "")
     paid = [a for a in (paid_args or []) if isinstance(a, dict)]
@@ -1329,6 +1331,12 @@ def annotate_quote_steps(steps: list, paid_args: list | None = None) -> list:
         if str(args.get("preset") or "").strip():
             out.append(step)
             continue
+        if paid:
+            from ..bot.skill_output import fills_brand_default
+            # This turn submits. Do not invent a slot the submit will not have.
+            if not fills_brand_default(args, current_skill, user_text, current_preset):
+                out.append(step)
+                continue
         if not args.get("brand_slot") and cursor < len(queue):
             slot = _BY_ID[queue[cursor]]
             cursor += 1
@@ -1466,6 +1474,25 @@ def stage_repeat(steps: list) -> str:
     if confirmed and confirmed <= submitted:
         return "done"
     return "continue"
+
+
+def submits_match_confirmed_plan(steps: list, submit_args: list | None) -> bool:
+    """True when stage_repeat continue may skip a new confirm.
+
+    Every generate submitted this turn must carry a brand_slot, and that slot
+    must be one of the slots in the confirmed plan. A turn with no generate
+    submits has nothing to reuse a confirm on.
+    """
+    stage = quoted_stage(steps)
+    rec = _stage_record(stage) if stage else None
+    saved = rec.get("fingerprint") if isinstance(rec, dict) else None
+    plan = {str(row[-1]) for row in (saved or ()) if row}
+    generates = [a for a in (submit_args or []) if isinstance(a, dict)]
+    if not generates:
+        return True
+    if not plan:
+        return False
+    return all(str(a.get("brand_slot") or "") in plan for a in generates)
 
 
 def remember_stage_plan(steps: list, *, fresh: bool) -> None:

@@ -776,6 +776,28 @@ def ref_ratio(sid: str, data: bytes | None) -> str | None:
     return _nearest(list(table), size[0] / size[1])
 
 
+def fills_brand_default(args: dict | None, current_skill: str = "", user_text: str | None = None,
+                        current_preset: str = "") -> bool:
+    """Whether this generate will go through brand fill_default.
+
+    Same skill id and preset resolution as apply_generate. A named skill wins,
+    otherwise the run's current skill. An industry preset on the call, on the
+    lock line, or on the run does not take the default path. A call that already
+    names brand_slot does.
+    """
+    args = args or {}
+    raw = str(args.get("skill") or "").strip()
+    named = resolve(raw)
+    if raw and not named:
+        return False
+    sid = named or resolve(current_skill)
+    if sid != "brand-identity-director":
+        return False
+    preset_key = str(args.get("preset") or preset_from_text(user_text) or current_preset or "").strip()
+    # Unknown preset ids are not the default path; plan_for maps them to the first template.
+    return bool(args.get("brand_slot") or not preset_key)
+
+
 def apply_generate(args: dict | None, current_skill: str = "", user_text: str | None = None,
                    ref_image: bytes | None = None, current_preset: str = "") -> dict:
     """Fill the skill id and its declared pixels.
@@ -832,14 +854,11 @@ def apply_generate(args: dict | None, current_skill: str = "", user_text: str | 
         args["skill"] = sid
     # #1019: no industry template → the 8-image default path. A known preset keeps #979.
     # An unknown preset id still falls through to the first template below.
-    if sid == "brand-identity-director":
-        from ..api.brand_identity import TEMPLATE_IDS, fill_default
-        preset_key = str(args.get("preset") or preset_from_text(user_text) or current_preset or "").strip()
-        # Unknown ids are NOT the default path; plan_for maps them to the first template.
-        if args.get("brand_slot") or not preset_key:
-            filled = fill_default(args)
-            if filled.get("_brand_block") or filled.get("brand_slot"):
-                return filled
+    if fills_brand_default(args, current_skill, user_text, current_preset):
+        from ..api.brand_identity import fill_default
+        filled = fill_default(args)
+        if filled.get("_brand_block") or filled.get("brand_slot"):
+            return filled
     # #982: a multi-call default (ratio pack / kit / screens) picks the call by
     # explicit ratio or by the pixels the relay already filled; otherwise call 1.
     call = None

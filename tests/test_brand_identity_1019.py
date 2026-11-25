@@ -670,7 +670,8 @@ def _logo_calls():
     )
 
 
-async def _brand_turn(monkeypatch, script, *, unit_price: float = 0.03, threshold: float | None = None):
+async def _brand_turn(monkeypatch, script, *, unit_price: float = 0.03, threshold: float | None = None,
+                      user_text: str = "做三个方向"):
     """One scripted turn. Pricing and MCP are local; WaveSpeed submit is counted and refused."""
     from ComfyArt.api import wavespeed
     from ComfyArt.bot.providers import TurnHandle
@@ -705,7 +706,7 @@ async def _brand_turn(monkeypatch, script, *, unit_price: float = 0.03, threshol
         return "start"
 
     monkeypatch.setattr(rig.p, "_confirm_plan", yes)
-    _res, events = await rig.send("做三个方向", goal="", handle=TurnHandle())
+    _res, events = await rig.send(user_text, goal="", handle=TurnHandle())
     return rig, events, confirms, submits
 
 
@@ -1117,6 +1118,115 @@ async def test_logos_preset_batch_above_line_does_not_reuse_confirm(monkeypatch,
     """
     rows = await _preset_turns(monkeypatch, skill=with_skill, batched=True, unit_price=0.60, turns=2)
     assert rows == [(1, 2), (1, 2)]
+
+
+_SKILL_START = "Use the ComfyArt skill 'brand-identity-director' for this task"
+
+
+def _bare_generate(prompt: str) -> tuple[str, dict]:
+    """No skill and no preset. current_skill stays empty unless the start line is sent."""
+    return ("generate_image", {"prompt": prompt})
+
+
+async def _bare_turns(monkeypatch, *, batched: bool, unit_price: float, turns: int = 2,
+                      user_text: str = "做三个方向"):
+    from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
+    from test_agent_budget_391 import calls, reply
+
+    token = BOT_CHAT_ID.set("c")
+    try:
+        _logos_ready()
+        assert brand._progress().get("phase") == "logos"
+        rows = []
+        slots = []
+        for turn in range(turns):
+            if batched:
+                items = (
+                    _bare_generate(f"open {turn}a"),
+                    _bare_generate(f"open {turn}b"),
+                )
+            else:
+                items = (_bare_generate(f"open {turn}"),)
+
+            def script(messages, n, items=items):
+                if n == 0:
+                    return calls(*items)
+                return reply("好")
+
+            rig, _events, confirms, submits = await _brand_turn(
+                monkeypatch, script, unit_price=unit_price, threshold=0.5, user_text=user_text)
+            paid = rig.paid_mcp()
+            assert submits == []
+            rows.append((len(confirms), len(paid)))
+            slots.append([args.get("brand_slot") for _name, args in paid])
+        return rows, slots
+    finally:
+        BOT_CHAT_ID.reset(token)
+
+
+async def test_logos_unscoped_single_below_line_does_not_reuse_confirm(monkeypatch):
+    """No skill, no preset, current_skill empty. Below the line: 0 confirms, both submit."""
+    rows, slots = await _bare_turns(monkeypatch, batched=False, unit_price=0.03)
+    assert rows == [(0, 1), (0, 1)]
+    assert slots == [[None], [None]]
+
+
+async def test_logos_unscoped_single_above_line_each_submit_confirms(monkeypatch):
+    """No skill, no preset, current_skill empty. Above the line each submit confirms."""
+    rows, slots = await _bare_turns(monkeypatch, batched=False, unit_price=0.60)
+    assert rows == [(1, 1), (1, 1)]
+    assert slots == [[None], [None]]
+
+
+async def test_logos_unscoped_batch_below_line_submits_without_confirm(monkeypatch):
+    """No skill, no preset, current_skill empty. A batch under the line submits directly."""
+    rows, slots = await _bare_turns(monkeypatch, batched=True, unit_price=0.03, turns=2)
+    assert rows == [(0, 2), (0, 2)]
+    assert slots == [[None, None], [None, None]]
+
+
+async def test_logos_unscoped_batch_above_line_does_not_reuse_confirm(monkeypatch):
+    """No skill, no preset, current_skill empty. Each batch above the line confirms once."""
+    rows, slots = await _bare_turns(monkeypatch, batched=True, unit_price=0.60)
+    assert rows == [(1, 2), (1, 2)]
+    assert slots == [[None, None], [None, None]]
+
+
+async def test_default_eight_image_path_with_skill_start_line_is_unchanged(monkeypatch):
+    """The skill start line still fills the default slot and asks, then a repeat is done.
+
+    begin_batch starts each turn at the same unsubmitted slot. The first turn confirms
+    logo_a. The second turn is that same confirmed slot, so it does not submit again.
+    """
+    from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
+    from test_agent_budget_391 import calls, reply
+
+    token = BOT_CHAT_ID.set("c")
+    try:
+        _logos_ready()
+        user_text = f"{_SKILL_START}\n做三个方向"
+
+        def script(messages, n):
+            if n == 0:
+                return calls(_bare_generate("default path"))
+            return reply("好")
+
+        rig, _events, confirms, submits = await _brand_turn(
+            monkeypatch, script, unit_price=0.03, threshold=0.5, user_text=user_text)
+        assert submits == []
+        assert len(confirms) == 1
+        assert [args.get("brand_slot") for _name, args in rig.paid_mcp()] == ["logo_a"]
+        assert [args.get("skill") for _name, args in rig.paid_mcp()] == [brand.SKILL]
+
+        rig, events, confirms, submits = await _brand_turn(
+            monkeypatch, script, unit_price=0.03, threshold=0.5, user_text=user_text)
+        assert confirms == []
+        assert rig.paid_mcp() == []
+        assert submits == []
+        texts = _tool_texts(events, "generate_image")
+        assert len(texts) == 1 and "下一阶段" in texts[0]
+    finally:
+        BOT_CHAT_ID.reset(token)
 
 
 def test_failed_generate_row_renders_the_tool_error_sentence():

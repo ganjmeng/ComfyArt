@@ -2469,8 +2469,12 @@ class LocalLlmProvider(AgentProvider):
             if not isinstance(steps, list):
                 steps = []
             from ..api.brand_identity import annotate_quote_steps
+            run_for_quote = loop.get("run")
             steps = annotate_quote_steps(
-                steps, [it["args"] for it in paid if it["name"] == "generate_image"])
+                steps, [it["args"] for it in paid if it["name"] == "generate_image"],
+                current_skill=getattr(run_for_quote, "current_skill", "") if run_for_quote is not None else "",
+                user_text=getattr(turn, "user_text", "") if turn is not None else "",
+                current_preset=getattr(run_for_quote, "current_preset", "") if run_for_quote is not None else "")
             brand_steps = steps if isinstance(steps, list) else []
             try:
                 quote = await self._quote_steps(steps, lang)
@@ -2479,22 +2483,32 @@ class LocalLlmProvider(AgentProvider):
                 quote_error = f"[error] {type(e).__name__}: {e}"
                 decision = "error"
             else:
-                from ..api.brand_identity import stage_repeat
+                from ..api.brand_identity import stage_repeat, submits_match_confirmed_plan
                 # Same confirmed plan: no second card. A changed plan asks again.
                 # An already-submitted plan does not dispatch.
                 repeat = stage_repeat(brand_steps)
+                submit_args = [it["args"] for it in paid if it["name"] == "generate_image"]
+                # continue may skip the card only when every submit names a slot
+                # in the confirmed plan. A quote that was stamped without that
+                # slot on the submit args has to ask again.
+                continue_ok = repeat == "continue" and submits_match_confirmed_plan(
+                    brand_steps, submit_args)
                 if quote is None:
                     decision = "passthrough"
                 elif repeat == "done":
                     decision = "done"
-                elif repeat == "continue":
+                elif continue_ok:
                     # Arm once per confirmation. A later continue must not reset the remaining slots.
                     gate.allow(quote, not single, brand_steps, fresh=False)
                     decision = "start"
-                elif not quote.ask:
+                elif not quote.ask and repeat != "continue":
                     gate.allow(quote, False)
                     decision = "start"
                 else:
+                    if repeat == "continue":
+                        # This confirm is a new approval. It replaces the plan
+                        # the submits did not match.
+                        repeat = "new"
                     from .run_budget import Stop, StopReason
                     run = loop.get("run")
                     unattended = run is not None and run.mode == "unattended"
