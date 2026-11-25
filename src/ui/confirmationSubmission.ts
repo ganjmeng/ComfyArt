@@ -49,10 +49,12 @@ export class ConfirmationSubmission {
 
 /**
  * Gate for the paid Confirm Continue button.
- * Open-ended / unknown quotes (null or unpriced) may Continue after explicit confirm (G02/F01);
- * never treat unknown as $0. Negative and non-finite prices stay blocked.
+ * Unpriced and estimate must not Continue: those cards only re-price or cancel.
+ * An open-ended quote (null, and not unpriced or estimate) may Continue after an explicit confirm.
+ * Never treat unknown as $0. Negative and non-finite prices stay blocked.
  */
-export function canSubmitPricedConfirmation(price: number | null, unpriced = false) {
-  if (unpriced || price == null) return true
+export function canSubmitPricedConfirmation(price: number | null, unpriced = false, estimate = false) {
+  if (unpriced || estimate) return false
+  if (price == null) return true
   return Number.isFinite(price) && price >= 0
 }

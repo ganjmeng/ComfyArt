@@ -847,13 +847,47 @@ export function OverQuote({ b }: { b: BotBlock }) {
   )
 }
 
-/** #235: the plan total uses the same cost-confirm card as a single job. No second card, no new styles. */
+/** Exact quotes keep 「确认费用」. Unpriced and estimate cards have no Start, so their titles say so. */
+function planQuoteTitle(b: BotBlock, repriceOnly: boolean): string {
+  if (!repriceOnly) return t('jobs.confirmTitle')
+  const unpriced = (b.lines ?? []).some((l) => l.source === 'unpriced' || l.price === t('quote.unpriced'))
+    || b.total === t('quote.unpriced')
+  return unpriced ? t('quote.unpricedTitle') : t('quote.estimateTitle')
+}
+
+/** #235: the plan total uses the same cost-confirm card as a single job. No second card, no new styles.
+ * An estimate or unpriced card has Re-price and Cancel (the same primary/secondary buttons). No Start. */
 function PlanQuote({ b }: { b: BotBlock }) {
   const [error, setError] = useState('')
   const askId = b.ask_id
   const pending = b.status === 'pending'
+  const repriceOnly = (b.options ?? []).some((o) => o.id === 'reprice') && !(b.options ?? []).some((o) => o.id === 'start')
   if (pending && askId) {
     const answer = quoteAnswer(askId)
+    if (repriceOnly) {
+      return (
+        <>
+          <ChatInlineConfirm
+            title={planQuoteTitle(b, true)}
+            desc={b.prompt ?? ''}
+            okLabel={t('quote.reprice')}
+            cancelLabel={t('common.cancel')}
+            lines={b.lines ?? []}
+            totalLabel={b.total_label}
+            total={b.total}
+            testId="chat-inline-planquote"
+            onConfirm={async () => {
+              await answer(['reprice'])
+            }}
+            onCancel={() => {
+              setAgentPlanConfirmed(false)
+              void answer(['cancel']).catch((e) => setError(errorText(e)))
+            }}
+          />
+          {error ? <div className="ca-chat__hint">{error}</div> : null}
+        </>
+      )
+    }
     return (
       <>
         <ChatInlineConfirm
@@ -885,10 +919,11 @@ function PlanQuote({ b }: { b: BotBlock }) {
   }
   if (pending) return error ? <div className="ca-chat__hint">{error}</div> : null
   const started = b.status === 'answered' && (b.selected ?? []).includes('start')
+  const repriced = b.status === 'answered' && (b.selected ?? []).includes('reprice')
   return (
     <div className="ca-chat__memo">
       <span className="ca-icon">{started ? Icons.check : Icons.close}</span>
-      {b.prompt} → {started ? t('jobs.confirmOk') : b.status === 'expired' ? t('chatMessage.timedOut') : t('chatMessage.canceled')}
+      {b.prompt} → {started ? t('jobs.confirmOk') : repriced ? t('quote.reprice') : b.status === 'expired' ? t('chatMessage.timedOut') : t('chatMessage.canceled')}
     </div>
   )
 }

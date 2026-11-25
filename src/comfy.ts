@@ -188,18 +188,23 @@ export function planBypassNow() { return planConfirmed && agentDepth > 0 }
 
 export type { ConfirmDetail, ConfirmGif }
 
-/** Second confirmation for costly cloud jobs, in the app's own Confirm dialog. */
+/** Second confirmation for costly cloud jobs, in the app's own Confirm dialog.
+ * An unpriced or estimate card has no Continue. Its primary button re-prices. */
 export function askCost(price: number | null, segSplits?: number, segCapped?: boolean, note = '', estimate?: ConfirmDetail, submit?: () => Promise<void>): Promise<boolean> {
   // #138: seg maps quote an upper bound before anything is recognised (nothing is charged before this dialog);
   // on a retry only the classes still missing a mask are quoted
   const cost = confirmDesc(price, segSplits, segCapped, estimate)
+  const repriceOnly = !!(estimate?.unpriced || estimate?.estimate)
+  const title = repriceOnly
+    ? t(estimate?.unpriced ? 'quote.unpricedTitle' : 'quote.estimateTitle')
+    : t('jobs.confirmTitle')
   return new Promise((resolve, reject) => confirmAtom.set({
-    title: t('jobs.confirmTitle'), ...(note ? { note } : {}), desc: cost, ok: t('jobs.confirmOk'),
+    title, ...(note ? { note } : {}), desc: cost,
+    ok: repriceOnly ? t('quote.reprice') : t('jobs.confirmOk'),
     run: () => resolve(true), cancel: () => resolve(false),
-    ...(submit ? {
+    ...(submit && !repriceOnly ? {
       submit,
-      // No real paid confirmation when the price cannot be bounded.
-      okDisabled: !canSubmitPricedConfirmation(price, !!estimate?.unpriced),
+      okDisabled: !canSubmitPricedConfirmation(price, !!estimate?.unpriced, !!estimate?.estimate),
       submissionFailed: () => reject(new Error(t('jobs.submissionUncertain'))),
     } : {}),
   }))
@@ -214,12 +219,15 @@ export async function queuePrompt(prompt: PromptGraph, _runOn = defaultTarget(),
     if (outOfCredit(key)) throw new Error(wsErrorText('insufficientCredit')!)
     const inputs = await wsHook(Object.values(prompt)[0].inputs as Record<string, unknown>)
     // #235: the plan card already approved these agent steps, so the server must not 409
+    // an official quote. An estimate or unpriced reply still 409s, and re-price retries
+    // without confirmed.
     if (confirmed) inputs.confirmed = true
     let ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs }) })
     let wsBody = await ws.json().catch(() => null)
-    const price = wsBody?.error?.confirm_usd
-    const confirmToken = typeof wsBody?.error?.confirm_token === 'string' ? wsBody.error.confirm_token : ''
-    if (ws.status === 409 && (typeof price === 'number' || wsBody?.error?.unpriced)) {
+    for (;;) {
+      const price = wsBody?.error?.confirm_usd
+      const confirmToken = typeof wsBody?.error?.confirm_token === 'string' ? wsBody.error.confirm_token : ''
+      if (ws.status !== 409 || !(typeof price === 'number' || wsBody?.error?.unpriced)) break
       // jobs of $0.50 or more need an explicit yes before they are submitted
       // #128: the actual duration when it differs from the one asked
       const gifNote = typeof wsBody?.error?.gif_note === 'string' ? wsBody.error.gif_note : ''
@@ -236,9 +244,10 @@ export async function queuePrompt(prompt: PromptGraph, _runOn = defaultTarget(),
         live: typeof price === 'number' && !wsBody.error.unpriced && !wsBody.error.estimate,
         ...(gif ? { gif } : {}),
       }
-      if (!(await askCost(price, wsBody?.error?.seg_splits, wsBody?.error?.seg_capped, note,
+      const repriceOnly = detail.unpriced || detail.estimate
+      if (!(await askCost(typeof price === 'number' ? price : null, wsBody?.error?.seg_splits, wsBody?.error?.seg_capped, note,
         detail.openEnded || detail.unpriced || detail.estimate || detail.live || gif ? detail : undefined,
-        async () => {
+        repriceOnly ? undefined : async () => {
           const next = { ...inputs, confirmed: true, ...(confirmToken ? { confirm_token: confirmToken } : {}) }
           ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs: next }) })
           wsBody = await ws.json().catch(() => null)
@@ -246,6 +255,10 @@ export async function queuePrompt(prompt: PromptGraph, _runOn = defaultTarget(),
           if (!ws.ok || typeof wsBody?.prompt_id !== 'string' || !wsBody.prompt_id) throw new Error(t('jobs.submissionUncertain'))
         },
       ))) throw new CostDeclined()
+      if (!repriceOnly) break
+      delete inputs.confirmed
+      ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs }) })
+      wsBody = await ws.json().catch(() => null)
     }
     if (!ws.ok) throw new Error(promptError(wsBody, ws.status))
     if (typeof wsBody?.prompt_id !== 'string' || !wsBody.prompt_id) throw new UncertainResultError(t('jobs.resultPendingHint'))

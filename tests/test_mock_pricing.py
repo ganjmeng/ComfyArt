@@ -47,6 +47,8 @@ def test_no_placeholder_fallback():
     for f in ("mock_wavespeed_pricing.py", "mock_wavespeed_server.py"):
         src = (ROOT / "tests" / f).read_text(encoding="utf-8")
         assert "0.039" not in src and "0.156" not in src, f
+    server = (ROOT / "tests" / "mock_wavespeed_server.py").read_text(encoding="utf-8")
+    assert '"code":4005' in server or '"code": 4005' in server
 
 
 def test_extra_catalog_entries_used_but_fixture_wins():

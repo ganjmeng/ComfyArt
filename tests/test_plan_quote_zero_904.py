@@ -103,7 +103,7 @@ async def test_single_unpriced_call_keeps_its_one_step_card():
     quote = await _quote([_step("unknown", "generate_image", MYSTERY, prompt="a")])
     assert quote is not None and quote.ask is True
     assert quote.lines[0].price == "未定价" and quote.total_text == "未定价"
-    assert quote.prompt.startswith("这次生成的价格暂未确定")  # #970 copy, no amount
+    assert quote.prompt == "这次生成暂时取不到价格，还没有开始，也没有扣积分。可以重新取价，或取消。"
     assert "确认线" not in quote.prompt and "50" not in quote.prompt
 
 

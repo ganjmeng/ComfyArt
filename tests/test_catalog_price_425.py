@@ -82,19 +82,33 @@ async def test_quote_matches_thinking_tier(ideo):
     assert ideo["quotes"][-1]["input"]["thinking"] == "very low"
 
 
-async def test_price_api_down_default_thinking_estimates_quote_price(ideo, monkeypatch):
-    ideo["prices"].pop(IDEO, None)  # force catalog / estimate path
+async def test_price_code_4005_default_thinking_is_unpriced(ideo):
+    # 4005 is not the catalog $0.015, even at the schema-default thinking tier.
+    ideo["prices"][IDEO] = None
+    job = {"feature": "text_to_image", "model": IDEO, "prompt": "a cat"}
+    est = await wavespeed.estimate(job)
+    assert est["source"] == "unpriced" and est["price"] is None and est["confirm"] is True
+    assert est["price"] != pytest.approx(0.015)
+
+
+async def test_price_5xx_default_thinking_estimates_quote_price(ideo):
+    # Timeout/5xx + exact schema at the default tier uses the quote-price fix ($0.015), not $0.003.
+    ideo["price_status"] = 503
     job = {"feature": "text_to_image", "model": IDEO, "prompt": "a cat"}
     est = await wavespeed.estimate(job)
     assert est["source"] == "estimate" and est["price"] == pytest.approx(0.015)
 
 
 async def test_price_api_down_non_default_thinking_is_unpriced(ideo):
-    ideo["prices"].pop(IDEO, None)
+    ideo["prices"][IDEO] = None
     job = {"feature": "text_to_image", "model": IDEO, "prompt": "a cat", "thinking": "very low"}
     est = await wavespeed.estimate(job)
     # Must not fall back to catalog $0.015 (or the old $0.003) for a non-default tier.
     assert est["source"] == "unpriced" and est["price"] is None and est["confirm"] is True
+    ideo["prices"].pop(IDEO, None)
+    ideo["price_status"] = 503
+    down = await wavespeed.estimate(job)
+    assert down["source"] == "unpriced" and down["price"] is None and down["price"] != pytest.approx(0.015)
 
 
 def test_fixture_base_price_matches_schema_default_quote():

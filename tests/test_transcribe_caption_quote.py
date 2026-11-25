@@ -30,11 +30,11 @@ async def test_transcribe_route_request_shape_and_quote(ws, bot_client, media):
     ws["outputs"] = ["hi"]
     ws["prices"][WHISPER] = BASE
     res = await bot_client.post("/comfyart/wavespeed/transcribe", json={"src": AUDIO})
-    assert res.status == 200 and (await res.json())["text"] == "hi"
-    model, payload = ws["submits"][0]
-    assert model == WHISPER and payload["audio"].startswith("https://cdn.test/")
-    assert "duration" not in payload  # #185: the length prices the job only, never submitted (schema has none)
-    assert ws["quotes"] == [{"model_id": WHISPER, "input": {"duration": 60}}]  # #185: unknown length -> 60 s fallback
+    # Unknown length is priced at 60s and labelled estimate, so the route does not submit.
+    # A known duration still submits; that payload shape is test_transcribe_route_prices_with_page_duration.
+    body = await res.json()
+    assert res.status == 409 and body["error"]["estimate"] is True and ws["submits"] == []
+    assert ws["quotes"] == [{"model_id": WHISPER, "input": {"duration": 60}}]
 
 
 async def test_caption_route_request_shape_and_quote(ws, bot_client, media):
@@ -100,29 +100,35 @@ async def test_transcribe_route_prices_with_page_duration(ws, bot_client, media,
 
 
 @pytest.mark.parametrize("seconds", [10, 60, 300])
-async def test_whisper_price_api_down_local_estimate_equals_charge(ws, seconds):
-    ws["prices"].pop(WHISPER, None)  # price API 400: local estimate = catalog $/s x rounded-up seconds
+async def test_whisper_price_reject_4005_is_unpriced_not_a_per_second_estimate(ws, seconds):
+    """A 4005 is not a timeout. The per-second table must not stand in for it."""
+    ws["prices"][WHISPER] = None
     est = await wavespeed.estimate({"feature": "transcribe", "audio": AUDIO, "duration": seconds})
-    print(f"#185 price-API down {seconds}s quoted={est['price']} charged={round(RATE * seconds, 6)} source={est['source']}")
-    assert est["price"] == round(RATE * seconds, 6) and est["source"] == "estimate" and not est.get("unpriced")
+    assert est["price"] is None and est["source"] == "unpriced"
+    assert est["price"] != round(RATE * seconds, 6)
 
 
-async def test_whisper_price_api_down_unknown_length_60s(ws):
-    ws["prices"].pop(WHISPER, None)
+async def test_whisper_price_reject_4005_unknown_length_is_unpriced(ws):
+    ws["prices"][WHISPER] = None
     est = await wavespeed.estimate({"feature": "transcribe", "audio": AUDIO})
-    print(f"#185 price-API down unknown length quoted={est['price']} source={est['source']}")
-    assert est["price"] == round(RATE * 60, 6) and est["source"] == "estimate" and est["duration_estimated"] is True
+    assert est["price"] is None and est["source"] == "unpriced"
+    assert est["price"] != round(RATE * 60, 6)
 
 
-async def test_m32_real_clip_rounds_up_to_charge(ws):
-    ws["prices"].pop(WHISPER, None)  # the real M32 run: 4.752 s clip, charged $0.0035
-    assert (await wavespeed.quote(WHISPER, {"feature": "transcribe", "duration": 4.752}))[0] == 0.0035
+async def test_m32_clip_is_unpriced_when_the_price_api_rejects(ws):
+    """4005 does not invent the old $0.0035 local estimate for a 4.752 s clip."""
+    ws["prices"][WHISPER] = None
+    price, source = await wavespeed.quote(WHISPER, {"feature": "transcribe", "duration": 4.752})
+    assert (price, source) == (None, "unpriced")
 
 
-async def test_whisper_price_api_down_route_never_409(ws, bot_client, media):
-    ws["prices"].pop(WHISPER, None)
+async def test_whisper_price_reject_does_not_submit(ws, bot_client, media):
+    ws["prices"][WHISPER] = None
     ws["outputs"] = ["hi"]
     for body in ({"src": AUDIO}, {"src": AUDIO, "duration": 10}):
         ws["submits"].clear()
         res = await bot_client.post("/comfyart/wavespeed/transcribe", json=body)
-        assert res.status == 200 and ws["submits"]
+        payload = await res.json()
+        err = payload.get("error") if isinstance(payload.get("error"), dict) else payload
+        assert res.status == 409 and err.get("unpriced") is True
+        assert ws["submits"] == []

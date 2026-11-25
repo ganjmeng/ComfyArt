@@ -318,13 +318,13 @@ def test_visible_confirm_text_uses_request_frames_local_mock(tmp_path):
     assert got["live99"] == "这次云端生成约需 5 积分，GIF 16 帧（已从 99 帧调整），每帧 20 毫秒（已从 5 毫秒调整），确定继续吗？"
     assert got["live1"] == "这次云端生成约需 5 积分，GIF 2 帧（已从 1 帧调整），每帧 200 毫秒，确定继续吗？"
     assert "毫秒调整" not in got["live1"]
-    assert got["unpriced"] == "暂时查不到准确价格。GIF 16 帧（已从 99 帧调整），每帧 20 毫秒（已从 5 毫秒调整）。继续会按这个档位实际扣费，确定继续吗？"
-    assert "积分" not in got["unpriced"]
+    assert got["unpriced"] == "这次生成暂时取不到价格，还没有开始，也没有扣积分。GIF 16 帧（已从 99 帧调整），每帧 20 毫秒（已从 5 毫秒调整）。可以重新取价，或取消。"
+    assert "确定继续" not in got["unpriced"]
     assert "没有可核对的封顶价" in got["openGif"]
     assert "GIF 16 帧" in got["openGif"] and "每帧 20 毫秒" in got["openGif"]
     assert "积分" not in got["openGif"]
     assert "no hard price cap" in got["openEn"]
-    assert got["estimate"] == "估算价：GIF 16 帧（已从 99 帧调整），每帧 20 毫秒，约 5 积分（暂时查不到实时价格，以实际扣费为准），确定继续吗？"
+    assert got["estimate"] == "这次生成预计约 5 积分。GIF 16 帧（已从 99 帧调整），每帧 20 毫秒。实时价格暂不可用，按未打折标价估算，实际扣费可能更低。可以重新取价，或取消。"
 
 
 def test_frontend_gif_file_names_and_clamps(tmp_path):

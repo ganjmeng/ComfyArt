@@ -75,8 +75,20 @@ async def _run(case: Case, lang: str, monkeypatch, caplog, capfd, *, live_tab: b
 
     async def _low_models(self, feature):
         return [("known-low/model", 0.01)]
+
+    # A step the router cannot place never calls `_quote`. It is priced as the dearest
+    # row and labeled estimate, which now asks. Hand it the same official $0.01 quote.
+    real_route = local_llm.LocalLlmProvider._quote_route
+
+    def _routed(tool, args, position=0):
+        routed = real_route(tool, args, position)
+        if isinstance(routed, tuple) and (routed[0] or (routed[1] or {}).get("param_blocked")):
+            return routed
+        return ("known-low/model", {})
+
     monkeypatch.setattr(_ws, "_quote", _low_quote)
     monkeypatch.setattr(local_llm.LocalLlmProvider, "_models_for", _low_models)
+    monkeypatch.setattr(local_llm.LocalLlmProvider, "_quote_route", staticmethod(_routed))
     # the timeout fault sleeps 1 s; other cases get a roomy timeout so a slow mock answer on a long
     # (300-step) run is not mistaken for a timeout and retried (the 15-hardcap-en flake)
     faulty = any(getattr(st, "fault", None) == "timeout" for st in case.script)

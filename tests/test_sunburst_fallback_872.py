@@ -19,6 +19,27 @@ FLARE_EDIT = "openai/gpt-image-2.6-flare/edit"
 POSTER = 'Movie poster with the headline "SUMMER"'
 
 
+class _ExactPrices(dict):
+    """A model with no override is an official $0.03 quote. An explicit value, including None, is kept."""
+
+    def __contains__(self, key):
+        return True
+
+    def __getitem__(self, key):
+        if super().__contains__(key):
+            return super().__getitem__(key)
+        return 0.03
+
+
+@pytest.fixture(autouse=True)
+def official_exact_quote(request):
+    """These tests cover fallback after submit, not the price gate. /price stays an official quote."""
+    if "ws" not in request.fixturenames:
+        return
+    state = request.getfixturevalue("ws")
+    state["prices"] = _ExactPrices(state["prices"])
+
+
 @pytest.fixture
 def catalog():
     return wavespeed.load_config()

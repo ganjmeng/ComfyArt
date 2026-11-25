@@ -2083,9 +2083,9 @@ class LocalLlmProvider(AgentProvider):
 
     async def _confirm_plan(self, spec: dict, turn: TurnRequest, handle: TurnHandle, *,
                             run=None, messages: Optional[list] = None) -> str:
-        """'start', 'cancel' (the user's Cancel / dismiss) or 'unattended' (no live turn to ask: nothing
-        is charged and it is not a user stop). #418: an interactive card waits indefinitely, and the run
-        is checkpointed as 'awaiting_confirm' while it does."""
+        """'start', 'reprice', 'cancel' (the user's Cancel / dismiss) or 'unattended' (no live turn to ask:
+        nothing is charged and it is not a user stop). #418: an interactive card waits indefinitely, and the
+        run is checkpointed as 'awaiting_confirm' while it does. Re-price asks again; it does not start."""
         if handle.stop_requested:
             return "cancel"
         from ..api.bot_turns import ACTIVE_TURNS
@@ -2107,6 +2107,8 @@ class LocalLlmProvider(AgentProvider):
         finally:
             state.awaiting = ""
         selected = outcome.get("selected") or []
+        if outcome.get("status") == "answered" and "reprice" in selected and "start" not in selected:
+            return "reprice"
         if outcome.get("status") == "answered" and "start" in selected:
             # The ask id is this confirmation. Repeating it must not add the plan again.
             spec["confirmation_id"] = str(outcome.get("ask_id") or "")
@@ -2383,42 +2385,49 @@ class LocalLlmProvider(AgentProvider):
         if quote_item is not None or len(paid) >= 2 or (single and not gate.strict):
             steps = (quote_item["args"].get("steps") if quote_item is not None
                      else [self._implicit_step(it, lang) for it in paid])
-            try:
-                quote = await self._quote_steps(steps if isinstance(steps, list) else [], lang)
-            except Exception as e:
-                _log.exception("[ComfyArt/local-llm] plan quote failed")
-                quote_error = f"[error] {type(e).__name__}: {e}"
-                decision = "error"
-            else:
+            while True:
+                try:
+                    quote = await self._quote_steps(steps if isinstance(steps, list) else [], lang)
+                except Exception as e:
+                    _log.exception("[ComfyArt/local-llm] plan quote failed")
+                    quote_error = f"[error] {type(e).__name__}: {e}"
+                    decision = "error"
+                    break
                 if quote is None:
                     decision = "passthrough"
-                elif not quote.ask:
+                    break
+                if not quote.ask:
+                    # Under the confirm line a known price still runs with no card.
                     gate.allow(quote, False)
                     decision = "start"
-                else:
-                    from .run_budget import Stop, StopReason
-                    run = loop.get("run")
-                    unattended = run is not None and run.mode == "unattended"
-                    # #418 ruling: unattended (routine / headless / no live client) never waits: the
-                    # card is not approved -> zero paid calls, turn ends normally as awaiting_confirm:not_approved.
-                    spec = quote.ask_spec()
-                    choice = "unattended" if unattended else await self._confirm_plan(
-                        spec, turn, handle, run=run, messages=messages)
-                    confirmation_id = str(spec.get("confirmation_id") or "")
-                    if handle.stop_requested:
-                        return TurnResult(aborted=True, usage=usage)
-                    if choice == "start":
-                        if not single:  # #418: one OK covers this call only; don't arm the plan gate
-                            gate.allow(quote, True)
-                        decision = "start"
-                    else:
-                        decision = "cancel"
-                        if run is not None:
-                            step = run.budget.used.steps
-                            # only the user's own Cancel is a user stop
-                            run.pending_stop = (Stop(StopReason.USER_STOP, "quote_declined", step=step)
-                                                if choice == "cancel" else
-                                                Stop(StopReason.AWAITING_CONFIRM, "not_approved", step=step))
+                    break
+                from .run_budget import Stop, StopReason
+                run = loop.get("run")
+                unattended = run is not None and run.mode == "unattended"
+                # #418 ruling: unattended (routine / headless / no live client) never waits: the
+                # card is not approved -> zero paid calls, turn ends normally as awaiting_confirm:not_approved.
+                spec = quote.ask_spec()
+                choice = "unattended" if unattended else await self._confirm_plan(
+                    spec, turn, handle, run=run, messages=messages)
+                confirmation_id = str(spec.get("confirmation_id") or "")
+                if handle.stop_requested:
+                    return TurnResult(aborted=True, usage=usage)
+                if choice == "reprice":
+                    # Ask again. A later exact quote under $0.50 still passes through (quote.ask is false).
+                    continue
+                if choice == "start":
+                    if not single:  # #418: one OK covers this call only; don't arm the plan gate
+                        gate.allow(quote, True)
+                    decision = "start"
+                    break
+                decision = "cancel"
+                if run is not None:
+                    step = run.budget.used.steps
+                    # only the user's own Cancel is a user stop
+                    run.pending_stop = (Stop(StopReason.USER_STOP, "quote_declined", step=step)
+                                        if choice == "cancel" else
+                                        Stop(StopReason.AWAITING_CONFIRM, "not_approved", step=step))
+                break
 
         if quote is not None and decision == "start":
             # #909: no whole-group count in the user's message -> the plan the card

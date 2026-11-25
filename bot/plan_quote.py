@@ -61,6 +61,8 @@ LIST_PRICE_EXPLAIN = {
 }
 START_LABEL = {"zh": "开始", "en": "Start"}
 CANCEL_LABEL = {"zh": "取消", "en": "Cancel"}
+# Same pair on an unpriced card and on an estimate card. Neither card has Start.
+REPRICE_LABEL = {"zh": "重新取价", "en": "Re-price"}
 AUTO_LABEL = {"zh": "自动", "en": "Auto"}
 # #968: no price at all is not 0 — say 「未定价」 and never put a number in the total or prompt.
 UNPRICED_LABEL = {"zh": "未定价", "en": "Unpriced"}
@@ -75,19 +77,29 @@ _PROMPT_ONE = {
     "zh": "这次生成预计约 {total} 积分，达到了你设置的 {threshold} 积分确认线。确定开始吗？",
     "en": "This generation will cost about {total} credits, at or above your {threshold} credits confirm limit. Start?",
 }
-# #968: an unpriced step forces a confirm card without claiming any amount (never "约 0 积分").
-_PROMPT_UNPRICED = {
-    "zh": "这个任务共 {n} 步，价格暂未确定，需要你确认后按实际价格执行。确定开始吗？",
-    "en": "This task has {n} steps with no price available. Confirm to run at the actual price. Start?",
+# Unpriced cards have no Start. The description is the locale sentence: nothing has
+# started and no credits were used. It does not say the job will run after a confirm.
+_UNPRICED_PROMPT_KEY = {
+    "one": "quote.unpricedPrompt",
+    "all": "quote.unpricedPromptMany",
+    "partial": "quote.unpricedPromptPartial",
 }
-_PROMPT_PARTIAL_UNPRICED = {
-    "zh": "这个任务共 {n} 步，其中部分步骤暂未定价，需要你确认后按实际价格执行。确定开始吗？",
-    "en": "This task has {n} steps and some have no price available. Confirm to run at the actual price. Start?",
-}
-_PROMPT_UNPRICED_ONE = {
-    "zh": "这次生成的价格暂未确定，需要你确认后按实际价格执行。确定开始吗？",
-    "en": "This generation has no price available. Confirm to run at the actual price. Start?",
-}
+_locale_text: dict[str, dict] = {}
+
+
+def _ui(lang: str, key: str) -> str:
+    lang = "zh" if str(lang).lower().startswith("zh") else "en"
+    data = _locale_text.get(lang)
+    if data is None:
+        path = Path(__file__).resolve().parents[1] / "src" / "locales" / f"{lang}.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        _locale_text[lang] = data
+    return str(data[key])
+
+
+def _unpriced_prompt(kind: str, lang: str, n: int) -> str:
+    return _ui(lang, _UNPRICED_PROMPT_KEY[kind]).format(n=n)
+_REPRICE_OR_CANCEL = {"zh": "可以重新取价，或取消。", "en": "Re-price, or cancel."}
 _PRICE_KEYS = ("duration", "resolution", "aspect_ratio", "ratio", "size", "quality", "output_format", "frame_count", "frame_duration_ms")
 _DROP_ARG = ("fallback", "fallback_model", "model")
 _GENERIC = {"text-to-image", "image-to-image", "edit", "image-edit", "text-to-video", "image-to-video"}
@@ -343,14 +355,25 @@ class Quote:
     # Validated multi-angle preview plan, stored with the pending quote. Prompt prose is not this.
     composition_plan: Optional[dict] = None
 
+    def blocks_start(self) -> bool:
+        """An estimate or unpriced billable line has no Start. Exact quotes still do."""
+        return any(ln.units > 0 and (ln.unpriced or ln.source != SOURCE_QUOTE) for ln in self.lines)
+
     def ask_spec(self) -> dict:
         lang = _lang(self.lang)
-        spec = {
-            "prompt": self.prompt,
-            "options": [
+        if self.blocks_start():
+            options = [
+                {"id": "reprice", "label": REPRICE_LABEL[lang]},
+                {"id": "cancel", "label": CANCEL_LABEL[lang]},
+            ]
+        else:
+            options = [
                 {"id": "start", "label": START_LABEL[lang]},
                 {"id": "cancel", "label": CANCEL_LABEL[lang]},
-            ],
+            ]
+        spec = {
+            "prompt": self.prompt,
+            "options": options,
             "min_selections": 1,
             "max_selections": 1,
             "allow_other": False,
@@ -587,12 +610,29 @@ def _pixel(value: object) -> Optional[int]:
     return None
 
 
-def _needs_ask(total: float, threshold: float, unknown_price: bool) -> bool:
-    """#904: a known 0-credit plan does not ask; an unknown price always does.
+def _under_line_estimate_prompt(lang: str, n: int, total_credits: int, *, list_price: bool) -> str:
+    """Estimate card under the confirm line. It must not say the line was reached."""
+    if lang == "zh":
+        head = (f"这次生成预计约 {total_credits} 积分。" if n == 1
+                else f"这个任务共 {n} 步，预计约 {total_credits} 积分。")
+        gap = ""
+    else:
+        head = (f"This generation is estimated at about {total_credits} credits. " if n == 1
+                else f"This task has {n} steps and is estimated at about {total_credits} credits. ")
+        gap = " "
+    if list_price:
+        return f"{head}{LIST_PRICE_EXPLAIN[lang]}{gap}{_REPRICE_OR_CANCEL[lang]}"
+    return f"{head}{_REPRICE_OR_CANCEL[lang]}"
 
+
+def _needs_ask(total: float, threshold: float, unknown_price: bool) -> bool:
+    """#904: a known 0-credit plan does not ask; a non-quote billable line always does.
+
+    `unknown_price` is any billable line that is unpriced or not an official quote.
     `threshold == 0` keeps its settings contract "0 = always confirm" (it asks even for a known 0,
     until product approves a copy change). A priced 0 is a fact; a missing price (#968
-    source=unpriced) is not 0 and must never be approved silently.
+    source=unpriced) is not 0 and must never be approved silently. An estimate is not an
+    official quote, so it asks even when the amount is under the line.
     """
     if unknown_price or threshold == 0:
         return True
@@ -684,10 +724,12 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
             units=units, source=source, reason=reason, credits=0,
         ))
     total = round(sum(ln.amount for ln in lines), 4)
-    # #904: only a billable line with an unknown price (#968 source=unpriced) forces the card.
+    # A billable line that is unpriced or not an official quote always asks, even under the line.
     # A blocked/refused step has units 0 (it makes no paid call), so it must not force one.
-    unknown_price = any(ln.unpriced and ln.units > 0 for ln in lines)
-    ask = _needs_ask(total, threshold, unknown_price)
+    # Only a purely official-quote total under the line skips the card.
+    non_quote = any(ln.units > 0 and (ln.unpriced or ln.source != SOURCE_QUOTE) for ln in lines)
+    meets_line = _needs_ask(total, threshold, False)
+    ask = _needs_ask(total, threshold, non_quote)
     if _forces_quote_card(prepared) and any(ln.units > 0 for ln in lines):
         ask = True
     if len(lines) == 1 and not ask and not lines[0].unpriced:
@@ -711,9 +753,13 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
     else:
         total_text = credits_text(total_credits, lang, approx=any_estimate)
     if any_unpriced:
-        template = (_PROMPT_UNPRICED_ONE if len(lines) == 1 else
-                    (_PROMPT_UNPRICED if all_unpriced else _PROMPT_PARTIAL_UNPRICED))
-        prompt = template[lang].format(n=len(lines))
+        kind = "one" if len(lines) == 1 else ("all" if all_unpriced else "partial")
+        prompt = _unpriced_prompt(kind, lang, len(lines))
+    elif non_quote and not meets_line:
+        # The card is here because a line is not an official quote, not because the
+        # total reached the confirm line. Do not say that it did.
+        prompt = _under_line_estimate_prompt(
+            lang, len(lines), total_credits, list_price=any(ln.reason == "list_price" for ln in lines))
     else:
         prompt = (_PROMPT_ONE if len(lines) == 1 else _PROMPT)[lang].format(
             n=len(lines), total=total_credits, threshold=ui_credits(threshold))
@@ -721,6 +767,11 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         question = "确定开始吗？" if lang == "zh" else "Start?"
         gap = "" if lang == "zh" else " "  # en: "…lower. Start?", never "…lower.Start?"
         prompt = prompt.replace(question, f"{LIST_PRICE_EXPLAIN[lang]}{gap}{question}")
+    # Estimate and unpriced cards have Re-price and Cancel, not Start.
+    cannot_start = any(ln.units > 0 and (ln.unpriced or ln.source != SOURCE_QUOTE) for ln in lines)
+    if cannot_start:
+        question = "确定开始吗？" if lang == "zh" else "Start?"
+        prompt = prompt.replace(question, _REPRICE_OR_CANCEL[lang])
     if quoted_plan is not None:
         from ..api.multi_angle import remember_quoted_plan
         remember_quoted_plan(quoted_plan, setup_snapshot=quoted_snapshot)

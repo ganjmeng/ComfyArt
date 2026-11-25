@@ -119,8 +119,8 @@ def test_block_carries_no_undo_payload():
 # #935: the origin/main locale bytes are pinned as a canonical-JSON sha256 per file.
 # The test still compares every non-memory key; only the source of the baseline changed.
 LOCALE_NORMALIZED_SHA256 = {
-    "src/locales/zh.json": "c17a956096a202147c7ef735da273a81d93211ed4d133423488f999c55bf4b20",
-    "src/locales/en.json": "73dc5cf753dd752f1037b4815695ef62282260a0f0289cda026224f2c478071e",
+    "src/locales/zh.json": "caf481ccc2e92ea398487c5a0f44a0b92a80a1d5c8fc4d49083bb29761b8cd82",
+    "src/locales/en.json": "338287b00723230017ae51e7552a11e9fdba2dd6fe85ff1e0669e2ea465052ef",
 }
 
 
@@ -230,6 +230,11 @@ def test_locales_only_add_memory_retrieved_430():
         # #1003: quote-card face for the pending line-art preview. The visible
         # line is the size template with the call's width, height and ratio.
         "quote.lineartPreview", "quote.lineartPreviewSize",
+        # P2-1: unpriced / estimate quote-card copy (not memory copy)
+        "quote.reprice", "quote.unpriced", "quote.unpricedTitle", "quote.estimateTitle",
+        "quote.unpricedPrompt", "quote.unpricedPromptMany", "quote.unpricedPromptPartial",
+        "jobs.confirmEstimate", "jobs.confirmEstimateGif", "jobs.confirmEstimateTier",
+        "jobs.confirmUnpriced", "jobs.confirmUnpricedGif",
         # confirmed multi-angle progress card (not memory copy)
         "bot.angleSummary", "bot.angleGenerating", "bot.angleInterrupted",
         "bot.anglePreview", "bot.angleFinal",
@@ -258,6 +263,12 @@ def test_locales_only_add_memory_retrieved_430():
     zh, en = json.loads(_src("src/locales/zh.json")), json.loads(_src("src/locales/en.json"))
     assert zh["models.minimaxH3Image"] == "6 步出图，2K 下细节丰富，可带多张参考图"
     assert en["models.minimaxH3Image"] == "6-step generation with dense detail at 2K, takes several reference images"
+    assert zh["quote.reprice"] == "重新取价" and zh["quote.unpriced"] == "未定价"
+    assert zh["quote.unpricedTitle"] == "暂未定价" and zh["quote.estimateTitle"] == "价格暂不可用"
+    assert zh["quote.unpricedPrompt"] == "这次生成暂时取不到价格，还没有开始，也没有扣积分。可以重新取价，或取消。"
+    assert en["quote.reprice"] == "Re-price" and en["quote.unpriced"] == "Unpriced"
+    assert en["quote.unpricedTitle"] == "Not priced yet" and en["quote.estimateTitle"] == "Price unavailable"
+    assert en["quote.unpricedPrompt"] == "We couldn't get a price for this generation yet. Nothing has started and no credits were used. You can re-price or cancel."
     assert zh["quote.lineartPreview"] == "线稿预览"
     assert en["quote.lineartPreview"] == "Line-art preview"
     assert zh["quote.lineartPreviewSize"] == "线稿预览 · {0}×{1} · {2}"
