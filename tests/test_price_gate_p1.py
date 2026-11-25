@@ -70,6 +70,38 @@ async def test_single_estimate_under_the_default_line_asks_and_does_not_submit(m
     assert confirms and [o["id"] for o in confirms[0]["options"]] == ["reprice", "cancel"]
 
 
+async def test_under_line_list_price_prompt_is_verbatim_and_over_line_still_names_the_line():
+    """Product sentence for one list-price estimate under the default $0.50 line, zh and en.
+
+    $0.05 is 5 credits. The over-line card ($0.85, 85 credits) still names the confirm line.
+    """
+    async def under(_model, _inputs):
+        return 0.05, "estimate", "list_price"
+
+    step = _step("棚拍", "generate_image", "acme/flare", prompt="p")
+    zh = await _quote([step], under)
+    assert zh is not None and zh.ask is True and zh.lines[0].reason == "list_price"
+    assert zh.prompt == (
+        "这次生成预计约 5 积分。实时价格暂不可用，按未打折标价估算，实际扣费可能更低。可以重新取价，或取消。"
+    )
+    assert "确认线" not in zh.prompt and "达到了" not in zh.prompt
+    en = await build_quote([step], "en", threshold=THRESHOLD, pricer=under, models_for=_no_models)
+    assert en is not None
+    assert en.prompt == (
+        "This generation is estimated at about 5 credits. The live price is unavailable; "
+        "this is an undiscounted list-price estimate and the actual charge may be lower. Re-price, or cancel."
+    )
+    assert "confirm limit" not in en.prompt
+
+    async def over(_model, _inputs):
+        return 0.85, "estimate", "list_price"
+
+    zh_over = await _quote([step], over)
+    assert zh_over is not None and "确认线" in zh_over.prompt and "达到了" in zh_over.prompt
+    en_over = await build_quote([step], "en", threshold=THRESHOLD, pricer=over, models_for=_no_models)
+    assert en_over is not None and "confirm limit" in en_over.prompt
+
+
 async def test_two_step_estimate_batch_under_the_default_line_does_not_submit(monkeypatch):
     """Two estimates, $0.04 + $0.04. ask stays true, so the batch does not start."""
     async def pricer(_model, _inputs):
