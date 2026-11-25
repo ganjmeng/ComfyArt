@@ -588,7 +588,7 @@ def _spec_lock() -> str:
         "copied character for character, these seven headings, the wordmark at three sizes, "
         "and on the color-proportion panel a Chinese color name plus a percentage. "
         "No explanatory caption, no English subtitle, no body copy, no sample English, no extra line, and no invented words. "
-        "Any text that does appear anywhere must be spelled correctly (one garbled character = FAIL). "
+        "Any text that does appear anywhere must be spelled correctly (one garbled character is not acceptable). "
         + hint_line
         + "Paper ground, not black."
     )
@@ -755,7 +755,7 @@ _SLOT_LOCK = {
     ),
     "cup": (
         "The takeaway cup must wear a cup sleeve (杯套). A bare cup with no sleeve is wrong. "
-        "The print shows the Chinese brand name AND the English brand name, both readable. "
+        "The print shows the Chinese brand name and the English brand name, both readable. "
         "Do not print the English name alone. "
         "No extra English captions. A real cup on a light ground, not a black void."
     ),
@@ -1656,7 +1656,7 @@ def default_hint() -> str:
         "The only words are the Chinese brand name and the English brand name from the brief, "
         "copied character for character, those seven headings, the wordmark at three sizes, and on the color-proportion panel a Chinese color name plus a percentage. "
         "No explanatory caption, no English subtitle, no body copy, and no sample English. "
-        "Any text that does appear anywhere must be spelled correctly (one garbled character = FAIL). "
+        "Any text that does appear anywhere must be spelled correctly (one garbled character is not acceptable). "
         "The storefront is the full shopfront, front view, with the names once on the fascia and an A-frame standing sign. "
         "The takeaway cup must wear a cup sleeve (杯套). A bare cup is wrong. "
         "Cup and bag print both the Chinese name and the English name. "

@@ -157,7 +157,7 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "carries its full heading" in spec["prompt"] and "wordmark at three sizes" in spec["prompt"]
     assert "this panel contains no small text at all" in spec["prompt"]
     assert spec["prompt"].count("no small text at all") == 2
-    assert "one garbled character = FAIL" in spec["prompt"]
+    assert "one garbled character is not acceptable" in spec["prompt"]
     assert "moodboard 色彩 cell" in spec["prompt"]
     assert "Chinese color name, and a percentage" in spec["prompt"]
     assert "real Chinese brand name" in spec["prompt"] and "real English brand name" in spec["prompt"]
@@ -178,7 +178,7 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "Not a hanging-sign close-up" in store["prompt"]
     cup = brand.fill_default({"brand_slot": "cup", "prompt": "杯"})
     assert "使用禁忌" in spec["prompt"] and "影像材质" in spec["prompt"]
-    assert "Chinese brand name AND the English brand name" in cup["prompt"]
+    assert "Chinese brand name and the English brand name" in cup["prompt"]
     assert "must wear a cup sleeve" in cup["prompt"] and "杯套" in cup["prompt"]
     assert "A bare cup with no sleeve is wrong." in cup["prompt"]
     again = brand.fill_default({"brand_slot": "logo_a", "prompt": a["prompt"]})
@@ -317,7 +317,7 @@ def test_spec_card_is_seven_lovart_panels_and_brand_prompts_have_no_lock_words()
     assert spec.count("no small text at all") == 2
     assert "使用禁忌 (this panel contains no small text at all" in spec
     assert "影像材质 (this panel contains no small text at all" in spec
-    assert "one garbled character = FAIL" in spec
+    assert "one garbled character is not acceptable" in spec
     logo_c = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})["prompt"]
     assert "主组合, 符号构造, 横版, 小尺寸" in logo_c
     assert "perched bird is the negative space inside the cup" in logo_c
@@ -347,7 +347,7 @@ def test_closing_rules_are_in_the_skill_instructions():
     assert [skill.index(heading) for heading in skill_headings] == sorted(skill.index(heading) for heading in skill_headings)
     for heading in skill_headings:
         assert skill.count(heading) == 1, heading
-    assert "no small text at all" in skill and "one garbled character = FAIL" in skill
+    assert "no small text at all" in skill and "one garbled character is not acceptable" in skill
     assert "carries its full heading" in skill and "wordmark at three sizes" in skill
     assert "wordmark appears exactly once per zone" in skill
     assert "#" not in skill
