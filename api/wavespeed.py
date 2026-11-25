@@ -1580,6 +1580,34 @@ async def quote_detail(model: str, inputs: dict) -> tuple[float | None, str, str
     return price, source, reason
 
 
+def _official_price_amount(payload: object) -> float | None:
+    """USD from one price response, or None when it must not be cached as a quote.
+
+    A business code other than 200, a missing or non-object data field, a
+    non-numeric amount, a negative amount, or a non-finite amount is not a
+    quote. Zero is a real price and is kept. Failure is never rewritten to 0.
+    """
+    if not isinstance(payload, dict):
+        return None
+    if payload.get("code", None) not in (None, 200):
+        return None
+    data = payload.get("data")
+    if not isinstance(data, dict):
+        return None
+    if "discounted_price" in data:
+        price = data.get("discounted_price")
+    elif "price" in data:
+        price = data.get("price")
+    else:
+        return None
+    if isinstance(price, bool) or not isinstance(price, (int, float)):
+        return None
+    amount = float(price)
+    if not math.isfinite(amount) or amount < 0:
+        return None
+    return amount
+
+
 async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
     """Price of one run via WaveSpeed's free POST /api/v3/model/price, cached 5 minutes, for the tier that will be
     submitted. #159: when the price API fails the catalog base_price is returned as source 'estimate' only if the
@@ -1598,9 +1626,20 @@ async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
         if stub is None:
             return _Quoted(None, "unpriced")
         return _Quoted(float(stub), "estimate", "svg_stub")
-    # #825: frame_count / frame_duration_ms are quoted on the confirm line but not sent to the price API.
-    body = {"model_id": model, "inputs": gif_image.billable(priced)}
+    # Official POST /api/v3/model/price takes singular `input`. Job payloads and the
+    # priced dict stay plural `inputs`; that key is not this request's body. Sending
+    # it here is not a price for resolution, quality, or reference count. A missing
+    # amount is not turned into 0 and is not cached as a quote.
+    body = {"model_id": model, "input": gif_image.billable(priced)}
     ck = json.dumps(body, sort_keys=True)
+    # No key: do not call the price API and do not load the catalog. The published
+    # table is an estimate; anything else is unpriced, which still asks before submit.
+    if not has_key():
+        n = len(priced.get("images") or []) + (1 if priced.get("mask_image") else 0)
+        stub = gif_image.documented_usd(model, str(priced.get("quality") or "medium"), str(priced.get("resolution") or "1k"), n)
+        if stub is not None:
+            return _Quoted(float(stub), "estimate", "list_price")
+        return _Quoted(None, "unpriced")
     hit = _quotes.get(ck)
     if hit and time.time() - hit[1] < QUOTE_TTL:
         return _Quoted(hit[0], "quote", "cache")
@@ -1612,7 +1651,7 @@ async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
             async with aiohttp.ClientSession(headers=_headers()) as session:
                 async with session.post(f"{_base()}/api/v3/model/price", json=body,
                                         timeout=aiohttp.ClientTimeout(total=QUOTE_TIMEOUT_S)) as res:
-                    data = ((await _json(res)) or {}).get("data") or {} if res.status < 400 else {}
+                    payload = await _json(res) if res.status < 400 else None
                     if res.status >= 400:
                         if res.status >= 500 and attempt < QUOTE_RETRIES:
                             # #968: a 5xx can be transient (cold start / upstream blip): retry once.
@@ -1622,11 +1661,11 @@ async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
                             continue
                         log.warning("WaveSpeed price API %s for %s %s; showing an estimate", res.status, model, priced)
                         break
-            price = data.get("discounted_price", data.get("price")) if isinstance(data, dict) else None
-            if isinstance(price, (int, float)) and not isinstance(price, bool):
-                _quotes[ck] = (float(price), time.time())
-                return _Quoted(float(price), "quote", "live")
-            break
+            amount = _official_price_amount(payload)
+            if amount is None:
+                break
+            _quotes[ck] = (amount, time.time())
+            return _Quoted(amount, "quote", "live")
         except (aiohttp.ClientError, asyncio.TimeoutError, ValueError) as e:
             if attempt >= QUOTE_RETRIES:
                 log.warning("WaveSpeed price API %s for %s after %d attempt(s); showing an estimate",

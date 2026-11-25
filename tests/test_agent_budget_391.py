@@ -24,6 +24,21 @@ def _tc(i, name, args):
     return {"id": f"t{i}", "function": {"name": name, "arguments": json.dumps(args)}}
 
 
+def pin_offline_plan_quote(monkeypatch, provider) -> None:
+    """Offline plan-quote price for one test provider. No WaveSpeed call and no confirm.
+
+    Production ``_price_one`` still calls ``quote_detail`` and still raises without a
+    key. Production ``_confirm_plan`` is left on the class. A known 0 stays under the
+    confirm line, so a test that passes ``prices`` to the per-call gate is what asks
+    or declines. Brand and multi-angle stages still force their own cards.
+    """
+
+    async def price(model, inputs):
+        return (0.0, "quote", "test-offline")
+
+    monkeypatch.setattr(provider, "_price_one", price)
+
+
 def calls(*items):
     return {"choices": [{"message": {"content": "", "tool_calls": [_tc(i, n, a) for i, (n, a) in enumerate(items)]}}]}
 

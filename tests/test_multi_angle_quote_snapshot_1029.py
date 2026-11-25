@@ -225,6 +225,8 @@ async def _send(monkeypatch, *, mode="quote", choice="start", change_before_star
 
     monkeypatch.setattr(wavespeed.aiohttp, "ClientSession", _session_factory(records, catalog, mode))
     monkeypatch.setattr(wavespeed, "_key", lambda: "offline-stand-in")
+    # #1019 no-key branch quotes from the table without the price API; this stand-in has a key.
+    monkeypatch.setattr(wavespeed, "has_key", lambda: True)
     monkeypatch.setattr(provider, "_request_json", fake_request)
     monkeypatch.setattr(bot_tools, "broadcast", answer_broadcast)
     monkeypatch.setattr(canvas, "submit_command", page)
@@ -296,8 +298,8 @@ async def test_real_send_confirmed_start_submits_one_preview(monkeypatch):
     gets, posts = _gets(out["http"]), _posts(out["http"])
     assert len(gets) == 1 and gets[0][1].endswith("/api/v3/models")
     assert len(posts) == 1 and posts[0][1].endswith("/api/v3/model/price")
-    assert set(posts[0][2]) == {"model_id", "inputs"}
-    assert isinstance(posts[0][2]["inputs"], dict)
+    assert set(posts[0][2]) == {"model_id", "input"}
+    assert isinstance(posts[0][2]["input"], dict)
     assert posts[0][2]["model_id"] == out["model_id"]
     setup = out["setup"][0]
     source, aspect = setup["questions"]
@@ -342,7 +344,7 @@ async def test_real_send_reaches_composition_selection_and_second_quote(monkeypa
     posts = _posts(out["http"])
     assert len(_gets(out["http"])) == 1
     assert len(posts) == 2, posts
-    assert all(set(body) == {"model_id", "inputs"} and isinstance(body["inputs"], dict)
+    assert all(set(body) == {"model_id", "input"} and isinstance(body["input"], dict)
                for _method, _url, body in posts)
     assert posts[0][2] != posts[1][2]
     token = BOT_CHAT_ID.set(out["cid"])
@@ -416,7 +418,7 @@ async def test_failed_price_estimate_is_not_a_confirmed_quote(monkeypatch, mode,
     out = await _send(monkeypatch, mode=mode)
     assert len(_gets(out["http"])) == 1
     assert len(_posts(out["http"])) == posts
-    assert all(set(item[2]) == {"model_id", "inputs"} and isinstance(item[2]["inputs"], dict)
+    assert all(set(item[2]) == {"model_id", "input"} and isinstance(item[2]["input"], dict)
                for item in _posts(out["http"]))
     assert out["sent"] == []
     token = BOT_CHAT_ID.set(out["cid"])

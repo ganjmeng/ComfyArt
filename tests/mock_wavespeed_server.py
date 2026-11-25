@@ -34,7 +34,7 @@ T0={}
 CAT=load_catalog(tws.MODELS)
 async def price(r):
     # #211: every model is priced at its catalog base_price; no placeholder for unknown models.
-    b=await r.json(); i=b.get("inputs") or {}; m=b.get("model_id") or ""
+    b=await r.json(); i=b.get("input") or {}; m=b.get("model_id") or ""
     p=mock_price(m, CAT)
     print("MOCK price", m, json.dumps({k:v for k,v in i.items() if k not in ("images","image","prompt")}), "->", p, flush=True)
     if p is None: return web.json_response({"code":404,"message":f"model {m} not in mock catalog"},status=404)
