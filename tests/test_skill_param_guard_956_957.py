@@ -15,7 +15,8 @@ import json
 
 import pytest
 
-from ComfyArt.api import chat_store, paid_guard, portrait_studio as ps, product_packaging as pk
+from ComfyArt.api import chat_store, paid_guard, portrait_studio as ps
+from ComfyArt.bot.skill_output import reset_slot_state
 from ComfyArt.api.mcp_tools import canvas
 from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
 from ComfyArt.api import skill_param_guard as guard
@@ -31,15 +32,14 @@ SENT: list = []
 def _clean_turns():
     before = set(paid_guard.TURNS)
     locks_ps = dict(ps._LOCKS)
-    locks_pk = dict(pk._LOCKS)
+    reset_slot_state()
     yield
     for k in list(paid_guard.TURNS):
         if k not in before:
             paid_guard.TURNS.pop(k, None)
     ps._LOCKS.clear()
     ps._LOCKS.update(locks_ps)
-    pk._LOCKS.clear()
-    pk._LOCKS.update(locks_pk)
+    reset_slot_state()
 
 
 @pytest.fixture
@@ -94,7 +94,12 @@ def _chat(*, skill="", uploads=(), card="", answers=None, later_skill=""):
             chat_id=chat["id"], role="assistant",
             blocks=[{
                 "type": "ask", "status": "answered", "ask_id": "a-pk",
-                "questions": pk.card_questions(None, "zh"), "answers": answers,
+                "questions": [
+                    {"id": "pk_product", "prompt": "这款产品具体是什么？品牌名/产品名怎么定"},
+                    {"id": "pk_color", "prompt": "包装的主色方向选哪个？"},
+                    {"id": "pk_scope", "prompt": "这套包装要交付到哪个范围？（可多选）",
+                     "options": [{"id": "A", "label": "核心三件：外盒 ＋ 瓶标 ＋ 内托"}]},
+                ], "answers": answers,
             }],
         )
     if later_skill:

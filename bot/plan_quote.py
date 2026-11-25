@@ -227,47 +227,48 @@ def price_inputs(args: dict) -> dict:
     return out
 
 
-PLANNED_ANCHOR = "<planned-anchor>"  # #963: semantic slot for the packaging anchor a quote cannot name yet
+PLANNED_ANCHOR = "<planned-anchor>"  # a contract ref the quote cannot name until wait_generation places it
 
 
 def _planned_args(tool: str, args: dict, anchor: Optional[str] = None,
                   plan_position: Optional[int] = None) -> dict:
-    """#963: compare a quoted step with its submit even when a ref is a future image.
+    """Compare a quoted step with its submit when one ref is a shape not placed yet.
 
-    product-to-packaging images 2-4 take [product photo, anchor]. A quote made
-    before image 1 exists can only name a placeholder for the anchor; the submit
-    names the placed shape. This function compares that second slot semantically,
-    but only for this skill and only with exactly two refs.
+    An output-contract slot may declare `ref_slot`: that ref index is the image
+    wait_generation will place for an earlier slot. A quote made before that
+    image exists names a placeholder; the submit names the placed shape.
 
-    `anchor=None` is the quote side (the anchor cannot exist yet): the slot is
-    replaced with the plan sentinel when the step is an extension (`plan_position > 0`;
-    image 1 is the anchor and stays strict, including a multi-product-ref anchor).
-    A string `anchor` is the submit side: the slot is replaced **only when it is that
-    placed anchor id**, so a wrong anchor, a wrong URL or a swapped order still fails
-    the comparison. Ref count/order, the product photo and every other field stay strict.
+    `anchor=None` is the quote side: the declared index is replaced with the
+    plan sentinel. The anchor slot (plan position 0, or a ratio with no ref_slot)
+    stays strict. A string `anchor` is the submit side: the index is replaced
+    only when it is that placed shape id, so a wrong id, a URL or a swapped
+    order still fails. Ref count, order, and every other field stay strict.
     """
-    if tool != "generate_image":
+    if tool != "generate_image" or not isinstance(args, dict):
         return args
-    from ..api.product_packaging import SKILL as packaging_skill
-    if str(args.get("skill") or "") != packaging_skill:
+    from .skill_output import contract_ref_index
+    index = contract_ref_index(args, plan_position)
+    if index is None:
         return args
     refs = args.get("refs")
-    if not (isinstance(refs, list) and len(refs) == 2):
+    if not (isinstance(refs, list) and len(refs) == index + 1):
         return args
     if anchor is None:
-        if plan_position is not None and plan_position <= 0:
-            return args  # image 1 is the anchor: its refs are the product photo(s), compared strictly
-    elif not anchor or str(refs[1]) != anchor:
+        if plan_position is not None and int(plan_position) <= 0:
+            return args
+    elif not anchor or str(refs[index]) != str(anchor):
         return args
-    return {**args, "refs": [refs[0], PLANNED_ANCHOR]}
+    rewritten = list(refs)
+    rewritten[index] = PLANNED_ANCHOR
+    return {**args, "refs": rewritten}
 
 
 def canon_key(tool: str, args: dict, model: str = "", *, plan: bool = False,
               anchor: Optional[str] = None, plan_position: Optional[int] = None) -> tuple:
     """Identity of one authorized paid call: tool + selected model + arguments, without fallback fields.
 
-    `plan=True` is the plan-gate comparison (#963): a packaging anchor slot that
-    cannot exist yet is compared as a slot, the same on both sides. Dedupe
+    `plan=True` is the plan-gate comparison: a contract ref that cannot exist yet
+    is compared as a slot, the same on both sides. Dedupe
     (`paid_key`) keeps the strict default so two different anchors stay distinct.
     """
     clean = {}
@@ -453,12 +454,12 @@ def _route(router: Router, tool: str, args: dict, position: int):
 
 
 def _plan_positions(steps: list[dict]) -> list[int]:
-    """0-based place of each step among the earlier steps of the same tool + skill (#959).
+    """0-based place of each step among the earlier steps of the same tool + skill.
 
-    A per-image skill (product-to-packaging) puts all its images in one plan; the quote must
-    walk that sequence (image 1, then 2..n) instead of previewing every step as image 1.
-    This is computed per quote build and never executes anything, so repeating the quote
-    starts again from the turn's real next place.
+    A multi-slot output contract puts its images in one plan; the quote walks that
+    sequence (slot 0, then later slots) instead of pricing every step as slot 0.
+    This is computed per quote build and never executes anything, so repeating the
+    quote starts again from the same positions.
     """
     seen: dict[tuple[str, str], int] = {}
     out: list[int] = []

@@ -9,8 +9,7 @@ Question 1's product noun and the options of questions 1 and 2 are written from 
 locks everything else.
 
 $0: no WaveSpeed call. submit_command and the run approval are mocked. Pins and the untouched
-files are locked by literal sha256 values (no historical git objects, so a depth-1 clone works);
-bot/skill_output.py is pinned to the #905 revision.
+files are locked by literal sha256 values (no historical git objects, so a depth-1 clone works).
 """
 from __future__ import annotations
 
@@ -24,8 +23,8 @@ from pathlib import Path
 import pytest
 
 from ComfyArt.api import bot_asks, paid_guard
-from ComfyArt.api import product_packaging as pk
 from ComfyArt.api.mcp_tools import canvas
+from ComfyArt.bot.skill_output import OUTPUTS, apply_generate, fill_contract_slot, run_hint
 from ComfyArt.api.mcp_tools._context import GUARD_CHAT_ID
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -154,18 +153,17 @@ def test_lovart_card_goes_through_unchanged(lang):
     _assert_card(spec, lang, live=LIVE[lang])
 
 
-def test_zh_fixed_text_is_lovart_e304e2fa_verbatim():
-    zh = {q["id"]: q for q in pk.CARD["zh"]}
-    # Q1 noun is live from the photo; the locked default is the generic fallback.
+def test_zh_fixed_text_is_the_reference_card_verbatim():
+    """The card the user sees uses the reference wording. A missing noun falls back to 这款产品."""
+    spec = _with_lang("zh", "", lambda: bot_asks.validate_spec(
+        {"questions": [{"id": "pk_scope", "prompt": "x", "allow_other": True}]}))
+    zh = {q["id"]: q for q in spec["questions"]}
     assert zh["pk_product"]["prompt"] == FALLBACK_Q1
-    assert pk.FALLBACK_SUBJECT["zh"] + pk.PRODUCT_REST["zh"] == FALLBACK_Q1
-    assert pk.LOVART_SUBJECT["zh"] + pk.PRODUCT_REST["zh"] == LOVART_Q1
     assert zh["pk_color"]["prompt"] == LOVART_Q2
     assert zh["pk_scope"]["prompt"] == LOVART_Q3
     assert [o["label"] for o in zh["pk_scope"]["options"]] == LOVART_Q3_OPTS
     assert [zh[i]["placeholder"] for i in IDS] == PLACEHOLDERS["zh"]
-    assert zh["pk_product"]["options"] is None and zh["pk_color"]["options"] is None  # live, from the photo
-    assert pk.PAGE_COUNT == 3
+    assert spec["page_count"] == 3
 
 
 @pytest.mark.parametrize("lang,ui,goal", [("zh", "zh", ""), ("en", "en", ""), ("zh", "en", "用这张产品图做一套包装。"),
@@ -214,12 +212,13 @@ def test_model_card_is_rewritten_to_the_locked_skeleton_in_the_ask_card_language
 ])
 def test_question_1_keeps_the_product_noun_from_the_photo(prompt, lang, expected):
     raw = {"questions": [{"id": "pk_product", "prompt": prompt or "x", "options": _opts(["a", "b", "c"])}]}
-    spec = pk.card_spec(raw["questions"], lang)
+    spec = _with_lang(lang, "", lambda: bot_asks.validate_spec(raw))
     assert spec["questions"][0]["prompt"] == expected
 
 
 def test_live_options_need_two_else_the_question_is_free_text():
-    spec = bot_asks.validate_spec(pk.card_spec([{"id": "pk_color", "prompt": LOVART_Q2, "options": [{"id": "a", "label": "only"}]}], "zh"))
+    spec = _with_lang("zh", "", lambda: bot_asks.validate_spec(
+        {"questions": [{"id": "pk_color", "prompt": LOVART_Q2, "options": [{"id": "a", "label": "only"}]}]}))
     q = spec["questions"][1]
     assert q["options"] == [] and q["allow_other"] is True and q["placeholder"] == "其它方向..."
     assert spec["questions"][0]["options"] == []  # question 1 was not sent: free text with its placeholder
@@ -240,7 +239,7 @@ def test_unknown_ui_language_defaults_to_zh():
 def test_other_skill_cards_are_untouched():
     raw = {"questions": [{"id": "look", "prompt": "模特长相方向选哪一档？", "options": [{"id": "A", "label": "x"}, {"id": "B", "label": "y"}],
                           "defaults": ["A"]}], "page_count": 3}
-    assert pk.normalize_card(dict(raw)) == raw
+    assert bot_asks.normalize_product_packaging_card(dict(raw)) == raw
     spec = bot_asks.validate_spec(dict(raw))
     assert spec["questions"][0]["prompt"] == "模特长相方向选哪一档？"
     assert spec["questions"][0]["defaults"] == ["A"]
@@ -297,15 +296,24 @@ def test_skill_text_carries_the_card_and_default_4():
         assert f'label:"{label}"' in instr, label
     assert "exactly four options in this order: A 核心三件, B 延伸件, C 变体家族, D 技术件" in instr
     assert "a box or pouch has no 瓶标 or 多香型" in instr
-    assert "round-robin in A-D order" in instr and "pk_scope skipped or not answered: A." in instr
-    assert "image_plan" in instr and "This image shows:" in instr
+    assert "image_plan" not in instr and "This image shows:" not in instr
+    assert "call generate_image exactly" not in instr.lower()
     assert LOVART_Q1_OPTS[0] in instr and LOVART_Q2_OPTS[0] in instr  # examples of live options
     assert instr.index('id "pk_product"') < instr.index('id "pk_color"') < instr.index('id "pk_scope"')
     assert "page_count 3, so the header is 1 of 3" in instr
     assert "min_selections 1, max_selections 4" in instr
     assert "Do not set defaults or recommended" in instr and "none is marked 推荐" in instr
-    assert "default 4 images" in instr and "one generate_image call per image with count 1" in instr
-    assert "Image 1 is the anchor" in instr and "image 1 3:4, images 2-4 4:3" in instr
+    # Section 6 pins the default 4-image set and the A–D distribution from main.
+    assert "default 4 images, one generate_image call per image with count 1" in instr
+    assert "Image 1 is the anchor" in instr and "images 2-4 as extensions of the anchor" in instr
+    assert "One scope: the parts named in that option across the three images" in instr
+    assert "the outer box from several angles, the bottle label close up, the unboxing with the inner tray" in instr
+    assert "round-robin in A-D order, and a free-text answer counts as one more scope after D" in instr
+    assert "More than three scopes with A among them: image 1, the anchor, is A" in instr
+    assert "A+B+C+D is A / B / C / D" in instr
+    assert "pk_scope skipped or not answered: A." in instr
+    assert "Deliver fewer than 4 only when the user explicitly asks for fewer images" in instr
+    assert "the default plan is these 4 images" in instr
     assert 'skill: "product-to-packaging"' in instr
     for needle in ("recommended: true", '"recommended"', "defaults: ["):
         assert needle not in instr
@@ -318,11 +326,27 @@ def test_skill_text_carries_the_card_and_default_4():
     assert "5) Refs: pass product shape id in refs on every generate_image call." not in instr
 
 
-def test_default_output_is_4_images_anchor_then_extensions():
-    assert pk.DEFAULT_IMAGES == 4
-    assert pk.RATIOS == ("3:4", "4:3", "4:3", "4:3")
-    assert [pk.ratio_for(i) for i in range(4)] == list(pk.RATIOS)
-    assert paid_guard.DEFAULT_CAP >= pk.DEFAULT_IMAGES  # the 4 calls fit the default turn cap
+def test_default_output_is_anchor_then_optional_extensions():
+    row = OUTPUTS["product-to-packaging"]
+    assert (row["images"], row["images_min"], row["images_max"]) == (4, 1, 4)
+    assert [(s["role"], s["ratio"], s.get("optional", False)) for s in row["slots"]] == [
+        ("anchor", "3:4", False), ("extension", "4:3", True)]
+    assert row["slots"][1]["ref_slot"] == "anchor"
+    assert row["require_product_ref"] is True
+    assert paid_guard.DEFAULT_CAP >= row["images"]
+    hint = run_hint("product-to-packaging")
+    assert "3:4" in hint and "4:3" in hint and "placed anchor" in hint
+    assert "exactly" not in hint.lower() and "image_plan" not in hint
+    # The planner pass does not invent a ratio (the quote key stays the planned args).
+    planned = apply_generate({"skill": "product-to-packaging", "prompt": "anchor", "count": 1})
+    assert "ratio" not in planned and "width" not in planned
+    filled = [apply_generate({"skill": "product-to-packaging", "prompt": "x"}, bind_slots=True, slot_position=i)
+              for i in range(4)]
+    assert [a["ratio"] for a in filled] == ["3:4", "4:3", "4:3", "4:3"]
+    assert all(a["count"] == 1 for a in filled)
+    refused = apply_generate({"skill": "product-to-packaging", "prompt": "x", "ratio": "1:1"},
+                             bind_slots=True, slot_position=0)
+    assert refused["ratio"] == "1:1" and refused.get("_ratio_refusal_994", {}).get("submitted") is False
 
 
 # --- one call per image: anchor 3:4 then 4:3, Sunburst, 2k ----------------------------------------
@@ -362,23 +386,30 @@ def _call(prompt, refs=None, **extra):
 
 
 def test_with_product_photo_4_calls_anchor_3x4_then_4x3_sunburst_edit_2k(relay):
+    """Omitted ratios fill the contract in order. Refs and prompts stay as the agent passed them."""
     calls = [_call("anchor: box + bottle key visual", ["shape:product"]),
              _call("outer box multi-angle board", ["shape:product", "shape:anchor"]),
-             _call("bottle label close-ups", ["shape:anchor"]),  # model dropped the product photo
+             _call("bottle label close-ups", ["shape:product", "shape:anchor"]),
              _call("unboxing with inner tray", ["shape:product", "shape:anchor"])]
     _run_turn("zh", calls)
     assert [a for a, _ in SENT] == ["generate_image"] * 4
     reqs = [r for _, r in SENT]
     assert [r["ratio"] for r in reqs] == ["3:4", "4:3", "4:3", "4:3"]
-    for r in reqs:
+    for r, call in zip(reqs, calls):
         assert r["edit_model"] == SUNBURST_EDIT and r.get("model") != SUNBURST_T2I
         assert r["edit_resolution"] == "2k"
         assert r["count"] == 1
         assert "width" not in r and "height" not in r and "size_lock" not in r
-        assert r["refs"][0] == "shape:product"  # the turn's product photo stays first
-    assert reqs[0]["refs"] == ["shape:product"]
-    assert all(r["refs"] == ["shape:product", "shape:anchor"] for r in reqs[1:])
-    assert [r["prompt"] for r in reqs] == [c["prompt"] for c in calls]  # prompts are the model's
+        assert r["refs"] == call["refs"]
+        assert r["prompt"] == call["prompt"]
+        assert "This image shows:" not in r["prompt"]
+
+
+def test_scope_may_drop_extensions_and_the_server_does_not_add_calls(relay):
+    _run_turn("zh", [_call("anchor only", ["shape:product"])])
+    assert len(SENT) == 1
+    assert SENT[0][1]["ratio"] == "3:4"
+    assert SENT[0][1]["refs"] == ["shape:product"]
 
 
 def test_without_product_photo_anchor_is_text_to_image(relay):
@@ -390,12 +421,14 @@ def test_without_product_photo_anchor_is_text_to_image(relay):
     assert (second["ratio"], second["edit_resolution"]) == ("4:3", "2k")
 
 
-def test_model_size_args_are_replaced(relay):
-    _run_turn("zh", [_call("anchor", ["shape:p"], width=1024, height=1024, ratio="1:1", resolution="4k", edit_resolution="1k"),
-                     _call("ext", ["shape:p"], ratio="3:4", width=1536, height=2048)])
-    a, b = SENT[0][1], SENT[1][1]
-    assert (a["ratio"], a["edit_resolution"]) == ("3:4", "2k") and "resolution" not in a and "width" not in a
-    assert (b["ratio"], b["edit_resolution"]) == ("4:3", "2k") and "width" not in b
+def test_illegal_ratio_is_refused_and_a_named_extension_ratio_is_kept(relay):
+    refused = _run_turn("zh", [_call("anchor", ["shape:p"], width=1024, height=1024, ratio="1:1")])
+    assert SENT == []
+    assert refused[0].get("submitted") is False
+    _run_turn("zh", [_call("ext", ["shape:p"], ratio="4:3", width=100, height=100)])
+    sent = SENT[0][1]
+    assert sent["ratio"] == "4:3" and sent["edit_resolution"] == "2k"
+    assert "width" not in sent and "height" not in sent
 
 
 def test_a_new_turn_starts_a_new_set(relay):
@@ -405,45 +438,47 @@ def test_a_new_turn_starts_a_new_set(relay):
     assert SENT[2][1]["refs"] == ["shape:p2"]
 
 
-def test_a_fallback_retry_keeps_the_image_place():
+def test_fill_retry_stays_on_the_anchor_slot():
     def go():
-        a = pk.lock_request(_call("anchor", ["shape:p"]))
-        b = pk.lock_request({**_call("anchor", ["shape:p"]), "fallback_for": "x/y"})
-        c = pk.lock_request(_call("ext", ["shape:p"]))
-        return a, b, c
-    a, b, c = _with_lang("zh", "", go)
-    assert (a["ratio"], b["ratio"], c["ratio"]) == ("3:4", "3:4", "4:3")
-    assert a["count"] == b["count"] == c["count"] == 1
+        a = fill_contract_slot(_call("anchor", ["shape:p"]), advance=True)
+        b = fill_contract_slot(_call("anchor", ["shape:p"]), retry=True)
+        c = fill_contract_slot(_call("ext", ["shape:p"]), advance=True)
+        return a["ratio"], b["ratio"], c["ratio"]
+    assert _with_lang("zh", "", go) == ("3:4", "3:4", "4:3")
 
 
-def test_count_is_one_per_call():
-    out = _with_lang("zh", "", lambda: pk.lock_request(_call("anchor", ["shape:p"], count=3)))
-    assert out["count"] == 1 and out["ratio"] == "3:4"
+def test_a_rejected_fallback_does_not_skip_the_extension_slot(relay):
+    """A fallback the shared guard refuses is not a new image, so the next call is still 4:3."""
+    results = _run_turn("zh", [
+        _call("anchor", ["shape:p"]),
+        {**_call("anchor", ["shape:p"]), "fallback_for": "x/y"},
+        _call("ext", ["shape:p"]),
+    ])
+    assert results[1].get("submitted") is not True
+    assert [r["ratio"] for _, r in SENT] == ["3:4", "4:3"]
+    assert all(r["count"] == 1 for _, r in SENT)
 
 
-@pytest.mark.parametrize("skill", [None, "studio-model", "portrait-studio", "ai-model"])
-def test_other_skills_are_not_locked(relay, skill):
+def test_count_is_one_per_call(relay):
+    _run_turn("zh", [_call("anchor", ["shape:p"], count=3)])
+    assert SENT[0][1]["count"] == 1 and SENT[0][1]["ratio"] == "3:4"
+
+
+@pytest.mark.parametrize("skill", [None, "studio-model", "ai-model"])
+def test_other_skills_are_not_filled_as_packaging_slots(relay, skill):
     args = {"prompt": "x", "count": 1, "refs": ["shape:a"], "ratio": "1:1"}
     if skill:
         args["skill"] = skill
-    before = dict(pk._LOCKS)
-    _run_turn("zh", [args, args])
-    assert pk._LOCKS == before
+    _run_turn("zh", [args])
     if skill in (None, "studio-model"):
-        assert all(r.get("ratio") == "1:1" for _, r in SENT), SENT
+        assert SENT and SENT[0][1].get("ratio") == "1:1", SENT
 
 
-def test_packaging_skill_is_locked_by_its_own_template_contract(relay):
-    """#979: packaging-design-director is no longer unfilled; its default 主款 is 1536×2048 3:4.
-
-    It still is not product-to-packaging's lock (_LOCKS unchanged); the size comes from
-    bot/skill_output.py's template plan.
-    """
+def test_packaging_design_director_keeps_its_own_template_contract(relay):
+    """packaging-design-director stays on its template plan, not the product-to-packaging slots."""
     args = {"prompt": "x", "count": 1, "refs": ["shape:a"], "ratio": "1:1",
             "skill": "packaging-design-director"}
-    before = dict(pk._LOCKS)
     _run_turn("zh", [args])
-    assert pk._LOCKS == before
     assert SENT and all(r.get("ratio") == "3:4" and r.get("width") == 1536
                         and r.get("height") == 2048 for _, r in SENT), SENT
 
@@ -508,7 +543,6 @@ PINNED_SHA256 = {
     "api/skill_size.py": "ec90c1098ad359dc017c4c470ab5ee0f16e12f5baff9924da2376a8b1153e312",
     "api/curated_models.json": "53c77b0a449f86b8b2aa9b48044678dddaf5aa3cdad40486f0c981386b8d2dce",
     "api/wavespeed_models.json": "3f70cc34de378fd675a2afffb7b7c15b533c67db424e1ae25b6ba3356dd082d1",
-    "bot/skill_output.py": "02d74b0260d4e494bbc922f79a373014eff98748245364fdfb56028636597569",  # #1003 source question stays when a reference is attached; content, 9:16 preview, and unrelated locks preserved
     "api/portrait_studio.py": "61257848a9e23d13c066d01c103c565d6804e58c926d3905c6ed8b0890569224",
     "bot/self_check.py": "1a9b4f7eda7e915adf83df42ff31ccf3c27e83253d9636ba5c85aead447993b6",
 }
@@ -520,7 +554,7 @@ def test_pins_sizes_and_model_tables_match_pinned_sha256(path):
     assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == PINNED_SHA256[path], path
 
 
-@pytest.mark.parametrize("path", ["api/portrait_studio.py", "bot/self_check.py", "bot/skill_output.py"])
+@pytest.mark.parametrize("path", ["api/portrait_studio.py", "bot/self_check.py"])
 def test_portrait_studio_and_self_check_match_pinned_sha256(path):
     assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == PINNED_SHA256[path], path
 
@@ -635,8 +669,8 @@ BOX_Q3 = ["核心三件：外盒 ＋ 内衬 ＋ 封口贴", "延伸件：快递�
 
 
 def _q3(options, lang="zh"):
-    spec = pk.card_spec([{"id": "pk_scope", "prompt": LOVART_Q3, "options": options}], lang)
-    return _with_lang(lang, "", lambda: bot_asks.validate_spec(spec))["questions"][2]
+    raw = {"questions": [{"id": "pk_scope", "prompt": LOVART_Q3, "options": options}]}
+    return _with_lang(lang, "", lambda: bot_asks.validate_spec(raw))["questions"][2]
 
 
 def test_q3_model_wording_is_used():
@@ -676,159 +710,39 @@ def test_q3_skeleton_cannot_be_reordered_or_expanded():
         assert set(o) == {"id", "label"}
 
 
-# --- images 2-4 follow the Q3 answer (Product point 4) -------------------------------------------
 
-def _spec_with_q3(labels=LOVART_Q3_OPTS):
-    return bot_asks.validate_spec(pk.card_spec([{"id": "pk_scope", "prompt": LOVART_Q3, "options": _opts(labels)}], "zh"))
+# --- the director is gone; the card answer is not a call script ---------------------------
 
-
-def _answered_turn(answers, labels=LOVART_Q3_OPTS, calls=4):
-    """ask_user answered in this turn, then `calls` generate_image calls through the per-image hook."""
-    def go():
-        plan = pk.record_card_answer(_spec_with_q3(labels), answers)
-        reqs = [pk.lock_request(_call(f"image {n + 1}", ["shape:p"])) for n in range(calls)]
-        return plan, reqs
-    return _with_lang("zh", "", go)
-
-
-def _shows(req):
-    lines = [ln for ln in req["prompt"].split("\n") if ln.startswith(pk.SHOWS_HEAD)]
-    assert len(lines) <= 1
-    return lines[0][len(pk.SHOWS_HEAD):].strip().rstrip(".") if lines else None
-
-
-def _sel(*letters, other=""):
-    a = {"selected": list(letters)}
-    if other:
-        a["other_text"] = other
-    return {"pk_product": {"selected": ["A"]}, "pk_color": {"selected": ["A"]}, "pk_scope": a}
-
-
-@pytest.mark.parametrize("answers,expected", [
-    (_sel("A"), ["外盒", "瓶标", "内托"]),
-    (_sel("B"), ["运输箱", "手提袋", "封条/感谢卡"]),
-    (_sel("B", "A"), ["外盒; 内托", "运输箱; 手提袋; 封条/感谢卡", "瓶标"]),  # A-D order, round-robin
-    ({}, ["外盒", "瓶标", "内托"]),  # whole card skipped -> A
-    (_sel(), ["外盒", "瓶标", "内托"]),  # Q3 not answered -> A
-    (None, ["外盒", "瓶标", "内托"]),
-    (_sel(other="金属礼盒"), ["金属礼盒", "金属礼盒", "金属礼盒"]),  # free text alone is the scope
-    (_sel("A", other="金属礼盒"), ["外盒; 内托", "金属礼盒", "瓶标"]),  # free text counts after D
-])
-def test_extension_images_follow_the_q3_answer(answers, expected):
-    plan, reqs = _answered_turn(answers)
-    assert [r["ratio"] for r in reqs] == ["3:4", "4:3", "4:3", "4:3"]
-    assert _shows(reqs[0]) is None  # three scopes or fewer: the anchor is the model's own prompt
-    assert plan[0] == pk.ANCHOR_PLAN
-    assert [_shows(r) for r in reqs[1:]] == expected
-    assert plan[1:] == expected and len(plan) == 4
-    for n, r in enumerate(reqs):
-        assert r["prompt"].startswith(f"image {n + 1}")
-
-
-def test_extension_images_use_the_wording_shown_on_the_card():
-    _, reqs = _answered_turn(_sel("A"), labels=BOX_Q3)
-    assert [_shows(r) for r in reqs[1:]] == ["外盒", "内衬", "封口贴"]
-
-
-def test_shows_line_is_replaced_not_stacked_and_kept_on_retry():
-    def go():
-        pk.record_card_answer(_spec_with_q3(), _sel("B"))
-        a = pk.lock_request(_call("anchor", ["shape:p"]))
-        b = pk.lock_request(_call("x\nThis image shows: something else.", ["shape:p"]))
-        c = pk.lock_request({**_call("x", ["shape:p"]), "fallback_for": "m"})
-        return a, b, c
-    a, b, c = _with_lang("zh", "", go)
-    assert _shows(b) == _shows(c) == "运输箱" and b["prompt"].count(pk.SHOWS_HEAD) == 1
-
-
-def test_no_card_answer_this_turn_leaves_prompts_alone():
-    reqs = _with_lang("zh", "", lambda: [pk.lock_request(_call(f"p{n}", ["shape:p"])) for n in range(4)])
-    assert [r["prompt"] for r in reqs] == ["p0", "p1", "p2", "p3"]
-
-
-def test_other_cards_record_nothing():
-    def go():
-        assert pk.record_card_answer({"questions": [{"id": "ps_shots"}]}, {"ps_shots": {"selected": ["A"]}}) is None
-        return pk.lock_request(_call("p", ["shape:p"]))
-    assert _with_lang("zh", "", go)["prompt"] == "p"
-
-
-def test_ask_user_returns_the_image_plan(monkeypatch):
+def test_ask_user_does_not_return_an_image_plan(monkeypatch):
     from ComfyArt.api.mcp_tools import bot_tools
 
     async def fake_await(chat_id, state, spec):
-        return {"status": "answered", "selected": [], "other_text": "", "answers": _sel("B")}
+        return {"status": "answered", "selected": ["B"], "other_text": "",
+                "answers": {"pk_scope": {"selected": ["B"]}}}
     monkeypatch.setattr(bot_tools, "_await_ask", fake_await)
     monkeypatch.setattr(bot_tools, "bot_turn_state", lambda: ("chat-x", object()))
     out = _with_lang("zh", "", lambda: asyncio.run(bot_tools.ask_user(json.loads(json.dumps(LOVART_CALL)))))
-    assert out["image_plan"][1:] == ["运输箱", "手提袋", "封条/感谢卡"]
-    assert "image_plan" not in _with_lang("zh", "", lambda: asyncio.run(bot_tools.ask_user(
+    assert out["status"] == "answered"
+    assert "image_plan" not in out
+    other = _with_lang("zh", "", lambda: asyncio.run(bot_tools.ask_user(
         {"questions": [{"id": "x", "prompt": "随便问问？", "options": _opts(["a", "b"])}]})))
+    assert "image_plan" not in other
 
 
-# --- _LOCKS only holds live turns (Tech) ----------------------------------------------------------
-
-def test_locks_drop_ended_and_replaced_turns():
-    pk._LOCKS.clear()
-    chats = [paid_guard.noturn_key(f"pk-lock-{n}") for n in range(3)]
-    for c in chats:  # three turns that start, use the hook, then end
-        token = GUARD_CHAT_ID.set(c)
-        try:
-            paid_guard.begin_turn(c, text="", provider_text="", lang="zh")
-            pk.lock_request(_call("p", ["shape:p"]))
-            assert c in pk._LOCKS
-            paid_guard.end_turn(c)
-        finally:
-            GUARD_CHAT_ID.reset(token)
-    _with_lang("zh", "", lambda: pk.lock_request(_call("p", ["shape:p"])))
-    assert not any(c in pk._LOCKS for c in chats)  # ended turns are gone
-    assert len(pk._LOCKS) <= 1
-    # Same chat, new turn: the old entry is replaced, not kept beside it.
-    c = paid_guard.noturn_key("pk-lock-same")
-    token = GUARD_CHAT_ID.set(c)
-    try:
-        g1 = paid_guard.begin_turn(c, text="", provider_text="", lang="zh")
-        pk.lock_request(_call("p", ["shape:p"]))
-        g2 = paid_guard.begin_turn(c, text="", provider_text="", lang="zh")
-        out = pk.lock_request(_call("p", ["shape:p"]))
-        assert out["ratio"] == "3:4" and pk._LOCKS[c]["guard"] is g2 is not g1
-        assert sum(1 for lk in pk._LOCKS.values() if lk["guard"] in (g1, g2)) == 1
-    finally:
-        GUARD_CHAT_ID.reset(token)
-        paid_guard.TURNS.pop(c, None)
-
-
-# --- more than three scopes with A: the anchor is A (Product, 22:25) ------------------------------
-
-@pytest.mark.parametrize("answers,anchor,expected", [
-    # A+B+C+D (any click order): anchor A, then B / C / D, no A+D squeeze.
-    (_sel("D", "C", "B", "A"), "外盒; 瓶标; 内托",
-     ["运输箱; 手提袋; 封条/感谢卡", "同系列多支 / 多香型陈列", "标注尺寸的结构的构图纸; 平面刀版稿"]),
-    # A+B+C+D + free text: anchor A; B, C, D, E round-robin over images 2-4 (E shares image 2 with B).
-    (_sel("A", "B", "C", "D", other="金属礼盒"), "外盒; 瓶标; 内托",
-     ["运输箱; 手提袋; 封条/感谢卡; 金属礼盒", "同系列多支 / 多香型陈列", "标注尺寸的结构的构图纸; 平面刀版稿"]),
-    # A+B+C + free text (4 scopes incl. E): anchor A, then B / C / E.
-    (_sel("A", "B", "C", other="金属礼盒"), "外盒; 瓶标; 内托",
-     ["运输箱; 手提袋; 封条/感谢卡", "同系列多支 / 多香型陈列", "金属礼盒"]),
-])
-def test_more_than_three_scopes_with_a_put_a_on_the_anchor(answers, anchor, expected):
-    plan, reqs = _answered_turn(answers)
-    assert [r["ratio"] for r in reqs] == ["3:4", "4:3", "4:3", "4:3"]
-    assert _shows(reqs[0]) == anchor
-    assert [_shows(r) for r in reqs[1:]] == expected
-    assert plan[0] == f"{pk.ANCHOR_PLAN}; it shows {anchor}" and plan[1:] == expected
-    assert reqs[0]["prompt"].startswith("image 1")
-
-
-def test_more_than_three_scopes_without_a_keep_the_anchor_free():
-    """B+C+D + free text: no A, so the anchor has no scope line; the four share images 2-4 round-robin."""
-    plan, reqs = _answered_turn(_sel("B", "C", "D", other="金属礼盒"))
-    assert _shows(reqs[0]) is None and plan[0] == pk.ANCHOR_PLAN
-    assert [_shows(r) for r in reqs[1:]] == ["运输箱; 手提袋; 封条/感谢卡; 金属礼盒", "同系列多支 / 多香型陈列",
-                                            "标注尺寸的结构的构图纸; 平面刀版稿"]
-
-
-def test_skill_text_puts_a_on_the_anchor_for_all_four():
+def test_product_packaging_director_module_is_absent():
+    assert not (ROOT / "api" / "product_packaging.py").exists()
+    for rel in (
+        "api/mcp_tools/canvas.py",
+        "api/mcp_tools/bot_tools.py",
+        "bot/plan_quote.py",
+        "api/skill_param_guard.py",
+        "bot/local_llm.py",
+    ):
+        text = (ROOT / rel).read_text(encoding="utf-8")
+        assert "product_packaging" not in text, rel
     instr = _instructions()
-    assert "More than three scopes with A among them: image 1, the anchor, is A" in instr
-    assert "A+B+C+D is A / B / C / D" in instr
+    hint = run_hint("product-to-packaging")
+    for blob in (instr, hint):
+        assert "image_plan" not in blob
+        assert "call generate_image exactly" not in blob.lower()
+        assert "This image shows:" not in blob

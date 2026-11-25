@@ -50,6 +50,27 @@ BRAND_PRESETS_979: dict[str, dict] = {
     "foodbev": {"name": "Pet Supplies / 宠物用品"},
     "pet": {"name": "Home & Lifestyle / 家居生活"},
 }
+# product-to-packaging is a brief plus this contract: one 3:4 anchor and up to
+# three optional 4:3 extensions. A scope answer may omit extension slots.
+# Extensions ref the placed anchor. The server fills an omitted ratio from this
+# order and refuses any other ratio. It does not pick the tool or the call count.
+PRODUCT_PACKAGING_SLOTS: tuple[dict, ...] = (
+    {
+        "id": "anchor",
+        "width": 1536, "height": 2048, "ratio": "3:4", "images": 1,
+        "role": "anchor",
+        "refs": "the uploaded product photo",
+    },
+    {
+        "id": "extension",
+        "width": 2048, "height": 1536, "ratio": "4:3", "images": 3,
+        "optional": True,
+        "role": "extension",
+        "refs": "the uploaded product photo, then the placed anchor",
+        "ref_slot": "anchor",
+        "ref_index": 1,
+    },
+)
 PACKAGING_PRESETS_979: dict[str, dict] = {
     "eco": {
         "width": 1536, "height": 2048, "ratio": "3:4", "images": 1,
@@ -349,6 +370,17 @@ OUTPUTS: dict[str, dict] = {
         "presets": PACKAGING_PRESETS_979,
         "names": ("packaging-design-director", "品牌包装设计系统",
                   "Brand Packaging Design System"),
+    },
+    # Flat fields are the anchor slot. Extension slots are optional (a scope
+    # answer may drop them) and ref the placed anchor. The Sunburst pin is
+    # separate and is not set here.
+    "product-to-packaging": {
+        "width": 1536, "height": 2048, "ratio": "3:4", "images": 4,
+        "images_min": 1, "images_max": 4,
+        "slots": PRODUCT_PACKAGING_SLOTS,
+        "require_product_ref": True,
+        "card_ids": ("pk_product", "pk_color", "pk_scope"),
+        "names": ("product-to-packaging", "产品到包装系统", "Product-to-Packaging System"),
     },
 }
 OUTPUTS.update(TYPE_OUTPUTS_982)
@@ -759,8 +791,200 @@ def ref_ratio(sid: str, data: bytes | None) -> str | None:
     return _nearest(list(table), size[0] / size[1])
 
 
+# Omitted-ratio fill only. A quote passes an explicit position and does not
+# touch the cursor. A real submit that omits ratio takes the next contract slot
+# (anchor, then extensions). This is not a call script and does not rewrite prompts.
+_SLOT_CURSOR: dict[tuple[str, str, int], int] = {}
+# (chat id, id of the current turn guard) -> holders and placed shapes for that turn only.
+# A new guard on the same chat drops the previous turn, same as _SLOT_CURSOR.
+_SLOT_PLACED: dict[tuple[str, int], dict] = {}
+
+
+def reset_slot_state() -> None:
+    _SLOT_CURSOR.clear()
+    _SLOT_PLACED.clear()
+
+
+def slot_rows(sid: str | None) -> list[dict]:
+    if not sid:
+        return []
+    return list((OUTPUTS.get(sid) or {}).get("slots") or [])
+
+
+def slot_at(slots: list[dict], position: int) -> dict:
+    """Contract slot for a 0-based image in the default order. Later images share the extension slot."""
+    position = max(0, int(position))
+    if position <= 0 or len(slots) == 1:
+        return slots[0]
+    exts = [s for s in slots if s.get("ref_slot") or s.get("optional") or s.get("role") == "extension"]
+    if not exts:
+        return slots[min(position, len(slots) - 1)]
+    if len(exts) == 1:
+        return exts[0]
+    return exts[min(position - 1, len(exts) - 1)]
+
+
+def _turn_key(sid: str) -> tuple[str, str, int]:
+    from ..api.paid_guard import TURNS, resolve_guard_chat_id
+    chat = resolve_guard_chat_id()
+    guard = TURNS.get(chat)
+    key = (sid, chat, id(guard) if guard is not None else 0)
+    for stale in [k for k in _SLOT_CURSOR if k[0] == sid and k[1] == chat and k != key]:
+        del _SLOT_CURSOR[stale]
+    return key
+
+
+def _placed_book(chat: str | None = None) -> dict:
+    """This turn's placed-slot book. A replaced guard drops the previous turn's book."""
+    from ..api.paid_guard import TURNS, resolve_guard_chat_id
+    chat_id = resolve_guard_chat_id() if chat is None else chat
+    guard = TURNS.get(chat_id)
+    key = (chat_id, id(guard) if guard is not None else 0)
+    for stale in [k for k in _SLOT_PLACED if k[0] == chat_id and k != key]:
+        del _SLOT_PLACED[stale]
+    return _SLOT_PLACED.setdefault(key, {"holders": {}, "placed": {}})
+
+
+def _slot_ratio_refusal(sid: str, ratio: str) -> dict:
+    allowed = ", ".join(str(s.get("ratio")) for s in slot_rows(sid) if s.get("ratio"))
+    message = (
+        f"比例 {ratio} 不在 {sid} 的输出约定里，未提交；请使用 {allowed}。"
+        f" / Ratio {ratio} is not in the {sid} output contract; nothing submitted. Use {allowed}."
+    )
+    return {
+        "status": "failed", "submitted": False, "generation_succeeded": False, "charged": False,
+        "kind": "outputContractRatio", "error": message, "user_message": message, "note": message,
+    }
+
+
+def fill_contract_slot(args: dict | None, *, position: int | None = None,
+                       advance: bool = False, retry: bool = False) -> dict:
+    """Fill ratio, pixels and count from the skill's output slots.
+
+    An explicit ratio must name a slot. An omitted ratio uses `position` when
+    the caller has one (a quote), otherwise the next slot of this turn.
+    Prompts and refs are left as the caller passed them.
+    """
+    args = dict(args or {})
+    sid = resolve(args.get("skill"))
+    slots = slot_rows(sid)
+    if not sid or not slots:
+        return args
+    args["skill"] = sid
+    ratio = str(args.get("ratio") or "").strip()
+    if ratio:
+        chosen = next((s for s in slots if str(s.get("ratio")) == ratio), None)
+        if chosen is None:
+            args[RATIO_REFUSAL_994] = _slot_ratio_refusal(sid, ratio)
+            return args
+    else:
+        if position is None:
+            key = _turn_key(sid)
+            current = _SLOT_CURSOR.get(key, 0)
+            if retry:
+                position = max(0, current - 1) if current else 0
+            else:
+                position = current
+                if advance:
+                    _SLOT_CURSOR[key] = current + 1
+        chosen = slot_at(slots, int(position))
+    args["ratio"] = chosen.get("ratio")
+    args["width"] = int(chosen["width"])
+    args["height"] = int(chosen["height"])
+    args["count"] = 1
+    args["size_lock"] = True
+    # The Sunburst pin fills 2k from the ratio only when no resolution was passed.
+    for key in ("resolution", "edit_resolution", "size"):
+        args.pop(key, None)
+    return args
+
+
+def contract_ref_index(args: dict | None, plan_position: int | None = None) -> int | None:
+    """Ref index that a quote compares as "the shape wait_generation placed", or None.
+
+    The anchor slot is strict. An extension slot's declared ref index is the
+    placed image of `ref_slot`. A call whose ref count is not that slot's is strict.
+    """
+    args = args or {}
+    sid = resolve(args.get("skill"))
+    slots = slot_rows(sid)
+    if not slots:
+        return None
+    ratio = str(args.get("ratio") or "").strip()
+    if ratio:
+        named = next((s for s in slots if str(s.get("ratio")) == ratio), None)
+        if named is None or not named.get("ref_slot"):
+            return None
+        return int(named.get("ref_index", 1))
+    if plan_position is not None and int(plan_position) <= 0:
+        return None
+    refs = args.get("refs")
+    slot = next((s for s in slots if s.get("ref_slot")), None)
+    if not slot or not isinstance(refs, list):
+        return None
+    index = int(slot.get("ref_index", 1))
+    if len(refs) != index + 1:
+        return None
+    return index
+
+
+def note_generated_slot(args: dict | None, result: dict | None) -> None:
+    """Remember the holder id of the anchor slot so a later wait can bind its placed shape."""
+    args = args or {}
+    sid = resolve(args.get("skill"))
+    slots = slot_rows(sid)
+    if not slots or not isinstance(result, dict) or result.get("cancelled"):
+        return
+    ids = result.get("ids") or []
+    if not isinstance(ids, list) or not ids:
+        return
+    ratio = str(args.get("ratio") or "")
+    slot = next((s for s in slots if str(s.get("ratio")) == ratio and not s.get("ref_slot")), None)
+    if slot is None:
+        return
+    book = _placed_book()
+    if any(v == slot["id"] for v in book["holders"].values()):
+        return
+    book["holders"][str(ids[0])] = slot["id"]
+
+
+def note_placed_slots(payload: dict | None) -> None:
+    """Bind a contract slot to the image shape wait_generation placed for its holder."""
+    book = _placed_book()
+    if not isinstance(payload, dict):
+        return
+    for row in payload.get("results") or []:
+        if not isinstance(row, dict):
+            continue
+        slot_id = book["holders"].get(str(row.get("id") or ""))
+        shapes = row.get("shapes") or []
+        if slot_id and isinstance(shapes, list) and shapes:
+            book["placed"][slot_id] = str(shapes[0])
+
+
+def placed_ref_for(chat_id: str, args: dict | None) -> str:
+    """The placed shape an extension slot refs, or "" when this call is not that slot."""
+    args = args or {}
+    sid = resolve(args.get("skill"))
+    slots = slot_rows(sid)
+    slot = next((s for s in slots if s.get("ref_slot")), None)
+    if not slot:
+        return ""
+    ratio = str(args.get("ratio") or "").strip()
+    if ratio and any(str(s.get("ratio")) == ratio and not s.get("ref_slot") for s in slots):
+        return ""
+    refs = args.get("refs")
+    index = int(slot.get("ref_index", 1))
+    if not (isinstance(refs, list) and len(refs) == index + 1):
+        return ""
+    book = _placed_book(chat_id)
+    return str((book.get("placed") or {}).get(slot["ref_slot"]) or "")
+
+
 def apply_generate(args: dict | None, current_skill: str = "", user_text: str | None = None,
-                   ref_image: bytes | None = None, current_preset: str = "") -> dict:
+                   ref_image: bytes | None = None, current_preset: str = "",
+                   *, bind_slots: bool = False, slot_position: int | None = None,
+                   advance_slot: bool = False, slot_retry: bool = False) -> dict:
     """Fill the skill id and its declared pixels.
 
     #982: skills without a declared canvas (and without a registered pin) get the
@@ -813,6 +1037,13 @@ def apply_generate(args: dict | None, current_skill: str = "", user_text: str | 
     row = OUTPUTS[sid]
     if not named:
         args["skill"] = sid
+    # Slotted contracts fill ratio/count on the submit and quote passes only.
+    # The planner pass leaves the call alone so a quote key stays the args the
+    # agent actually planned. Prompts and refs are not rewritten.
+    if row.get("slots"):
+        if not bind_slots:
+            return args
+        return fill_contract_slot(args, position=slot_position, advance=advance_slot, retry=slot_retry)
     # #982: a multi-call default (ratio pack / kit / screens) picks the call by
     # explicit ratio or by the pixels the relay already filled; otherwise call 1.
     call = None
@@ -1037,6 +1268,32 @@ def _video_hint(sid: str, row: dict) -> str:
     )
 
 
+def _slots_hint(sid: str, row: dict) -> str:
+    """Constraints for a slotted deliverable. Does not name a tool sequence or a call count."""
+    parts = []
+    for slot in row.get("slots") or []:
+        n = int(slot.get("images") or 1)
+        role = slot.get("role") or slot.get("id")
+        opt = " Optional: a scope answer may omit this slot." if slot.get("optional") else ""
+        refs = f" Refs: {slot['refs']}." if slot.get("refs") else ""
+        parts.append(
+            f"{role} = {n} at width={int(slot['width'])} height={int(slot['height'])} "
+            f"ratio={slot.get('ratio')}.{opt}{refs}"
+        )
+    lo = int(row.get("images_min", 1))
+    hi = int(row.get("images_max", row["images"]))
+    return (
+        f"Output lock: {sid!r} default deliverable is {int(row['images'])} images "
+        f"(allowed {lo}..{hi}): " + " ".join(parts) + " "
+        f"Each generate_image uses count=1 and skill={sid!r}. "
+        "Omit ratio and the server fills these slots in order (anchor, then extensions); "
+        "any other ratio is refused and nothing is submitted. "
+        "When a product photo was uploaded, pass it in refs; do not drop it and do not switch to text-to-image. "
+        "An extension refs that product photo and the placed anchor. "
+        "A paid generate still needs the quote card."
+    )
+
+
 def _run_hint_declared(name: object, user_text: str = "", ref_image: bytes | None = None,
                        preset_id: str = "") -> str:
     """One line appended to the skill-start user text. Empty when the skill has no declared size.
@@ -1072,6 +1329,8 @@ def _run_hint_declared(name: object, user_text: str = "", ref_image: bytes | Non
             "No final before the composition answer. No fixed output count; no repeated paid calls on resume."
         )
     row = OUTPUTS[sid]
+    if row.get("slots"):
+        return _slots_hint(sid, row)
     if sid in TYPE_OUTPUTS_982:
         requested = requested_ratio_994(user_text)
         if requested:

@@ -169,7 +169,7 @@ VIDEO_STILL = {
 # (#708/#911/#912); a separate gap card covers their product defaults.
 PINNED_MISSING = [
     "cover-design-director", "studio-model", "youtube-channel-banner",
-    "ai-model", "product-to-packaging", "portrait-studio",
+    "ai-model", "portrait-studio",
 ]
 
 
@@ -187,12 +187,12 @@ def test_the_typed_table_covers_every_unpinned_missing_skill():
     ids = _builtin_ids()
     declared = set(OUTPUTS)
     assert len(ids) == 49
-    assert len(declared) == 42  # #911 multi-angle is interactive, not a static delivery row
+    assert len(declared) == 43  # #911 multi-angle is interactive; product-to-packaging is a slot contract
     assert [sid for sid in ids if sid not in declared and sid != "universal-multi-angle-grid"] == PINNED_MISSING
-    assert TYPED == set(declared) - {  # 8 existing + 2 (logo/character) + 33 typed
+    assert TYPED == set(declared) - {  # 8 existing + 2 (logo/character) + 33 typed + packaging slots
         "before-after", "universal-multi-angle-grid", "pose-fission", "game-art",
         "linkedin-banner", "clothing-swap", "brand-identity-director",
-        "packaging-design-director", LOGO, CHARACTER,
+        "packaging-design-director", "product-to-packaging", LOGO, CHARACTER,
     }
     assert CALL_PLAN_SKILLS == set(CALLS)
     assert VIDEO_SKILLS == VIDEO
@@ -551,6 +551,8 @@ def test_ts_and_python_typed_rows_agree():
         assert got.get("provisional") == row.get("provisional"), sid
         assert got.get("images_min") == row.get("images_min"), sid
         assert got.get("images_max") == row.get("images_max"), sid
+        py_slots = list(row["slots"]) if row.get("slots") else None
+        assert got.get("slots") == py_slots, sid
         assert got.get("lock") == row.get("lock"), sid
         assert tuple(got.get("materials") or ()) == tuple(row.get("materials") or ()), sid
     assert [p["id"] for p in js["presets"]["character"]] == list(CHARACTER_EXPECTED)

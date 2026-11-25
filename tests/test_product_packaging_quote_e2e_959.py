@@ -381,8 +381,9 @@ async def test_fullapp_quote_card_then_four_real_submits(app_url, mock_ws, local
             quote = state["quote"]
             assert quote is not None and quote.total == 0.29, quote
             assert [line.amount for line in quote.lines] == [0.05, 0.08, 0.08, 0.08]
-            assert [r["inputs"]["image_index"] for r in state["routed"]] == [1, 2, 3, 4]
+            assert [r["position"] for r in state["routed"]] == [0, 1, 2, 3]
             assert [r["inputs"]["ratio"] for r in state["routed"]] == ["3:4", "4:3", "4:3", "4:3"]
+            assert all("image_index" not in r["inputs"] and "image_role" not in r["inputs"] for r in state["routed"])
             assert all(r["model"] == SUNBURST_EDIT for r in state["routed"]), state["routed"]
             # What the supplier received (mock): the quote's per-image plan, not the placeholder.
             payloads = [body for _model, body in mock_ws["submits"]]
@@ -407,7 +408,7 @@ async def test_fullapp_quote_card_then_four_real_submits(app_url, mock_ws, local
             for i, (routed, line) in enumerate(zip(state["routed"], quote.lines)):
                 payload = by_prompt[routed["inputs"]["prompt"]]
                 table.append({
-                    "image": routed["inputs"]["image_index"], "role": routed["inputs"]["image_role"],
+                    "image": routed["position"] + 1,
                     "quote": {"ratio": routed["inputs"]["ratio"],
                               "resolution": routed["inputs"]["resolution"],
                               "refs": len(routed["inputs"]["images"]),

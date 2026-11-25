@@ -20,16 +20,17 @@ import os
 
 import pytest
 
-from ComfyArt.api import chat_store, mcp, paid_guard, portrait_studio as ps, product_packaging as pk
+from ComfyArt.api import chat_store, mcp, paid_guard, portrait_studio as ps
 from ComfyArt.api import skill_param_guard as guard
 from ComfyArt.api.auto_models import skill_pin
 from ComfyArt.api.mcp_tools import canvas
 from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID, GUARD_CHAT_ID
 from ComfyArt.bot.local_llm import _PLAN_REFUSE, _PlanGate, LocalLlmProvider
 from ComfyArt.bot.plan_quote import build_quote
+from ComfyArt.bot.skill_output import reset_slot_state
 from tests.test_agent_budget_391 import Rig, calls, reply
 
-SKILL = pk.SKILL
+SKILL = "product-to-packaging"
 PRODUCT = "/api/view?filename=product-959.png&type=input"
 ANCHOR_PLAN = "shape:anchor-planned"   # plan placeholder: the anchor does not exist when the quote runs
 ANCHOR_HOLDER = "shape:anchor-holder-959"  # the anchor generator shape returned by generate_image
@@ -45,11 +46,11 @@ MOCK_UNIT = {"3:4": 0.03, "4:3": 0.05}
 MOCK_2K = 0.02
 MOCK_REF = 0.01
 
-EXPECTED = [  # one row per image: index, role, ratio, resolution, refs, mock price
-    (1, pk.ANCHOR_ROLE, "3:4", "2k", 1, 0.05),
-    (2, pk.EXTENSION_ROLE, "4:3", "2k", 2, 0.08),
-    (3, pk.EXTENSION_ROLE, "4:3", "2k", 2, 0.08),
-    (4, pk.EXTENSION_ROLE, "4:3", "2k", 2, 0.08),
+EXPECTED = [  # one row per image: index, ratio, resolution, refs, mock price
+    (1, "3:4", "2k", 1, 0.05),
+    (2, "4:3", "2k", 2, 0.08),
+    (3, "4:3", "2k", 2, 0.08),
+    (4, "4:3", "2k", 2, 0.08),
 ]
 
 SENT: list[tuple[str, dict]] = []
@@ -75,7 +76,7 @@ def _isolate():
     saved = {k: os.environ.pop(k, None) for k in keys}
     turns = dict(paid_guard.TURNS)
     locks_ps = _freeze(ps._LOCKS)
-    locks_pk = _freeze(pk._LOCKS)
+    reset_slot_state()
     SENT.clear()
     try:
         yield
@@ -85,8 +86,7 @@ def _isolate():
                 paid_guard.TURNS.pop(k, None)
         ps._LOCKS.clear()
         ps._LOCKS.update(locks_ps)
-        pk._LOCKS.clear()
-        pk._LOCKS.update(locks_pk)
+        reset_slot_state()
         for k, v in saved.items():
             if v is not None:
                 os.environ[k] = v
@@ -126,19 +126,15 @@ def _chat():
                "pk_scope": {"selected": ["A"]}}
     chat_store.create_message(chat_id=chat["id"], role="assistant", blocks=[{
         "type": "ask", "status": "answered", "ask_id": "a-pk-959",
-        "questions": pk.card_questions(None, "zh"),
+        "questions": [
+            {"id": "pk_product", "prompt": "这款产品具体是什么？品牌名/产品名怎么定"},
+            {"id": "pk_color", "prompt": "包装的主色方向选哪个？"},
+            {"id": "pk_scope", "prompt": "这套包装要交付到哪个范围？（可多选）",
+             "options": [{"id": "A", "label": "核心三件：外盒 ＋ 瓶标 ＋ 内托"}]},
+        ],
         "answers": answers,
     }])
     return chat, answers
-
-
-def _seed(chat_id: str, answers: dict) -> None:
-    """The card was answered this turn: the extension images follow its Q3 scopes."""
-    token = BOT_CHAT_ID.set(chat_id)
-    try:
-        pk.record_card_answer(pk.card_spec(None, "zh"), answers)
-    finally:
-        BOT_CHAT_ID.reset(token)
 
 
 def _steps() -> list[dict]:
@@ -253,7 +249,6 @@ def _preview(chat_id: str, steps: list[dict]) -> list[dict]:
 
 def test_quote_plan_equals_the_actual_submit_for_all_four_images(relay):
     chat, answers = _chat()
-    _seed(chat["id"], answers)
     steps = _steps()
     preview = _preview(chat["id"], steps)
     quote, routed, priced = _quote(chat["id"], steps)
@@ -261,19 +256,20 @@ def test_quote_plan_equals_the_actual_submit_for_all_four_images(relay):
     assert quote is not None and len(quote.lines) == 4
     assert [r["position"] for r in routed] == [0, 1, 2, 3]
     # The old #959 defect: four previews all image 1 at 3:4/1k, $0.15 vs $0.29 actual.
-    assert [r["inputs"]["image_index"] for r in routed] == [1, 2, 3, 4]
-    assert quote.total == round(sum(row[5] for row in EXPECTED), 4) == 0.29
+    assert [r["inputs"]["ratio"] for r in routed] == ["3:4", "4:3", "4:3", "4:3"]
+    assert all("image_index" not in r["inputs"] for r in routed)
+    assert quote.total == round(sum(row[4] for row in EXPECTED), 4) == 0.29
     assert quote.total == round(sum(line.amount for line in quote.lines), 4)
 
     _execute(chat["id"], _actual_calls())
     assert [action for action, _ in SENT] == ["generate_image"] * 4
 
-    for i, (index, role, ratio, resolution, refs, price) in enumerate(EXPECTED):
+    for i, (index, ratio, resolution, refs, price) in enumerate(EXPECTED):
         got = routed[i]["inputs"]
         sent = SENT[i][1]
-        # --- preview plan: index / role / aspect / resolution / refs / model / price ---
+        # --- quote and submit: aspect / resolution / refs / model / price ---
         assert routed[i]["model"] == SUNBURST_EDIT and routed[i]["model"] == sent.get("edit_model")
-        assert (got["image_index"], got["image_role"]) == (index, role)
+        assert "image_index" not in got and "image_role" not in got
         assert (got["ratio"], got["resolution"]) == (ratio, resolution)
         assert len(got["images"]) == refs
         assert (priced[i][0], priced[i][1]["ratio"], priced[i][1]["resolution"]) == (SUNBURST_EDIT, ratio, resolution)
@@ -302,16 +298,11 @@ def test_quote_plan_equals_the_actual_submit_for_all_four_images(relay):
 
 def test_preview_does_not_consume_the_real_execution_sequence(relay):
     chat, answers = _chat()
-    _seed(chat["id"], answers)
-    before = _freeze(pk._LOCKS)
 
     first, routed_first, _ = _quote(chat["id"], _steps())
-    assert pk._LOCKS == before, "a quote must not create, advance or rewrite the turn lock"
-    # A repeated quote (the user reopens the card) walks the same plan again, not 5..8.
+    # A repeated quote (the user reopens the card) walks the same plan again, not later slots.
     second, routed_second, _ = _quote(chat["id"], _steps())
-    assert pk._LOCKS == before
-    assert [r["inputs"]["image_index"] for r in routed_first] == [1, 2, 3, 4]
-    assert [r["inputs"]["image_index"] for r in routed_second] == [1, 2, 3, 4]
+    assert [r["inputs"]["ratio"] for r in routed_first] == ["3:4", "4:3", "4:3", "4:3"]
     assert ([r["inputs"]["ratio"] for r in routed_first]
             == [r["inputs"]["ratio"] for r in routed_second] == ["3:4", "4:3", "4:3", "4:3"])
     assert first.total == second.total == 0.29
@@ -325,7 +316,6 @@ def test_preview_does_not_consume_the_real_execution_sequence(relay):
 def test_quote_still_refuses_missing_refs_without_a_price(relay):
     """#958 protection stays: an incomplete packaging call is param_blocked, not priced as t2i."""
     chat, answers = _chat()
-    _seed(chat["id"], answers)
     steps = _steps()
     for step in steps:
         step["arguments"].pop("refs")
@@ -347,7 +337,6 @@ def test_plan_gate_binds_the_placed_anchor_and_stays_strict(relay):
     resolution change are still refused. `paid_key` keeps the strict comparison.
     """
     chat, answers = _chat()
-    _seed(chat["id"], answers)
     quote, _, _ = _quote(chat["id"], _steps())
     assert quote is not None
     actual = _actual_calls()
@@ -407,6 +396,55 @@ def test_plan_gate_binds_the_placed_anchor_and_stays_strict(relay):
     assert (canon_key("generate_image", actual[1], plan=True, plan_position=1)
             == canon_key("generate_image", {**actual[1], "refs": [PRODUCT, "shape:any"]},
                          plan=True, plan_position=1))
+
+
+def test_same_chat_second_turn_binds_the_new_anchor(relay, monkeypatch):
+    """A new turn guard on the same chat must not keep the previous run's placed anchor.
+
+    The first run places one anchor. The second run, under a new guard, places another.
+    placed_ref_for is the new shape, and only an extension of that shape passes the plan gate.
+    """
+    chat, _answers = _chat()
+    quote, _, _ = _quote(chat["id"], _steps())
+    assert quote is not None
+    gate = _PlanGate(chat["id"])
+    gate.allow(quote, True)
+    shapes = {"h1": "shape:anchor-run-1", "h2": "shape:anchor-run-2"}
+    turn = {"holder": "h1"}
+
+    async def submit(action, args, project, timeout, chat=""):
+        if action == "wait_generation":
+            waited = str((args.get("ids") or [""])[0])
+            shape = shapes.get(waited, "")
+            return {"status": "done", "results": [{
+                "id": waited, "status": "done", "placed": True,
+                "generation_succeeded": True, "delivered": 1,
+                "shapes": [shape] if shape else []}]}
+        return {"ids": [turn["holder"]], "submitted": True,
+                "model": args.get("edit_model") or args.get("model")}
+
+    monkeypatch.setattr(canvas, "submit_command", submit)
+    anchor_args = _steps()[0]["arguments"]
+    ext_prompt = _steps()[1]["arguments"]["prompt"]
+
+    def place(holder: str) -> None:
+        turn["holder"] = holder
+        paid_guard.begin_turn(chat["id"], text="", provider_text="", lang="zh")
+        _execute(chat["id"], [dict(anchor_args)])
+        _wait(chat["id"], [holder])
+
+    from ComfyArt.bot.skill_output import placed_ref_for
+
+    place("h1")
+    first = {"prompt": ext_prompt, "skill": SKILL, "refs": [PRODUCT, shapes["h1"]], "count": 1}
+    assert placed_ref_for(chat["id"], first) == shapes["h1"]
+    assert gate.blocks("generate_image", first) is False
+
+    place("h2")
+    second = {"prompt": ext_prompt, "skill": SKILL, "refs": [PRODUCT, shapes["h2"]], "count": 1}
+    assert placed_ref_for(chat["id"], second) == shapes["h2"]
+    assert gate.blocks("generate_image", second) is False
+    assert gate.blocks("generate_image", first) is True
 
 
 def test_agent_loop_plan_gate_submits_all_four_with_the_real_anchor(monkeypatch):
@@ -529,12 +567,12 @@ def test_agent_loop_plan_gate_submits_all_four_with_the_real_anchor(monkeypatch)
             assert refuse not in text, text
     assert res.error is None or "quote_plan" not in str(res.error)
 
-    for i, (index, role, ratio, resolution, refs, price) in enumerate(EXPECTED):
+    for i, (index, ratio, resolution, refs, price) in enumerate(EXPECTED):
         routed = captured["routed"][i]
         got = routed["inputs"]
         submitted = sent[i]
         assert routed["position"] == i
-        assert (got["image_index"], got["image_role"]) == (index, role)
+        assert "image_index" not in got and "image_role" not in got
         assert (got["ratio"], got["resolution"]) == (ratio, resolution) == (submitted["ratio"], submitted["edit_resolution"])
         assert len(got["images"]) == refs == len(submitted["refs"])
         assert routed["model"] == submitted["edit_model"] == SUNBURST_EDIT
