@@ -3,10 +3,25 @@ from __future__ import annotations
 import os
 import json
 
+import pytest
+
 from ComfyArt.bot import lms
 from ComfyArt.bot.guide import CORE_MCP_TOOLS
 from ComfyArt.bot.local_llm import LocalLlmProvider, _user_content
 from ComfyArt.bot.providers import BotEvent, TurnHandle, TurnRequest
+from test_agent_budget_391 import pin_offline_plan_quote
+
+
+@pytest.fixture(autouse=True)
+def _official_plan_quote(monkeypatch):
+    """Loop-guard and retry tests are not the price gate. Same official $0 quote as pin_offline_plan_quote."""
+    real_init = LocalLlmProvider.__init__
+
+    def init(self, *args, **kwargs):
+        real_init(self, *args, **kwargs)
+        pin_offline_plan_quote(monkeypatch, self)
+
+    monkeypatch.setattr(LocalLlmProvider, "__init__", init)
 
 
 class TestConfig:

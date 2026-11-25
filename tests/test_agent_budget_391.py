@@ -30,13 +30,29 @@ def pin_offline_plan_quote(monkeypatch, provider) -> None:
     Production ``_price_one`` still calls ``quote_detail`` and still raises without a
     key. Production ``_confirm_plan`` is left on the class. A known 0 stays under the
     confirm line, so a test that passes ``prices`` to the per-call gate is what asks
-    or declines. Brand and multi-angle stages still force their own cards.
+    or declines. Brand and multi-angle stages still force their own cards. A step the
+    router cannot place is given a stand-in model so it is this quote, not the
+    dearest-model estimate.
     """
 
     async def price(model, inputs):
         return (0.0, "quote", "test-offline")
 
     monkeypatch.setattr(provider, "_price_one", price)
+    # A step the router cannot place never calls `_price_one`: it is priced as the
+    # dearest catalog row and labeled estimate. Give it a model so this official
+    # quote is the price. A real route, including a param block, is left as-is.
+    real_route = provider._quote_route
+
+    def route(tool, args, position=0):
+        routed = real_route(tool, args, position)
+        if isinstance(routed, tuple) and routed[0]:
+            return routed
+        if isinstance(routed, tuple) and (routed[1] or {}).get("param_blocked"):
+            return routed
+        return ("test/offline-quote", {})
+
+    monkeypatch.setattr(provider, "_quote_route", route)
 
 
 def calls(*items):
@@ -125,6 +141,9 @@ class Rig:
             self.confirms.append((name, p, left))
             return confirm
         mon.setattr(self.p, "_confirm_over_quote", ask)
+        # Plan quote is not what these tests cover. An official $0 quote stays under the
+        # line, so the per-call gate (`prices` / `_confirm_over_quote`) is unchanged.
+        pin_offline_plan_quote(mon, self.p)
 
     async def send(self, text="画一张猫", *, goal=None, mode="interactive", resume=None, lease=None, handle=None):
         events: list[BotEvent] = []

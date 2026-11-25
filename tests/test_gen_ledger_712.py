@@ -8,6 +8,27 @@ from ComfyArt.api import gen_ledger, wavespeed
 from test_wavespeed import ws  # noqa: F401  (mocked WaveSpeed API)
 
 MODEL = "wavespeed-ai/minimax-h3/text-to-video"
+
+
+class _ExactPrices(dict):
+    """A model with no override is an official $0.03 quote. An explicit value, including None, is kept."""
+
+    def __contains__(self, key):
+        return True
+
+    def __getitem__(self, key):
+        if super().__contains__(key):
+            return super().__getitem__(key)
+        return 0.03
+
+
+@pytest.fixture(autouse=True)
+def official_exact_quote(request):
+    """These tests cover the ledger, not the price gate. /price stays an official quote."""
+    if "ws" not in request.fixturenames:
+        return
+    state = request.getfixturevalue("ws")
+    state["prices"] = _ExactPrices(state["prices"])
 BODY = {"feature": "text_to_video", "model": MODEL, "prompt": "x", "duration": 5, "confirmed": True}
 
 

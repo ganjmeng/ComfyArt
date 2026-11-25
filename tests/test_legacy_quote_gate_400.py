@@ -19,6 +19,7 @@ import pytest
 from ComfyArt.bot.local_llm import LocalLlmProvider
 from ComfyArt.bot.providers import BotEvent, TurnHandle, TurnRequest
 from ComfyArt.bot.run_budget import resolve_policy
+from test_agent_budget_391 import pin_offline_plan_quote
 
 
 def _tc(i, name, args):
@@ -77,6 +78,9 @@ class LegacyRig:
             self.confirms.append((name, p, left))
             return confirm
         monkeypatch.setattr(self.p, "_confirm_over_quote", ask)
+        # These tests cover the legacy per-call gate, not the plan-quote card. None of them
+        # assert that confirmed=True skips pricing, so the plan quote is an official $0 quote.
+        pin_offline_plan_quote(monkeypatch, self.p)
 
     async def send(self, text="画一张猫"):
         events: list[BotEvent] = []
