@@ -578,6 +578,10 @@ BRAND_QUOTE_LOCALE = {
         "jobs.requote": "重新取价",
         "jobs.quoteDeadline": "报价 10 分钟内有效，截止 {0}（北京时间）",
         "jobs.quoteRequoted": "已重新取价，此报价已失效",
+        "jobs.brandTemplateTitle": "{stage} 阶段 · {name}模板",
+        "jobs.brandTemplateExtraMoodboard": "额外一张，不替换情绪板",
+        "jobs.brandTemplateExtraLogos": "额外一张，不替换方向 A/B/C",
+        "jobs.brandTemplateExtraFinals": "额外一张，不替换成稿物料",
     },
     "en": {
         "jobs.quoteExpired": "This quote has expired. Request a new price.",
@@ -586,6 +590,10 @@ BRAND_QUOTE_LOCALE = {
         "jobs.requote": "Request a new price",
         "jobs.quoteDeadline": "This quote is valid for 10 minutes, until {0} (Beijing time).",
         "jobs.quoteRequoted": "A new price was requested. This quote is no longer valid.",
+        "jobs.brandTemplateTitle": "{stage} stage · {name} template",
+        "jobs.brandTemplateExtraMoodboard": "One extra image. It does not replace the moodboard.",
+        "jobs.brandTemplateExtraLogos": "One extra image. It does not replace directions A/B/C.",
+        "jobs.brandTemplateExtraFinals": "One extra image. It does not replace the final deliverables.",
     },
 }
 LOCALE_EXTRAS = {
