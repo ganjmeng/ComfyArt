@@ -57,7 +57,7 @@ async def price_api(monkeypatch):
     async def price(request):
         body = await request.json()
         state["bodies"].append(body)
-        return web.json_response(state["reply"])
+        return web.json_response(state["reply"], status=state.get("status", 200))
 
     async def submit(request):
         state["submits"].append((request.match_info["model"], await request.json()))
@@ -198,3 +198,39 @@ async def test_estimate_from_a_failed_price_is_not_a_real_quote(price_api, monke
     assert card.lines[0].source != SOURCE_QUOTE
     assert card.lines[0].approx
     assert wavespeed._quotes == {}
+
+
+@pytest.mark.parametrize("code", [4005, 4006, 4007])
+async def test_rejecting_price_codes_are_unpriced_not_an_estimate(price_api, code):
+    price_api["status"] = 400
+    price_api["reply"] = {"code": code, "message": "price failed"}
+    wavespeed._quotes.clear()
+    price, source, reason = await wavespeed.quote_detail(FLARE, {"prompt": f"reject {code}"})
+    assert gif_image.documented_usd(FLARE) is not None
+    assert (price, source, reason) == (None, "unpriced", f"price_error_{code}")
+    assert len(price_api["bodies"]) == 1
+    assert wavespeed._quotes == {}
+
+
+async def test_other_client_errors_keep_the_list_price_estimate(price_api):
+    price_api["status"] = 400
+    price_api["reply"] = {"code": 400, "message": "bad request"}
+    wavespeed._quotes.clear()
+    price, source, reason = await wavespeed.quote_detail(FLARE, {"prompt": "plain 400"})
+    assert (source, reason) == ("estimate", "list_price")
+    assert price == pytest.approx(gif_image.documented_usd(FLARE))
+    assert wavespeed._quotes == {}
+
+
+async def test_price_input_carries_the_billed_edit_fields(price_api, monkeypatch):
+    priced = {"prompt": "edit", "images": ["https://x/a.png", "https://x/b.png"],
+              "mask_image": "https://x/m.png", "resolution": "2k", "quality": "high"}
+
+    async def same(_model, inputs):
+        return dict(inputs)
+
+    monkeypatch.setattr(wavespeed, "priced_inputs", same)
+    await wavespeed.quote_detail(gif_image.FLARE_EDIT, priced)
+    sent = price_api["bodies"][-1]["input"]
+    for key in ("images", "mask_image", "resolution", "quality"):
+        assert sent[key] == priced[key]
