@@ -76,6 +76,11 @@ _PROMPT_ONE = {
     "zh": "这次生成预计约 {total} 积分，达到了你设置的 {threshold} 积分确认线。确定开始吗？",
     "en": "This generation will cost about {total} credits, at or above your {threshold} credits confirm limit. Start?",
 }
+# Official below-line brand template card only. Other cards keep _PROMPT_ONE.
+_BRAND_TEMPLATE_UNDER = {
+    "zh": "这次生成 {total} 积分。品牌阶段每次生成都需要你确认，确定开始吗？",
+    "en": "This generation is {total} credits. Every generation in the brand stage needs your confirmation. Start now?",
+}
 # #968: an unpriced step forces a confirm card without claiming any amount (never "约 0 积分").
 _PROMPT_UNPRICED = {
     "zh": "这个任务共 {n} 步，价格暂未确定，需要你确认后按实际价格执行。确定开始吗？",
@@ -767,6 +772,12 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
     else:
         prompt = (_PROMPT_ONE if len(lines) == 1 else _PROMPT)[lang].format(
             n=len(lines), total=total_credits, threshold=ui_credits(threshold))
+        # Brand template row, under the line, every row an official quote.
+        # An estimate or unpriced row keeps the sentence above.
+        if (not brand_stage and steps_include_brand_template(prepared)
+                and total < float(threshold) and lines
+                and all(ln.source == SOURCE_QUOTE and not ln.unpriced for ln in lines)):
+            prompt = _BRAND_TEMPLATE_UNDER[lang].format(total=total_credits)
     if any(ln.reason == "list_price" for ln in lines):
         question = "确定开始吗？" if lang == "zh" else "Start?"
         gap = "" if lang == "zh" else " "  # en: "…lower. Start?", never "…lower.Start?"

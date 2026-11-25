@@ -11,6 +11,7 @@ from __future__ import annotations
 from ComfyArt.api import brand_identity as brand
 from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
 from ComfyArt.bot.local_llm import LocalLlmProvider
+from ComfyArt.bot.plan_quote import _PROMPT_ONE, _PROMPT_UNPRICED_ONE, build_quote
 from ComfyArt.bot.skill_output import apply_generate
 from test_agent_budget_391 import Rig, calls, reply
 
@@ -734,3 +735,83 @@ async def test_template_grant_write_failure_is_readable(monkeypatch):
     assert rig.paid_mcp() == []
     assert brand.template_grants() == {}
     assert brand._progress()["phase"] == "logos"
+
+
+def _template_steps():
+    return [{
+        "tool": "generate_image",
+        "model": "acme/poster",
+        "arguments": {
+            "prompt": "one direction",
+            "skill": brand.SKILL,
+            "preset": "geometric",
+        },
+    }]
+
+
+async def _template_quote(source, amount=0.04, *, lang="zh", threshold=0.5):
+    async def pricer(model, inputs):
+        if source == "unpriced":
+            return (None, "unpriced", "test")
+        return (amount, source, "test")
+
+    async def models_for(feature):
+        return []
+
+    return await build_quote(
+        _template_steps(), lang, threshold=threshold, pricer=pricer, models_for=models_for)
+
+
+def _open_logos():
+    brand.reset_for_tests()
+    BOT_CHAT_ID.set("c")
+    _logos_phase()
+
+
+async def test_below_line_official_template_uses_the_new_sentence():
+    """An official under-line template card does not use 约 or the confirm line."""
+    _open_logos()
+    quote = await _template_quote("quote")
+    en = await _template_quote("quote", lang="en")
+    assert quote is not None and en is not None
+    assert quote.prompt == "这次生成 4 积分。品牌阶段每次生成都需要你确认，确定开始吗？"
+    assert en.prompt == (
+        "This generation is 4 credits. Every generation in the brand stage "
+        "needs your confirmation. Start now?")
+    assert "约" not in quote.prompt and "确认线" not in quote.prompt
+    assert quote.price_state == "quote"
+    assert "Logo 阶段 · 几何模板" in quote.lines[0].text
+    assert "额外一张，不替换方向 A/B/C" in quote.lines[0].text
+
+
+async def test_below_line_estimate_template_keeps_the_existing_sentence():
+    _open_logos()
+    quote = await _template_quote("estimate")
+    assert quote is not None
+    assert quote.prompt == _PROMPT_ONE["zh"].format(total=4, threshold=50)
+    assert "品牌阶段每次生成都需要你确认" not in quote.prompt
+
+
+async def test_below_line_unpriced_template_keeps_the_existing_sentence():
+    _open_logos()
+    quote = await _template_quote("unpriced")
+    assert quote is not None
+    assert quote.prompt == _PROMPT_UNPRICED_ONE["zh"].format(n=1)
+    assert "品牌阶段每次生成都需要你确认" not in quote.prompt
+
+
+async def test_single_image_over_the_line_keeps_prompt_one_verbatim():
+    brand.reset_for_tests()
+
+    async def pricer(model, inputs):
+        return (0.60, "quote", "test")
+
+    async def models_for(feature):
+        return []
+
+    quote = await build_quote(
+        [{"tool": "generate_image", "model": "acme/poster", "arguments": {"prompt": "a cat"}}],
+        "zh", threshold=0.5, pricer=pricer, models_for=models_for)
+    assert quote is not None
+    assert quote.prompt == _PROMPT_ONE["zh"].format(total=60, threshold=50)
+    assert quote.prompt == "这次生成预计约 60 积分，达到了你设置的 50 积分确认线。确定开始吗？"
