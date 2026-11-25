@@ -147,32 +147,49 @@ def test_each_slot_prompt_locks_a_different_structure():
         assert "No empty placeholder box" in board["prompt"] and "no X box" in board["prompt"]
         assert "小尺寸 includes the symbol" in board["prompt"]
     spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})
-    headings = ["标识", "色彩", "变体", "字体", "版式", "使用禁忌", "影像与材质"]
+    headings = [
+        "标识 / LOGO", "色彩 / COLOR", "变体 / VARIANTS", "字体 / TYPE",
+        "版式 / LAYOUT", "使用禁忌 / MISUSE", "影像与材质 / IMAGE",
+    ]
     assert "exactly 7 panels" in spec["prompt"]
     assert spec["prompt"].count("exactly 7 panels") == 1
     positions = [spec["prompt"].index(heading) for heading in headings]
     assert positions == sorted(positions)
     for heading in headings:
         assert heading in spec["prompt"], heading
-    for old in ("最小尺寸", "色彩比例", "字体层级", "影像材质"):
+    for old in OLD_SPEC_HEADINGS:
         assert old not in spec["prompt"], old
+    assert "最小使用尺寸" in spec["prompt"]
+    assert "not a separate panel" in spec["prompt"]
+    assert "最小尺寸" not in spec["prompt"].replace("最小使用尺寸", "")
     assert "No heading is repeated" in spec["prompt"]
     assert "one filled layout diagram" in spec["prompt"]
-    assert "carries its full heading" in spec["prompt"] and "wordmark at three sizes" in spec["prompt"]
-    assert "this panel contains no small text at all" in spec["prompt"]
-    assert spec["prompt"].count("no small text at all") == 2
+    assert "full bilingual heading" in spec["prompt"] and "not clipped to 字" in spec["prompt"]
+    assert "hierarchy and annotation density follow the gold" in spec["prompt"]
+    assert "wordmark at three sizes" not in spec["prompt"]
+    assert "no small text at all" not in spec["prompt"]
+    assert "short captions of the same kind as the gold" in spec["prompt"]
     assert "one garbled character is not acceptable" in spec["prompt"]
     assert "moodboard 色彩 cell" in spec["prompt"]
-    assert "no color-name label and no percentage text" in spec["prompt"]
-    assert "Chinese color name" not in spec["prompt"]
-    assert "percentage" not in spec["prompt"].replace("no percentage text", "")
+    assert "each swatch has a Chinese color name, a role, and a percentage" in spec["prompt"]
+    assert "any accent is at most about 5%" in spec["prompt"]
+    assert "do not hardcode a palette" in spec["prompt"]
+    assert "栖木咖啡" not in spec["prompt"]
+    assert "no color-name label" not in spec["prompt"]
+    assert "no percentage text" not in spec["prompt"]
+    assert "ratios are shown only by the width" not in spec["prompt"]
+    assert "Allowed on-card text includes the bilingual headings" in spec["prompt"]
+    assert "a Chinese color name plus a role plus a percentage" in spec["prompt"]
+    assert "short captions on 使用禁忌 / MISUSE and 影像与材质 / IMAGE" in spec["prompt"]
     assert "real Chinese brand name" in spec["prompt"] and "real English brand name" in spec["prompt"]
     assert "character for character" in spec["prompt"]
     assert "Do not drop a character" in spec["prompt"]
     assert "red X" in spec["prompt"]
-    assert "no invented words" in spec["prompt"]
-    assert "no body copy" in spec["prompt"] and "no sample English" in spec["prompt"]
-    assert "uses only those brand colors" in spec["prompt"]
+    assert "Do not write invented body copy" in spec["prompt"]
+    assert "Do not invent English" in spec["prompt"]
+    for banned in ("The only words", "No explanatory caption", "no English subtitle", "不要说明文字", "只能出现这些字", "no sample English", "no invented words"):
+        assert banned not in spec["prompt"], banned
+    assert "uses only the brand colors" in spec["prompt"]
     assert "title, subtitle" not in spec["prompt"]
     assert "#" not in spec["prompt"]
     assert "moodboard 色彩 cell" in hint
@@ -295,8 +312,11 @@ def test_flatten_puts_alpha_on_white_and_leaves_opaque_bytes():
         assert img.getpixel((0, 0)) == (255, 255, 255)
 
 
-SPEC_HEADINGS = ("标识", "色彩", "变体", "字体", "版式", "使用禁忌", "影像与材质")
-OLD_SPEC_HEADINGS = ("最小尺寸", "色彩比例", "字体层级", "影像材质")
+SPEC_HEADINGS = (
+    "标识 / LOGO", "色彩 / COLOR", "变体 / VARIANTS", "字体 / TYPE",
+    "版式 / LAYOUT", "使用禁忌 / MISUSE", "影像与材质 / IMAGE",
+)
+OLD_SPEC_HEADINGS = ("色彩比例", "字体层级", "影像材质", "中英各三档")
 _LOCK_DIRECTIVE = __import__("re").compile(r"\b(?:[A-Z]{2,} +)+LOCK\b")
 
 
@@ -327,10 +347,14 @@ def test_spec_card_is_seven_lovart_panels_and_brand_prompts_have_no_lock_words()
     assert [spec.index(heading) for heading in SPEC_HEADINGS] == sorted(spec.index(heading) for heading in SPEC_HEADINGS)
     for old in OLD_SPEC_HEADINGS:
         assert old not in spec, old
-    assert "carries its full heading" in spec and "wordmark at three sizes" in spec
-    assert spec.count("no small text at all") == 2
-    assert "使用禁忌 (this panel contains no small text at all" in spec
-    assert "影像与材质 (this panel contains no small text at all" in spec
+    assert "最小使用尺寸" in spec and "最小尺寸" not in spec.replace("最小使用尺寸", "")
+    assert "full bilingual heading" in spec and "not clipped to 字" in spec
+    assert "wordmark at three sizes" not in spec
+    assert "no small text at all" not in spec
+    assert "short captions of the same kind as the gold" in spec
+    assert "Allowed on-card text includes the bilingual headings" in spec
+    for banned in ("The only words", "No explanatory caption", "no English subtitle", "不要说明文字", "只能出现这些字"):
+        assert banned not in spec, banned
     assert "one garbled character is not acceptable" in spec
     assert "Do not print an English instruction label." in spec
     logo_c = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C STRUCTURE LOCK C"})["prompt"]
@@ -368,9 +392,17 @@ def test_spec_card_is_seven_lovart_panels_and_brand_prompts_have_no_lock_words()
                 assert heading in assembled, heading
             for old in OLD_SPEC_HEADINGS:
                 assert old not in assembled, old
-            assert "no color-name label and no percentage text" in assembled
-            assert "Chinese color name" not in assembled
-            assert "plus a percentage" not in assembled
+            assert "each swatch has a Chinese color name, a role, and a percentage" in assembled
+            assert "any accent is at most about 5%" in assembled
+            assert "Allowed on-card text includes the bilingual headings" in assembled
+            assert "short captions on 使用禁忌 / MISUSE and 影像与材质 / IMAGE" in assembled
+            assert "no small text at all" not in assembled
+            assert "wordmark at three sizes" not in assembled
+            assert "no color-name label" not in assembled
+            assert "no percentage text" not in assembled
+            assert "ratios are shown only by the width" not in assembled
+            for banned in ("The only words", "No explanatory caption", "no English subtitle", "不要说明文字", "只能出现这些字"):
+                assert banned not in assembled, banned
         if slot == "logo_c":
             assert "cup-shaped" in assembled
             assert "The wordmark appears exactly once per zone." in assembled
@@ -387,16 +419,29 @@ def test_closing_rules_are_in_the_skill_instructions():
     assert "does not state hex values" in skill
     assert "exact values are on the spec card" in skill
     assert "moodboard color cell" in skill
-    assert "no invented words" in skill
-    assert "no body copy" in skill and "cup sleeve" in skill
-    skill_headings = ["标识", "色彩", "变体", "字体", "版式", "使用禁忌", "影像与材质"]
+    assert "each swatch has a Chinese color name, a role, and a percentage" in skill
+    assert "any accent is at most about 5%" in skill
+    assert "no color-name label" not in skill
+    assert "no percentage text" not in skill
+    assert "ratios are shown only by the width" not in skill
+    assert "Do not write invented body copy" in skill and "Do not invent English" in skill
+    assert "cup sleeve" in skill
+    skill_headings = [
+        "标识 / LOGO", "色彩 / COLOR", "变体 / VARIANTS", "字体 / TYPE",
+        "版式 / LAYOUT", "使用禁忌 / MISUSE", "影像与材质 / IMAGE",
+    ]
     assert "exactly 7 panels" in skill
     assert [skill.index(heading) for heading in skill_headings] == sorted(skill.index(heading) for heading in skill_headings)
     for old in OLD_SPEC_HEADINGS:
         assert old not in skill, old
-    assert "no small text at all" in skill and "one garbled character is not acceptable" in skill
+    assert "最小使用尺寸" in skill and "最小尺寸" not in skill.replace("最小使用尺寸", "")
+    assert "no small text at all" not in skill and "one garbled character is not acceptable" in skill
     assert "Do not print an English instruction label." in skill
-    assert "carries its full heading" in skill and "wordmark at three sizes" in skill
+    assert "full bilingual heading" in skill and "wordmark at three sizes" not in skill
+    assert "Allowed on-card text includes the bilingual headings" in skill
+    assert "陶土橘" not in skill and "栖木咖啡" not in skill
+    for banned in ("The only words", "No explanatory caption", "no English subtitle", "不要说明文字", "只能出现这些字"):
+        assert banned not in skill, banned
     assert "wordmark appears exactly once per zone" in skill
     assert "#" not in skill
     hint = brand.default_hint()
