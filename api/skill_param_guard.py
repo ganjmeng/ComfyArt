@@ -16,10 +16,10 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import chat_store, product_packaging as packaging, portrait_studio as portrait
+from . import chat_store, portrait_studio as portrait
 
 PORTRAIT = portrait.SKILL
-PACKAGING = packaging.SKILL
+PACKAGING = "product-to-packaging"
 
 KIND_MISSING = "missingSkillParams"
 
@@ -124,6 +124,16 @@ def _text_of(block: dict) -> str:
     return str(block.get("text") or block.get("content") or "")
 
 
+def _product_ref_card_ids() -> set[str]:
+    """Question ids of skills whose contract requires the uploaded product photo."""
+    from ..bot.skill_output import OUTPUTS
+    ids: set[str] = set()
+    for row in OUTPUTS.values():
+        if row.get("require_product_ref"):
+            ids.update(str(x) for x in (row.get("card_ids") or ()))
+    return ids
+
+
 def _card_kind(block: dict) -> str:
     """portrait / packaging / '' from an ask block or a raw spec."""
     if not isinstance(block, dict):
@@ -133,22 +143,21 @@ def _card_kind(block: dict) -> str:
         payload = block
     if portrait.is_portrait_card(payload):
         return "portrait"
-    if packaging.is_packaging_card(payload):
-        return "packaging"
+    card_ids = _product_ref_card_ids()
     # answered blocks may only keep question ids in answers
     answers = payload.get("answers")
     if isinstance(answers, dict):
         keys = {str(k) for k in answers}
         if keys & {portrait.PS_SHOTS, portrait.PS_OUTFIT, portrait.PS_SCENE}:
             return "portrait"
-        if keys & set(packaging.QUESTION_IDS):
+        if keys & card_ids:
             return "packaging"
     questions = payload.get("questions")
     if isinstance(questions, list):
         ids = {str((q or {}).get("id") or "") for q in questions if isinstance(q, dict)}
         if ids & {portrait.PS_SHOTS, portrait.PS_OUTFIT, portrait.PS_SCENE}:
             return "portrait"
-        if ids & set(packaging.QUESTION_IDS):
+        if ids & card_ids:
             return "packaging"
     return ""
 
@@ -472,11 +481,11 @@ def _restore_locks(locks: dict, frozen: dict) -> None:
 
 
 def preview_locked_args(args: dict, position: int | None = None) -> dict:
-    """The args lock_request would submit, without advancing the turn lock.
+    """Args the submit will use, without advancing a slotted skill's fill cursor.
 
-    #959 `position`: this step's 0-based place in a quoted multi-image plan, so the
-    quote walks image 1..n (ratio/role/refs of each real submit) while the real
-    execution sequence still starts at 1.
+    `position` is this step's 0-based place in a quoted plan. A slotted contract
+    fills that slot's ratio and count. Portrait still uses its own lock. Refs and
+    prompts are not rewritten here.
     """
     args = dict(args or {})
     if portrait.applies(args):
@@ -486,12 +495,11 @@ def preview_locked_args(args: dict, position: int | None = None) -> dict:
         finally:
             _restore_locks(portrait._LOCKS, frozen)
         args.pop("shot", None)
-    if packaging.applies(args):
-        frozen = _freeze_locks(packaging._LOCKS)
-        try:
-            args = packaging.lock_request(args, preview_position=position)
-        finally:
-            _restore_locks(packaging._LOCKS, frozen)
+    from ..bot.skill_output import OUTPUTS, apply_generate, resolve
+    sid = resolve(args.get("skill"))
+    if sid and (OUTPUTS.get(sid) or {}).get("slots"):
+        pos = 0 if position is None else int(position)
+        args = apply_generate(args, bind_slots=True, slot_position=pos, advance_slot=False)
     return args
 
 
@@ -503,4 +511,8 @@ def prepare_for_quote(args: dict, chat_id: str = "", position: int | None = None
     blocked = preflight(args, chat_id=chat_id)
     if blocked is not None:
         return None, blocked
-    return preview_locked_args(args, position), None
+    prepared = preview_locked_args(args, position)
+    refusal = prepared.get("_ratio_refusal_994") if isinstance(prepared, dict) else None
+    if isinstance(refusal, dict):
+        return None, refusal
+    return prepared, None

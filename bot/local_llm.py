@@ -1475,14 +1475,13 @@ class _PlanGate:
     def blocks(self, name: str, args: dict) -> bool:
         if not self.strict or name not in PAID_TOOLS:
             return False
-        # #963: plan keys compare a packaging anchor slot semantically -- the quote names a
-        # future anchor, the submit names the shape placed by image 1 -- but the submit side
-        # is only canonicalized when it is that placed anchor id. Everything else stays
-        # strict; dedupe (paid_key) keeps the exact key.
+        # A contract slot may ref a shape wait_generation has not placed yet. The quote
+        # names that ref as a slot; the submit matches only when the ref is the shape
+        # that wait actually placed. Everything else stays strict.
         anchor = ""
         if self.chat_id and name == "generate_image":
-            from ..api import product_packaging
-            anchor = product_packaging.anchor_for(self.chat_id)
+            from .skill_output import placed_ref_for
+            anchor = placed_ref_for(self.chat_id, args)
         return canon_key(name, args, plan=True, anchor=anchor) not in self.keys
 
 

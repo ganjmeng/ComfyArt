@@ -77,10 +77,6 @@ def _relay(action: str, *, timeout: float = 20.0, approval: str = ""):
                 # the reply lists, written into this image's prompt (api/mcp_tools/portrait.py).
                 args = portrait_studio.apply_plan(args, str(BOT_CHAT_ID.get() or ""))
             args.pop("shot", None)  # portrait-studio only
-            # product-to-packaging (reference run e304e2fa): one call per image; image 1 3:4, later images 4:3.
-            from .. import product_packaging
-            if product_packaging.applies(args):
-                args = product_packaging.lock_request(args)
         fallback_for = str(args.pop("fallback_for", "") or "")
         if approval:
             label = str(args.get("prompt") or args.get("to") or "")[:80]
@@ -106,7 +102,6 @@ def _unregistered_copy() -> str:
 
 
 async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float) -> dict:
-    from .. import product_packaging
     from .. import multi_angle
     multi_meta = None
     if action == "generate_image":
@@ -117,16 +112,19 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
         args.pop("multi_angle_stage", None)
         args.pop("composition_id", None)
         args.pop("composition_plan", None)
-    packaging_run = action == "generate_image" and product_packaging.applies(args)
     if action == "generate_image":
         # #707: a named skill's declared pixels reach the page even if the provider omitted them.
+        # Slotted skills fill ratio/count here, after the plan gate, from the output contract.
         from ...bot.skill_output import REF_RATIO_KEY, RATIO_REFUSAL_994, apply_generate, follows_ref
         ref_image = None
         if follows_ref(args.get("skill")) and not args.get(REF_RATIO_KEY):
             # #911: no ratio from the chat loop (e.g. an external agent): read image 1 from refs.
             from ...bot.ref_orientation import ref_image_bytes
             ref_image = ref_image_bytes(args.get("refs"))
-        args = apply_generate(args, ref_image=ref_image)
+        args = apply_generate(
+            args, ref_image=ref_image, bind_slots=True,
+            advance_slot=not bool(fallback_for), slot_retry=bool(fallback_for),
+        )
         if args.get(RATIO_REFUSAL_994):
             return args[RATIO_REFUSAL_994]
         if requests_svg(args) and not svg_block(args):
@@ -238,6 +236,10 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
             # Exact-pixel metadata was verified for THIS model. A disabled page
             # preference must refuse, never fall through to another default.
             args.update(model=running_model, auto_model=False, size_lock=True, size_candidates=[running_model])
+    slot_snapshot = None
+    if action == "generate_image":
+        slot_snapshot = {"skill": args.get("skill"), "ratio": args.get("ratio"),
+                         "refs": list(args.get("refs") or [])}
     args.pop("skill", None)
     # #825: page stashes model_choice on the gen card / GenInfo (Auto · name + hover reason).
     if choice and isinstance(choice, dict):
@@ -264,9 +266,11 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
         if not multi_angle.trusted_submit(result):
             return multi_angle.mark_unknown(multi_meta, "untrusted")
         multi_angle.submitted(multi_meta, result)
-    if packaging_run and isinstance(result, dict) and not result.get("cancelled"):
-        # #963: image 1's returned shape is the anchor holder; wait_generation swaps in the placed shape.
-        product_packaging.record_submitted(result)
+    if slot_snapshot and isinstance(result, dict) and not result.get("cancelled"):
+        # A slotted contract remembers the anchor holder so the plan gate can bind
+        # the shape wait_generation places. This does not add or reorder calls.
+        from ...bot.skill_output import note_generated_slot
+        note_generated_slot(slot_snapshot, result)
     if choice and isinstance(result, dict) and not result.get("cancelled"):
         ran = result.get("model")
         if choice["auto"] and choice.get("category") != "skill_size" and "edit_model" not in choice and choice["category"] != "references" and ran and ran != choice["model"]:
@@ -298,10 +302,10 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
 
 async def _wait_generation(args: dict) -> dict:
     timeout = max(1, min(int(args.get("timeout_s") or WAIT_MAX_S), WAIT_MAX_S))
-    from .. import product_packaging
     payload = await submit_command("wait_generation", {**args, "timeout_s": timeout}, PROJECT.get(), timeout + 15)
-    # #963: the placed anchor image shape (image 1 of a packaging turn) is what the plan gate binds to.
-    product_packaging.record_wait(payload)
+    # Bind any contract slot whose generate holder this wait just placed.
+    from ...bot.skill_output import note_placed_slots
+    note_placed_slots(payload)
     from .. import multi_angle
     multi_angle.record_wait(payload)
     return payload
@@ -510,10 +514,10 @@ _RATIO_ONLY_2K_SKILLS = frozenset({
     "youtube-channel-banner", "portrait-studio",
 })
 
-# #959: the quote must run the same _pin_args post-processing as the submit for these
-# skills, because their per-image plan supplies the ratio the ratio-only 2k fill needs.
-# Scope is product-to-packaging in this card; other pinned skills keep their previous
-# quote inputs (portrait-studio already matched: its pin names resolution itself).
+# The quote runs the same _pin_args post-processing as the submit for these
+# skills, because their output contract supplies the ratio the ratio-only 2k fill needs.
+# Other pinned skills keep their previous quote inputs (portrait-studio already
+# matched: its pin names resolution itself).
 _QUOTE_PIN_POSTPROCESS_SKILLS = frozenset({"product-to-packaging"})
 
 
@@ -710,8 +714,8 @@ def quote_route(action: str, args: dict, user_text: str | None = None, catalog: 
         return None
     if (action == "generate_image" and choice.get("category") in ("skill", "skill_fallback")
             and str(clean.get("skill") or "") in _QUOTE_PIN_POSTPROCESS_SKILLS):
-        # #959: the submit runs _pin_args after the image lock; the quote prices the same args.
-        # product-to-packaging's lock sets ratio 3:4/4:3 and the pin then fills the 2k tier;
+        # The submit runs _pin_args after the contract fill; the quote prices the same args.
+        # The output contract sets ratio 3:4/4:3 and the pin then fills the 2k tier;
         # skipping this priced every image at the 1k default.
         clean = _pin_args(clean, choice)
     model = str(choice.get("edit_model") or choice.get("model") or "")

@@ -874,6 +874,214 @@ def ask_user_recovery_text() -> str:
     return _ASK_USER_RECOVERY["zh" if card_lang() == "zh" else "en"]
 
 
+# product-to-packaging question card. Skeleton is locked (ids, titles, question 3
+# letters, free-text last row, nothing preselected). Question 1's product noun and
+# the options of questions 1 and 2 stay as the model wrote them from the photo.
+# zh titles are the reference card; en is the existing translation. This does not
+# plan generate calls.
+_PP_PRODUCT, _PP_COLOR, _PP_SCOPE = "pk_product", "pk_color", "pk_scope"
+_PP_QUESTION_IDS = (_PP_PRODUCT, _PP_COLOR, _PP_SCOPE)
+_PP_PAGE_COUNT = 3
+_PP_LIVE_MAX = 3
+_PP_PRODUCT_REST = {
+    "zh": "具体是什么？品牌名/产品名怎么定（直接决定包装上的文案与必要信息版面）",
+    "en": "? How should the brand name / product name be set (it decides the copy and the required-info layout on the packaging)",
+}
+_PP_PRODUCT_HEAD = {"zh": "", "en": "What exactly is "}
+_PP_FALLBACK_SUBJECT = {"zh": "这款产品", "en": "this product"}
+_PP_CARD: dict[str, list[dict]] = {
+    "zh": [
+        {"id": _PP_PRODUCT, "prompt": _PP_FALLBACK_SUBJECT["zh"] + _PP_PRODUCT_REST["zh"], "options": None,
+         "placeholder": "自己填：品类 ＋ 品牌名 ＋ 产品名（不给的话我会先提案一版）..."},
+        {"id": _PP_COLOR, "prompt": "包装的主色方向选哪个？", "options": None,
+         "placeholder": "其它方向..."},
+        {"id": _PP_SCOPE, "prompt": "这套包装要交付到哪个范围？（可多选）",
+         "options": [{"id": "A", "label": "核心三件：外盒 ＋ 瓶标 ＋ 内托"},
+                     {"id": "B", "label": "延伸件：运输箱 ＋ 手提袋 ＋ 封条/感谢卡"},
+                     {"id": "C", "label": "变体家族：同系列多支 / 多香型陈列"},
+                     {"id": "D", "label": "技术件：标注尺寸的结构的构图纸 ＋ 平面刀版稿"}],
+         "placeholder": "其它，请直接输入..."},
+    ],
+    "en": [
+        {"id": _PP_PRODUCT, "prompt": _PP_PRODUCT_HEAD["en"] + _PP_FALLBACK_SUBJECT["en"] + _PP_PRODUCT_REST["en"], "options": None,
+         "placeholder": "Write your own: category + brand name + product name (if not, I'll propose one first)..."},
+        {"id": _PP_COLOR, "prompt": "Which main color direction for the packaging?", "options": None,
+         "placeholder": "Another direction..."},
+        {"id": _PP_SCOPE, "prompt": "Which scope should this packaging set cover? (multi-select)",
+         "options": [{"id": "A", "label": "Core three: outer box + bottle label + inner tray"},
+                     {"id": "B", "label": "Extensions: shipping carton + tote bag + seal / thank-you card"},
+                     {"id": "C", "label": "Variant family: several in the same line / multi-scent display"},
+                     {"id": "D", "label": "Technical: dimensioned structural drawing + flat dieline"}],
+         "placeholder": "Other, type it here..."},
+    ],
+}
+_PP_RECOMMENDED = ("（推荐）", "(推荐)", "推荐", "(recommended)", "(Recommended)")
+_PP_CJK = re.compile(r"[\u3400-\u9fff\uf900-\ufaff]")
+_PP_SUBJECT_MAX = {"zh": 20, "en": 60}
+
+
+def _pp_lang(lang: str | None = None) -> str:
+    if lang in _PP_CARD:
+        return lang
+    got = card_lang()
+    return got if got in _PP_CARD else "zh"
+
+
+def _pp_qid(raw: object) -> str:
+    if not isinstance(raw, dict):
+        return ""
+    qid = str(raw.get("id") or "").strip()
+    if qid in _PP_QUESTION_IDS:
+        return qid
+    prompt = str(raw.get("prompt") or "").strip()
+    if not prompt:
+        return ""
+    low = prompt.lower()
+    if "品牌名/产品名怎么定" in prompt or ("what exactly is" in low and "brand name" in low):
+        return _PP_PRODUCT
+    if prompt.startswith("包装的主色方向") or "main color direction for the packaging" in low:
+        return _PP_COLOR
+    if prompt.startswith("这套包装要交付到哪个范围") or low.startswith("which scope should this packaging set cover"):
+        return _PP_SCOPE
+    return ""
+
+
+def _pp_is_card(args: dict) -> bool:
+    questions = (args or {}).get("questions")
+    if isinstance(questions, list) and questions:
+        return any(_pp_qid(q) for q in questions)
+    return bool(_pp_qid({"id": (args or {}).get("id"), "prompt": (args or {}).get("prompt")}))
+
+
+def _pp_subject(prompt: object, lang: str) -> str:
+    text = str(prompt or "").strip()
+    subject = ""
+    if lang == "zh":
+        cut = text.find("具体是什么")
+        subject = text[:cut].strip() if cut > 0 else ""
+        ok = bool(subject) and bool(_PP_CJK.search(subject))
+    else:
+        m = re.match(r"(?i)\s*what exactly is\s+(.+?)\s*\?", text)
+        subject = m.group(1).strip() if m else ""
+        ok = bool(subject) and not _PP_CJK.search(subject)
+    if ok and len(subject) <= _PP_SUBJECT_MAX[lang] and not any(ch in subject for ch in "？?（）()\n"):
+        return subject
+    return _PP_FALLBACK_SUBJECT[lang]
+
+
+def _pp_product_prompt(subject: str, lang: str) -> str:
+    return _PP_PRODUCT_HEAD[lang] + subject + _PP_PRODUCT_REST[lang]
+
+
+def _pp_strip_rec(text: object) -> str:
+    out = str(text or "")
+    for mark in _PP_RECOMMENDED:
+        out = out.replace(mark, "")
+    return out.strip()
+
+
+def _pp_live_options(raw_opts: object) -> list[dict]:
+    out: list[dict] = []
+    for o in raw_opts if isinstance(raw_opts, list) else []:
+        if isinstance(o, dict):
+            label, desc = _pp_strip_rec(o.get("label")), _pp_strip_rec(o.get("description"))
+        else:
+            label, desc = _pp_strip_rec(o), ""
+        if not label:
+            continue
+        item = {"id": "ABC"[len(out)], "label": label}
+        if desc:
+            item["description"] = desc
+        out.append(item)
+        if len(out) == _PP_LIVE_MAX:
+            break
+    return out if len(out) >= 2 else []
+
+
+def _pp_right_lang(text: str, lang: str) -> bool:
+    return bool(_PP_CJK.search(text)) is (lang == "zh")
+
+
+def _pp_scope_options(raw_opts: object, locked: list[dict], lang: str) -> list[dict]:
+    raw = [o for o in raw_opts] if isinstance(raw_opts, list) else []
+    letters = [o["id"] for o in locked]
+    by_letter: dict[str, object] = {}
+    for o in raw:
+        oid = str(o.get("id") or "").strip().upper() if isinstance(o, dict) else ""
+        if oid in letters and oid not in by_letter:
+            by_letter[oid] = o
+    for i, o in enumerate(raw[:len(letters)]):
+        oid = str(o.get("id") or "").strip().upper() if isinstance(o, dict) else ""
+        if oid not in letters:
+            by_letter.setdefault(letters[i], o)
+    out = []
+    for lk in locked:
+        o = by_letter.get(lk["id"])
+        label = _pp_strip_rec(o.get("label") if isinstance(o, dict) else o) if o is not None else ""
+        if not label or not _pp_right_lang(label, lang):
+            label = lk["label"]
+        out.append({"id": lk["id"], "label": label})
+    return out
+
+
+def _pp_questions(raw_questions: list | None = None, lang: str | None = None) -> list[dict]:
+    lang = _pp_lang(lang)
+    by_id: dict[str, dict] = {}
+    for q in raw_questions or []:
+        qid = _pp_qid(q)
+        if qid and qid not in by_id:
+            by_id[qid] = q
+    out = []
+    for locked in _PP_CARD[lang]:
+        raw = by_id.get(locked["id"]) or {}
+        if locked["options"] is not None:
+            options = _pp_scope_options(raw.get("options"), locked["options"], lang)
+            min_sel, max_sel = 1, len(options)
+        else:
+            options = _pp_live_options(raw.get("options"))
+            min_sel, max_sel = (1, 1) if options else (0, 0)
+        prompt = locked["prompt"]
+        if locked["id"] == _PP_PRODUCT:
+            prompt = _pp_product_prompt(_pp_subject(raw.get("prompt"), lang), lang)
+        out.append({
+            "id": locked["id"],
+            "prompt": prompt,
+            "options": options,
+            "allow_other": True,
+            "placeholder": locked["placeholder"],
+            "page": 1,
+            "min_selections": min_sel,
+            "max_selections": max_sel,
+        })
+    return out
+
+
+def _pp_spec(raw_questions: list | None = None, lang: str | None = None) -> dict:
+    questions = _pp_questions(raw_questions, lang)
+    return {
+        "questions": questions,
+        "page_count": _PP_PAGE_COUNT,
+        "allow_skip": True,
+        "allow_other": True,
+        "prompt": questions[0]["prompt"],
+        "options": questions[0]["options"],
+    }
+
+
+def normalize_product_packaging_card(args: dict, lang: str | None = None) -> dict:
+    """Force the packaging card skeleton. Other cards are returned unchanged."""
+    args = dict(args or {})
+    if not _pp_is_card(args):
+        return args
+    raw = args.get("questions")
+    if not isinstance(raw, list) or not raw:
+        raw = [{"id": args.get("id"), "prompt": args.get("prompt"), "options": args.get("options")}]
+    for k in ("defaults", "id", "placeholder", "min_selections", "max_selections"):
+        args.pop(k, None)
+    args.update(_pp_spec(raw, lang))
+    return args
+
+
 def validate_spec(args: dict) -> dict:
     """Accept legacy single-question OR questions[] multi form.
 
@@ -895,8 +1103,7 @@ def _validate_spec(args: dict) -> dict:
     args = normalize_multi_angle_card(args)
     from .portrait_studio import normalize_card as normalize_portrait_studio_card
     args = normalize_portrait_studio_card(args)  # portrait-studio (reference run 7fc60c86)
-    from .product_packaging import normalize_card as normalize_product_packaging_card
-    args = normalize_product_packaging_card(args)  # product-to-packaging (reference run e304e2fa)
+    args = normalize_product_packaging_card(args)
     args = normalize_clothing_swap_card(args)
     args = normalize_studio_direction_card(args)
     args = normalize_youtube_banner_card(args)

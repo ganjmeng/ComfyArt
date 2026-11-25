@@ -102,6 +102,8 @@ def test_ts_and_python_tables_agree_row_by_row():
             else:
                 for key in ("width", "height", "ratio", "images"):
                     assert ts_plan.get(key) == plan.get(key), (sid, pid, key)
+        py_slots = list(row["slots"]) if row.get("slots") else None
+        assert got.get("slots") == py_slots, sid
 
 
 @needs_node
