@@ -97,12 +97,28 @@ async def ws(monkeypatch, fresh_user_dir):
     app = web.Application()
 
     async def price(request):
-        # documented POST /api/v3/model/price; unknown models answer 400 (code 4005) so the catalog price is used
+        # Known catalog models with no override are a live quote at base_price.
+        # An explicit None, or a model that is not in the catalog, is official code 4005 (unpriced).
         body = await request.json()
         state["quotes"].append(body)
-        p = state["prices"].get(body.get("model_id"))
-        if p is None:
-            return web.json_response({"code": 4005, "message": "model not found"}, status=400)
+        mid = body.get("model_id") or ""
+        status = state.get("price_status")
+        if isinstance(status, int) and status >= 400:
+            # A 5xx must not carry 4005/4006/4007: those codes are unpriced, not an outage.
+            code = state.get("price_code")
+            if not isinstance(code, int) or isinstance(code, bool):
+                code = 4005 if status < 500 else 500
+            return web.json_response({"code": code, "message": "price failed"}, status=status)
+        if mid in state["prices"]:
+            p = state["prices"][mid]
+            if p is None:
+                return web.json_response({"code": 4005, "message": "model not found"}, status=400)
+        else:
+            known = next((m for m in MODELS if m.get("model_id") == mid), None)
+            base = known.get("base_price") if isinstance(known, dict) else None
+            if not isinstance(base, (int, float)) or isinstance(base, bool):
+                return web.json_response({"code": 4005, "message": "model not found"}, status=400)
+            p = base
         p = p(body.get("input") or {}) if callable(p) else p
         return web.json_response({"code": 200, "message": "success", "data": {"model_id": body["model_id"], "unit_price": p, "price": p, "discounted_price": p, "discount_rate": 1, "currency": "USD"}})
 
@@ -982,12 +998,13 @@ async def test_estimate_uses_documented_price_endpoint_and_caches(ws):
     assert len(ws["quotes"]) == 2
 
 
-async def test_estimate_falls_back_to_catalog_price_marked_as_estimate(ws):
+async def test_price_code_4005_is_unpriced_not_the_catalog_number(ws):
+    """A known catalog cell is not an estimate when the price API returns 4005."""
+    ws["prices"]["elevenlabs/music-v2"] = None
     est = await wavespeed.estimate({"feature": "music", "model": "elevenlabs/music-v2", "prompt": "x"})
-    # #842 fbe28e7f added model (the id submit will POST); do not require exact dict equality.
-    assert est["price"] == pytest.approx(0.75)
+    assert est["price"] is None
     assert est["currency"] == "USD"
-    assert est["source"] == "estimate"
+    assert est["source"] == "unpriced"
     assert est["confirm_usd"] == 0.5
     assert est["confirm"] is True
     assert est["model"] == "elevenlabs/music-v2"

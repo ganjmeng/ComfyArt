@@ -567,6 +567,11 @@ QUOTE_LINE_LOCALE = {
         "quote.lineartPreviewSize": "Line-art preview · {0}×{1} · {2}",
     },
 }
+# P2-1: unpriced / re-price copy. The rest of each locale file stays on LOCALE_BASE_SHA256.
+QUOTE_REPRICE_LOCALE = {
+    "zh": {"quote.reprice": "重新取价", "quote.unpriced": "未定价"},
+    "en": {"quote.reprice": "Re-price", "quote.unpriced": "Unpriced"},
+}
 ANGLE_PROGRESS_LOCALE = {
     "zh": {
         "bot.angleSummary": "预览 {0} + 成品 {1}/{2}",
@@ -604,7 +609,7 @@ LOCALE_EXTRAS = {
            "runStop.stillGenerating": RUN_STOP_LOCALE[lang],
            "wsErr.userRatioUnsupported": RATIO_REFUSAL_LOCALE_994[lang],
            "models.minimaxH3Image": H3_IMAGE_LOCALE[lang],
-           **QUOTE_LINE_LOCALE[lang], **ANGLE_PROGRESS_LOCALE[lang]}
+           **QUOTE_LINE_LOCALE[lang], **QUOTE_REPRICE_LOCALE[lang], **ANGLE_PROGRESS_LOCALE[lang]}
     for lang in ("zh", "en")
 }
 # Canonical locale JSON minus the extras above. #1003 keeps jobs.sizeNotice as the #924

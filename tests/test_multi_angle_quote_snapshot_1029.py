@@ -413,9 +413,10 @@ async def test_no_quote_card_does_not_submit(monkeypatch):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("mode,posts", [("error", 1), ("transport", 2)])
-async def test_failed_price_estimate_is_not_a_confirmed_quote(monkeypatch, mode, posts):
-    out = await _send(monkeypatch, mode=mode)
+@pytest.mark.parametrize("mode,posts,source", [("error", 1, "unpriced"), ("transport", 2, "estimate")])
+async def test_failed_price_estimate_is_not_a_confirmed_quote(monkeypatch, mode, posts, source):
+    """4005 (error) is unpriced. A transport outage on a schema match stays an estimate. Neither starts."""
+    out = await _send(monkeypatch, mode=mode, choice="cancel")
     assert len(_gets(out["http"])) == 1
     assert len(_posts(out["http"])) == posts
     assert all(set(item[2]) == {"model_id", "input"} and isinstance(item[2]["input"], dict)
@@ -425,7 +426,9 @@ async def test_failed_price_estimate_is_not_a_confirmed_quote(monkeypatch, mode,
     try:
         quotes = [b for row in chat_store.list_messages(out["cid"]) for b in row["blocks"]
                   if b.get("kind") == "plan_quote"]
-        assert quotes and quotes[-1]["lines"][0]["source"] == "estimate"
+        assert quotes and quotes[-1]["lines"][0]["source"] == source
+        assert [o["id"] for o in quotes[-1]["options"]] == ["reprice", "cancel"]
+        assert "start" not in [o["id"] for o in quotes[-1]["options"]]
         ledger = ma._root(out["cid"])[1][ma.LEDGER]
         assert ledger.get("composition_plan") and "preview" not in ledger
         blocked = await canvas._relay("generate_image")(dict(PREVIEW))

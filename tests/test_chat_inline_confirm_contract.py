@@ -29,3 +29,13 @@ def test_inline_primary_uses_jobs_confirm_ok():
     assert CHAT.count("okLabel={t('jobs.confirmOk')}") + CHAT.count('okLabel={t("jobs.confirmOk")}') >= 2
     assert "okLabel={copy.confirm}" not in CHAT
     assert "okLabel={startLabel" not in CHAT
+
+
+def test_unpriced_and_estimate_cards_use_reprice_on_the_same_primary_button():
+    """Estimate / unpriced: the primary button is Re-price, not Start, and it does not confirm the plan."""
+    assert "const repriceOnly" in CHAT
+    assert "okLabel={t('quote.reprice')}" in CHAT
+    assert "cancelLabel={t('common.cancel')}" in CHAT
+    branch = CHAT.split("if (repriceOnly)", 1)[1].split("okLabel={t('jobs.confirmOk')}", 1)[0]
+    assert "await answer(['reprice'])" in branch
+    assert "setAgentPlanConfirmed(true)" not in branch

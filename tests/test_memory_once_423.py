@@ -230,6 +230,8 @@ def test_locales_only_add_memory_retrieved_430():
         # #1003: quote-card face for the pending line-art preview. The visible
         # line is the size template with the call's width, height and ratio.
         "quote.lineartPreview", "quote.lineartPreviewSize",
+        # P2-1: unpriced card and its Re-price button (not memory copy)
+        "quote.reprice", "quote.unpriced",
         # confirmed multi-angle progress card (not memory copy)
         "bot.angleSummary", "bot.angleGenerating", "bot.angleInterrupted",
         "bot.anglePreview", "bot.angleFinal",
@@ -258,6 +260,8 @@ def test_locales_only_add_memory_retrieved_430():
     zh, en = json.loads(_src("src/locales/zh.json")), json.loads(_src("src/locales/en.json"))
     assert zh["models.minimaxH3Image"] == "6 步出图，2K 下细节丰富，可带多张参考图"
     assert en["models.minimaxH3Image"] == "6-step generation with dense detail at 2K, takes several reference images"
+    assert zh["quote.reprice"] == "重新取价" and zh["quote.unpriced"] == "未定价"
+    assert en["quote.reprice"] == "Re-price" and en["quote.unpriced"] == "Unpriced"
     assert zh["quote.lineartPreview"] == "线稿预览"
     assert en["quote.lineartPreview"] == "Line-art preview"
     assert zh["quote.lineartPreviewSize"] == "线稿预览 · {0}×{1} · {2}"

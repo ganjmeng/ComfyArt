@@ -90,7 +90,7 @@ async def test_chain_model_missing_from_catalog_and_price_api_fails_is_unpriced(
     import json
     monkeypatch.setattr("test_wavespeed.MODELS", [m for m in MODELS if m["model_id"] != I2V])
     monkeypatch.setitem(wavespeed._catalog, "models", {})
-    priced["prices"].pop(I2V)  # the mock price API answers 400 (code 4005) for it
+    priced["prices"][I2V] = None  # the mock price API answers 400 (code 4005) for it
     monkeypatch.setattr(wavespeed, "confirm_usd", lambda: 100.0)  # far below the threshold it still asks
     est = await wavespeed.estimate(copy.deepcopy(BOARD))
     assert est["price"] is None and est["source"] == "unpriced" and est["confirm"] is True

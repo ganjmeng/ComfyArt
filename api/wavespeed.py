@@ -1446,6 +1446,86 @@ def _submitted_tier(props: dict, inputs: dict, priced: dict) -> dict:
     return {k: v for k, v in out.items() if k in props}
 
 
+def _schema_value_ok(spec: dict, value) -> bool:
+    """True when `value` is exactly what this official property allows."""
+    if not isinstance(spec, dict):
+        return False
+    enum = spec.get("enum")
+    if isinstance(enum, list) and enum:
+        return any(value == item for item in enum)
+    typ = spec.get("type")
+    if typ == "integer":
+        if isinstance(value, bool) or not isinstance(value, int):
+            return False
+    elif typ == "number":
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+            return False
+    elif typ == "string":
+        if not isinstance(value, str):
+            return False
+    elif typ == "boolean":
+        if not isinstance(value, bool):
+            return False
+    elif typ == "array":
+        if not isinstance(value, list):
+            return False
+    elif typ == "object":
+        if not isinstance(value, dict):
+            return False
+    elif typ not in (None, ""):
+        return False
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        minimum, maximum = spec.get("minimum"), spec.get("maximum")
+        if isinstance(minimum, (int, float)) and not isinstance(minimum, bool) and value < minimum:
+            return False
+        if isinstance(maximum, (int, float)) and not isinstance(maximum, bool) and value > maximum:
+            return False
+    return True
+
+
+# Fields the price body can carry. Prompt, image, video, and audio are submit content;
+# the price API does not receive them, so their being required is not a schema mismatch.
+_PRICE_BODY_FIELDS = frozenset(_PRICE_FIELDS) | {"images", "mask_image", "loras"}
+
+
+def official_schema_match(model: str, priced: dict, meta: dict | None) -> bool:
+    """True when `model` is in the official catalog and the price body matches its schema.
+
+    A missing model, an empty schema, a key the schema does not declare, a value outside
+    an enum / type / range, or a missing required price field (no default) is a mismatch.
+    Per-second models may also carry `duration` (price only; it is not a submit field).
+    """
+    if not isinstance(meta, dict) or not meta:
+        return False
+    named = str(meta.get("model_id") or "")
+    if named and named != model:
+        return False
+    schema = _schema(meta)
+    props = schema.get("properties") if isinstance(schema, dict) else None
+    if not isinstance(props, dict) or not props:
+        return False
+    body = gif_image.billable(priced if isinstance(priced, dict) else {})
+    if not isinstance(body, dict):
+        return False
+    for key, value in body.items():
+        if key in props:
+            spec = props[key] if isinstance(props[key], dict) else {}
+            if not _schema_value_ok(spec, value):
+                return False
+            continue
+        if key == "duration" and model in DURATION_BILLED and isinstance(value, int) and not isinstance(value, bool) and value > 0:
+            continue
+        return False
+    required = schema.get("required") if isinstance(schema.get("required"), list) else []
+    for key in required:
+        if key not in _PRICE_BODY_FIELDS:
+            continue
+        spec = props.get(key) if isinstance(props.get(key), dict) else {}
+        if key not in body and "default" not in spec:
+            return False
+    return True
+
+
 def _is_default_tier(props: dict, priced: dict) -> bool:
     """#159 / #425: the catalog base_price is the price of the schema's default tier, so it only estimates a job
     submitted at that tier (resolution, duration, quality, aspect ratio, thinking at their schema default, or the
@@ -1502,6 +1582,9 @@ def tier_label(priced: dict) -> str:
 # API, never in the submit payload, which only carries schema fields). Unknown length: priced at 60 s and labelled.
 DURATION_BILLED = {"wavespeed-ai/openai-whisper-turbo"}
 DURATION_FALLBACK_S = 60
+# Official price-API business codes. They reject the price (and the submit) and have
+# no list-price fallback: the quote card is 「未定价」 / Unpriced.
+PRICE_REJECT_CODES = frozenset({4005, 4006, 4007})
 
 
 def media_seconds(inputs: dict) -> int | None:
@@ -1608,11 +1691,49 @@ def _official_price_amount(payload: object) -> float | None:
     return amount
 
 
+def _price_business_code(payload: object) -> int | None:
+    if not isinstance(payload, dict):
+        return None
+    code = payload.get("code")
+    if isinstance(code, bool) or not isinstance(code, int):
+        return None
+    return code
+
+
+async def _outage_estimate(model: str, priced: dict) -> _Quoted:
+    """估算价 after a timeout or 5xx, and only when the model and params match the official schema.
+
+    Any mismatch is 「未定价」: no number and no 「约」. The published table and the catalog
+    base price are upper bounds, never an exact quote.
+    """
+    meta = (await catalog()).get(model) or {}
+    if not official_schema_match(model, priced, meta):
+        return _Quoted(None, "unpriced", "schema_mismatch")
+    # Published GPT Image 2.6 / 2.5 table when the price API is down. GIF uses the still cell; frames are
+    # not a multiplier. Unset quality/resolution are the schema defaults (medium / 1k), which #189 also
+    # leaves unpinned. #910: an edit adds $0.015 per input image (images + mask_image), not the catalog's
+    # one-image base_price. documented_usd returns None for models with no lock table.
+    n = len(priced.get("images") or []) + (1 if priced.get("mask_image") else 0)
+    stub = gif_image.documented_usd(model, str(priced.get("quality") or "medium"), str(priced.get("resolution") or "1k"), n)
+    if stub is not None:
+        return _Quoted(float(stub), "estimate", "list_price")
+    base = base_price_of(model, meta)
+    if model in DURATION_BILLED and isinstance(base, (int, float)) and not isinstance(base, bool) and priced.get("duration"):
+        # #185: catalog base_price of a per-second model is its price per second. Only when the
+        # price body matches the schema (duration itself is the allowed price-only field).
+        return _Quoted(round(float(base) * int(priced["duration"]), 6), "estimate", "duration_base")
+    if isinstance(base, (int, float)) and not isinstance(base, bool) and _is_default_tier(_schema(meta).get("properties") or {}, priced):
+        return _Quoted(float(base), "estimate", "base_price")
+    return _Quoted(None, "unpriced", "schema_mismatch")
+
+
 async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
     """Price of one run via WaveSpeed's free POST /api/v3/model/price, cached 5 minutes, for the tier that will be
-    submitted. #159: when the price API fails the catalog base_price is returned as source 'estimate' only if the
-    submitted tier is the schema's default tier (the tier base_price is for), labelled 「估算价」/'Estimated'; otherwise
-    (None, 'unpriced'): no amount is shown and the job always asks before it is submitted.
+    submitted.
+
+    Business codes 4005/4006/4007 are 「未定价」 (no list-price stand-in). A timeout or 5xx is 「估算价」
+    only when the model and params exactly match the official schema; any mismatch is 「未定价」.
+    A missing key does not call the API: the published table stays an estimate (unchanged).
 
     #968: the answer is the usual `(price, source)` pair with `.reason` beside it. `list_price` marks the
     undiscounted published table, which is only an upper bound of the (usually discounted) charge and must not be
@@ -1644,14 +1765,23 @@ async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
     if hit and time.time() - hit[1] < QUOTE_TTL:
         return _Quoted(hit[0], "quote", "cache")
     # #968: cold starts can take longer than the old 10 s (paid acceptance 2026-11-13 hit 10.61 s). The
-    # free price call is read-only and is never the submit, so one short retry cannot double-charge a job;
-    # a 4xx is not retried (the same request will fail the same way).
+    # free price call is read-only and is never the submit, so one short retry cannot double-charge a job.
+    # 4005/4006/4007 and other 4xx are not retried. A timeout or 5xx is retried once, then estimated
+    # only when the schema matches.
+    outage = False
     for attempt in range(QUOTE_RETRIES + 1):
         try:
             async with aiohttp.ClientSession(headers=_headers()) as session:
                 async with session.post(f"{_base()}/api/v3/model/price", json=body,
                                         timeout=aiohttp.ClientTimeout(total=QUOTE_TIMEOUT_S)) as res:
-                    payload = await _json(res) if res.status < 400 else None
+                    payload = await _json(res)
+                    code = _price_business_code(payload)
+                    if code in PRICE_REJECT_CODES:
+                        # 4005 price calculation failed, 4006 media duration unreadable,
+                        # 4007 image dimensions unreadable. No list-price stand-in.
+                        log.warning("WaveSpeed price API %s code %s for %s %s; unpriced",
+                                    res.status, code, model, priced)
+                        return _Quoted(None, "unpriced", f"price_error_{code}")
                     if res.status >= 400:
                         if res.status >= 500 and attempt < QUOTE_RETRIES:
                             # #968: a 5xx can be transient (cold start / upstream blip): retry once.
@@ -1659,7 +1789,11 @@ async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
                                         res.status, model, attempt + 1)
                             await asyncio.sleep(QUOTE_RETRY_BACKOFF_S)
                             continue
-                        log.warning("WaveSpeed price API %s for %s %s; showing an estimate", res.status, model, priced)
+                        if res.status >= 500:
+                            outage = True
+                            log.warning("WaveSpeed price API %s for %s %s; outage", res.status, model, priced)
+                        else:
+                            log.warning("WaveSpeed price API %s for %s %s; unpriced", res.status, model, priced)
                         break
             amount = _official_price_amount(payload)
             if amount is None:
@@ -1668,31 +1802,15 @@ async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
             return _Quoted(amount, "quote", "live")
         except (aiohttp.ClientError, asyncio.TimeoutError, ValueError) as e:
             if attempt >= QUOTE_RETRIES:
-                log.warning("WaveSpeed price API %s for %s after %d attempt(s); showing an estimate",
+                outage = True
+                log.warning("WaveSpeed price API %s for %s after %d attempt(s); outage",
                             type(e).__name__, model, attempt + 1)
                 break
             log.warning("WaveSpeed price API %s for %s (attempt %d); retrying once", type(e).__name__, model, attempt + 1)
             await asyncio.sleep(QUOTE_RETRY_BACKOFF_S)
-    # Published GPT Image 2.6 / 2.5 table when the price API is down. GIF uses the still cell; frames are
-    # not a multiplier. Unset quality/resolution are the schema defaults (medium / 1k), which #189 also
-    # leaves unpinned. #910: an edit adds $0.015 per input image (images + mask_image), not the catalog's
-    # one-image base_price. documented_usd returns None for models with no lock table.
-    # #968: the published table is the list price, not the discounted price the price API charges; the card
-    # labels it 「标价上限估算」 (reason list_price) instead of passing it off as the exact quote.
-    n = len(priced.get("images") or []) + (1 if priced.get("mask_image") else 0)
-    stub = gif_image.documented_usd(model, str(priced.get("quality") or "medium"), str(priced.get("resolution") or "1k"), n)
-    if stub is not None:
-        return _Quoted(float(stub), "estimate", "list_price")
-    meta = (await catalog()).get(model) or {}
-    base = base_price_of(model, meta)
-    if model in DURATION_BILLED and isinstance(base, (int, float)) and not isinstance(base, bool) and priced.get("duration"):
-        # #185: the catalog base_price of a per-second model is its price per second of media (whisper $0.0007/s,
-        # WaveSpeed docs; a real 4.752 s clip was charged $0.0035 = 5 s x $0.0007), so the local estimate is
-        # base_price x rounded-up seconds (60 s when the length is unknown), labelled 「估算价」, never unpriced.
-        return _Quoted(round(float(base) * int(priced["duration"]), 6), "estimate", "duration_base")
-    if isinstance(base, (int, float)) and not isinstance(base, bool) and _is_default_tier(_schema(meta).get("properties") or {}, priced):
-        return _Quoted(float(base), "estimate", "base_price")
-    return _Quoted(None, "unpriced")
+    if outage:
+        return await _outage_estimate(model, priced)
+    return _Quoted(None, "unpriced", "price_unavailable")
 
 
 async def route_gif_live(inputs: dict) -> dict:

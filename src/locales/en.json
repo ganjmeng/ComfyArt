@@ -912,6 +912,8 @@
   "jobs.sizeNoticeUnread": "Output size could not be checked. Delivered as generated.",
   "llm.imageTooLarge": "This reference image is too large to send. You haven't been charged. Compress it or try a different image.",
   "llm.imageUnreadable": "This reference image can't be read directly. You haven't been charged. Download it and upload it directly, then try again.",
+  "quote.reprice": "Re-price",
+  "quote.unpriced": "Unpriced",
   "quote.lineartPreview": "Line-art preview",
   "quote.lineartPreviewSize": "Line-art preview · {0}×{1} · {2}",
   "llm.overBudget": "This project has reached its usage limit. Sending is paused and you haven't been charged. Start a new project to continue.",

@@ -37,7 +37,8 @@ async def price(r):
     b=await r.json(); i=b.get("input") or {}; m=b.get("model_id") or ""
     p=mock_price(m, CAT)
     print("MOCK price", m, json.dumps({k:v for k,v in i.items() if k not in ("images","image","prompt")}), "->", p, flush=True)
-    if p is None: return web.json_response({"code":404,"message":f"model {m} not in mock catalog"},status=404)
+    # Unknown model: official price code 4005. The quote card is unpriced, not a catalog estimate.
+    if p is None: return web.json_response({"code":4005,"message":"model not found"},status=400)
     return web.json_response({"code":200,"data":{"price":p}})
 async def result(r):
     import time

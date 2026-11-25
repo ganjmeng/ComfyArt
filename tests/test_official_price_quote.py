@@ -129,6 +129,7 @@ async def test_bad_price_responses_are_not_cached_and_are_not_a_fake_zero(price_
 
 
 async def test_error_amount_is_not_an_exact_quote_when_a_list_price_exists(price_api):
+    """Code 4005 is unpriced even when a list price and a disguised amount are both available."""
     price_api["reply"] = {
         "code": 4005, "message": "model not found", "data": {"discounted_price": 999},
     }
@@ -136,9 +137,8 @@ async def test_error_amount_is_not_an_exact_quote_when_a_list_price_exists(price
     price, source, reason = await wavespeed.quote_detail(FLARE, {"prompt": "disguised"})
     listed = gif_image.documented_usd(FLARE)
     assert listed is not None
-    assert (source, reason) == ("estimate", "list_price")
-    assert price == pytest.approx(listed)
-    assert price != 999
+    assert (price, source, reason) == (None, "unpriced", "price_error_4005")
+    assert price != listed and price != 999
     assert wavespeed._quotes == {}
 
 
@@ -183,20 +183,32 @@ async def test_failed_quote_does_not_start(price_api, monkeypatch):
     assert wavespeed._quotes == {}
 
 
-async def test_estimate_from_a_failed_price_is_not_a_real_quote(price_api, monkeypatch):
+async def test_a_nan_price_is_unpriced_not_a_list_price_estimate(price_api, monkeypatch):
+    """A non-finite amount is not a timeout or a 5xx, so it is not an estimate."""
     price_api["reply"] = {
         "code": 200, "data": {"discounted_price": float("nan")},
     }
     monkeypatch.setattr(wavespeed, "confirm_usd", lambda: 0.0)
     wavespeed._quotes.clear()
     price, source, reason = await wavespeed.quote_detail(FLARE, {"prompt": "board"})
-    assert source == "estimate" and reason == "list_price"
-    assert price == pytest.approx(gif_image.documented_usd(FLARE))
+    assert (price, source, reason) == (None, "unpriced", "price_unavailable")
     card = await build_quote([_step(FLARE, "board")], "en", threshold=0.0,
                              pricer=wavespeed.quote_detail, models_for=_no_models)
     assert card is not None and card.ask
-    assert card.lines[0].source != SOURCE_QUOTE
-    assert card.lines[0].approx
+    assert card.lines[0].source == "unpriced"
+    assert card.lines[0].price == "Unpriced"
+    assert [o["id"] for o in card.ask_spec()["options"]] == ["reprice", "cancel"]
+    assert wavespeed._quotes == {}
+
+
+@pytest.mark.parametrize("code", [4005, 4006, 4007])
+async def test_rejecting_price_codes_are_unpriced_not_an_estimate(price_api, code):
+    price_api["reply"] = {"code": code, "message": "price failed"}
+    wavespeed._quotes.clear()
+    price, source, reason = await wavespeed.quote_detail(FLARE, {"prompt": f"reject {code}"})
+    assert gif_image.documented_usd(FLARE) is not None
+    assert (price, source, reason) == (None, "unpriced", f"price_error_{code}")
+    assert len(price_api["bodies"]) == 1
     assert wavespeed._quotes == {}
 
 

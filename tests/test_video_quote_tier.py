@@ -1,8 +1,9 @@
 """#159: the video quote is priced at the tier that is actually submitted. '1K' (the image default) never maps to 4k;
 an unset or unknown video resolution is the model's schema default (seedance: 720p; no default: the first tier) on the
-agent and canvas paths. On a price-API failure the catalog base_price is only used when it is the price of the submitted
-tier (the schema default tier), labelled 「估算价」/'Estimated'; any other tier shows no amount and always asks before
-it is submitted. Never another tier's catalog price. All mocked: no key, no WaveSpeed, $0."""
+agent and canvas paths. Official price codes 4005/4006/4007 are 「未定价」 at every tier, including the schema
+default: no catalog number. A timeout or 5xx is 「估算价」/'Estimated' only when the model and params match the
+official schema and the submitted tier is the schema default (catalog base_price). Any other tier, and any schema
+mismatch, shows no amount. Never another tier's catalog price. All mocked: no key, no WaveSpeed, $0."""
 import json
 import os
 import shutil
@@ -67,10 +68,29 @@ def _loc(lang):
     return json.loads((ROOT / f"src/locales/{lang}.json").read_text())
 
 
-async def test_price_api_400_default_tier_is_an_estimate(seed, monkeypatch):
-    # branch 1: base_price is the price of the schema default tier (720p · 5s) and that is the submitted tier
-    seed["prices"].pop(SEED, None)  # unknown to the price API -> 400
+async def test_price_api_4005_default_tier_is_unpriced(seed, monkeypatch):
+    # 4005 is unpriced at the schema default too: no catalog $0.24, no 「约」.
+    seed["prices"][SEED] = None
     job = {**JOB, "resolution": "1K"}  # old card value -> schema default 720p
+    est = await wavespeed.estimate(job)
+    assert est["source"] == "unpriced" and est["price"] is None and est["confirm"] is True and est["tier"] == "720p · 5s"
+    monkeypatch.setattr(wavespeed, "confirm_usd", lambda: 100.0)  # unpriced asks even under the line
+    with pytest.raises(wavespeed.WaveSpeedError) as e:
+        await wavespeed.submit(job)
+    assert e.value.status == 409 and e.value.unpriced and not e.value.estimate and not seed["submits"]
+    body = json.loads(wavespeed._respond_error(e.value).body)["error"]
+    assert body["unpriced"] is True and body["confirm_usd"] is None and "estimate" not in body and body["tier"] == "720p · 5s"
+    await wavespeed.submit({**job, "confirmed": True})
+    assert seed["submits"][-1][1]["resolution"] == "720p"
+    for lang, text in (("zh", "暂时查不到准确价格，继续会按 {0} 实际扣费，确定继续吗？"), ("en", "Couldn't get the exact price; continuing will be charged at the actual rate for {0}. Continue?")):
+        loc = _loc(lang)
+        assert loc["jobs.confirmUnpriced"] == text and "$" not in text and "0.24" not in text
+
+
+async def test_price_5xx_default_tier_is_an_estimate(seed, monkeypatch):
+    # Timeout/5xx + exact schema at the default tier: catalog base_price, labelled estimate.
+    seed["price_status"] = 503
+    job = {**JOB, "resolution": "1K"}
     est = await wavespeed.estimate(job)
     assert est["source"] == "estimate" and est["price"] == 0.24 and est["tier"] == "720p · 5s"
     monkeypatch.setattr(wavespeed, "confirm_usd", lambda: 0.0)  # 0 = always confirm, so the dialog shows
@@ -80,7 +100,7 @@ async def test_price_api_400_default_tier_is_an_estimate(seed, monkeypatch):
     body = json.loads(wavespeed._respond_error(e.value).body)["error"]
     assert body["estimate"] is True and body["tier"] == "720p · 5s" and body["confirm_usd"] == 0.24
     await wavespeed.submit({**job, "confirmed": True})
-    assert seed["submits"][-1][1]["resolution"] == body["tier"].split(" · ")[0]  # dialog tier == submitted tier
+    assert seed["submits"][-1][1]["resolution"] == body["tier"].split(" · ")[0]
     for lang, word in (("zh", "估算价"), ("en", "Estimated")):
         text = _loc(lang)["jobs.confirmEstimateTier"].replace("{0}", "0.24").replace("{1}", body["tier"])
         assert word in text and "720p · 5s" in text and "0.24" in text
@@ -88,9 +108,9 @@ async def test_price_api_400_default_tier_is_an_estimate(seed, monkeypatch):
 
 
 @pytest.mark.parametrize("res,dur,tier", [("1080p", 5, "1080p · 5s"), ("4k", 5, "4k · 5s"), ("720p", 10, "720p · 10s")])
-async def test_price_api_400_other_tier_shows_no_amount_and_always_asks(seed, monkeypatch, res, dur, tier):
-    # branch 2: no price for the submitted tier: no amount, never the catalog price of the default tier, always confirm
-    seed["prices"].pop(SEED, None)
+async def test_price_api_4005_other_tier_shows_no_amount_and_always_asks(seed, monkeypatch, res, dur, tier):
+    # 4005: no amount, never the catalog price of the default tier, always confirm
+    seed["prices"][SEED] = None
     job = {**JOB, "resolution": res, "duration": dur}
     est = await wavespeed.estimate(job)
     assert est["source"] == "unpriced" and est["price"] is None and est["confirm"] is True and est["tier"] == tier
@@ -109,8 +129,20 @@ async def test_price_api_400_other_tier_shows_no_amount_and_always_asks(seed, mo
     assert _loc("en")["wsKey.unpriced"] == "Exact price unavailable; you'll confirm before generating"
 
 
+async def test_price_5xx_other_tier_is_unpriced_not_the_default_catalog_price(seed, monkeypatch):
+    seed["price_status"] = 503
+    job = {**JOB, "resolution": "1080p", "duration": 5}
+    est = await wavespeed.estimate(job)
+    assert est["source"] == "unpriced" and est["price"] is None and est["price"] != 0.24
+    assert est["tier"] == "1080p · 5s" and est["confirm"] is True
+    monkeypatch.setattr(wavespeed, "confirm_usd", lambda: 100.0)
+    with pytest.raises(wavespeed.WaveSpeedError) as e:
+        await wavespeed.submit(job)
+    assert e.value.unpriced and not e.value.estimate and e.value.confirm is None
+
+
 async def test_storyboard_with_an_unpriced_scene_asks_without_a_total(seed, monkeypatch):
-    seed["prices"].pop(SEED, None)
+    seed["prices"][SEED] = None  # 4005, not a live base_price quote
     monkeypatch.setattr(wavespeed, "confirm_usd", lambda: 100.0)
     sb = {**JOB, "resolution": "1080p", "scenes": [{"prompt": "a"}, {"prompt": "b"}]}
     est = await wavespeed.estimate(sb)

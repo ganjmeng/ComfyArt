@@ -61,6 +61,8 @@ LIST_PRICE_EXPLAIN = {
 }
 START_LABEL = {"zh": "开始", "en": "Start"}
 CANCEL_LABEL = {"zh": "取消", "en": "Cancel"}
+# Same pair on an unpriced card and on an estimate card. Neither card has Start.
+REPRICE_LABEL = {"zh": "重新取价", "en": "Re-price"}
 AUTO_LABEL = {"zh": "自动", "en": "Auto"}
 # #968: no price at all is not 0 — say 「未定价」 and never put a number in the total or prompt.
 UNPRICED_LABEL = {"zh": "未定价", "en": "Unpriced"}
@@ -77,17 +79,18 @@ _PROMPT_ONE = {
 }
 # #968: an unpriced step forces a confirm card without claiming any amount (never "约 0 积分").
 _PROMPT_UNPRICED = {
-    "zh": "这个任务共 {n} 步，价格暂未确定，需要你确认后按实际价格执行。确定开始吗？",
-    "en": "This task has {n} steps with no price available. Confirm to run at the actual price. Start?",
+    "zh": "这个任务共 {n} 步，价格暂未确定，需要你确认后按实际价格执行。可以重新取价，或取消。",
+    "en": "This task has {n} steps with no price available. Re-price, or cancel.",
 }
 _PROMPT_PARTIAL_UNPRICED = {
-    "zh": "这个任务共 {n} 步，其中部分步骤暂未定价，需要你确认后按实际价格执行。确定开始吗？",
-    "en": "This task has {n} steps and some have no price available. Confirm to run at the actual price. Start?",
+    "zh": "这个任务共 {n} 步，其中部分步骤暂未定价，需要你确认后按实际价格执行。可以重新取价，或取消。",
+    "en": "This task has {n} steps and some have no price available. Re-price, or cancel.",
 }
 _PROMPT_UNPRICED_ONE = {
-    "zh": "这次生成的价格暂未确定，需要你确认后按实际价格执行。确定开始吗？",
-    "en": "This generation has no price available. Confirm to run at the actual price. Start?",
+    "zh": "这次生成的价格暂未确定，需要你确认后按实际价格执行。可以重新取价，或取消。",
+    "en": "This generation has no price available. Re-price, or cancel.",
 }
+_REPRICE_OR_CANCEL = {"zh": "可以重新取价，或取消。", "en": "Re-price, or cancel."}
 _PRICE_KEYS = ("duration", "resolution", "aspect_ratio", "ratio", "size", "quality", "output_format", "frame_count", "frame_duration_ms")
 _DROP_ARG = ("fallback", "fallback_model", "model")
 _GENERIC = {"text-to-image", "image-to-image", "edit", "image-edit", "text-to-video", "image-to-video"}
@@ -343,14 +346,25 @@ class Quote:
     # Validated multi-angle preview plan, stored with the pending quote. Prompt prose is not this.
     composition_plan: Optional[dict] = None
 
+    def blocks_start(self) -> bool:
+        """An estimate or unpriced billable line has no Start. Exact quotes still do."""
+        return any(ln.units > 0 and (ln.unpriced or ln.source != SOURCE_QUOTE) for ln in self.lines)
+
     def ask_spec(self) -> dict:
         lang = _lang(self.lang)
-        spec = {
-            "prompt": self.prompt,
-            "options": [
+        if self.blocks_start():
+            options = [
+                {"id": "reprice", "label": REPRICE_LABEL[lang]},
+                {"id": "cancel", "label": CANCEL_LABEL[lang]},
+            ]
+        else:
+            options = [
                 {"id": "start", "label": START_LABEL[lang]},
                 {"id": "cancel", "label": CANCEL_LABEL[lang]},
-            ],
+            ]
+        spec = {
+            "prompt": self.prompt,
+            "options": options,
             "min_selections": 1,
             "max_selections": 1,
             "allow_other": False,
@@ -721,6 +735,11 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         question = "确定开始吗？" if lang == "zh" else "Start?"
         gap = "" if lang == "zh" else " "  # en: "…lower. Start?", never "…lower.Start?"
         prompt = prompt.replace(question, f"{LIST_PRICE_EXPLAIN[lang]}{gap}{question}")
+    # Estimate and unpriced cards have Re-price and Cancel, not Start.
+    cannot_start = any(ln.units > 0 and (ln.unpriced or ln.source != SOURCE_QUOTE) for ln in lines)
+    if cannot_start:
+        question = "确定开始吗？" if lang == "zh" else "Start?"
+        prompt = prompt.replace(question, _REPRICE_OR_CANCEL[lang])
     if quoted_plan is not None:
         from ..api.multi_angle import remember_quoted_plan
         remember_quoted_plan(quoted_plan, setup_snapshot=quoted_snapshot)
