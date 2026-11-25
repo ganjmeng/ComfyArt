@@ -147,14 +147,15 @@ def test_each_slot_prompt_locks_a_different_structure():
         assert "No empty placeholder box" in board["prompt"] and "no X box" in board["prompt"]
         assert "小尺寸 includes the symbol" in board["prompt"]
     spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})
-    headings = ["最小尺寸", "变体", "色彩比例", "字体层级", "版式", "使用禁忌", "影像材质"]
+    headings = ["标识", "色彩", "变体", "字体", "版式", "使用禁忌", "影像与材质"]
     assert "exactly 7 panels" in spec["prompt"]
     assert spec["prompt"].count("exactly 7 panels") == 1
     positions = [spec["prompt"].index(heading) for heading in headings]
     assert positions == sorted(positions)
     for heading in headings:
-        assert spec["prompt"].count(heading) == 1, heading
-    assert "影像与材质" not in spec["prompt"]
+        assert heading in spec["prompt"], heading
+    for old in ("最小尺寸", "色彩比例", "字体层级", "影像材质"):
+        assert old not in spec["prompt"], old
     assert "No heading is repeated" in spec["prompt"]
     assert "one filled layout diagram" in spec["prompt"]
     assert "carries its full heading" in spec["prompt"] and "wordmark at three sizes" in spec["prompt"]
@@ -180,7 +181,7 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "A-frame standing sign" in store["prompt"]
     assert "Not a hanging-sign close-up" in store["prompt"]
     cup = brand.fill_default({"brand_slot": "cup", "prompt": "杯"})
-    assert "使用禁忌" in spec["prompt"] and "影像材质" in spec["prompt"]
+    assert "使用禁忌" in spec["prompt"] and "影像与材质" in spec["prompt"]
     assert "Chinese brand name and the English brand name" in cup["prompt"]
     assert "must wear a cup sleeve" in cup["prompt"] and "杯套" in cup["prompt"]
     assert "A bare cup with no sleeve is wrong." in cup["prompt"]
@@ -292,9 +293,8 @@ def test_flatten_puts_alpha_on_white_and_leaves_opaque_bytes():
         assert img.getpixel((0, 0)) == (255, 255, 255)
 
 
-SPEC_HEADINGS = ("最小尺寸", "变体", "色彩比例", "字体层级", "版式", "使用禁忌", "影像材质")
-# Printable directive tokens. "Output lock:" stays the injected hint marker the app strips
-# before it reads the user's own words; it is not an all-caps token on the image prompt.
+SPEC_HEADINGS = ("标识", "色彩", "变体", "字体", "版式", "使用禁忌", "影像与材质")
+OLD_SPEC_HEADINGS = ("最小尺寸", "色彩比例", "字体层级", "影像材质")
 _LOCK_DIRECTIVE = __import__("re").compile(r"\b(?:[A-Z]{2,} +)+LOCK\b")
 
 
@@ -323,13 +323,12 @@ def test_spec_card_is_seven_lovart_panels_and_brand_prompts_have_no_lock_words()
     spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})["prompt"]
     assert "exactly 7 panels" in spec
     assert [spec.index(heading) for heading in SPEC_HEADINGS] == sorted(spec.index(heading) for heading in SPEC_HEADINGS)
-    for heading in SPEC_HEADINGS:
-        assert spec.count(heading) == 1, heading
-    assert "影像与材质" not in spec and "标识," not in spec
+    for old in OLD_SPEC_HEADINGS:
+        assert old not in spec, old
     assert "carries its full heading" in spec and "wordmark at three sizes" in spec
     assert spec.count("no small text at all") == 2
     assert "使用禁忌 (this panel contains no small text at all" in spec
-    assert "影像材质 (this panel contains no small text at all" in spec
+    assert "影像与材质 (this panel contains no small text at all" in spec
     assert "one garbled character is not acceptable" in spec
     assert "Do not print an English instruction label." in spec
     logo_c = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C STRUCTURE LOCK C"})["prompt"]
@@ -342,6 +341,34 @@ def test_spec_card_is_seven_lovart_panels_and_brand_prompts_have_no_lock_words()
         assert "lockup" not in text.lower(), name
         assert "STRUCTURE LOCK" not in text and "GUIDELINE LOCK" not in text
         assert "LAYOUT LOCK" not in text and "APPLICATION LOCK" not in text
+        if not name.startswith("hint:"):
+            assert "Output lock:" not in text, name
+    from ComfyArt.bot.skill_output import apply_generate
+    caller = (
+        "栖木咖啡\nOutput lock: leaked header\nSTRUCTURE LOCK C: keep the cup\n"
+        "GUIDELINE LOCK\nLAYOUT LOCK\nAPPLICATION LOCK"
+    )
+    for slot in ("logo_a", "logo_b", "logo_c", "spec"):
+        assembled = apply_generate(
+            {"skill": brand.SKILL, "brand_slot": slot, "prompt": brand.default_hint() + "\n" + caller},
+            current_skill=brand.SKILL,
+        )["prompt"]
+        assert "Output lock:" not in assembled, slot
+        assert "STRUCTURE LOCK" not in assembled, slot
+        assert "GUIDELINE LOCK" not in assembled, slot
+        assert "LAYOUT LOCK" not in assembled, slot
+        assert "APPLICATION LOCK" not in assembled, slot
+        assert "Do not print an English instruction label." in assembled, slot
+        assert "keep the cup" in assembled, slot
+        assert "no industry template was selected" in assembled, slot
+        if slot == "spec":
+            for heading in SPEC_HEADINGS:
+                assert heading in assembled, heading
+            for old in OLD_SPEC_HEADINGS:
+                assert old not in assembled, old
+        if slot == "logo_c":
+            assert "cup-shaped" in assembled
+            assert "The wordmark appears exactly once per zone." in assembled
 
 
 def test_closing_rules_are_in_the_skill_instructions():
@@ -357,11 +384,11 @@ def test_closing_rules_are_in_the_skill_instructions():
     assert "moodboard color cell" in skill
     assert "no invented words" in skill
     assert "no body copy" in skill and "cup sleeve" in skill
-    skill_headings = ["最小尺寸", "变体", "色彩比例", "字体层级", "版式", "使用禁忌", "影像材质"]
+    skill_headings = ["标识", "色彩", "变体", "字体", "版式", "使用禁忌", "影像与材质"]
     assert "exactly 7 panels" in skill
     assert [skill.index(heading) for heading in skill_headings] == sorted(skill.index(heading) for heading in skill_headings)
-    for heading in skill_headings:
-        assert skill.count(heading) == 1, heading
+    for old in OLD_SPEC_HEADINGS:
+        assert old not in skill, old
     assert "no small text at all" in skill and "one garbled character is not acceptable" in skill
     assert "Do not print an English instruction label." in skill
     assert "carries its full heading" in skill and "wordmark at three sizes" in skill

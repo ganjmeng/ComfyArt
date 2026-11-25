@@ -571,22 +571,22 @@ def _spec_lock() -> str:
         )
     return (
         "The spec card is exactly 7 panels. Each heading appears once, in this order: "
-        "最小尺寸 (the mark at its smallest readable size), "
-        "变体 (the approved mark variants), "
-        "色彩比例 (swatches sampled from the moodboard 色彩 cell; each swatch shows the color block, "
+        "标识 (the approved mark), "
+        "色彩 (swatches sampled from the moodboard 色彩 cell; each swatch shows the color block, "
         "a Chinese color name, and a percentage; main colors carry the bulk; any accent is at most about 5%; "
         "do not print a color that is absent from that cell; do not copy a stored palette and do not invent hex values), "
-        "字体层级 (this panel carries its full heading and shows the wordmark at three sizes; "
+        "变体 (the approved mark variants), "
+        "字体 (this panel carries its full heading 字体, not clipped to 字, and shows the wordmark at three sizes; "
         "the Chinese brand name and the English brand name are copied character for character; "
         "Do not drop a character and do not substitute a character), "
         "版式 (one filled layout diagram and nothing else), "
         "使用禁忌 (this panel contains no small text at all; uses only those brand colors; "
         "a red X through each misuse; do not recolor the mark; no other colors), "
-        "影像材质 (this panel contains no small text at all). "
-        "No heading is repeated. No empty panel. "
+        "影像与材质 (this panel contains no small text at all). "
+        "No heading is repeated. No empty panel. Do not add an eighth panel. Do not clip a heading. "
         "The only words on the card are the real Chinese brand name and the real English brand name from the brief, "
         "copied character for character, these seven headings, the wordmark at three sizes, "
-        "and on the color-proportion panel a Chinese color name plus a percentage. "
+        "and on the color panel a Chinese color name plus a percentage. "
         "No explanatory caption, no English subtitle, no body copy, no sample English, no extra line, and no invented words. "
         "Any text that does appear anywhere must be spelled correctly (one garbled character is not acceptable). "
         "Do not print an English instruction label. "
@@ -714,7 +714,7 @@ def _refs_for(slot: dict, progress: dict) -> list[str]:
 # Internal labels that an image model has printed onto a board. They must never
 # remain in the prompt that is submitted.
 _INTERNAL_MARK = re.compile(
-    r"(?i)\b(?:STRUCTURE|GUIDELINE|LAYOUT|APPLICATION)\s+LOCK(?:\s*[ABC])?\s*:?"
+    r"(?i)(?:\b(?:STRUCTURE|GUIDELINE|LAYOUT|APPLICATION)\s+LOCK(?:\s*[ABC])?\s*:?|\bOutput lock:)"
 )
 
 
@@ -1672,8 +1672,8 @@ def flatten_opaque(data: bytes) -> bytes:
 
 def default_hint() -> str:
     return (
-        "Output lock: no industry template was selected, so this is the brand-identity default path, "
-        "NOT the 3+1 logo-system template. Three ask_user cards, then eight images, count=1 each. "
+        "When no industry template was selected, this is the brand-identity default path, "
+        "not the 3+1 logo-system template. Three ask_user cards, then eight images, count=1 each. "
         "Card 1 before any image: one ask_user, questions bi_delivery (multi), bi_color, bi_mark, bi_source, "
         "pages 1-4, page_count 4, allow_skip true, allow_other true, no defaults and no recommended. "
         "Then exactly one moodboard, brand_slot=moodboard, 2048x1152 16:9, exactly 3 equal columns by 3 equal rows, "
@@ -1699,18 +1699,18 @@ def default_hint() -> str:
         "Card 3 bi_direction: three options with image_url of those boards, exactly one recommended, nothing preselected. "
         "Then exactly four deliverables, brand_slot spec, cup, bag (each 1536x2048 3:4) and storefront (2048x1152 16:9). "
         "refs are the chosen logo shape and the moodboard. The spec card is exactly 7 panels. Each heading appears once, in this order: "
-        "最小尺寸 (the mark at its smallest readable size), "
-        "变体 (the approved mark variants), "
-        "色彩比例 (swatches sampled from the moodboard 色彩 cell; each swatch has the color block, a Chinese color name, and a percentage; "
+        "标识 (the approved mark), "
+        "色彩 (swatches sampled from the moodboard 色彩 cell; each swatch has the color block, a Chinese color name, and a percentage; "
         "main colors carry the bulk; any accent is at most about 5%; do not invent hex values), "
-        "字体层级 (this panel carries its full heading and shows the wordmark at three sizes; "
+        "变体 (the approved mark variants), "
+        "字体 (this panel carries its full heading 字体, not clipped to 字, and shows the wordmark at three sizes; "
         "every character of both names, character for character; Do not drop or substitute a character), "
         "版式 (one filled layout diagram and nothing else), "
         "使用禁忌 (this panel contains no small text at all; uses only those brand colors and draws a red X through each misuse), "
-        "影像材质 (this panel contains no small text at all). "
-        "No heading is repeated. No empty panel. "
+        "影像与材质 (this panel contains no small text at all). "
+        "No heading is repeated. No empty panel. Do not add an eighth panel. Do not clip a heading. "
         "The only words are the Chinese brand name and the English brand name from the brief, "
-        "copied character for character, those seven headings, the wordmark at three sizes, and on the color-proportion panel a Chinese color name plus a percentage. "
+        "copied character for character, those seven headings, the wordmark at three sizes, and on the color panel a Chinese color name plus a percentage. "
         "No explanatory caption, no English subtitle, no body copy, and no sample English. "
         "Any text that does appear anywhere must be spelled correctly (one garbled character is not acceptable). "
         "Do not print an English instruction label. "

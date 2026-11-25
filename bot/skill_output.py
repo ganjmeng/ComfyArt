@@ -966,6 +966,9 @@ def apply_generate(args: dict | None, current_skill: str = "", user_text: str | 
         # (api/mcp_tools/canvas.py applies this a second time) is idempotent.
         args["preset"] = plan["preset"]
         args["stage"] = plan["stage"]
+    if sid == "brand-identity-director" and args.get("prompt"):
+        from ..api.brand_identity import scrub_internal_marks
+        args["prompt"] = scrub_internal_marks(str(args.get("prompt") or ""))
     return args
 
 
