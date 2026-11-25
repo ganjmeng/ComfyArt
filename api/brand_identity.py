@@ -1571,6 +1571,16 @@ def steps_are_brand_stage(steps: list) -> bool:
     return bool(slots) and same_stage(slots)
 
 
+def session_default_stage_open() -> bool:
+    """This chat is on moodboard, logos, or finals.
+
+    The chat is ``_chat()``: ``brand_progress_scope`` first, then the guard chat.
+    ``need_card1`` and ``done`` are not open stages, so a finished or reset
+    session does not keep a template call on the grant path.
+    """
+    return str(_progress().get("phase") or "") in {"moodboard", "logos", "finals"}
+
+
 def cumulative_line(total_usd: float, lang: str) -> str:
     from ..bot.run_budget import ui_credits
     prev = float(_progress().get("spent") or 0)

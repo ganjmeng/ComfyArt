@@ -342,8 +342,32 @@ async def test_preset_during_active_default_stage_uses_grant_path(monkeypatch):
     """
     rig, asked, brand_dispatch = await _active_rig(monkeypatch, _preset_during_stage)
     _moodboard_phase()
+    seen = {"stage": False, "slots": [], "session_calls": 0}
+    real_stage = brand.steps_are_brand_stage
+    real_open = brand.session_default_stage_open
+
+    def watch_stage(steps):
+        result = real_stage(steps)
+        slots = []
+        for step in steps or []:
+            args = step.get("arguments") if isinstance(step, dict) else None
+            if isinstance(args, dict) and args.get("brand_slot"):
+                slots.append(str(args["brand_slot"]))
+        if result:
+            seen["stage"] = True
+            seen["slots"] = slots
+        return result
+
+    def watch_open():
+        seen["session_calls"] += 1
+        return real_open()
+
+    monkeypatch.setattr(brand, "steps_are_brand_stage", watch_stage)
+    monkeypatch.setattr(brand, "session_default_stage_open", watch_open)
     await rig.send("出一张", goal="")
     gens = _gens(rig)
+    assert seen["stage"] is True and seen["slots"] == ["moodboard"], seen
+    assert seen["session_calls"] == 0, seen
     assert asked and all(spec.get("brand_confirm") is True for spec in asked)
     assert len(brand_dispatch) == 1, brand_dispatch
     assert brand_dispatch[0].get("preset") == "geometric"
@@ -370,3 +394,71 @@ async def test_mixed_logo_batch_every_item_uses_grant_path(monkeypatch):
     assert all((row.get("width"), row.get("height")) != (1024, 1024) for row in gens)
     recorded = brand.submitted_slots(2)
     assert {str(row.get("brand_slot")) for row in gens} <= recorded
+
+
+async def _under_line(monkeypatch):
+    """A known under-line price. Production confirm is left in place."""
+    rig = Rig(monkeypatch, _script)
+    asked: list[dict] = []
+    original = LocalLlmProvider._confirm_plan
+
+    async def local_price(model, inputs):
+        return (0.04, "quote", "test")
+
+    async def watch(self, spec, turn, handle, **kwargs):
+        asked.append(spec)
+        return await original(self, spec, turn, handle, **kwargs)
+
+    monkeypatch.setattr(rig.p, "_price_one", local_price)
+    monkeypatch.setattr(LocalLlmProvider, "_confirm_plan", watch)
+    return rig, asked
+
+
+async def _assert_template_passthrough(rig, asked):
+    await rig.send(LOCK, goal="")
+    first = _gens(rig)
+    assert asked == [], asked
+    assert len(first) == 3, first
+    assert [(a.get("width"), a.get("height"), a.get("preset"), a.get("brand_slot"))
+            for a in first] == [(1024, 1024, "geometric", None)] * 3
+    rig.n = 0
+    rig.mcp.clear()
+    await rig.send("选第一个方向，直接出规范板", goal="")
+    second = _gens(rig)
+    assert asked == [], asked
+    assert len(second) == 1, second
+    assert (second[0].get("width"), second[0].get("height"), second[0].get("preset"),
+            second[0].get("brand_slot")) == (2048, 1152, "geometric", None)
+
+
+async def test_other_session_template_stays_on_the_quote_gate(monkeypatch):
+    """Chat A on logos must not pull chat B's template generate onto the grant path.
+
+    B's turn is bound with brand_progress_scope. A's phase stays on the other key.
+    """
+    brand.reset_for_tests()
+    BOT_CHAT_ID.set("chat-a")
+    _logos_phase()
+    assert brand._progress()["phase"] == "logos"
+    token = brand.brand_progress_scope("chat-b")
+    try:
+        assert brand._progress()["phase"] == "need_card1"
+        rig, asked = await _under_line(monkeypatch)
+        await _assert_template_passthrough(rig, asked)
+    finally:
+        brand.reset_brand_progress_scope(token)
+    assert brand._progress()["phase"] == "logos"
+
+
+async def test_finished_brand_session_template_stays_on_the_quote_gate(monkeypatch):
+    """After the default path is done, the same chat's template call is a normal quote."""
+    from test_brand_wrapup_1027 import _place, _reach_finals, _submit_finals
+    brand.reset_for_tests()
+    BOT_CHAT_ID.set("chat-done")
+    _reach_finals()
+    for slot in _submit_finals():
+        _place(slot)
+    assert brand._progress()["phase"] == "done"
+    rig, asked = await _under_line(monkeypatch)
+    await _assert_template_passthrough(rig, asked)
+    assert brand._progress()["phase"] == "done"
