@@ -278,8 +278,19 @@ def _cjk(text: str) -> bool:
     return any("\u4e00" <= ch <= "\u9fff" for ch in text)
 
 
+def _locked_options(fallback: list[dict]) -> list[dict]:
+    """Cards 1 and 2 always show the measured labels. A matching count must not keep the model's copy."""
+    rows = []
+    for opt in fallback:
+        row = {"id": str(opt.get("id") or ""), "label": str(opt.get("label") or "")}
+        if opt.get("description"):
+            row["description"] = str(opt["description"])
+        rows.append(row)
+    return rows
+
+
 def _live_options(raw: object, fallback: list[dict], lang: str) -> list[dict]:
-    """Keep the model's labels when the count matches and the language matches; else the measured fallback."""
+    """Card 3 still reads the model's option count. Its titles are replaced from the lock afterwards."""
     got: list[dict] = []
     for item in raw if isinstance(raw, list) else []:
         if isinstance(item, dict):
@@ -304,7 +315,7 @@ def _live_options(raw: object, fallback: list[dict], lang: str) -> list[dict]:
 
 def _question(locked: dict, lang: str, raw: dict | None, *, multi: bool = False) -> dict:
     raw = raw if isinstance(raw, dict) else {}
-    options = _live_options(raw.get("options"), locked["options"], lang)
+    options = _locked_options(locked["options"])
     # Never carry a recommended flag from the model onto card 1 or 2.
     for opt in options:
         opt.pop("recommended", None)
@@ -815,8 +826,10 @@ _SLOT_LOCK = {
         "No other small text. No garbled English captions. No bottom caption. Do not print an English instruction label."
     ),
     "logo_c": (
-        "The badge is a cup-shaped container. A perched bird is the negative space inside the cup, "
-        "not a bird standing on a branch outside it. Not a circular seal, not a wood plaque. "
+        "The badge is a cup-shaped container, not a picture of a handled cup. "
+        "A perched bird is the negative space inside the cup, reversed out in white from an indigo badge, "
+        "not a bird drawn as a positive shape and not a bird standing on a branch outside it. "
+        "Not a circular seal, not a wood plaque. "
         "The sheet has exactly four labelled zones, in this order: 主组合, 符号构造, 横版, 小尺寸. "
         "Each of the four zone labels appears exactly once. "
         "符号构造 shows the actual symbol construction. No empty placeholder box and no X box. "
@@ -841,6 +854,43 @@ _SLOT_LOCK = {
         "Not a hanging-sign close-up. No garbled small type."
     ),
 }
+
+
+# Generation preface for the spec image. This is not the locked brief. The brief stays
+# in _spec_lock(), default_hint(), and the skill instructions, and is still appended last.
+_SPEC_PREFACE = (
+    "Draw seven separate panels, one heading each, in this order: "
+    "标识 / LOGO, 色彩 / COLOR, 变体 / VARIANTS, 字体 / TYPE, 版式 / LAYOUT, "
+    "使用禁忌 / MISUSE, 影像与材质 / IMAGE. "
+    "字体 / TYPE is its own panel with a type hierarchy. "
+    "版式 / LAYOUT is a different panel with one filled layout diagram. "
+    "Do not merge them and do not write a heading such as 版式 / TYPE. "
+    "色彩 / COLOR is flat color swatches sampled from the moodboard, not a wood-grain texture. "
+    "Each swatch prints one correctly spelled simplified-Chinese color name, a role, and a percentage, "
+    "and the percentages sum to 100%. "
+    "标识 / LOGO contains a drawn 「最小使用尺寸」 diagram of the mark at its smallest size, "
+    "inside that panel, not only the quoted words. "
+    "Warm paper ground with a soft vignette. Not a black background and not a sparse empty card."
+)
+
+
+def _mood_color_line() -> str:
+    """The confirmed card-1 color label, so the moodboard is not painted from the model's own wording."""
+    hint = color_hue_hint()
+    if not hint:
+        return ""
+    return "Confirmed color direction, keep it in the 色彩 cell and do not replace it: " + hint + "."
+
+
+def _bind_lock(prompt: str, lock: str, preface: str = "") -> str:
+    """Put the slot lock last. A caller who already pasted it, then added other words, does not bury it."""
+    body = str(prompt or "")
+    for piece in (lock, preface):
+        if piece and piece in body:
+            body = body.replace(piece, " ")
+    body = re.sub(r"[ \t]{2,}", " ", body).strip()
+    parts = [part for part in (preface.strip(), body, lock.strip()) if part]
+    return "\n".join(parts)
 
 
 def fill_default(args: dict) -> dict:
@@ -878,9 +928,12 @@ def fill_default(args: dict) -> dict:
     args.pop("preset", None)
     args.pop("stage", None)
     lock = _spec_lock() if str(slot["id"]) == "spec" else _SLOT_LOCK.get(str(slot["id"]))
-    prompt = str(args.get("prompt") or "")
-    if lock and lock not in prompt:
-        prompt = (prompt.rstrip() + "\n" + lock).strip()
+    preface = _SPEC_PREFACE if str(slot["id"]) == "spec" else ""
+    prompt = _bind_lock(str(args.get("prompt") or ""), str(lock or ""), preface)
+    if str(slot["id"]) == "moodboard":
+        color_line = _mood_color_line()
+        if color_line and color_line not in prompt:
+            prompt = (prompt.rstrip() + "\n" + color_line).strip()
     args["prompt"] = scrub_internal_marks(prompt)
     refs = _refs_for(slot, progress)
     if refs:
@@ -1440,11 +1493,37 @@ def steps_are_brand_stage(steps: list) -> bool:
     return bool(slots) and same_stage(slots)
 
 
+def other_stage_credits(stage: int) -> int:
+    """Credits already confirmed on the other stages. This stage is excluded so a re-quote replaces it.
+
+    Each stage is ceiled on its own, which is the amount that stage's card showed and the account
+    was charged. Summing those integers matches the confirmed total. Ceil of the raw dollar sum
+    can drop a stage that was already charged.
+    """
+    from ..bot.run_budget import ui_credits
+    total = 0
+    for key, rec in (_progress().get("quoted_stages") or {}).items():
+        try:
+            key_i = int(key)
+        except (TypeError, ValueError):
+            continue
+        if int(stage or 0) and key_i == int(stage):
+            continue
+        total += ui_credits(_stage_amount(rec))
+    return total
+
+
+def _sum_stage_usd(progress: dict) -> float:
+    total = 0.0
+    for rec in (progress.get("quoted_stages") or {}).values():
+        total += _stage_amount(rec)
+    return round(total, 4)
+
+
 def cumulative_line(total_usd: float, lang: str) -> str:
     from ..bot.run_budget import ui_credits
-    prev = float(_progress().get("spent") or 0)
     stage = ui_credits(float(total_usd or 0))
-    cum = ui_credits(prev + float(total_usd or 0))
+    cum = other_stage_credits(0) + stage
     if lang == "zh":
         return f"本阶段 {stage} 积分，累计 {cum} 积分（含本阶段）。"
     return f"This stage is {stage} credits. Cumulative {cum} credits, including this stage."
@@ -1711,19 +1790,22 @@ def note_confirmed(total_usd: float, units: int = 0, stage: int = 0) -> None:
     done = progress.setdefault("quoted_stages", {})
     key = int(stage or 0)
     amount = float(total_usd or 0)
+    first = not (key and key in done)
     if key and key in done:
-        progress["spent"] = round(spend_before(key) + amount, 4)
         rec = done[key]
         if isinstance(rec, dict):
             rec["amount"] = amount
         else:
             done[key] = {"amount": amount, "fingerprint": None, "dispatched": False}
-        _persist_grants()
-        return
-    if key:
+    elif key:
         done[key] = {"amount": amount, "fingerprint": None, "dispatched": False}
-    progress["spent"] = round(float(progress.get("spent") or 0) + amount, 4)
+    if key:
+        progress["spent"] = _sum_stage_usd(progress)
+    else:
+        progress["spent"] = round(float(progress.get("spent") or 0) + amount, 4)
     _persist_grants()
+    if not first:
+        return
     if units <= 0:
         return
     try:
@@ -1799,7 +1881,7 @@ def default_hint() -> str:
         "Then exactly three SEPARATE logo direction boards, brand_slot logo_a then logo_b then logo_c, "
         "each 2048x2048 1:1. logo_a is one open single-line bird on a branch. "
         "logo_b is a filled wood plaque plus a separate circular seal. "
-        "logo_c is a cup-shaped badge with a perched bird as the negative space inside the cup. "
+        "logo_c is a cup-shaped badge, not a picture of a handled cup, with a perched bird as the negative space inside the cup, reversed out in white from an indigo badge, not drawn as a positive bird. "
         "Each logo board has four labelled zones: 主组合, 符号构造, 横版, 小尺寸. "
         "Each zone label appears exactly once. "
         "符号构造 shows the actual symbol construction. No empty placeholder box and no X box. "
@@ -2006,6 +2088,7 @@ def _hydrate_grants(chat: str, row: dict) -> None:
             thawed[stage] = rec
     if thawed:
         row["quoted_stages"] = thawed
+        row["spent"] = _sum_stage_usd(row)
 
 
 def settle_restored_cards(chat_id: str, messages: list | None = None, *, now: float | None = None) -> list:

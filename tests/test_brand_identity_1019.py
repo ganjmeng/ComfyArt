@@ -32,6 +32,51 @@ def _card1():
     ], "page_count": 4})
 
 
+def test_cards_1_and_2_keep_locked_labels_when_the_model_count_matches():
+    """A live card kept 「暖木棕 + 米白」 because three options matched. The lock wins."""
+    card = validate_spec({"questions": [
+        {"id": "bi_delivery", "prompt": "这次「基础品牌视觉系统」要交付哪些物料？",
+         "options": [{"id": "A", "label": "随便一套"}, {"id": "B", "label": "菜单"},
+                     {"id": "C", "label": "社媒"}, {"id": "D", "label": "名片"}]},
+        {"id": "bi_color", "prompt": "色彩方向选哪一种？",
+         "options": [{"id": "A", "label": "暖木棕 + 米白"}, {"id": "B", "label": "只要棕色"},
+                     {"id": "C", "label": "绿色"}]},
+        {"id": "bi_mark", "prompt": "Logo 的构成方向偏好？",
+         "options": [{"id": "A", "label": "甲"}, {"id": "B", "label": "乙"}, {"id": "C", "label": "丙"}]},
+        {"id": "bi_source", "prompt": "门店与产品素材怎么处理？",
+         "options": [{"id": "A", "label": "没有照片"}, {"id": "B", "label": "我来传"},
+                     {"id": "C", "label": "只要平面"}]},
+    ], "page_count": 4})
+    color = card["questions"][1]["options"]
+    assert [opt["label"] for opt in color] == [
+        "暖土色为主 + 低饱和靛蓝点缀",
+        "纯暖土色系：陶土橘 / 焦糖 / 米白 / 深焙棕",
+        "鼠尾草绿 + 原木 + 米白，自然感更强",
+    ]
+    blob = __import__("json").dumps(card, ensure_ascii=False)
+    assert "暖木棕 + 米白" not in blob
+    assert "随便一套" not in blob
+    mood = validate_spec({"questions": [{
+        "id": "bi_moodboard",
+        "prompt": "这张情绪板可以作为后续全套物料的视觉基准吗？",
+        "options": [{"id": "A", "label": "可以"}, {"id": "B", "label": "再来一张"},
+                    {"id": "C", "label": "我自己改"}],
+    }]})
+    assert [opt["label"] for opt in mood["questions"][0]["options"]] == [
+        "就这版，通过", "重出情绪板，加强靛蓝点缀", "告诉我要改哪几格",
+    ]
+    en = brand.normalize_card({"questions": [{
+        "id": "bi_color",
+        "prompt": "Which color direction?",
+        "options": [{"id": "A", "label": "Warm wood and white"},
+                    {"id": "B", "label": "Brown only"}, {"id": "C", "label": "Green"}],
+    }]}, "en")
+    assert en["questions"][1]["options"][0]["label"] == (
+        "Warm earth as the base, with a low-saturation indigo accent"
+    )
+    assert "Warm wood and white" not in __import__("json").dumps(en)
+
+
 def test_card1_is_one_card_four_pages_and_not_preselected():
     spec = _card1()
     assert spec["page_count"] == 4
@@ -134,6 +179,8 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "cup-shaped" in c["prompt"]
     assert "single-line" not in b["prompt"]
     assert "perched bird is the negative space inside the cup" in c["prompt"]
+    assert "reversed out in white" in c["prompt"] and "indigo" in c["prompt"]
+    assert "handled cup" in c["prompt"] and "positive shape" in c["prompt"]
     assert "bird standing on a branch" in c["prompt"]
     assert "The wordmark appears exactly once per zone." in c["prompt"]
     for board in (a, b, c):
@@ -611,6 +658,72 @@ def test_stage_quote_is_separate_and_names_the_cumulative():
     assert quote.total == 0.03
     assert quote.lines[0].text == "情绪板 2048×1152 16:9"
     assert "精确像素" not in quote.lines[0].text
+
+
+def test_third_stage_cumulative_is_the_sum_of_the_confirmed_stages():
+    """Stages quoted 3, 9, and 12. The third card's cumulative is 24, not 21."""
+    import asyncio
+    brand.note_confirmed(0.03, 1, stage=1)
+    brand.note_confirmed(0.09, 3, stage=2)
+    assert brand._progress()["spent"] == 0.12
+
+    async def pricer(model, inputs):
+        return 0.03, "quote", ""
+
+    async def models_for(feature):
+        return []
+
+    steps = []
+    for slot, width, height, ratio in (
+        ("spec", 1536, 2048, "3:4"),
+        ("cup", 1536, 2048, "3:4"),
+        ("bag", 1536, 2048, "3:4"),
+        ("storefront", 2048, 1152, "16:9"),
+    ):
+        steps.append({"text": slot, "tool": "generate_image", "model": brand.QWEN_T2I, "arguments": {
+            "skill": brand.SKILL, "brand_slot": slot, "prompt": slot,
+            "width": width, "height": height, "ratio": ratio, "count": 1,
+        }})
+    quote = asyncio.run(build_quote(steps, "zh", threshold=0.5, pricer=pricer, models_for=models_for))
+    assert quote is not None
+    assert "本阶段 12" in quote.prompt
+    assert "累计 24" in quote.prompt
+    assert "累计 21" not in quote.prompt
+    brand.drop_memory_for_tests()
+    assert brand._progress()["spent"] == 0.12
+    again = asyncio.run(build_quote(steps, "zh", threshold=0.5, pricer=pricer, models_for=models_for))
+    assert "累计 24" in again.prompt
+
+
+def test_spec_prompt_leads_with_the_panel_contract_and_keeps_the_locked_brief_last():
+    caller = brand._spec_lock() + "\nMerge the type and layout panels into 版式 / TYPE."
+    spec = brand.fill_default({"brand_slot": "spec", "prompt": caller})["prompt"]
+    assert spec.startswith("Draw seven separate panels")
+    assert "字体 / TYPE is its own panel" in spec
+    assert "版式 / LAYOUT is a different panel" in spec
+    assert "percentages sum to 100%" in spec
+    assert "soft vignette" in spec
+    assert "drawn 「最小使用尺寸」 diagram" in spec
+    assert spec.rstrip().endswith("Paper ground, not black.")
+    assert brand._spec_lock() in spec
+    assert spec.index("版式 / TYPE") < spec.rindex("Paper ground, not black.")
+    assert spec.count("exactly 7 panels") == 1
+    again = brand.fill_default({"brand_slot": "spec", "prompt": spec})["prompt"]
+    assert again.count("Draw seven separate panels") == 1
+    assert again.count("exactly 7 panels") == 1
+    assert again.rstrip().endswith("Paper ground, not black.")
+
+
+def test_moodboard_prompt_keeps_the_locked_color_direction():
+    brand.record_card_answer(_card1(), {
+        "bi_delivery": {"selected": ["A"]},
+        "bi_color": {"selected": ["A"]},
+        "bi_mark": {"selected": ["A"]},
+        "bi_source": {"selected": ["A"]},
+    })
+    mood = brand.fill_default({"brand_slot": "moodboard", "prompt": "暖木棕 + 米白"})
+    assert "暖土色为主 + 低饱和靛蓝点缀" in mood["prompt"]
+    assert "Confirmed color direction" in mood["prompt"]
 
 
 def test_card3_options_match_the_enforced_structures():

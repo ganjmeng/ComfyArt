@@ -794,12 +794,11 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         question = "确定开始吗？" if lang == "zh" else "Start?"
         prompt = prompt.replace(question, "").strip()
     elif brand_stage and not any_unpriced:
-        from ..api.brand_identity import brand_prompt, quoted_stage, spend_before
+        from ..api.brand_identity import brand_prompt, other_stage_credits, quoted_stage
         from .run_budget import ui_credits as _ui_credits
         stage = quoted_stage(prepared)
-        prev = spend_before(stage) if stage else 0.0
         stage_credits = 0 if all_unpriced else _ui_credits(total)
-        cum_credits = 0 if all_unpriced else _ui_credits(prev + total)
+        cum_credits = stage_credits + (other_stage_credits(stage) if stage else 0)
         under = total < float(threshold)
         prompt = brand_prompt(stage_credits, cum_credits, len(lines), lang, under_gate=under)
     if quoted_plan is not None:
