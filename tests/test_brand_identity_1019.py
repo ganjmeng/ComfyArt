@@ -163,7 +163,7 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "not a separate panel" in spec["prompt"]
     assert "typographic blocks" in spec["prompt"]
     assert "not a color swatch" in spec["prompt"]
-    assert "four distinct misuses" in spec["prompt"]
+    assert "four visually extreme, mutually distinct misuses" in spec["prompt"]
     assert "stretched or squeezed" in spec["prompt"]
     assert "similar-colored ground" in spec["prompt"]
     assert "write this heading exactly once" in spec["prompt"]
@@ -171,6 +171,14 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "no other application mockup" in spec["prompt"]
     assert "do not swap 变体 with 字体" in spec["prompt"]
     assert "do not write any heading twice" in spec["prompt"]
+    assert "in this exact order: 标识、色彩、变体、字体、版式、使用禁忌、影像与材质" in spec["prompt"]
+    assert spec["prompt"].index("in this exact order:") < spec["prompt"].index("标识 (")
+    assert "seven separate non-overlapping cells" in spec["prompt"][:spec["prompt"].index("标识 (")]
+    assert "typographic/page layout" in spec["prompt"]
+    assert "never a single brown rectangle" in spec["prompt"]
+    assert "no caption micro-text" in spec["prompt"]
+    assert "never stacked under the 禁忌 row" in spec["prompt"]
+    assert "visible margin box on all four sides" in spec["prompt"]
     assert "do not draw four copies of the correct mark" in spec["prompt"]
     assert "never overlapping any other panel" in spec["prompt"]
     assert "header band" in spec["prompt"]
@@ -198,6 +206,13 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "no other application mockup" in hint
     assert "do not swap 变体 with 字体" in hint
     assert "do not write any heading twice" in hint
+    assert "in this exact order: 标识、色彩、变体、字体、版式、使用禁忌、影像与材质" in hint
+    assert hint.index("in this exact order:") < hint.index("标识 (")
+    assert "typographic/page layout" in hint
+    assert "never a single brown rectangle" in hint
+    assert "no caption micro-text" in hint
+    assert "never stacked under the 禁忌 row" in hint
+    assert "four visually extreme, mutually distinct misuses" in hint
     assert "Do not state hex values" in hint and "exact values are on the spec card" in hint
     assert "#" not in hint
     store = brand.fill_default({"brand_slot": "storefront", "prompt": "门头"})
@@ -353,12 +368,20 @@ def test_spec_card_is_seven_lovart_panels_and_brand_prompts_have_no_lock_words()
     assert "clear-space diagram" in spec and "minimum-use size" in spec
     assert "not a separate panel" in spec
     assert "typographic blocks" in spec and "not a color swatch" in spec
-    assert "four distinct misuses" in spec and "stretched or squeezed" in spec
+    assert "four visually extreme, mutually distinct misuses" in spec and "stretched or squeezed" in spec
     assert "write this heading exactly once" in spec
     assert "seven separate non-overlapping cells" in spec
     assert "no other application mockup" in spec
     assert "do not swap 变体 with 字体" in spec
     assert "do not write any heading twice" in spec
+    assert "in this exact order: 标识、色彩、变体、字体、版式、使用禁忌、影像与材质" in spec
+    assert spec.index("in this exact order:") < spec.index("标识 (")
+    assert "seven separate non-overlapping cells" in spec[:spec.index("标识 (")]
+    assert "typographic/page layout" in spec
+    assert "never a single brown rectangle" in spec
+    assert "no caption micro-text" in spec
+    assert "never stacked under the 禁忌 row" in spec
+    assert "visible margin box on all four sides" in spec
     assert "do not draw four copies of the correct mark" in spec
     assert "never overlapping any other panel" in spec
     assert "header band" in spec and "visible margin box" in spec
@@ -432,12 +455,20 @@ def test_closing_rules_are_in_the_skill_instructions():
     assert "Do not print an English instruction label." in skill
     assert "carries its full heading" in skill and "wordmark at three sizes" in skill
     assert "clear-space diagram" in skill and "minimum-use size" in skill
-    assert "typographic blocks" in skill and "four distinct misuses" in skill
+    assert "typographic blocks" in skill and "four visually extreme, mutually distinct misuses" in skill
     assert "write this heading exactly once" in skill
     assert "seven separate non-overlapping cells" in skill
     assert "no other application mockup" in skill
     assert "do not swap 变体 with 字体" in skill
     assert "do not write any heading twice" in skill
+    assert "in this exact order: 标识、色彩、变体、字体、版式、使用禁忌、影像与材质" in skill
+    assert skill.index("in this exact order:") < skill.index("标识 (")
+    assert "seven separate non-overlapping cells" in skill[:skill.index("标识 (")]
+    assert "typographic/page layout" in skill
+    assert "never a single brown rectangle" in skill
+    assert "no caption micro-text" in skill
+    assert "never stacked under the 禁忌 row" in skill
+    assert "visible margin box on all four sides" in skill
     assert "do not draw four copies of the correct mark" in skill
     assert "never overlapping any other panel" in skill
     assert "header band" in skill and "visible margin box" in skill
