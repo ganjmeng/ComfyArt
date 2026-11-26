@@ -166,6 +166,15 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "four distinct misuses" in spec["prompt"]
     assert "stretched or squeezed" in spec["prompt"]
     assert "similar-colored ground" in spec["prompt"]
+    assert "write this heading exactly once" in spec["prompt"]
+    assert "seven separate non-overlapping cells" in spec["prompt"]
+    assert "no other application mockup" in spec["prompt"]
+    assert "do not swap 变体 with 字体" in spec["prompt"]
+    assert "do not write any heading twice" in spec["prompt"]
+    assert "do not draw four copies of the correct mark" in spec["prompt"]
+    assert "never overlapping any other panel" in spec["prompt"]
+    assert "header band" in spec["prompt"]
+    assert "visible margin box" in spec["prompt"]
     assert "carries its full heading" in spec["prompt"] and "wordmark at three sizes" in spec["prompt"]
     assert "this panel contains no small text at all" in spec["prompt"]
     assert spec["prompt"].count("no small text at all") == 2
@@ -184,6 +193,11 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "title, subtitle" not in spec["prompt"]
     assert "#" not in spec["prompt"]
     assert "moodboard 色彩 cell" in hint
+    assert "write this heading exactly once" in hint
+    assert "seven separate non-overlapping cells" in hint
+    assert "no other application mockup" in hint
+    assert "do not swap 变体 with 字体" in hint
+    assert "do not write any heading twice" in hint
     assert "Do not state hex values" in hint and "exact values are on the spec card" in hint
     assert "#" not in hint
     store = brand.fill_default({"brand_slot": "storefront", "prompt": "门头"})
@@ -340,6 +354,14 @@ def test_spec_card_is_seven_lovart_panels_and_brand_prompts_have_no_lock_words()
     assert "not a separate panel" in spec
     assert "typographic blocks" in spec and "not a color swatch" in spec
     assert "four distinct misuses" in spec and "stretched or squeezed" in spec
+    assert "write this heading exactly once" in spec
+    assert "seven separate non-overlapping cells" in spec
+    assert "no other application mockup" in spec
+    assert "do not swap 变体 with 字体" in spec
+    assert "do not write any heading twice" in spec
+    assert "do not draw four copies of the correct mark" in spec
+    assert "never overlapping any other panel" in spec
+    assert "header band" in spec and "visible margin box" in spec
     assert spec.count("no small text at all") == 2
     assert "使用禁忌 (this panel contains no small text at all" in spec
     assert "影像与材质 (this panel contains no small text at all" in spec
@@ -411,6 +433,14 @@ def test_closing_rules_are_in_the_skill_instructions():
     assert "carries its full heading" in skill and "wordmark at three sizes" in skill
     assert "clear-space diagram" in skill and "minimum-use size" in skill
     assert "typographic blocks" in skill and "four distinct misuses" in skill
+    assert "write this heading exactly once" in skill
+    assert "seven separate non-overlapping cells" in skill
+    assert "no other application mockup" in skill
+    assert "do not swap 变体 with 字体" in skill
+    assert "do not write any heading twice" in skill
+    assert "do not draw four copies of the correct mark" in skill
+    assert "never overlapping any other panel" in skill
+    assert "header band" in skill and "visible margin box" in skill
     assert "wordmark appears exactly once per zone" in skill
     assert "#" not in skill
     hint = brand.default_hint()
