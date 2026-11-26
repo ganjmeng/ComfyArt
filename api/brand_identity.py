@@ -811,7 +811,9 @@ _SLOT_LOCK = {
         "The sheet has exactly four labelled zones, in this order: 主组合, 符号构造, 横版, 小尺寸. "
         "Each of the four zone labels appears exactly once. "
         "符号构造 shows the actual symbol construction. No empty placeholder box and no X box. "
-        "小尺寸 includes the symbol, not the wordmark alone. "
+        "小尺寸 includes the symbol, not the wordmark alone, as three small applications side by side: "
+        "a rounded-square icon, a circular stamp, and a solid square badge. "
+        "横版 appears once. Do not draw a second landscape treatment. "
         "In each zone the Chinese brand name and the English brand name appear together exactly once. "
         "No other small text. No bottom caption. Do not print an English instruction label."
     ),
@@ -821,12 +823,14 @@ _SLOT_LOCK = {
         "The sheet has exactly four labelled zones, in this order: 主组合, 符号构造, 横版, 小尺寸. "
         "Each of the four zone labels appears exactly once. "
         "符号构造 shows the actual symbol construction. No empty placeholder box and no X box. "
-        "小尺寸 includes the symbol, not the wordmark alone. "
+        "小尺寸 includes the symbol, not the wordmark alone, as the seal, a horizontal plaque, a circle, and a square. "
+        "横版 appears once. Do not draw a second landscape treatment. "
         "In each zone the Chinese brand name and the English brand name appear together exactly once. "
         "No other small text. No garbled English captions. No bottom caption. Do not print an English instruction label."
     ),
     "logo_c": (
         "The badge is a cup-shaped container, not a picture of a handled cup. "
+        "The cup silhouette has no handle. "
         "The badge uses the accent color or the dark color from the confirmed color direction, "
         "and the bird is reversed out inside it as negative space. "
         "A perched bird is the negative space inside the cup, "
@@ -834,23 +838,30 @@ _SLOT_LOCK = {
         "Not a circular seal, not a wood plaque. "
         "The sheet has exactly four labelled zones, in this order: 主组合, 符号构造, 横版, 小尺寸. "
         "Each of the four zone labels appears exactly once. "
+        "横版 appears once. Do not draw a second landscape treatment. "
         "符号构造 shows the actual symbol construction. No empty placeholder box and no X box. "
-        "小尺寸 includes the symbol, not the wordmark alone. "
+        "小尺寸 includes the symbol, not the wordmark alone, as an icon, a cup-lid sticker, and an emboss. "
         "The wordmark appears exactly once per zone. "
         "No other small text. No garbled English captions. No bottom caption. Do not print an English instruction label."
     ),
     "cup": (
         "The takeaway cup must wear a cup sleeve (杯套). A bare cup with no sleeve is wrong. "
+        "Show two vessels: a paper takeaway cup wearing the sleeve, and a clear iced cup with the mark on the cup. "
+        "A flat sleeve lies in front. The sleeve carries one thin stripe in the accent color of the confirmed color direction. "
+        "One plain white cup alone is wrong. "
         "The print shows the Chinese brand name and the English brand name, both readable. "
         "Do not print the English name alone. "
         "No extra English captions. A real cup on a light ground, not a black void."
     ),
     "bag": (
-        "Paper bag. The Chinese name and the English name are both readable. "
+        "Paper bag. Show two paper bags: a large bag standing and a smaller bag lying in front of it. "
+        "A thin vertical stripe in the accent color of the confirmed color direction runs down the side of the standing bag. "
+        "The Chinese name and the English name are both readable. "
         "Not English only. No garbled captions. Real paper, not a black void."
     ),
     "storefront": (
         "The full shopfront, front view, the facade filling the frame edge to edge. "
+        "The fascia eave is the accent color or the dark color from the confirmed color direction, not bare wood. "
         "The fascia carries the Chinese brand name and the English brand name once. "
         "An A-frame standing sign stands on the pavement in front of the entrance. "
         "Not a hanging-sign close-up. No garbled small type."
@@ -881,7 +892,11 @@ def _mood_color_line() -> str:
     hint = color_hue_hint()
     if not hint:
         return ""
-    return "Confirmed color direction, keep it in the 色彩 cell and do not replace it: " + hint + "."
+    return (
+        "Confirmed color direction, keep it in the 色彩 cell and do not replace it: " + hint + ". "
+        "Paint that cell as flat swatches from this direction, including its accent, "
+        "and print this direction as the cell annotation. Do not swap the accent for a different hue."
+    )
 
 
 def _logo_c_accent_line() -> str:
@@ -889,7 +904,38 @@ def _logo_c_accent_line() -> str:
     hint = color_hue_hint()
     if not hint:
         return ""
-    return "The confirmed color direction for this badge's accent is: " + hint + "."
+    return (
+        "The confirmed color direction for this badge's accent is: " + hint + ". "
+        "Fill the badge with that accent or the dark color in this direction. "
+        "Do not invent a hue that is outside this direction."
+    )
+
+
+def _apply_color_line(part: str) -> str:
+    """Runtime only. Name the confirmed direction for one application. No palette is hardcoded."""
+    hint = color_hue_hint()
+    if not hint:
+        return ""
+    return "The confirmed color direction for the " + part + " is: " + hint + "."
+
+
+def _spec_assembly_line() -> str:
+    """Runtime only. The locked brief stays byte-identical and still ends the lock."""
+    hint = color_hue_hint()
+    named = ""
+    if hint:
+        named = " Sample the swatches from the confirmed color direction: " + hint + "."
+    return (
+        "Do not copy the reference moodboard into a 3 by 3 grid. "
+        "Spell each heading exactly once. Do not write COLR, TISUS, or INMAGE. "
+        "使用禁忌 / MISUSE is an independent panel, not merged into another panel. "
+        "The hue hint is not a swatch and it does not remove the swatches. "
+        "色彩 / COLOR is flat swatches, each with one simplified-Chinese color name, a role, and a percentage, "
+        "and the percentages sum to 100%, including the accent from the confirmed color direction. "
+        "标识 / LOGO draws a minimum-size diagram of the mark with measurement lines, "
+        "not only the words 「最小使用尺寸」."
+        + named
+    )
 
 
 def _without_exact_line(prompt: str, line: str) -> str:
@@ -954,6 +1000,14 @@ def fill_default(args: dict) -> dict:
         color_line = _mood_color_line()
     elif str(slot["id"]) == "logo_c":
         color_line = _logo_c_accent_line()
+    elif str(slot["id"]) == "cup":
+        color_line = _apply_color_line("sleeve stripe")
+    elif str(slot["id"]) == "bag":
+        color_line = _apply_color_line("side stripe")
+    elif str(slot["id"]) == "storefront":
+        color_line = _apply_color_line("fascia eave")
+    elif str(slot["id"]) == "spec":
+        color_line = _spec_assembly_line()
     else:
         color_line = ""
     # The confirmed color is a runtime line after the lock. Strip it before rebinding
