@@ -954,11 +954,13 @@ def fill_default(args: dict) -> dict:
         color_line = _mood_color_line()
     elif str(slot["id"]) == "logo_c":
         color_line = _logo_c_accent_line()
-        raw_prompt = _without_exact_line(raw_prompt, color_line)
     else:
         color_line = ""
+    # The confirmed color is a runtime line after the lock. Strip it before rebinding
+    # so a second fill, the one the grant freezes and the one dispatch submits, match.
+    raw_prompt = _without_exact_line(raw_prompt, color_line)
     prompt = _bind_lock(raw_prompt, str(lock or ""), preface)
-    if color_line and (str(slot["id"]) == "logo_c" or color_line not in prompt):
+    if color_line:
         prompt = (prompt.rstrip() + "\n" + color_line).strip()
     args["prompt"] = scrub_internal_marks(prompt)
     refs = _refs_for(slot, progress)

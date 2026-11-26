@@ -291,9 +291,16 @@ async def test_normal_stages_do_not_requote_because_of_program_assembly(monkeypa
             assert len(session.confirms) == 1, phase
             assert len(session.generate_posts) == len(rows), phase
             for (slot, prompt), posted in zip(rows, session.generate_posts):
+                posted_prompt = str(posted["prompt"])
                 assert posted["brand_slot"] == slot
-                assert str(posted["prompt"]).startswith(prompt)
-                assert str(posted["prompt"]) != prompt
+                # Assembly keeps the caller's words and adds the lock. The spec
+                # preface leads that prompt; every other slot still starts with the caller.
+                assert prompt in posted_prompt
+                assert posted_prompt != prompt
+                if slot == "spec":
+                    assert posted_prompt.startswith("Draw seven separate panels")
+                else:
+                    assert posted_prompt.startswith(prompt)
             assert session.wavespeed_posts == []
 
             def second(messages, n, generates=generates):

@@ -733,6 +733,8 @@ def test_moodboard_prompt_keeps_the_locked_color_direction():
     mood = brand.fill_default({"brand_slot": "moodboard", "prompt": "暖木棕 + 米白"})
     assert "暖土色为主 + 低饱和靛蓝点缀" in mood["prompt"]
     assert "Confirmed color direction" in mood["prompt"]
+    again_mood = brand.fill_default({"brand_slot": "moodboard", "prompt": mood["prompt"]})
+    assert again_mood["prompt"] == mood["prompt"]
     logo = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})
     assert "The confirmed color direction for this badge's accent is: 暖土色为主 + 低饱和靛蓝点缀" in logo["prompt"]
     assert "靛蓝" not in brand._SLOT_LOCK["logo_c"] and "indigo" not in brand._SLOT_LOCK["logo_c"].lower()
