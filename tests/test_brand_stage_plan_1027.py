@@ -198,12 +198,15 @@ async def _run(monkeypatch, script):
     message = chat_store.create_message(chat_id=chat["id"], role="assistant", blocks=[], status="streaming")
     ACTIVE_TURNS[chat["id"]] = _TurnState(TurnHandle(), chat["id"], message["id"])
     paid: list[dict] = []
+    order: list[tuple] = []
 
     async def generate(args):
+        slot = str(args.get("brand_slot") or "")
+        order.append(("generate", slot))
         gid = f"g{len(paid) + 1}"
         payload = {"ids": [gid]}
         brand.record_submitted(args, payload)
-        paid.append({"slot": args.get("brand_slot"), "id": gid})
+        paid.append({"slot": slot, "id": gid})
         return payload
 
     async def wait(_args):
@@ -237,6 +240,9 @@ async def _run(monkeypatch, script):
         return (0.03, "quote", "stage-plan")
 
     async def confirm(spec, turn, handle, *, run=None, messages=None, retire_previous: bool = False):
+        frozen = spec.get("frozen") if isinstance(spec, dict) else None
+        stage = int((frozen or {}).get("stage") or 0) if isinstance(frozen, dict) else 0
+        order.append(("confirm", stage))
         rig.confirms.append(spec)
         return "start"
 
@@ -306,6 +312,7 @@ async def _run(monkeypatch, script):
         "payload": payload,
         "phase": snapshot["phase"],
         "shapes": snapshot["shapes"],
+        "order": order,
     }
 
 
@@ -316,6 +323,30 @@ def _user_text(requests) -> str:
                 if "brand-identity-director" in message["content"]:
                     return message["content"]
     return ""
+
+
+@pytest.mark.asyncio
+async def test_each_confirmed_stage_dispatches_its_images_immediately(monkeypatch):
+    """Start dispatches that stage before another quote is asked.
+
+    Moodboard, the three logos, and the four deliverables each go out in the
+    same confirmation. No second card is inserted in front of them.
+    """
+    out = await _run(monkeypatch, _positive_script)
+    assert out["order"] == [
+        ("confirm", 1),
+        ("generate", "moodboard"),
+        ("confirm", 2),
+        ("generate", "logo_a"),
+        ("generate", "logo_b"),
+        ("generate", "logo_c"),
+        ("confirm", 3),
+        ("generate", "spec"),
+        ("generate", "cup"),
+        ("generate", "bag"),
+        ("generate", "storefront"),
+    ]
+    assert [stage for kind, stage in out["order"] if kind == "confirm"] == [1, 2, 3]
 
 
 @pytest.mark.asyncio
