@@ -769,16 +769,39 @@ def test_logo_c_warm_earth_prompt_does_not_name_indigo():
 
 def test_visual_assembly_follows_the_gold_sheet():
     """Slot prompts and runtime color lines carry the gold layout. The shared lock names no palette."""
-    for banned in ("陶土橙", "焯糖棕", "燕麦奶白", "深焙棕", "低饱和蔚蓝", "暖土为主·蔚蓝点缀"):
-        assert banned not in brand._SLOT_LOCK["logo_c"]
-        assert banned not in brand._SLOT_LOCK["logo_a"]
-        assert banned not in brand._SLOT_LOCK["logo_b"]
-        assert banned not in brand._SLOT_LOCK["cup"]
-        assert banned not in brand._SLOT_LOCK["bag"]
-        assert banned not in brand._SLOT_LOCK["storefront"]
-        assert banned not in brand._spec_lock()
-        assert banned not in brand._SPEC_PREFACE
-        assert banned not in brand.default_hint()
+    from pathlib import Path
+    skill_text = Path("src/skills.ts").read_text(encoding="utf-8")
+    skill_at = skill_text.index("id: 'brand-identity-director'")
+    skill = skill_text[skill_at:skill_text.index("category: 'branding'", skill_at)]
+    hint = brand.default_hint()
+    banned_names = ("陶土橙", "焦糖棕", "燕麦奶白", "深焙棕", "低饱和靛蓝", "靛蓝", "暖土为主·蔚蓝点缀")
+    assert "焯糖棕" not in banned_names and "低饱和蔚蓝" not in banned_names
+    assert "焦糖棕" in banned_names and "低饱和靛蓝" in banned_names
+    for banned in banned_names:
+        assert banned not in brand._SLOT_LOCK["logo_c"], banned
+        assert banned not in brand._SLOT_LOCK["logo_a"], banned
+        assert banned not in brand._SLOT_LOCK["logo_b"], banned
+        assert banned not in brand._SLOT_LOCK["cup"], banned
+        assert banned not in brand._SLOT_LOCK["bag"], banned
+        assert banned not in brand._SLOT_LOCK["storefront"], banned
+        assert banned not in brand._spec_lock(), banned
+        assert banned not in brand._SPEC_PREFACE, banned
+        assert banned not in hint, banned
+        assert banned not in skill, banned
+    for source in (hint, skill):
+        assert "The cup silhouette has no handle." in source
+        assert "小尺寸 is an icon, a cup-lid sticker, and an emboss." in source
+        assert "横版 appears once and must not be drawn a second time." in source
+        assert "a paper takeaway cup wearing the sleeve, and a clear iced cup" in source
+        assert "A flat sleeve lies in front." in source
+        assert "one thin stripe in the accent color of the confirmed color direction" in source
+        assert "One plain white cup alone is wrong." in source
+        assert "a large bag standing and a smaller bag lying in front" in source
+        assert "thin vertical stripe in the accent color of the confirmed color direction" in source
+        assert "fascia eave is the accent color or the dark color from the confirmed color direction, not bare wood" in source
+        assert "影像格小字不得写错" in source
+    assert "影像格小字不得写错" not in brand._spec_lock()
+    assert "影像格小字不得写错" not in brand._SPEC_PREFACE
     logo_c = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})["prompt"]
     assert "The cup silhouette has no handle." in logo_c
     assert "not a picture of a handled cup" in logo_c
@@ -815,7 +838,7 @@ def test_visual_assembly_follows_the_gold_sheet():
     assert "no typo, no garble, and no invented heading fragment" in spec
     assert "影像格小字不得写错" not in brand._spec_lock()
     assert "影像格小字不得写错" not in brand._SPEC_PREFACE
-    assert "影像格小字不得写错" not in brand.default_hint()
+    assert "影像格小字不得写错" in brand.default_hint()
     assert spec.rstrip().endswith(brand._spec_assembly_line())
     assert brand._spec_lock().rstrip().endswith("Paper ground, not black.")
     again = brand.fill_default({"brand_slot": "spec", "prompt": spec})["prompt"]
