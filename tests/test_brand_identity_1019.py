@@ -179,7 +179,11 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "cup-shaped" in c["prompt"]
     assert "single-line" not in b["prompt"]
     assert "perched bird is the negative space inside the cup" in c["prompt"]
-    assert "reversed out in white" in c["prompt"] and "indigo" in c["prompt"]
+    assert "accent color or the dark color from the confirmed color direction" in c["prompt"]
+    assert "reversed out inside it as negative space" in c["prompt"]
+    assert "indigo" not in c["prompt"].lower() and "靛蓝" not in c["prompt"]
+    assert "indigo" not in brand._SLOT_LOCK["logo_c"].lower() and "靛蓝" not in brand._SLOT_LOCK["logo_c"]
+    assert "indigo" not in hint.lower() and "靛蓝" not in hint
     assert "handled cup" in c["prompt"] and "positive shape" in c["prompt"]
     assert "bird standing on a branch" in c["prompt"]
     assert "The wordmark appears exactly once per zone." in c["prompt"]
@@ -486,6 +490,9 @@ def test_closing_rules_are_in_the_skill_instructions():
     assert "最小使用尺寸" in skill and "最小尺寸" not in skill.replace("最小使用尺寸", "")
     assert "no small text at all" not in skill and "one garbled character is not acceptable" in skill
     assert "Do not print an English instruction label." in skill
+    assert "accent color or the dark color from the confirmed color direction" in skill
+    assert "reversed out inside it as negative space" in skill and "not drawn as a positive bird" in skill
+    assert "indigo" not in skill.lower() and "靛蓝" not in skill
     assert "Paper ground, not black." in skill
     assert "full bilingual heading" in skill and "wordmark at three sizes" not in skill
     assert "Allowed on-card text includes the bilingual headings" in skill
@@ -503,6 +510,8 @@ def test_closing_rules_are_in_the_skill_instructions():
     assert lock == brand.scrub_internal_marks(lock)
     assert lock in hint
     assert "Paper ground, not black." in hint
+    assert "accent color or the dark color from the confirmed color direction" in hint
+    assert "indigo" not in hint.lower() and "靛蓝" not in hint
 
 
 def test_fallback_copy_does_not_name_one_brand():
@@ -724,6 +733,29 @@ def test_moodboard_prompt_keeps_the_locked_color_direction():
     mood = brand.fill_default({"brand_slot": "moodboard", "prompt": "暖木棕 + 米白"})
     assert "暖土色为主 + 低饱和靛蓝点缀" in mood["prompt"]
     assert "Confirmed color direction" in mood["prompt"]
+    logo = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})
+    assert "The confirmed color direction for this badge's accent is: 暖土色为主 + 低饱和靛蓝点缀" in logo["prompt"]
+    assert "靛蓝" not in brand._SLOT_LOCK["logo_c"] and "indigo" not in brand._SLOT_LOCK["logo_c"].lower()
+    again = brand.fill_default({"brand_slot": "logo_c", "prompt": logo["prompt"]})
+    assert again["prompt"] == logo["prompt"]
+
+
+def test_logo_c_warm_earth_prompt_does_not_name_indigo():
+    """Pure warm earth has no indigo, so the assembled logo C prompt must not invent one."""
+    brand.record_card_answer(_card1(), {
+        "bi_delivery": {"selected": ["A"]},
+        "bi_color": {"selected": ["B"]},
+        "bi_mark": {"selected": ["A"]},
+        "bi_source": {"selected": ["A"]},
+    })
+    logo = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})["prompt"]
+    assert "indigo" not in logo.lower()
+    assert "靛蓝" not in logo.lower()
+    assert "accent color or the dark color from the confirmed color direction" in logo
+    assert "reversed out inside it as negative space" in logo
+    assert "纯暖土色系" in logo
+    assert "indigo" not in brand._SLOT_LOCK["logo_c"].lower()
+    assert "靛蓝" not in brand.default_hint().lower()
 
 
 def test_card3_options_match_the_enforced_structures():

@@ -827,7 +827,9 @@ _SLOT_LOCK = {
     ),
     "logo_c": (
         "The badge is a cup-shaped container, not a picture of a handled cup. "
-        "A perched bird is the negative space inside the cup, reversed out in white from an indigo badge, "
+        "The badge uses the accent color or the dark color from the confirmed color direction, "
+        "and the bird is reversed out inside it as negative space. "
+        "A perched bird is the negative space inside the cup, "
         "not a bird drawn as a positive shape and not a bird standing on a branch outside it. "
         "Not a circular seal, not a wood plaque. "
         "The sheet has exactly four labelled zones, in this order: 主组合, 符号构造, 横版, 小尺寸. "
@@ -882,6 +884,24 @@ def _mood_color_line() -> str:
     return "Confirmed color direction, keep it in the 色彩 cell and do not replace it: " + hint + "."
 
 
+def _logo_c_accent_line() -> str:
+    """Runtime only. The badge follows the confirmed answer; the shared lock names no palette."""
+    hint = color_hue_hint()
+    if not hint:
+        return ""
+    return "The confirmed color direction for this badge's accent is: " + hint + "."
+
+
+def _without_exact_line(prompt: str, line: str) -> str:
+    """Drop one runtime line so a second fill puts it back in the same place."""
+    if not line or line not in prompt:
+        return prompt
+    prompt = prompt.replace(line, "")
+    prompt = re.sub(r"[ \t]{2,}", " ", prompt)
+    prompt = re.sub(r"\n{2,}", "\n", prompt)
+    return prompt.strip()
+
+
 def _bind_lock(prompt: str, lock: str, preface: str = "") -> str:
     """Put the slot lock last. A caller who already pasted it, then added other words, does not bury it."""
     body = str(prompt or "")
@@ -929,11 +949,17 @@ def fill_default(args: dict) -> dict:
     args.pop("stage", None)
     lock = _spec_lock() if str(slot["id"]) == "spec" else _SLOT_LOCK.get(str(slot["id"]))
     preface = _SPEC_PREFACE if str(slot["id"]) == "spec" else ""
-    prompt = _bind_lock(str(args.get("prompt") or ""), str(lock or ""), preface)
+    raw_prompt = str(args.get("prompt") or "")
     if str(slot["id"]) == "moodboard":
         color_line = _mood_color_line()
-        if color_line and color_line not in prompt:
-            prompt = (prompt.rstrip() + "\n" + color_line).strip()
+    elif str(slot["id"]) == "logo_c":
+        color_line = _logo_c_accent_line()
+        raw_prompt = _without_exact_line(raw_prompt, color_line)
+    else:
+        color_line = ""
+    prompt = _bind_lock(raw_prompt, str(lock or ""), preface)
+    if color_line and (str(slot["id"]) == "logo_c" or color_line not in prompt):
+        prompt = (prompt.rstrip() + "\n" + color_line).strip()
     args["prompt"] = scrub_internal_marks(prompt)
     refs = _refs_for(slot, progress)
     if refs:
@@ -1881,7 +1907,7 @@ def default_hint() -> str:
         "Then exactly three SEPARATE logo direction boards, brand_slot logo_a then logo_b then logo_c, "
         "each 2048x2048 1:1. logo_a is one open single-line bird on a branch. "
         "logo_b is a filled wood plaque plus a separate circular seal. "
-        "logo_c is a cup-shaped badge, not a picture of a handled cup, with a perched bird as the negative space inside the cup, reversed out in white from an indigo badge, not drawn as a positive bird. "
+        "logo_c is a cup-shaped badge, not a picture of a handled cup. The badge uses the accent color or the dark color from the confirmed color direction, and the bird is reversed out inside it as negative space, not drawn as a positive bird and not a bird standing on a branch outside it. "
         "Each logo board has four labelled zones: 主组合, 符号构造, 横版, 小尺寸. "
         "Each zone label appears exactly once. "
         "符号构造 shows the actual symbol construction. No empty placeholder box and no X box. "
