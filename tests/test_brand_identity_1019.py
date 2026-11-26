@@ -180,19 +180,19 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "never stacked under the 禁忌 row" in spec["prompt"]
     assert "色彩 immediately after 标识" in spec["prompt"]
     assert "字体 immediately after 变体" in spec["prompt"]
-    assert "do not garble, substitute, or clip a heading character" in spec["prompt"]
+    assert "do not garble or clip a heading" in spec["prompt"]
     assert "not omitted" in spec["prompt"]
     assert "corner marks" in spec["prompt"]
-    assert "write this heading exactly 色彩" in spec["prompt"]
-    assert "horizontal row of swatches" in spec["prompt"]
-    assert "do not put the wordmark or brand name in this cell" in spec["prompt"]
+    assert "horizontal swatches only" in spec["prompt"]
+    assert "stacked with wordmark" in spec["prompt"]
+    assert "no wordmark in this cell" in spec["prompt"]
     assert "not only one stacked mark" in spec["prompt"]
     assert "reversed cream-on-brown" in spec["prompt"]
     assert "this cell is not empty" in spec["prompt"]
     assert "wordmark at three decreasing sizes" in spec["prompt"]
-    assert "obvious at a glance" in spec["prompt"]
-    assert "do not share or bleed into 影像与材质" in spec["prompt"]
-    assert "do not put red-X misuses in this cell" in spec["prompt"]
+    assert "four variants" in spec["prompt"]
+    assert "do not bleed into 影像与材质" in spec["prompt"]
+    assert "no red-X misuses in this cell" in spec["prompt"]
     assert "visible margin box on all four sides" in spec["prompt"]
     assert "do not draw four copies of the correct mark" in spec["prompt"]
     assert "never overlapping any other panel" in spec["prompt"]
@@ -229,19 +229,19 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "never stacked under the 禁忌 row" in hint
     assert "色彩 immediately after 标识" in hint
     assert "字体 immediately after 变体" in hint
-    assert "do not garble, substitute, or clip a heading character" in hint
+    assert "do not garble or clip a heading" in hint
     assert "not omitted" in hint
     assert "corner marks" in hint
-    assert "write this heading exactly 色彩" in hint
-    assert "horizontal row of swatches" in hint
-    assert "do not put the wordmark or brand name in this cell" in hint
+    assert "horizontal swatches only" in hint
+    assert "stacked with wordmark" in hint
+    assert "no wordmark in this cell" in hint
     assert "not only one stacked mark" in hint
     assert "reversed cream-on-brown" in hint
     assert "this cell is not empty" in hint
     assert "wordmark at three decreasing sizes" in hint
-    assert "obvious at a glance" in hint
-    assert "do not share or bleed into 影像与材质" in hint
-    assert "do not put red-X misuses in this cell" in hint
+    assert "four variants" in hint
+    assert "do not bleed into 影像与材质" in hint
+    assert "no red-X misuses in this cell" in hint
     assert "four visually extreme, mutually distinct misuses" in hint
     assert "Do not state hex values" in hint and "exact values are on the spec card" in hint
     assert "#" not in hint
@@ -413,19 +413,19 @@ def test_spec_card_is_seven_lovart_panels_and_brand_prompts_have_no_lock_words()
     assert "never stacked under the 禁忌 row" in spec
     assert "色彩 immediately after 标识" in spec
     assert "字体 immediately after 变体" in spec
-    assert "do not garble, substitute, or clip a heading character" in spec
+    assert "do not garble or clip a heading" in spec
     assert "not omitted" in spec
     assert "corner marks" in spec
-    assert "write this heading exactly 色彩" in spec
-    assert "horizontal row of swatches" in spec
-    assert "do not put the wordmark or brand name in this cell" in spec
+    assert "horizontal swatches only" in spec
+    assert "stacked with wordmark" in spec
+    assert "no wordmark in this cell" in spec
     assert "not only one stacked mark" in spec
     assert "reversed cream-on-brown" in spec
     assert "this cell is not empty" in spec
     assert "wordmark at three decreasing sizes" in spec
-    assert "obvious at a glance" in spec
-    assert "do not share or bleed into 影像与材质" in spec
-    assert "do not put red-X misuses in this cell" in spec
+    assert "four variants" in spec
+    assert "do not bleed into 影像与材质" in spec
+    assert "no red-X misuses in this cell" in spec
     assert "visible margin box on all four sides" in spec
     assert "do not draw four copies of the correct mark" in spec
     assert "never overlapping any other panel" in spec
@@ -515,19 +515,19 @@ def test_closing_rules_are_in_the_skill_instructions():
     assert "never stacked under the 禁忌 row" in skill
     assert "色彩 immediately after 标识" in skill
     assert "字体 immediately after 变体" in skill
-    assert "do not garble, substitute, or clip a heading character" in skill
+    assert "do not garble or clip a heading" in skill
     assert "not omitted" in skill
     assert "corner marks" in skill
-    assert "write this heading exactly 色彩" in skill
-    assert "horizontal row of swatches" in skill
-    assert "do not put the wordmark or brand name in this cell" in skill
+    assert "horizontal swatches only" in skill
+    assert "stacked with wordmark" in skill
+    assert "no wordmark in this cell" in skill
     assert "not only one stacked mark" in skill
     assert "reversed cream-on-brown" in skill
     assert "this cell is not empty" in skill
     assert "wordmark at three decreasing sizes" in skill
-    assert "obvious at a glance" in skill
-    assert "do not share or bleed into 影像与材质" in skill
-    assert "do not put red-X misuses in this cell" in skill
+    assert "four variants" in skill
+    assert "do not bleed into 影像与材质" in skill
+    assert "no red-X misuses in this cell" in skill
     assert "visible margin box on all four sides" in skill
     assert "do not draw four copies of the correct mark" in skill
     assert "never overlapping any other panel" in skill
