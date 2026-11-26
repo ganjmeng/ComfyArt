@@ -928,6 +928,8 @@ def _spec_assembly_line() -> str:
     return (
         "Do not copy the reference moodboard into a 3 by 3 grid. "
         "Spell each heading exactly once. Do not write COLR, TISUS, or INMAGE. "
+        "影像格 small labels and captions on 影像与材质 / IMAGE must be spelled correctly, "
+        "with no typo, no garble, and no invented heading fragment. 影像格小字不得写错. "
         "使用禁忌 / MISUSE is an independent panel, not merged into another panel. "
         "The hue hint is not a swatch and it does not remove the swatches. "
         "色彩 / COLOR is flat swatches, each with one simplified-Chinese color name, a role, and a percentage, "

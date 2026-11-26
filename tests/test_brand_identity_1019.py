@@ -810,6 +810,12 @@ def test_visual_assembly_follows_the_gold_sheet():
     assert "minimum-size diagram of the mark with measurement lines" in spec
     assert "The hue hint is not a swatch and it does not remove the swatches." in spec
     assert "Do not write COLR, TISUS, or INMAGE." in spec
+    assert "影像格小字不得写错" in spec
+    assert "影像格 small labels and captions on 影像与材质 / IMAGE must be spelled correctly" in spec
+    assert "no typo, no garble, and no invented heading fragment" in spec
+    assert "影像格小字不得写错" not in brand._spec_lock()
+    assert "影像格小字不得写错" not in brand._SPEC_PREFACE
+    assert "影像格小字不得写错" not in brand.default_hint()
     assert spec.rstrip().endswith(brand._spec_assembly_line())
     assert brand._spec_lock().rstrip().endswith("Paper ground, not black.")
     again = brand.fill_default({"brand_slot": "spec", "prompt": spec})["prompt"]
