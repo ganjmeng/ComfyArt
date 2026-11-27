@@ -1540,8 +1540,50 @@ def _subject_restatement(slot_id: str) -> str:
     return ""
 
 
+# A prohibition keeps its object. These cues govern through the end of the sentence,
+# including a comma-separated list. A cue glued to the token («主色不是», "主色 is not")
+# covers that token too. A later claim, after a comma, does not reach backward.
+_PROHIBITION_CUE = re.compile(
+    r"不是|不要|并非|禁止|勿"
+    r"|don['’]t"
+    r"|\bdo\s+not\b"
+    r"|\b(?:not|no|never|without|cannot)\b"
+    r"|n['’]t\b",
+    re.IGNORECASE,
+)
+_SENTENCE_BREAK = set(".。!！?？\n;；")
+
+
+def _sentence_span(text: str, pos: int) -> tuple[int, int]:
+    start = 0
+    for i in range(min(pos, len(text))):
+        if text[i] in _SENTENCE_BREAK:
+            start = i + 1
+    end = len(text)
+    for i in range(pos, len(text)):
+        if text[i] in _SENTENCE_BREAK:
+            end = i + 1
+            break
+    return start, end
+
+
+def _in_prohibition(text: str, start: int, end: int) -> bool:
+    """True when this match is the object of a negation, not an affirmative claim."""
+    sent_start, sent_end = _sentence_span(text, start)
+    if _PROHIBITION_CUE.search(text[sent_start:start]):
+        return True
+    window = text[end:sent_end]
+    cut = len(window)
+    for i, ch in enumerate(window):
+        if ch in ",，、":
+            cut = i
+            break
+    cue = _PROHIBITION_CUE.search(window[:cut])
+    return bool(cue and cue.start() <= 4)
+
+
 def _sanitize_subject(slot_id: str, text: str) -> str:
-    """Drop caller phrases that contradict the slot. The rest of the caller stays."""
+    """Drop affirmative caller claims that contradict the slot. A prohibition keeps its words."""
     body = str(text or "")
     patterns: tuple[str, ...] = ()
     if slot_id == "logo_c":
@@ -1561,8 +1603,20 @@ def _sanitize_subject(slot_id: str, text: str) -> str:
         patterns = (r"(?i)\bunpainted\b", r"主色", r"裸木")
     elif slot_id in ("cup", "bag"):
         patterns = (r"主组合", r"小尺寸", r"横版", r"符号")
+    spans: list[tuple[int, int]] = []
     for pattern in patterns:
-        body = re.sub(pattern, " ", body)
+        for match in re.finditer(pattern, body):
+            if not _in_prohibition(body, match.start(), match.end()):
+                spans.append((match.start(), match.end()))
+    spans.sort()
+    merged: list[tuple[int, int]] = []
+    for start, end in spans:
+        if merged and start < merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+        else:
+            merged.append((start, end))
+    for start, end in reversed(merged):
+        body = body[:start] + " " + body[end:]
     body = re.sub(r"[ \t]{2,}", " ", body)
     body = re.sub(r" +([,.])", r"\1", body)
     body = re.sub(r"\n{2,}", "\n", body)
@@ -1570,7 +1624,10 @@ def _sanitize_subject(slot_id: str, text: str) -> str:
 
 
 def guard_subject(slot_id: str, text: str) -> str:
-    """Caller text after the repairs this slot always makes. Empty when only a heading essay was removed."""
+    """Caller text after the repairs this slot always makes. Empty when only a heading essay was removed.
+
+    The token cut is ``_sanitize_subject``, which keeps a word that sits in a prohibition.
+    """
     body = _sanitize_subject(slot_id, _drop_ref_hints(text))
     if slot_id == "moodboard":
         body = _drop_weak_mood_subject(body)

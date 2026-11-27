@@ -3389,3 +3389,164 @@ def test_paid_fail_subjects_restate_the_rulings_and_keep_the_spec_heading():
     assert "不是裸木" in store
     assert "not bare wood" in store
     assert "unpainted" not in store.lower()
+
+
+def test_sanitize_keeps_prohibitions_and_strips_affirmative_claims():
+    """Bare tokens stay inside a negation. An affirmative contradiction is still removed."""
+    from ComfyArt.api.prompt_cap import finalize_qwen_prompt
+
+    kept = (
+        ("storefront", "不是主色"),
+        ("storefront", "not the 主色"),
+        ("storefront", "不是裸木"),
+        ("storefront", "The fascia is not the 主色."),
+        ("storefront", "The eave is not bare wood (不是裸木)."),
+        (
+            "storefront",
+            "The fascia (招牌) is the confirmed dark color or the accent, not the 主色, and carries the bird mark.",
+        ),
+        ("cup", "不要印主组合"),
+        ("cup", "Do not print zone labels such as 主组合 or 小尺寸"),
+        ("bag", "不要印主组合"),
+        ("bag", "Do not print zone labels such as 主组合 or 小尺寸"),
+        (
+            "bag",
+            "Do not print zone labels or a logo sheet (主组合, 符号, 横版, 小尺寸) on the lying bag.",
+        ),
+    )
+    for slot, text in kept:
+        assert brand._sanitize_subject(slot, text) == text, (slot, text)
+        assert brand.guard_subject(slot, text) == text, (slot, text)
+    for slot in ("storefront", "cup", "bag"):
+        lead = brand._subject_restatement(slot)
+        assert brand._sanitize_subject(slot, lead) == lead, slot
+        assert brand.guard_subject(slot, lead) == lead, slot
+
+    # A cue in the next claim does not protect an earlier affirmative token.
+    mixed_store = brand._sanitize_subject(
+        "storefront",
+        "Paint an unpainted wood eave. The fascia is the 主色. The fascia is not the 主色. 不是裸木.",
+    )
+    assert "unpainted" not in mixed_store.lower()
+    assert "is the 主色" not in mixed_store
+    assert "not the 主色" in mixed_store
+    assert "不是裸木" in mixed_store
+    assert brand.guard_subject(
+        "storefront",
+        "Paint an unpainted wood eave. The fascia is the 主色. The fascia is not the 主色. 不是裸木.",
+    ) == mixed_store
+
+    mixed_cup = "不要印主组合。Do not print zone labels such as 主组合 or 小尺寸. A cup labeled 主组合."
+    cup_kept = brand._sanitize_subject("cup", mixed_cup)
+    assert "不要印主组合" in cup_kept
+    assert "Do not print zone labels such as 主组合 or 小尺寸" in cup_kept
+    assert "such as or" not in cup_kept
+    assert "labeled 主组合" not in cup_kept
+    assert "labeled ." in cup_kept or "labeled." in cup_kept
+    assert brand.guard_subject("cup", mixed_cup) == cup_kept
+
+    bag_kept = brand._sanitize_subject("bag", "Print 主组合 符号 横版 小尺寸 on the lying bag.")
+    assert "主组合" not in bag_kept
+    assert "符号" not in bag_kept
+    assert "横版" not in bag_kept
+    assert "小尺寸" not in bag_kept
+    logo = brand._sanitize_subject("logo_c", "plus one horizontal lockup for a takeaway cup")
+    assert "plus one horizontal lockup" not in logo
+    assert "takeaway" not in logo.lower()
+    assert "plus one horizontal lockup" not in brand.guard_subject(
+        "logo_c", "plus one horizontal lockup for a takeaway cup",
+    )
+
+    # Color defer does not cut 主色 out of a prohibition. That cut was the sanitizer.
+    for phrase in ("not the 主色", "不是主色", "不是裸木"):
+        assert brand._defer_color_words(phrase) == phrase
+        assert brand._defer_object_color(phrase) == phrase
+
+    brand.reset_for_tests()
+    brand.record_card_answer(_card1(), {
+        "bi_delivery": {"selected": ["A"]},
+        "bi_color": {"selected": ["A"]},
+        "bi_mark": {"selected": ["A"]},
+        "bi_source": {"selected": ["A"]},
+        "brief": {"zh": "栖木咖啡", "en": "QIMU COFFEE"},
+    })
+    brand.record_card_answer(
+        {"questions": [brand._CARD3_ZH]},
+        {"bi_direction": {"selected": ["A"]}},
+    )
+
+    def _final(slot, prompt):
+        filled = brand.fill_default({"brand_slot": slot, "prompt": prompt})
+        err = str((filled.get("_brand_block") or {}).get("error") or "")
+        assert "not truncated" not in err, (slot, err)
+        final, ferr = finalize_qwen_prompt(
+            "wavespeed-ai/qwen-image-2.0/edit", filled["prompt"], [],
+        )
+        assert ferr == "", (slot, ferr, len(final))
+        return final
+
+    skill = Path("src/skills.ts").read_text(encoding="utf-8")
+    at = skill.index("id: 'brand-identity-director'")
+    block = skill[at:skill.index("category: 'branding'", at)]
+    text = block.split("instructions: '", 1)[1].split("',", 1)[0].replace("\\n", "\n")
+    storefront_caller = text[text.index("The storefront is"):text.index("The takeaway cup")]
+    storefront_caller += (
+        " The fascia (招牌) is the confirmed dark color or the accent, not the 主色, and carries the bird mark. "
+        "The eave is not bare wood (不是裸木)."
+    )
+    cup_caller = text[text.index("The takeaway cup"):text.index("Show two paper bags")]
+    cup_caller += " Do not print zone labels such as 主组合 or 小尺寸 in the scene. 不要印主组合."
+    bag_caller = text[text.index("Show two paper bags"):text.index("Palette and type")]
+    bag_caller += " Do not print zone labels or a logo sheet (主组合, 符号, 横版, 小尺寸) on the lying bag."
+
+    store = _final("storefront", storefront_caller)
+    assert "not the 主色" in store
+    assert "不是裸木" in store
+    assert "不是。" not in store
+    assert "not the ." not in store and "not the," not in store
+    assert brand._subject_restatement("storefront") in store
+
+    cup = _final("cup", cup_caller)
+    assert "Do not print zone labels such as 主组合 or 小尺寸" in cup
+    assert "不要印主组合" in cup
+    assert "such as or" not in cup
+    assert "the paper cup body is the confirmed 主色" in cup
+    assert "No white shows above or below the sleeve." in cup
+    assert brand._subject_restatement("cup") in cup
+
+    bag = _final("bag", bag_caller)
+    assert "Do not print zone labels such as 主组合." in bag
+    assert "Do not print zone labels or a logo sheet (主组合, 符号, 横版, 小尺寸) on the lying bag." in bag
+    assert "such as ." not in bag
+    assert brand._subject_restatement("bag") in bag
+
+    official = _final("spec", _official_spec_subject())
+    assert len(official) <= 2750, len(official)
+    assert 2800 - len(official) >= 50, len(official)
+    for heading in (
+        "标识 / LOGO", "色彩 / COLOR", "变体 / VARIANTS", "字体 / TYPE",
+        "版式 / LAYOUT", "使用禁忌 / MISUSE", "影像与材质 / IMAGE",
+    ):
+        assert heading in official, heading
+    assert "影像与材质 /" not in official.replace("影像与材质 / IMAGE", "")
+
+    brand.reset_for_tests()
+    brand.record_card_answer(_card1(), {
+        "bi_delivery": {"selected": ["A"]},
+        "bi_color": {"selected": ["A"]},
+        "bi_mark": {"selected": ["A"]},
+        "bi_source": {"selected": ["A"]},
+        "brief": {"zh": "栖木", "en": "QIMU COFFEE"},
+    })
+    brand.record_card_answer(
+        {"questions": [brand._CARD3_EN]},
+        {"bi_direction": {"selected": ["B"]}},
+    )
+    bare = brand.fill_default({"brand_slot": "spec", "prompt": ""})
+    err = str((bare.get("_brand_block") or {}).get("error") or "")
+    assert "not truncated" not in err, err
+    bare_final, ferr = finalize_qwen_prompt(
+        "wavespeed-ai/qwen-image-2.0/edit", bare["prompt"], [],
+    )
+    assert ferr == ""
+    assert len(bare_final) <= 2800, len(bare_final)
