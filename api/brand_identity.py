@@ -657,7 +657,10 @@ def _spec_lock() -> str:
     hint = color_hue_hint()
     hint_line = ""
     if hint:
-        hint_line = " never a printed swatch: " + hint + ". It does not add a color."
+        hint_line = (
+            " The confirmed color direction is " + hint
+            + ", painted in COLOR and never a printed swatch outside it."
+        )
     return _SPEC_BRIEF + hint_line + " Paper ground, not black."
 
 
@@ -794,6 +797,10 @@ def scrub_internal_marks(text: str) -> str:
     return cleaned.strip()
 
 
+# One wording, shared by the logo C lock and the hint. No apostrophe.
+_NOT_B_RECTANGULAR = "not the rectangular badge of B"
+
+
 # Appended to the image prompt. The three logos must not share one drawing.
 _SLOT_LOCK = {
     "moodboard": (
@@ -844,7 +851,7 @@ _SLOT_LOCK = {
         "and the mark is reversed out inside it as negative space. "
         "The subject is the negative space inside the cup, "
         "not drawn as a positive shape and not standing outside it. "
-        "Not a circular seal and not B's rectangular badge. "
+        "Not a circular seal and " + _NOT_B_RECTANGULAR + ". "
         "Not a generic coffee mug or an unrelated icon. "
         "The sheet has exactly four labelled zones, in this order: 主组合, 负形, 反白与点缀, 小尺寸. "
         "Each of the four zone labels appears exactly once. "
@@ -941,6 +948,42 @@ def _trim_at_sentence(text: str, limit: int) -> str:
     if " " in chunk:
         return chunk.rsplit(" ", 1)[0].strip()
     return chunk.strip()
+
+
+_ZONE4_MARK = re.compile(r"(?i)zone\s*4|小尺寸")
+
+
+def _zone4_sentence(text: str) -> str:
+    """The sentence that carries Zone 4, or empty when the text has none."""
+    body = " ".join(str(text or "").split())
+    match = _ZONE4_MARK.search(body)
+    if not match:
+        return ""
+    start = max(body.rfind(".", 0, match.start()), body.rfind("。", 0, match.start()))
+    start = start + 1 if start >= 0 else 0
+    end_dot = body.find(".", match.end())
+    end_cjk = body.find("。", match.end())
+    ends = [pos for pos in (end_dot, end_cjk) if pos >= 0]
+    end = (min(ends) + 1) if ends else len(body)
+    return body[start:end].strip()
+
+
+def _trim_keeping_zone4(text: str, limit: int) -> str:
+    """Shorten a subject without cutting off the Zone 4 sentence."""
+    body = " ".join(str(text or "").split())
+    if len(body) <= limit:
+        return body
+    zone = _zone4_sentence(body)
+    if not zone:
+        return _trim_at_sentence(body, limit)
+    if len(zone) >= limit:
+        return zone
+    head = body[:body.find(zone)].strip()
+    room = limit - len(zone) - (1 if head else 0)
+    kept = _trim_at_sentence(head, room) if room > 0 else ""
+    if kept:
+        return (kept + " " + zone).strip()
+    return zone
 
 
 def _mark_type_phrase(slot_id: str) -> str:
@@ -1212,7 +1255,7 @@ def _swatch_copy_line(rows: list[tuple[str, str, int]]) -> str:
 
 
 _WEAK_MOOD_SUBJECT = re.compile(
-    r"a flat colou?r study(?:,?\s*\w[\w ]{0,40}accent swatch)?"
+    r"a flat colou?r study(?:,\s+\w+\s+and\s+a\s+small\s+accent\s+swatch)?"
     r"|small accent swatch"
     r"|flat colou?r study",
     re.I,
@@ -1220,10 +1263,23 @@ _WEAK_MOOD_SUBJECT = re.compile(
 
 
 def _drop_weak_mood_subject(text: str) -> str:
-    """Drop a colour-study subject that contradicts the five role swatches."""
-    cleaned = _WEAK_MOOD_SUBJECT.sub(" ", str(text or ""))
+    """Drop a colour-study subject that contradicts the five role swatches.
+
+    A family colour named in the same sentence stays. The cut must not leave
+    a dangling 'of' or 'and'.
+    """
+    raw = str(text or "")
+    cleaned = _WEAK_MOOD_SUBJECT.sub(" ", raw)
+    if cleaned == raw:
+        return raw.strip()
     cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
     cleaned = re.sub(r"\s+([,.])", r"\1", cleaned)
+    cleaned = re.sub(r"^\s*(?:of|and|or)\b\s*", "", cleaned, flags=re.I)
+    cleaned = re.sub(r"(?:,\s*)?\b(?:and|or)\s+(?:a|an)\s*$", "", cleaned, flags=re.I)
+    cleaned = re.sub(r"\s+\b(?:and|or|of)\b\s*$", "", cleaned, flags=re.I)
+    cleaned = re.sub(r"\s+,", ",", cleaned)
+    cleaned = re.sub(r",[ \t]*,", ",", cleaned)
+    cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
     return cleaned.strip(" ,")
 
 
@@ -1423,6 +1479,9 @@ def _slim_spec_subject(text: str, room: int) -> str:
             return True
         if lock and piece in lock and "annotation density follows the gold." in piece.lower():
             return True
+        # The caller's own Zone 4 stays. A sentence already in the hint or the lock does not.
+        if _ZONE4_MARK.search(piece) and piece not in hint and piece not in (lock or ""):
+            return True
         return False
 
     for chunk in chunks:
@@ -1454,7 +1513,7 @@ def _slim_spec_subject(text: str, room: int) -> str:
         if not any(not _protected(part) for part in trial):
             gap = 1 if trial else 0
             room_for = room - len(_join(trial)) - gap
-            kept[drop_at] = _trim_at_sentence(kept[drop_at], max(room_for, 0))
+            kept[drop_at] = _trim_keeping_zone4(kept[drop_at], max(room_for, 0))
             if not kept[drop_at]:
                 del kept[drop_at]
             break
@@ -1462,7 +1521,7 @@ def _slim_spec_subject(text: str, room: int) -> str:
     subject = _join(kept)
     if len(subject) <= room:
         return subject
-    return _trim_at_sentence(subject, room)
+    return _trim_keeping_zone4(subject, room)
 
 
 # Role nouns a caller may prefix with a short hue word. Bare 色 is not a noun:
@@ -1581,9 +1640,36 @@ def _defer_object_color(text: str, nouns: str | None = None) -> str:
     return _tidy_color_residue(cleaned)
 
 
+def _confirmed_color_names() -> tuple[str, ...]:
+    """Family and accent names from the card-1 answer. Empty when no answer is set."""
+    hint = color_hue_hint()
+    if not hint:
+        return ()
+    names: list[str] = []
+    for name, _role, _pct in _swatch_rows(hint):
+        if name and name not in names:
+            names.append(name)
+    return tuple(names)
+
+
+def _cut_would_break_confirmed_name(before: str, modifier: str, noun: str) -> bool:
+    """True when deleting the glued hue would split a confirmed family or accent name."""
+    names = _confirmed_color_names()
+    if not names or not modifier:
+        return False
+    window = before[-24:] + noun
+    after = before[:-len(modifier)][-24:] + noun
+    return any(name in window and name not in after for name in names)
+
+
 def _defer_color_words(text: str) -> str:
-    """Drop a short hue word glued to a role noun. Keep the noun. No palette is named here."""
-    raw = _defer_english_color_words(str(text or ""))
+    """Drop a short hue word glued to a role noun. Keep the noun.
+
+    A confirmed family or accent name stays whole. English palette phrases are
+    not removed here; only a hue that directly modifies cup, sleeve, bag, eave,
+    or fascia is removed, and that happens in _defer_object_color.
+    """
+    raw = str(text or "")
     out: list[str] = []
     i = 0
     while i < len(raw):
@@ -1593,7 +1679,7 @@ def _defer_color_words(text: str) -> str:
             i += 1
             continue
         modifier = _glued_color_modifier("".join(out))
-        if modifier:
+        if modifier and not _cut_would_break_confirmed_name("".join(out), modifier, noun):
             del out[-len(modifier):]
         out.append(noun)
         i += len(noun)
@@ -3021,7 +3107,7 @@ def default_hint() -> str:
         "The seal is a circular ink stamp of this same mark, not a cup and not a laurel wreath. "
         "The badge is flat and printed, not a carved 3D block or embossed; the seal is a flat ink stamp, not wax. "
         "Its zones, each once, are 主组合, 印章, 横版, 小尺寸. "
-        "logo_c is a negative-space mark. It is a cup-shaped badge, not a picture of a handled cup, and not B's rectangular badge. The badge uses the accent color or the dark color from the confirmed color direction, and the mark is reversed out inside it as negative space, not drawn as a positive shape and not standing outside it. "
+        "logo_c is a negative-space mark. It is a cup-shaped badge, not a picture of a handled cup, and " + _NOT_B_RECTANGULAR + ". The badge uses the accent color or the dark color from the confirmed color direction, and the mark is reversed out inside it as negative space, not drawn as a positive shape and not standing outside it. "
         "The cup silhouette has no handle. 小尺寸 is an icon, a cup-lid sticker, and an emboss. "
         "主组合 appears once only. 横版 appears once, only in the 横版 zone. "
         "小尺寸 is not labeled 主组合 and does not draw a second 横版. "

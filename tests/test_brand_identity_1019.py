@@ -199,7 +199,8 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "negative-space mark" in c["prompt"]
     assert "solid silhouette" not in c["prompt"]
     assert "monoline" not in c["prompt"]
-    assert "not B's rectangular badge" in c["prompt"]
+    assert "not the rectangular badge of B" in c["prompt"]
+    assert "B's" not in c["prompt"]
     assert "flat dark badge" not in c["prompt"]
     assert "cup-shaped" in c["prompt"]
     assert "主组合, 负形, 反白与点缀, 小尺寸" in c["prompt"]
@@ -809,8 +810,7 @@ def test_english_palette_wording_is_stripped_and_a_clay_cup_stays():
     cup = brand.fill_default({"brand_slot": "cup", "prompt": subject})["prompt"]
     assert "a cup on the counter" in cup
     assert "clay cup" not in cup
-    for gone in ("deep clay accent", "warm wood brown", "oat beige", "cream white", "and oat"):
-        assert gone not in cup, gone
+    assert "a cup on the counter, warm wood brown" in cup
     kept = brand.fill_default({"brand_slot": "cup", "prompt": "a small white cup"})["prompt"]
     assert "a small cup" in kept
     assert "a small white cup" not in kept
@@ -822,17 +822,18 @@ def test_english_palette_wording_is_stripped_and_a_clay_cup_stays():
 
 def test_english_palette_phrases_leave_no_residue():
     before = "warm wood brown and oat beige palette"
-    assert brand._defer_color_words(before) == ""
-    assert "and oat" not in brand._defer_color_words("use " + before + " here")
+    assert brand._defer_color_words(before) == before
+    assert "warm wood brown" in brand._defer_color_words("use " + before + " here")
     replay = (
         "a flat colour study of warm wood brown and a small touch of deep clay accent "
         "arranged as broad painted bands"
     )
-    assert brand._defer_color_words(replay) == "a flat colour study"
-    assert "broad painted bands" not in brand._defer_color_words(replay)
-    assert brand._defer_color_words("small gold accent") == ""
-    assert brand._defer_color_words("a bird with a small gold accent on the wing") == "a bird on the wing"
-    assert brand._defer_color_words("a mark with a terracotta accent") == "a mark"
+    assert "warm wood brown" in brand._defer_color_words(replay)
+    assert brand._defer_color_words("small gold accent") == "small gold accent"
+    assert brand._defer_color_words("a bird with a small gold accent on the wing") == (
+        "a bird with a small gold accent on the wing"
+    )
+    assert brand._defer_color_words("a mark with a terracotta accent") == "a mark with a terracotta accent"
     assert brand._defer_color_words("white or dark for contrast") == "white or dark for contrast"
     brand.record_card_answer(_card1(), {
         "bi_delivery": {"selected": ["A"]},
@@ -851,10 +852,79 @@ def test_english_palette_phrases_leave_no_residue():
     assert "white or dark for contrast" in contrast
     mood = brand.fill_default({"brand_slot": "moodboard", "prompt": replay})["prompt"]
     assert "a flat colour study" not in mood
-    assert "small accent swatch" not in mood
+    assert "warm wood brown and a small touch of deep clay accent" in mood
     assert "five named role swatches" in mood
+    assert "a flat colour study of" not in mood
     assert "broad painted bands" not in mood.split("\n")[0]
-    assert "and oat" not in mood
+    logo_b = brand.fill_default({
+        "brand_slot": "logo_b",
+        "prompt": "solid warm brown rounded rectangle",
+    })["prompt"]
+    assert "solid warm brown rounded rectangle" in logo_b
+    assert "solid rounded rectangle" not in logo_b.replace("solid warm brown rounded rectangle", "")
+    named = brand.fill_default({"brand_slot": "moodboard", "prompt": "the family is 暖土色"})["prompt"]
+    assert "暖土色" in named
+    paid = brand.fill_default({
+        "brand_slot": "moodboard",
+        "prompt": "a flat colour study of warm wood brown, cream and a small accent swatch",
+    })["prompt"]
+    assert "warm wood brown, cream" in paid
+    assert "and a\n" not in paid and "small accent swatch" not in paid
+
+
+def test_logo_c_keeps_zone_4_and_the_badge_wording():
+    """A four-zone caller keeps Zone 4 after fill_default and the Qwen cap check."""
+    from ComfyArt.api.prompt_cap import finalize_qwen_prompt
+
+    brand.record_card_answer(_card1(), {
+        "bi_delivery": {"selected": ["A"]},
+        "bi_color": {"selected": ["A"]},
+        "bi_mark": {"selected": ["A"]},
+        "bi_source": {"selected": ["A"]},
+    })
+    zone4 = "Zone 4 小尺寸 is an icon, a cup-lid sticker, and an emboss."
+    caller = (
+        "Zone 1 主组合 is the main lockup. "
+        "Zone 2 负形 is the negative space. "
+        "Zone 3 横版 is the horizontal lockup. "
+        + ("Extra note about the sheet. " * 80)
+        + zone4
+    )
+    filled = brand.fill_default({"brand_slot": "logo_c", "prompt": caller})
+    block = str((filled.get("_brand_block") or {}).get("error") or "")
+    assert "not truncated" not in block
+    text = filled["prompt"]
+    assert zone4 in text
+    assert "Zone 3 横版" in text
+    assert text.index("Zone 3 横版") < text.index(zone4)
+    assert brand._NOT_B_RECTANGULAR in text
+    assert "B's" not in text
+    final, err = finalize_qwen_prompt(
+        "wavespeed-ai/qwen-image-2.0/edit", text, [],
+    )
+    assert err == ""
+    assert zone4 in final
+    assert len(final) <= 2800
+
+
+def test_spec_color_sentence_is_grammatical_and_ratios_stay_in_color():
+    brand.record_card_answer(_card1(), {
+        "bi_delivery": {"selected": ["A"]},
+        "bi_color": {"selected": ["A"]},
+        "bi_mark": {"selected": ["A"]},
+        "bi_source": {"selected": ["A"]},
+    })
+    spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})["prompt"]
+    sentence = "The confirmed color direction is 暖土色为主 + 低饱和靛蓝点缀, painted in COLOR and never a printed swatch outside it."
+    assert sentence in spec
+    assert "It does not add a color" not in spec
+    assert "do not hardcode a palette" in spec
+    assert "35/25/25/12" in spec
+    assert "暖土色 主色 35%" in spec
+    misuse = spec.split("使用禁忌 / MISUSE (", 1)[1].split(")", 1)[0]
+    image = spec.split("影像与材质 / IMAGE (", 1)[1].split(")", 1)[0]
+    assert "%" not in misuse and "%" not in image
+    assert "35/25/25/12" not in misuse and "35/25/25/12" not in image
 
 
 def test_moodboard_color_cell_is_code_written_and_capped():
@@ -1163,6 +1233,8 @@ def test_visual_assembly_follows_the_gold_sheet():
     assert "thin vertical stripe" in bag
     store = brand.fill_default({"brand_slot": "storefront", "prompt": "门头"})["prompt"]
     assert "fascia eave" in store and "not bare wood" in store
+    assert "The fascia carries the mark." in store
+    assert "unpainted" not in store.lower()
     assert "full shopfront, front view" in store
     spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})["prompt"]
     assert spec.startswith(brand._CONTENT_REF)
@@ -2917,6 +2989,8 @@ def test_paid_lr_prompt_rulings_are_in_the_final_strings():
     assert "not a double side stripe" in bag
     store = brand.fill_default({"brand_slot": "storefront", "prompt": "门头"})["prompt"]
     assert "not bare wood" in store and "The fascia carries the mark." in store
+    assert "unpainted" not in store.lower()
+    assert "fascia eave is the accent color or the dark color" in store
     brand.reset_for_tests()
     brand.record_card_answer(_card1(), {
         "bi_delivery": {"selected": ["A"]},
