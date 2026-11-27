@@ -694,16 +694,9 @@ def record_card_answer(spec: dict, answers: object) -> str | None:
     progress = _progress()
     if kind == "card1":
         selected, other = _selected(answers, _Q_COLOR)
-        options = []
-        for question in (spec or {}).get("questions") or []:
-            if not isinstance(question, dict) or str(question.get("id") or "") != _Q_COLOR:
-                continue
-            options = [
-                {"id": str(opt.get("id") or ""), "label": str(opt.get("label") or "")}
-                for opt in (question.get("options") or [])
-                if isinstance(opt, dict)
-            ]
-        progress["color"] = {"selected": selected[:1], "other": other, "options": options}
+        other = _strip_hex(other)[:60]
+        _take_saved_brand(spec, answers)
+        progress["color"] = {"selected": selected[:1], "other": other}
         if progress["phase"] in {"need_card1", "done"}:
             progress["phase"] = "moodboard"
             progress["mood_inflight"] = False
@@ -883,16 +876,18 @@ _SLOT_LOCK = {
 # The locked brief already lists the seven headings. This preface keeps only the
 # layout commands that brief does not draw: separate type and layout panels, the
 # minimum-size diagram, misuse as its own panel, and swatches that sum to 100%.
+# The locked brief already names the seven panels in this order, so the preface
+# does not repeat that title list. Headings that these sentences must mention
+# stay in that same order.
 _SPEC_PREFACE = (
-    "Draw seven separate panels: "
-    "标识 / LOGO, 色彩 / COLOR, 变体 / VARIANTS, 字体 / TYPE, 版式 / LAYOUT, "
-    "使用禁忌 / MISUSE, 影像与材质 / IMAGE. "
+    "Draw seven separate panels. "
+    "标识 / LOGO has a drawn 「最小使用尺寸」 diagram. "
+    "The 色彩 / COLOR swatch percentages sum to 100%. "
+    "变体 / VARIANTS is its own panel. "
     "字体 / TYPE is its own panel. "
     "版式 / LAYOUT is a different panel. "
     "Do not write 版式 / TYPE. "
-    "标识 / LOGO has a drawn 「最小使用尺寸」 diagram. "
-    "使用禁忌 / MISUSE is an independent panel. "
-    "percentages sum to 100%."
+    "使用禁忌 / MISUSE is an independent panel."
 )
 _SPEC_PROMPT_MAX = 2800
 
@@ -944,8 +939,6 @@ def _spec_assembly_line() -> str:
 
 _EN_BRAND = re.compile(r"\b[A-Z]{2,}(?:\s+[A-Z]{2,})+\b")
 _CJK_BRAND = re.compile(r"[\u4e00-\u9fff]{2,}")
-# A color direction phrase, not a product or a material: 点缀 / 檐口 / 色.
-_COLOR_PHRASE = re.compile(r"[\u4e00-\u9fff]{1,16}(?:点缀|檐口|色)")
 
 
 def _drop_noise_word(text: str) -> str:
@@ -954,8 +947,8 @@ def _drop_noise_word(text: str) -> str:
     return cleaned.strip()
 
 
-def _brand_name_line(text: str) -> str:
-    """Chinese name and English name, taken from the caller brief. Nothing is hardcoded."""
+def _brand_pair_from_text(text: str) -> str:
+    """Both names from one brief, or nothing. A single name is not guessed into a line."""
     body = str(text or "")
     english = _EN_BRAND.search(body)
     if not english:
@@ -966,6 +959,48 @@ def _brand_name_line(text: str) -> str:
     if not chinese:
         return ""
     return f"{chinese} {english.group()}"
+
+
+def remember_brand(chinese: str, english: str) -> None:
+    """Store the confirmed brand. Both names are required; a partial pair is ignored."""
+    zh = " ".join(str(chinese or "").split())
+    en = " ".join(str(english or "").split())
+    if zh and en:
+        _progress()["brand"] = {"zh": zh, "en": en}
+
+
+def _take_saved_brand(spec: dict, answers: object) -> None:
+    """Card 1 may carry the confirmed brand on the brief or the brand answer."""
+    found: list[object] = []
+    if isinstance(spec, dict):
+        found.append(spec.get("brief"))
+        found.append(spec.get("brand"))
+    if isinstance(answers, dict):
+        found.append(answers.get("brief"))
+        found.append(answers.get("brand"))
+    for value in found:
+        if isinstance(value, dict):
+            zh = str(value.get("zh") or value.get("chinese") or "").strip()
+            en = str(value.get("en") or value.get("english") or "").strip()
+            if zh and en:
+                remember_brand(zh, en)
+                return
+            value = value.get("text") or value.get("other_text") or ""
+        if isinstance(value, str):
+            pair = _brand_pair_from_text(value)
+            if pair:
+                remember_brand(*pair.split(" ", 1))
+                return
+
+
+def _brand_name_line(text: str) -> str:
+    """Saved brand answer or brief first, otherwise both names in the subject, otherwise nothing."""
+    saved = _progress().get("brand") if isinstance(_progress().get("brand"), dict) else {}
+    zh = str((saved or {}).get("zh") or "").strip()
+    en = str((saved or {}).get("en") or "").strip()
+    if zh and en:
+        return f"{zh} {en}"
+    return _brand_pair_from_text(text)
 
 
 def _lift_brand_line(text: str) -> tuple[str, str]:
@@ -1016,58 +1051,29 @@ def _slim_spec_subject(text: str, room: int) -> str:
     return clipped.strip()
 
 
-def _color_option_rows() -> list[dict]:
-    """Option rows from the answered card. The locked card is the fallback."""
-    color = _progress().get("color") if isinstance(_progress().get("color"), dict) else {}
-    saved = color.get("options")
-    if isinstance(saved, list) and saved:
-        return [row for row in saved if isinstance(row, dict)]
-    for row in _CARD1_ZH:
-        if row["id"] == _Q_COLOR:
-            return list(row["options"])
-    return []
-
-
-def _unselected_color_phrases() -> list[str]:
-    """Color-direction phrases from options the user did not pick.
-
-    Only a whole phrase that ends in 点缀, 檐口, or 色. A product name or a
-    material noun is not a phrase. Nothing is stripped when no color answer
-    is saved, and a phrase that also appears in the confirmed answer stays.
-    """
-    color = _progress().get("color") if isinstance(_progress().get("color"), dict) else {}
-    selected = color.get("selected") or []
-    if not selected and not str(color.get("other") or "").strip():
-        return []
-    key = str(selected[0]).upper()[:1] if selected else ""
-    confirmed = color_hue_hint()
-    selected_label = ""
-    found: list[str] = []
-    seen: set[str] = set()
-    for opt in _color_option_rows():
-        label = str(opt.get("label") or "")
-        if key and str(opt.get("id") or "").upper()[:1] == key:
-            selected_label = label
-            continue
-        for phrase in _COLOR_PHRASE.findall(label):
-            if phrase in seen:
-                continue
-            if confirmed and phrase in confirmed:
-                continue
-            if selected_label and phrase in selected_label:
-                continue
-            seen.add(phrase)
-            found.append(phrase)
-    found.sort(key=len, reverse=True)
-    return found
+# Role nouns a caller may prefix with a hue or a material. Bare 色 is not a noun:
+# 出色 and 特色 stay whole. Longer nouns are tried first so 点缀色 is not read as 点缀.
+_COLOR_ROLE_NOUNS = ("点缀色", "强调色", "主色", "点缀", "檐口")
 
 
 def _defer_color_words(text: str) -> str:
-    """Remove an unselected color phrase. Leave a product name or a material noun."""
-    cleaned = str(text or "")
-    for phrase in _unselected_color_phrases():
-        # Whole phrase: do not cut the phrase out of a longer word that continues it.
-        cleaned = re.sub(re.escape(phrase) + r"(?![\u4e00-\u9fffA-Za-z0-9])", "", cleaned)
+    """Drop the modifier glued to a role noun. Keep the noun. No palette is named here."""
+    raw = str(text or "")
+    out: list[str] = []
+    i = 0
+    while i < len(raw):
+        noun = next((name for name in _COLOR_ROLE_NOUNS if raw.startswith(name, i)), "")
+        if not noun:
+            out.append(raw[i])
+            i += 1
+            continue
+        popped = 0
+        while out and popped < 8 and "\u4e00" <= out[-1] <= "\u9fff":
+            out.pop()
+            popped += 1
+        out.append(noun)
+        i += len(noun)
+    cleaned = "".join(out)
     cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
     cleaned = re.sub(r"\n{2,}", "\n", cleaned)
     cleaned = re.sub(r"\s+([,，。])", r"\1", cleaned)
@@ -1094,7 +1100,7 @@ def _slot_command(slot_id: str) -> str:
     """
     if slot_id == "spec":
         return (
-            "One clean, reviewable sheet. Spell each heading exactly once. Warm paper ground. "
+            "One clean, reviewable sheet. Warm paper ground. "
             "Color panel: flat swatches (no wood grain) include the confirmed accent "
             "(never COLR, TISUS, INMAGE)."
         )
@@ -1223,7 +1229,8 @@ def fill_default(args: dict) -> dict:
     if str(slot["id"]) == "spec":
         brand_line, raw_prompt = _lift_brand_line(raw_prompt)
         raw_prompt = _drop_noise_word(raw_prompt)
-    raw_prompt = _defer_color_words(raw_prompt)
+    if color_line:
+        raw_prompt = _defer_color_words(raw_prompt)
     if str(slot["id"]) == "spec":
         fixed = [part for part in (preface, brand_line, lead, str(lock or ""), color_line) if part]
         fixed_len = sum(len(part) for part in fixed) + max(len(fixed) - 1, 0)

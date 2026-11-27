@@ -773,6 +773,48 @@ def test_logo_c_warm_earth_prompt_does_not_name_indigo():
     assert "靛蓝" not in brand.default_hint().lower()
 
 
+_ROLE_MODIFIERS = ("陶土", "焦糖", "靛蓝", "暖木", "燕麦", "深焙", "鼠尾草")
+_ROLE_NOUNS = ("点缀", "檐口", "主色")
+
+
+def _answer_color_a() -> None:
+    brand.record_card_answer(_card1(), {
+        "bi_delivery": {"selected": ["A"]},
+        "bi_color": {"selected": ["A"]},
+        "bi_mark": {"selected": ["A"]},
+        "bi_source": {"selected": ["A"]},
+    })
+
+
+@pytest.mark.parametrize("modifier", _ROLE_MODIFIERS)
+@pytest.mark.parametrize("noun", _ROLE_NOUNS)
+def test_a_modifier_glued_to_a_role_noun_is_dropped(modifier, noun):
+    """21 combos: the modifier goes, the noun stays. The rule does not depend on the picked direction."""
+    _answer_color_a()
+    phrase = modifier + noun
+    filled = brand.fill_default({"brand_slot": "cup", "prompt": f"方案：{phrase}。"})["prompt"]
+    subject = filled.split("\n", 1)[0]
+    assert phrase not in subject
+    assert noun in subject
+    assert brand.fill_default({"brand_slot": "cup", "prompt": filled})["prompt"] == filled
+
+
+@pytest.mark.parametrize("phrase", ("特色咖啡", "出色", "焦糖拿铁", "陶土杯", "暖木质吧台"))
+def test_products_and_unrelated_words_are_not_color_modifiers(phrase):
+    _answer_color_a()
+    filled = brand.fill_default({"brand_slot": "cup", "prompt": phrase})["prompt"]
+    assert phrase in filled
+
+
+@pytest.mark.parametrize("phrase,noun", (("靛蓝强调色", "强调色"), ("暖木点缀色", "点缀色")))
+def test_longer_role_nouns_keep_the_noun(phrase, noun):
+    _answer_color_a()
+    filled = brand.fill_default({"brand_slot": "cup", "prompt": f"方案：{phrase}。"})["prompt"]
+    subject = filled.split("\n", 1)[0]
+    assert phrase not in subject
+    assert noun in subject
+
+
 def test_unselected_color_phrases_leave_product_names_and_change_with_the_pick():
     """Strip whole color phrases from directions that were not picked. Products stay."""
     from pathlib import Path
@@ -809,14 +851,14 @@ def test_unselected_color_phrases_leave_product_names_and_change_with_the_pick()
     assert brand.fill_default({"brand_slot": "cup", "prompt": cup})["prompt"] == cup
     answer("B")
     picked_b = brand.fill_default({"brand_slot": "moodboard", "prompt": subject})["prompt"]
-    assert "陶土点缀" in picked_b
-    assert "暖木檐口" not in picked_b
-    assert "焦糖拿铁" in picked_b and "暖木质吧台" in picked_b
+    assert "陶土点缀" not in picked_b and "暖木檐口" not in picked_b
+    assert "焦糖拿铁" in picked_b and "陶土杯" in picked_b and "暖木质吧台" in picked_b
     answer("C")
     picked_c = brand.fill_default({"brand_slot": "storefront", "prompt": subject})["prompt"]
-    assert "暖木檐口" in picked_c
-    assert "陶土点缀" not in picked_c
+    assert "暖木檐口" not in picked_c and "陶土点缀" not in picked_c
     assert "焦糖拿铁" in picked_c and "陶土杯" in picked_c and "暖木质吧台" in picked_c
+    plain = brand.fill_default({"brand_slot": "logo_a", "prompt": subject})["prompt"]
+    assert "陶土点缀" in plain and "暖木檐口" in plain
     answer("A")
     mood = brand.fill_default({"brand_slot": "moodboard", "prompt": subject})["prompt"]
     logo_c = brand.fill_default({"brand_slot": "logo_c", "prompt": subject})["prompt"]
@@ -2201,6 +2243,31 @@ def test_raw_noise_text_without_a_charged_flag_is_not_a_free_retry():
     assert source.index("stamp_wait_charge(", noise_at) > noise_at
 
 
+def test_saved_brand_line_does_not_guess_a_missing_name():
+    """A saved brief wins. Otherwise both names must be in the subject, or the line is omitted."""
+    answers = {
+        "bi_delivery": {"selected": ["A"]},
+        "bi_color": {"selected": ["A"]},
+        "bi_mark": {"selected": ["A"]},
+        "bi_source": {"selected": ["A"]},
+        "brief": {"zh": "栖木咖啡", "en": "QIMU COFFEE"},
+    }
+    for subject in ("", "栖木咖啡", "QIMU", "qimu coffee"):
+        brand.reset_for_tests()
+        brand.record_card_answer(_card1(), answers)
+        spec = brand.fill_default({"brand_slot": "spec", "prompt": subject})["prompt"]
+        assert "栖木咖啡 QIMU COFFEE" in spec.splitlines(), subject
+    brand.reset_for_tests()
+    brand.remember_brand("栖木咖啡", "QIMU COFFEE")
+    spec = brand.fill_default({"brand_slot": "spec", "prompt": ""})["prompt"]
+    assert "栖木咖啡 QIMU COFFEE" in spec.splitlines()
+    brand.reset_for_tests()
+    brand.record_card_answer(_card1(), {k: v for k, v in answers.items() if k != "brief"})
+    for subject in ("", "栖木咖啡", "QIMU", "qimu coffee"):
+        spec = brand.fill_default({"brand_slot": "spec", "prompt": subject})["prompt"]
+        assert "栖木咖啡 QIMU COFFEE" not in spec.splitlines(), subject
+
+
 def _spec_for(color: str, other: str = "") -> str:
     brand.reset_for_tests()
     brand.record_card_answer(_card1(), {
@@ -2227,7 +2294,7 @@ def test_spec_submission_stays_under_2800_and_keeps_the_panel_commands():
         assert "栖木咖啡 QIMU COFFEE" in spec.splitlines()
         assert "QIMU COFFEE" in spec
         assert "soft vignette" not in spec
-        assert "Spell each heading exactly once" in spec
+        assert "Spell each heading exactly once" not in spec
         assert "Warm paper ground" in spec
         assert "flat swatches (no wood grain)" in spec
         assert "confirmed accent" in spec
@@ -2239,11 +2306,13 @@ def test_spec_submission_stays_under_2800_and_keeps_the_panel_commands():
         assert spec.index(brand._slot_command("spec")) < spec.index(brand._spec_lock())
         assert spec.rstrip().endswith(brand._spec_assembly_line())
         assert brand.fill_default({"brand_slot": "spec", "prompt": spec})["prompt"] == spec
-    custom = "自定义长色盘：雾绿点缀与岩灰檐口并置，再加一份比卡片选项更长的方向说明，用来卡住整段提交的上限。"
+    custom = "长" * 1000
     spec = _spec_for("", custom)
     lengths["custom"] = len(spec)
+    assert brand.color_hue_hint() == "长" * 60
     assert len(spec) <= 2800, ("custom", len(spec))
-    assert custom in spec
+    assert custom not in spec
+    assert ("长" * 60) in spec
     assert "栖木咖啡 QIMU COFFEE" in spec.splitlines()
     assert "noise" not in spec.lower()
     assert brand.fill_default({"brand_slot": "spec", "prompt": spec})["prompt"] == spec
