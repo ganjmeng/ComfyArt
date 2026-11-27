@@ -203,7 +203,12 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "flat dark badge" not in c["prompt"]
     assert "cup-shaped" in c["prompt"]
     assert "主组合, 负形, 反白与点缀, 小尺寸" in c["prompt"]
-    assert "horizontal mark" in c["prompt"]
+    assert "主组合 appears once only." in c["prompt"]
+    assert "横版 appears once." in c["prompt"]
+    assert "only in the 横版 zone" in c["prompt"]
+    assert "小尺寸 is not labeled 主组合" in c["prompt"]
+    assert "does not draw a second 横版" in c["prompt"]
+    assert "plus one horizontal mark" not in c["prompt"]
     assert "single-line" not in b["prompt"]
     assert "negative space inside the cup" in c["prompt"]
     assert "accent color or the dark color from the confirmed color direction" in c["prompt"]
@@ -237,9 +242,9 @@ def test_each_slot_prompt_locks_a_different_structure():
         assert heading in spec["prompt"], heading
     for old in OLD_SPEC_HEADINGS:
         assert old not in spec["prompt"], old
-    assert "最小使用尺寸" in spec["prompt"]
+    assert "≥ 20 mm" in spec["prompt"]
+    assert "「最小使用尺寸」" not in spec["prompt"]
     assert "not a separate panel" in spec["prompt"]
-    assert "最小尺寸" not in spec["prompt"].replace("最小使用尺寸", "")
     assert "No heading is repeated" in spec["prompt"]
     assert "one filled layout diagram" in spec["prompt"]
     assert "full bilingual heading" in spec["prompt"] and "not clipped to 字" in spec["prompt"]
@@ -428,7 +433,7 @@ def test_spec_card_is_seven_lovart_panels_and_brand_prompts_have_no_lock_words()
     assert [spec.index(heading) for heading in SPEC_HEADINGS] == sorted(spec.index(heading) for heading in SPEC_HEADINGS)
     for old in OLD_SPEC_HEADINGS:
         assert old not in spec, old
-    assert "最小使用尺寸" in spec and "最小尺寸" not in spec.replace("最小使用尺寸", "")
+    assert "≥ 20 mm" in spec and "「最小使用尺寸」" not in spec
     assert "full bilingual heading" in spec and "not clipped to 字" in spec
     assert "wordmark at three sizes" not in spec
     assert "no small text at all" not in spec
@@ -527,7 +532,7 @@ def test_closing_rules_are_in_the_skill_instructions():
     assert [skill.index(heading) for heading in skill_headings] == sorted(skill.index(heading) for heading in skill_headings)
     for old in OLD_SPEC_HEADINGS:
         assert old not in skill, old
-    assert "最小使用尺寸" in skill and "最小尺寸" not in skill.replace("最小使用尺寸", "")
+    assert "≥ 20 mm" in skill and "「最小使用尺寸」" not in skill
     assert "no small text at all" not in skill and "one garbled character is not acceptable" in skill
     assert "Do not print an English instruction label." in skill
     assert "accent color or the dark color from the confirmed color direction" in skill
@@ -753,7 +758,7 @@ def test_spec_prompt_leads_with_the_panel_contract_and_keeps_the_locked_brief_la
     assert "版式 / LAYOUT is a different panel" in spec
     assert "percentages sum to 100%" in spec
     assert "soft vignette" not in spec
-    assert "drawn 「最小使用尺寸」 diagram" in spec
+    assert "dimension annotation ≥ 20 mm" in spec
     assert len(spec) <= 2800
     assert brand._spec_lock().rstrip().endswith("Paper ground, not black.")
     assert spec.startswith(brand._CONTENT_REF)
@@ -845,7 +850,9 @@ def test_english_palette_phrases_leave_no_residue():
     })["prompt"]
     assert "white or dark for contrast" in contrast
     mood = brand.fill_default({"brand_slot": "moodboard", "prompt": replay})["prompt"]
-    assert "a flat colour study" in mood
+    assert "a flat colour study" not in mood
+    assert "small accent swatch" not in mood
+    assert "five named role swatches" in mood
     assert "broad painted bands" not in mood.split("\n")[0]
     assert "and oat" not in mood
 
@@ -1047,13 +1054,13 @@ def test_unselected_color_phrases_leave_product_names_and_change_with_the_pick()
     logo_a = brand.fill_default({"brand_slot": "logo_a", "prompt": subject})["prompt"]
     assert "横版 appears once" in logo_a
     logo_b = brand.fill_default({"brand_slot": "logo_b", "prompt": subject})["prompt"]
-    assert "The main seal is a circular stamp filled with the confirmed accent" in logo_b
+    assert "circular ink stamp of this same mark, not a cup and not a laurel wreath" in logo_b
     bag = brand.fill_default({"brand_slot": "bag", "prompt": subject})["prompt"]
-    assert "side gusset" in bag
+    assert "not a double side stripe" in bag
     store = brand.fill_default({"brand_slot": "storefront", "prompt": subject})["prompt"]
     assert "Paint the fascia eave in the confirmed accent" in store
     cup = brand.fill_default({"brand_slot": "cup", "prompt": subject})["prompt"]
-    assert "thin stripe on the sleeve is the confirmed accent" in cup
+    assert "each have exactly one thin accent stripe" in cup
     hint = brand.default_hint()
     skill_text = Path("src/skills.ts").read_text(encoding="utf-8")
     skill_at = skill_text.index("id: 'brand-identity-director'")
@@ -1164,7 +1171,7 @@ def test_visual_assembly_follows_the_gold_sheet():
     assert spec.count("Draw seven separate panels") == 1
     assert "3 by 3 grid" in spec
     assert "independent panel" in spec
-    assert "drawn 「最小使用尺寸」 diagram" in spec
+    assert "dimension annotation ≥ 20 mm" in spec
     assert "The hue hint is not a swatch" not in spec
     assert "Never write COLR, TISUS, INMAGE." in spec
     assert "noise" not in spec.lower()
@@ -2534,11 +2541,11 @@ def test_submitted_prompts_put_the_gold_commands_before_the_lock():
     expected = {
         "moodboard": "flat named swatches with percentages",
         "logo_a": "rounded-square icon, a circular stamp, and a solid square badge",
-        "logo_b": "The main seal is a circular stamp filled with the confirmed accent or its dark color.",
+        "logo_b": "circular ink stamp of this same mark, not a cup and not a laurel wreath",
         "logo_c": "not a filled plaque",
         "spec": "One clean, reviewable sheet",
-        "cup": "the thin stripe on the sleeve is the confirmed accent",
-        "bag": "down the side gusset, not only across the front face",
+        "cup": "each have exactly one thin accent stripe",
+        "bag": "not a double side stripe",
         "storefront": "nor a hue invented outside that confirmed direction",
     }
     for slot, caller in slots.items():
@@ -2561,7 +2568,7 @@ def test_submitted_prompts_put_the_gold_commands_before_the_lock():
         if slot == "logo_c":
             assert filled.count("cup-shaped") == 1
             assert "not a row of app icons" in filled
-            assert "do not draw it again inside the small-size set" in filled
+            assert "does not draw a second 横版" in filled
         assert expected[slot] in filled
         assert lead not in lock
         assert lead not in brand._SPEC_PREFACE
@@ -2853,6 +2860,78 @@ def test_option_c_assigns_family_roles_and_folds_the_accent_onto_the_main():
     assert "色 34%" not in mood and "色 33%" not in spec
 
 
+def test_paid_lr_prompt_rulings_are_in_the_final_strings():
+    """Card 1 A / card 3 A failure: swatches, dark badge, one 横版, spec ratios, cup, bag, fascia."""
+    brand.reset_for_tests()
+    brand.record_card_answer(_card1(), {
+        "bi_delivery": {"selected": ["A"]},
+        "bi_color": {"selected": ["A"]},
+        "bi_mark": {"selected": ["A"]},
+        "bi_source": {"selected": ["A"]},
+    })
+    weak = "a flat colour study, cream and a small accent swatch"
+    mood = brand.fill_default({"brand_slot": "moodboard", "prompt": weak})["prompt"]
+    assert weak not in mood
+    assert "a flat colour study" not in mood
+    assert "five named role swatches" in mood
+    assert "主色" in mood and "辅助" in mood and "底色" in mood and "中性" in mood
+    assert "点缀 10%" in mood
+    assert "five named role swatches" in brand._SLOT_LOCK["moodboard"]
+    logo_a = brand.fill_default({"brand_slot": "logo_a", "prompt": "方向A"})["prompt"]
+    assert "small dot on the mark, not a separate large circle" in logo_a
+    assert "Do not add wood grain." in logo_a
+    logo_b = brand.fill_default({"brand_slot": "logo_b", "prompt": "方向B"})["prompt"]
+    assert "solid dark badge, the mark reversed out" in logo_b
+    assert "circular ink stamp of this same mark, not a cup and not a laurel wreath" in logo_b
+    assert brand._BADGE_FLAT in logo_b
+    assert "wood" not in brand._SLOT_LOCK["logo_b"].lower()
+    logo_c = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})["prompt"]
+    assert logo_c.count("主组合") >= 1
+    assert "主组合 appears once only." in logo_c
+    assert "小尺寸 is not labeled 主组合" in logo_c
+    assert "plus one horizontal mark" not in logo_c
+    assert "handle-less" in logo_c or "no handle" in logo_c
+    assert "negative space" in logo_c and "not drawn as a positive shape" in logo_c
+    brand.record_card_answer({"questions": [brand._CARD3_ZH]}, {"bi_direction": {"selected": ["A"]}})
+    for slot in ("spec", "cup", "bag", "storefront"):
+        text = brand.fill_default({"brand_slot": slot, "prompt": "piece"})["prompt"]
+        assert "small dot on the mark, not a separate large circle" in text, slot
+        assert "Do not add wood grain." in text, slot
+        assert "solid dark badge" not in text, slot
+    spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})["prompt"]
+    assert "35/25/25/12" in spec and "paint these ratios" in spec
+    assert "do not hardcode a palette" in spec
+    misuse = spec.split("使用禁忌 / MISUSE (", 1)[1].split(")", 1)[0]
+    image = spec.split("影像与材质 / IMAGE (", 1)[1].split(")", 1)[0]
+    assert "no colour chips" in misuse and "no ratio figures" in misuse
+    assert "no colour chips" in image and "no ratio figures" in image
+    assert "%" not in misuse and "%" not in image
+    assert "not just the logo" in spec and "TYPE does not collapse into VARIANTS" in spec
+    assert "≥ 20 mm" in spec and "「" not in spec.split("标识 / LOGO", 1)[1][:80]
+    cup = brand.fill_default({"brand_slot": "cup", "prompt": "杯"})["prompt"]
+    assert "confirmed 主色" in cup and "No white shows below the sleeve." in cup
+    assert "each have exactly one thin accent stripe" in cup
+    assert "not two stripes on one sleeve and none on the other" in cup
+    bag = brand.fill_default({"brand_slot": "bag", "prompt": "袋"})["prompt"]
+    assert "Do not print zone labels such as 主组合." in bag
+    assert "not a double side stripe" in bag
+    store = brand.fill_default({"brand_slot": "storefront", "prompt": "门头"})["prompt"]
+    assert "not bare wood" in store and "The fascia carries the mark." in store
+    brand.reset_for_tests()
+    brand.record_card_answer(_card1(), {
+        "bi_delivery": {"selected": ["A"]},
+        "bi_color": {"selected": ["A"]},
+        "bi_mark": {"selected": ["A"]},
+        "bi_source": {"selected": ["A"]},
+    })
+    brand.record_card_answer({"questions": [brand._CARD3_ZH]}, {"bi_direction": {"selected": ["B"]}})
+    for slot in ("logo_b", "spec", "cup", "bag", "storefront"):
+        text = brand.fill_default({"brand_slot": slot, "prompt": "piece"})["prompt"]
+        assert "solid dark badge, the mark reversed out" in text, slot
+        assert "not a cup and not a laurel wreath" in text, slot
+        assert brand._BADGE_FLAT in text, slot
+
+
 def test_logo_b_flat_badge_sentence_reaches_the_logo_and_the_deliverables():
     """The solid-badge lock stays generic. Deliverables repeat it when B is chosen."""
     sentence = brand._BADGE_FLAT
@@ -2970,7 +3049,7 @@ def test_spec_fixed_part_leaves_room_and_long_subjects_are_not_blocked():
     bare = brand.fill_default({"brand_slot": "spec", "prompt": ""})["prompt"]
     assert "The chosen mark is 实心木牌，旁边一枚圆形印章." in bare
     assert brand._BADGE_FLAT in bare
-    assert len(bare) <= 2500
+    assert len(bare) <= 2800
 
 
 _LONG_SUBJECT = {
