@@ -899,16 +899,87 @@ _SPEC_PROMPT_MAX = 2800
 _MOOD_PROMPT_MAX = 2800
 
 
+def _split_color_answer(label: str) -> list[tuple[str, str]]:
+    """Swatch name and role from one saved card-1 color answer. No palette is hardcoded."""
+    text = str(label or "").strip()
+    if re.search(r"[：:]", text):
+        _left, right = re.split(r"[：:]", text, maxsplit=1)
+        if re.search(r"[+/、|/]", right):
+            text = right.strip()
+    parts = re.split(r"\s*(?:\+|／|/|、|\||,|，)\s*", text)
+    rows: list[tuple[str, str]] = []
+    for part in parts:
+        piece = part.strip(" 。.;；")
+        if not piece:
+            continue
+        if re.search(r"更强|自然感|more natural", piece, re.I) and not re.search(r"[色木白绿棕橘]", piece):
+            continue
+        role = "色"
+        name = piece
+        if re.search(r"点缀|\baccent\b", name, re.I):
+            role = "点缀"
+            name = re.sub(r"点缀|\baccent\b", "", name, flags=re.I)
+        elif re.search(r"为主|主色|as the base|\bmain\b", name, re.I):
+            role = "主色"
+            name = re.sub(r"为主|主色|as the base|\bmain\b", "", name, flags=re.I)
+        name = re.sub(r"^(?:with\s+(?:a|an)\s+|with\s+|a\s+|an\s+|the\s+)", "", name.strip(), flags=re.I)
+        name = re.sub(r"\s+", " ", name).strip(" -—")
+        if re.search(r"[\u4e00-\u9fff]", name):
+            name = re.sub(r"\s+", "", name)
+        if name:
+            rows.append((name, role))
+    return rows
+
+
+def _swatch_rows(label: str) -> list[tuple[str, str, int]]:
+    """Names, roles, and percentages from card 1. An accent is 10%; the rest share what remains."""
+    named = _split_color_answer(label)
+    if not named:
+        return []
+    accents = [i for i, (_name, role) in enumerate(named) if role == "点缀"]
+    amounts = [0] * len(named)
+    if accents:
+        each = 10
+        used = each * len(accents)
+        if used >= 100:
+            each = max(1, 100 // len(accents))
+            used = each * len(accents)
+        for index in accents:
+            amounts[index] = each
+        others = [i for i in range(len(named)) if i not in accents]
+        if others:
+            rest = 100 - used
+            base, extra = divmod(rest, len(others))
+            for offset, index in enumerate(others):
+                amounts[index] = base + (1 if offset < extra else 0)
+        else:
+            base, extra = divmod(100, len(accents))
+            for offset, index in enumerate(accents):
+                amounts[index] = base + (1 if offset < extra else 0)
+    else:
+        base, extra = divmod(100, len(named))
+        for index in range(len(named)):
+            amounts[index] = base + (1 if index < extra else 0)
+    return [(name, role, amounts[index]) for index, (name, role) in enumerate(named)]
+
+
 def _mood_color_line() -> str:
-    """The confirmed card-1 color label, so the moodboard is not painted from the model's own wording."""
+    """The 色彩 cell, written from card 1. No color answer keeps the generic instruction."""
     hint = color_hue_hint()
     if not hint:
         return ""
+    rows = _swatch_rows(hint)
+    if not rows:
+        return (
+            "The color cell is flat named swatches with percentages, "
+            "and the confirmed accent is its own swatch at about 10%. "
+            "Do not paint broad bands and do not replace the accent."
+        )
+    body = "; ".join(f"{name} {role} {pct}%" for name, role, pct in rows)
     return (
-        "Confirmed color direction, written into the 色彩 cell as flat named swatches with percentages: "
-        + hint + ". "
-        "Include that direction's accent as its own swatch at about 10%. "
-        "Do not paint broad bands and do not replace the accent."
+        "色彩 cell, flat swatches, copy only these: "
+        + body + ". "
+        "Do not paint broad bands and do not add a swatch."
     )
 
 
@@ -1096,6 +1167,7 @@ _EN_HUE = frozenset({
     "red", "orange", "yellow", "green", "cyan", "blue", "indigo", "purple", "violet",
     "brown", "tan", "gray", "grey", "black", "white", "beige", "gold", "silver",
     "pink", "wood", "wooden", "clay", "earth",
+    "terracotta", "oat", "cream", "kraft", "caramel",
 })
 _EN_SHADE = frozenset({
     "deep", "warm", "soft", "light", "dark", "pale", "rich", "muted",
@@ -1130,26 +1202,69 @@ def _glued_color_modifier(before: str) -> str:
     return modifier
 
 
+_EN_INTENSITY = "small|tiny|subtle|little"
+# Object nouns a single hue may modify. Stripped only on the code-coloured slots.
+_OBJECT_NOUN = r"cups?|sleeves?|bags?|cornices?|eaves?|storefronts?|door\s+heads?"
+
+
+def _tidy_color_residue(text: str) -> str:
+    """Drop a broken connector or a broad-band clause left after a palette phrase."""
+    cleaned = re.sub(r"\b(?:arranged\s+as\s+)?broad\s+(?:painted\s+)?bands\b", " ", str(text or ""), flags=re.I)
+    for _ in range(6):
+        nxt = re.sub(r"[ \t]+", " ", cleaned)
+        nxt = re.sub(r"\s+([,.])", r"\1", nxt)
+        nxt = re.sub(r",\s*,+", ",", nxt)
+        nxt = re.sub(r"(?:^|\s)\.(?=\s|$)", " ", nxt)
+        nxt = re.sub(r"\barranged\s+as\b(?=\s*(?:[,.]|$))", " ", nxt, flags=re.I)
+        nxt = re.sub(r"\b(?:with|of|and)\s+(?:a|an)\b(?=\s*(?:[,.]|$))", " ", nxt, flags=re.I)
+        nxt = re.sub(
+            r"\b(?:and|or|with|of|in)\b(?=\s*(?:[,.]|$|\b(?:and|or|with|of|on|in|at|for|to|arranged)\b))",
+            " ",
+            nxt,
+            flags=re.I,
+        )
+        nxt = re.sub(r"[ \t]+", " ", nxt).strip(" ,")
+        if nxt == cleaned.strip(" ,"):
+            return nxt
+        cleaned = nxt
+    return cleaned.strip(" ,")
+
+
 def _defer_english_color_words(text: str) -> str:
-    """Drop an English palette phrase. Keep a single hue word that names an object."""
+    """Drop an English palette phrase, its connectors, and its leading size words.
+
+    A single hue word that names an object stays. 'white or dark for contrast' stays.
+    """
     shade = "|".join(sorted(_EN_SHADE, key=len, reverse=True))
     hue = "|".join(sorted(_EN_HUE, key=len, reverse=True))
     role = "|".join(sorted(_EN_ROLE, key=len, reverse=True))
+    core = (
+        rf"(?:{shade})(?:\s+(?:{hue}))+(?:\s+(?:{role})\b)?"
+        rf"|(?:{hue})(?:\s+(?:{hue}))+(?:\s+(?:{role})\b)?"
+        rf"|(?:{hue})\s+(?:{role})\b"
+    )
+    lead = (
+        rf"(?:(?:a|an)\s+)?(?:(?:{_EN_INTENSITY})\s+)?(?:touch|hint)\s+of\s+"
+        rf"|(?:(?:a|an)\s+)?(?:{_EN_INTENSITY})\s+"
+    )
+    connector = r"(?:,\s*|\s+and\s+|\s+or\s+|\s+with\s+)+"
     phrase = re.compile(
-        rf"\b(?:(?:{shade})\s+)+(?:(?:{hue})\b\s*)+(?:(?:{role})\b)?|"
-        rf"\b(?:(?:{hue})\b\s*){{2,}}(?:(?:{role})\b)?|"
-        rf"\b(?:{hue})\b\s+(?:{role})\b",
+        rf"\b(?:(?:{lead}))?(?:{core})(?:(?:{connector})(?:(?:{lead}))?(?:{core}))*",
         re.I,
     )
-    cleaned = phrase.sub("", str(text or ""))
+    return _tidy_color_residue(phrase.sub(" ", str(text or "")))
+
+
+def _defer_object_color(text: str) -> str:
+    """On a code-coloured slot, drop one hue word that directly modifies the object noun."""
+    hue = "|".join(sorted(_EN_HUE, key=len, reverse=True))
     cleaned = re.sub(
-        rf",\s+(?:(?!(?:{hue})\b)[A-Za-z]+\s+){{0,2}}(?:{hue})\b(?=\s*(?:,|\.|$|\band\b|\bor\b))",
-        "",
-        cleaned,
+        rf"\b(?:{hue})\b(?=\s+(?:[A-Za-z]+\s+){{0,2}}(?:{_OBJECT_NOUN})\b)",
+        " ",
+        str(text or ""),
         flags=re.I,
     )
-    cleaned = re.sub(r",\s*,", ",", cleaned)
-    return cleaned
+    return _tidy_color_residue(cleaned)
 
 
 def _defer_color_words(text: str) -> str:
@@ -1207,6 +1322,11 @@ def _slot_command(slot_id: str) -> str:
             "Draw the landscape zone once, and do not draw it again inside the small-size set."
         )
     if slot_id == "moodboard":
+        if _swatch_rows(color_hue_hint()):
+            return (
+                "The color cell uses only the flat swatches named in the color line. "
+                "Do not paint broad bands."
+            )
         return (
             "The color cell is flat named swatches with percentages, and the confirmed accent is its own swatch at about 10%. "
             "Do not paint broad bands and do not replace that accent with a different hue."
@@ -1333,6 +1453,8 @@ def fill_default(args: dict) -> dict:
         raw_prompt = _drop_noise_word(raw_prompt)
     if color_line:
         raw_prompt = _defer_color_words(raw_prompt)
+    if str(slot["id"]) in ("cup", "bag", "storefront"):
+        raw_prompt = _defer_object_color(raw_prompt)
     if str(slot["id"]) == "spec":
         fixed = [part for part in (preface, brand_line, lead, str(lock or ""), color_line) if part]
         fixed_len = sum(len(part) for part in fixed) + max(len(fixed) - 1, 0)

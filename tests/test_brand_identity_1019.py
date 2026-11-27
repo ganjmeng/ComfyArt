@@ -760,8 +760,9 @@ def test_moodboard_prompt_keeps_the_locked_color_direction():
         "bi_source": {"selected": ["A"]},
     })
     mood = brand.fill_default({"brand_slot": "moodboard", "prompt": "暖木棕 + 米白"})
-    assert "暖土色为主 + 低饱和靛蓝点缀" in mood["prompt"]
-    assert "Confirmed color direction" in mood["prompt"]
+    assert "暖土色 主色 90%" in mood["prompt"]
+    assert "低饱和靛蓝 点缀 10%" in mood["prompt"]
+    assert "copy only these" in mood["prompt"]
     again_mood = brand.fill_default({"brand_slot": "moodboard", "prompt": mood["prompt"]})
     assert again_mood["prompt"] == mood["prompt"]
     logo = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})
@@ -783,13 +784,52 @@ def test_english_palette_wording_is_stripped_and_a_clay_cup_stays():
         "and a small touch of deep clay accent"
     )
     cup = brand.fill_default({"brand_slot": "cup", "prompt": subject})["prompt"]
-    assert "clay cup" in cup
-    for gone in ("deep clay accent", "warm wood brown", "oat beige", "cream white"):
+    assert "a cup on the counter" in cup
+    assert "clay cup" not in cup
+    for gone in ("deep clay accent", "warm wood brown", "oat beige", "cream white", "and oat"):
         assert gone not in cup, gone
     kept = brand.fill_default({"brand_slot": "cup", "prompt": "a small white cup"})["prompt"]
-    assert "small white cup" in kept
-    assert "white" in kept
+    assert "a small cup" in kept
+    assert "a small white cup" not in kept
+    assert "One plain white cup alone is wrong." in kept
     assert brand.fill_default({"brand_slot": "cup", "prompt": cup})["prompt"] == cup
+    elsewhere = brand.fill_default({"brand_slot": "logo_a", "prompt": "a clay cup"})["prompt"]
+    assert "clay cup" in elsewhere
+
+
+def test_english_palette_phrases_leave_no_residue():
+    before = "warm wood brown and oat beige palette"
+    assert brand._defer_color_words(before) == ""
+    assert "and oat" not in brand._defer_color_words("use " + before + " here")
+    replay = (
+        "a flat colour study of warm wood brown and a small touch of deep clay accent "
+        "arranged as broad painted bands"
+    )
+    assert brand._defer_color_words(replay) == "a flat colour study"
+    assert "broad painted bands" not in brand._defer_color_words(replay)
+    assert brand._defer_color_words("small gold accent") == ""
+    assert brand._defer_color_words("a bird with a small gold accent on the wing") == "a bird on the wing"
+    assert brand._defer_color_words("a mark with a terracotta accent") == "a mark"
+    assert brand._defer_color_words("white or dark for contrast") == "white or dark for contrast"
+    brand.record_card_answer(_card1(), {
+        "bi_delivery": {"selected": ["A"]},
+        "bi_color": {"selected": ["A"]},
+        "bi_mark": {"selected": ["A"]},
+        "bi_source": {"selected": ["A"]},
+    })
+    bag = brand.fill_default({"brand_slot": "bag", "prompt": "a white paper bag on the counter"})["prompt"]
+    assert "paper bag on the counter" in bag
+    assert "white paper bag" not in bag
+    assert "white or dark for contrast" not in brand._SLOT_LOCK["bag"]
+    contrast = brand.fill_default({
+        "brand_slot": "logo_b",
+        "prompt": "white or dark for contrast",
+    })["prompt"]
+    assert "white or dark for contrast" in contrast
+    mood = brand.fill_default({"brand_slot": "moodboard", "prompt": replay})["prompt"]
+    assert "a flat colour study" in mood
+    assert "broad painted bands" not in mood.split("\n")[0]
+    assert "and oat" not in mood
 
 
 def test_moodboard_color_cell_is_code_written_and_capped():
@@ -802,9 +842,9 @@ def test_moodboard_color_cell_is_code_written_and_capped():
     subject = "board " + ("long cell note " * 400)
     mood = brand.fill_default({"brand_slot": "moodboard", "prompt": subject})["prompt"]
     assert len(mood) <= 2800
-    assert "flat named swatches with percentages" in mood
-    assert "about 10%" in mood
-    assert brand.color_hue_hint() in mood
+    assert "暖土色 主色 90%" in mood
+    assert "低饱和靛蓝 点缀 10%" in mood
+    assert "flat named swatches with percentages" not in mood
     assert "broad bands" not in mood.split("\n")[0]
     assert brand.fill_default({"brand_slot": "moodboard", "prompt": mood})["prompt"] == mood
 
@@ -842,9 +882,13 @@ def test_shared_prompt_code_has_no_example_palette_outside_locked_cards():
     skill = Path("src/skills.ts").read_text(encoding="utf-8")
     start = skill.index("id: 'brand-identity-director'")
     skill = skill[start:skill.index("id: 'packaging-design-director'", start)]
-    for banned in ("terracotta", "caramel", "oat", "cream"):
-        assert re.search(rf"(?i)\b{banned}\b", body) is None, banned
+    table = re.search(r"_EN_HUE = frozenset\(\{.*?\}\)", body, re.S)
+    assert table is not None
+    outside = body[:table.start()] + body[table.end():]
+    for banned in ("terracotta", "caramel", "oat", "cream", "kraft"):
+        assert re.search(rf"(?i)\b{banned}\b", outside) is None, banned
         assert re.search(rf"(?i)\b{banned}\b", skill) is None, banned
+        assert re.search(rf"(?i)\b{banned}\b", table.group(0)) is not None, banned
     hint = brand.default_hint()
     for banned in ("栖木", "QIMU"):
         assert banned not in hint
@@ -1124,10 +1168,10 @@ def test_visual_assembly_follows_the_gold_sheet():
     })
     hint = "暖土色为主 + 低饱和靛蓝点缀"
     mood = brand.fill_default({"brand_slot": "moodboard", "prompt": "板"})["prompt"]
-    assert "flat named swatches with percentages" in mood
-    assert "about 10%" in mood
+    assert "暖土色 主色 90%" in mood
+    assert "低饱和靛蓝 点缀 10%" in mood
     assert "Do not paint broad bands" in mood
-    assert hint in mood
+    assert "flat named swatches with percentages" not in mood
     assert brand.fill_default({"brand_slot": "moodboard", "prompt": mood})["prompt"] == mood
     badge = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})["prompt"]
     assert "Fill the badge with that accent or the dark color in this direction." in badge
