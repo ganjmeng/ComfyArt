@@ -2395,7 +2395,10 @@ class LocalLlmProvider(AgentProvider):
             return False, messages
         it["args"] = prepared
         filled = str(prepared.get("prompt") or "")
-        if incoming and not assembled_keeps_caller(filled, incoming):
+        leads = prepared.pop("_server_leads", None)
+        if not isinstance(leads, list):
+            leads = []
+        if incoming and not assembled_keeps_caller(filled, incoming, leads):
             messages = await self._emit_result(
                 it, submit_block_text("mismatch", lang), emit=emit, done=done, lang=lang, is_error=True)
             return False, messages

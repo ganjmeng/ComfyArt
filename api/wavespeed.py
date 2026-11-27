@@ -2071,15 +2071,17 @@ async def submit(inputs: dict) -> str:
             # #159: no price for the submitted tier: never guess one, always ask (no amount, the tier is named)
             raise WaveSpeedError(f"{model}: no price for this tier; confirm to continue", 409, unpriced=True,
                                  tier=tier_label(await priced_inputs(model, inputs)), gif_note=gif_note, model=model, gif=gif_body, model_choice=model_choice)
+    from .prompt_cap import PROMPT_CHAR_CAP, finalize_qwen_prompt
+    if str(inputs.get("prompt") or "") and model in PROMPT_CHAR_CAP:
+        hints = inputs.get("ref_hints") if isinstance(inputs.get("ref_hints"), list) else []
+        final, blocked = finalize_qwen_prompt(model, str(inputs.get("prompt") or ""), hints)
+        if blocked:
+            raise WaveSpeedError(blocked, 400)
+        inputs = dict(inputs)
+        inputs["prompt"] = final
+        inputs.pop("ref_hints", None)
     async with aiohttp.ClientSession(headers=_headers()) as session:
         payload = await build_payload(session, _schema(meta), await _prepare(session, model, inputs), model)
-        from .prompt_cap import PROMPT_CHAR_CAP, finalize_qwen_prompt
-        if payload.get("prompt") and model in PROMPT_CHAR_CAP:
-            hints = inputs.get("ref_hints") if isinstance(inputs.get("ref_hints"), list) else []
-            final, blocked = finalize_qwen_prompt(model, str(payload.get("prompt") or ""), hints)
-            if blocked:
-                raise WaveSpeedError(blocked, 400)
-            payload["prompt"] = final
         _submits.append(time.time())
         # never auto-retry a submit: a retry could be charged twice
         try:

@@ -630,7 +630,7 @@ def _spec_lock() -> str:
     hint_line = ""
     if hint:
         hint_line = (
-            "Soft hue-family hint from the color answer, never a hex value and never a printed swatch: "
+            "never a printed swatch: "
             f"{hint}. It does not add a color. "
         )
     return (
@@ -642,18 +642,18 @@ def _spec_lock() -> str:
         "the names, roles, and ratios are from the confirmed color direction; "
         "do not hardcode a palette and do not invent hex values), "
         "变体 / VARIANTS (the approved variants, each with a short label), "
-        "字体 / TYPE (this panel carries its full bilingual heading 字体 / TYPE, not clipped to 字; "
+        "字体 / TYPE (full bilingual heading 字体 / TYPE, not clipped to 字; "
         "hierarchy and annotation density follow the gold; "
-        "the Chinese brand name and the English brand name are copied character for character; "
-        "Do not drop a character and do not substitute a character), "
+        "copied character for character; "
+        "Do not drop a character), "
         "版式 / LAYOUT (one filled layout diagram), "
         "使用禁忌 / MISUSE (uses only the brand colors, draws a red X, and keeps short captions of the same kind as the gold), "
         "影像与材质 / IMAGE (keeps short captions of the same kind as the gold). "
         "No heading is repeated. Do not clip a heading. "
         "Annotation density follows the gold. "
-        "Allowed on-card text includes the bilingual headings, a Chinese color name plus a role plus a percentage on each swatch, "
-        "the in-panel 「最小使用尺寸」 annotation, short captions on 使用禁忌 / MISUSE and 影像与材质 / IMAGE of the same kind as the gold, "
-        "short labels on the approved variants, and the real Chinese brand name and the real English brand name from the brief, copied character for character. "
+        "Allowed on-card text includes the bilingual headings, a Chinese color name plus a role plus a percentage, "
+        "short captions on 使用禁忌 / MISUSE and 影像与材质 / IMAGE, "
+        "and the real Chinese brand name and the real English brand name, copied character for character. "
         "Do not write invented body copy. Do not invent English. "
         "Any text that does appear anywhere must be spelled correctly (one garbled character is not acceptable)."
         + (f" {hint_line.strip()}" if hint_line else "")
@@ -719,6 +719,7 @@ def record_card_answer(spec: dict, answers: object) -> str | None:
     selected, _other = _selected(answers, _CARD3)
     pick = selected[0] if selected else "A"
     progress["chosen"] = {"A": "logo_a", "B": "logo_b", "C": "logo_c"}.get(pick, "logo_a")
+    progress["mark_desc"] = _card_option_description(spec, _CARD3, pick)
     progress["phase"] = "finals"
     return "finals"
 
@@ -898,23 +899,34 @@ def _ref_hint(slot_id: str) -> str:
     return _CONTENT_REF
 
 
-def _remember_mark(slot_id: str, subject: str) -> None:
-    """Keep this run's logo subject. The noun is the caller's text, never a built-in animal."""
-    if slot_id not in ("logo_a", "logo_b", "logo_c"):
-        return
-    text = " ".join(str(subject or "").split())
-    if not text:
-        return
-    # A second fill that failed to peel the lock must not replace the run's subject.
-    if text.startswith((
-        "The mark is a ",
-        "Use only the visual style",
-        "Use image 1 as the content reference",
-        "Draw seven separate panels",
-    )):
-        return
-    marks = _progress().setdefault("marks", {})
-    marks[slot_id] = text[:80]
+def _card_option_description(spec: object, qid: str, option_id: str) -> str:
+    """The description field of one ask_user option. Not the logo prompt."""
+    if not isinstance(spec, dict):
+        return ""
+    wanted = str(option_id or "").strip().upper()[:1]
+    for question in spec.get("questions") or []:
+        if not isinstance(question, dict) or str(question.get("id") or "") != qid:
+            continue
+        for opt in question.get("options") or []:
+            if not isinstance(opt, dict):
+                continue
+            if str(opt.get("id") or "").strip().upper()[:1] == wanted:
+                return " ".join(str(opt.get("description") or "").split())
+    return ""
+
+
+def _trim_at_sentence(text: str, limit: int) -> str:
+    """Shorten at a sentence boundary. Never cut a word in half."""
+    body = " ".join(str(text or "").split())
+    if len(body) <= limit:
+        return body
+    chunk = body[:limit]
+    cut = max(chunk.rfind("。"), chunk.rfind("."), chunk.rfind("；"), chunk.rfind(";"))
+    if cut >= 12:
+        return chunk[:cut + 1].strip()
+    if " " in chunk:
+        return chunk.rsplit(" ", 1)[0].strip()
+    return chunk.strip()
 
 
 def _mark_type_phrase(slot_id: str) -> str:
@@ -925,7 +937,7 @@ def _mark_type_phrase(slot_id: str) -> str:
 
 
 def _chosen_mark_sentence() -> str:
-    """One sentence for the four deliverables. Subject from this run; type words from the lock."""
+    """Type words from the lock. The noun is the card-3 option description, never the logo prompt."""
     progress = _progress()
     chosen = str(progress.get("chosen") or "")
     if chosen not in ("logo_a", "logo_b", "logo_c"):
@@ -933,11 +945,11 @@ def _chosen_mark_sentence() -> str:
     phrase = _mark_type_phrase(chosen)
     if not phrase:
         return ""
-    subject = str((progress.get("marks") or {}).get(chosen) or "").strip()
     typed = f"The mark is a {phrase}."
-    if not subject:
+    desc = _trim_at_sentence(str(progress.get("mark_desc") or ""), 180)
+    if not desc:
         return typed
-    return f"The chosen mark is {subject}. {typed}"
+    return f"The chosen mark is {desc}. {typed}"
 
 
 def _qwen_prompt_cap() -> int:
@@ -954,21 +966,45 @@ _STYLE_REF = "Use only the visual style, palette and rendering of image 1, not i
 _CONTENT_REF = "Use image 1 as the content reference for the approved mark."
 
 
-def assembled_keeps_caller(filled: str, incoming: str) -> bool:
-    """The caller's words stay in the assembled prompt.
+def _caller_is_fragment(caller: str) -> bool:
+    """A caller that is only a hint sentence or only a template command."""
+    text = caller.strip()
+    if not text:
+        return False
+    if text in (_STYLE_REF, _CONTENT_REF, "Draw the mark first"):
+        return True
+    if re.fullmatch(
+        r"Use only the visual style, palette and rendering of image \d+, not its content\.",
+        text,
+    ):
+        return True
+    if text.startswith("Use image ") and "content reference" in text and "\n" not in text and len(text) < 140:
+        return True
+    return False
 
-    A reference sentence may lead. Replacing the caller text is still a mismatch.
+
+def assembled_keeps_caller(filled: str, incoming: str, leads: list[str] | None = None) -> bool:
+    """The caller must start the text once the server's own reference sentences are removed.
+
+    ``leads`` is the exact list this call prepended. Nothing is inferred from the prompt.
+    A caller that is only a hint or a template fragment is a mismatch.
     """
-    text = str(filled or "")
+    text = str(filled or "").strip()
     caller = str(incoming or "").strip()
     if not caller:
         return True
+    if _caller_is_fragment(caller):
+        return False
     if text.startswith(caller):
         return True
-    if not (text.startswith(_STYLE_REF) or text.startswith(_CONTENT_REF)):
-        return False
-    lines = [line.strip() for line in text.splitlines() if line.strip()]
-    return any(line == caller or line.startswith(caller) for line in lines)
+    rest = text
+    for lead in leads or []:
+        piece = str(lead or "").strip()
+        if piece and rest.startswith(piece):
+            rest = rest[len(piece):].lstrip(" \t\n")
+    return rest.startswith(caller)
+
+
 _DO_NOT_TAIL = {
     "moodboard": "Do not paint broad bands.",
     "logo_a": "No other small text. No bottom caption. Do not print an English instruction label.",
@@ -994,8 +1030,6 @@ def _split_color_answer(label: str) -> list[tuple[str, str]]:
         piece = part.strip(" 。.;；")
         if not piece:
             continue
-        if re.search(r"更强|自然感|more natural", piece, re.I) and not re.search(r"[色木白绿棕橘]", piece):
-            continue
         role = "色"
         name = piece
         if re.search(r"点缀|\baccent\b", name, re.I):
@@ -1004,6 +1038,9 @@ def _split_color_answer(label: str) -> list[tuple[str, str]]:
         elif re.search(r"为主|主色|as the base|\bmain\b", name, re.I):
             role = "主色"
             name = re.sub(r"为主|主色|as the base|\bmain\b", "", name, flags=re.I)
+        name, softened = _strip_intensity(name)
+        if role == "色" and softened:
+            role = "点缀"
         name = re.sub(r"^(?:with\s+(?:a|an)\s+|with\s+|a\s+|an\s+|the\s+)", "", name.strip(), flags=re.I)
         name = re.sub(r"\s+", " ", name).strip(" -—")
         if re.search(r"[\u4e00-\u9fff]", name):
@@ -1013,11 +1050,39 @@ def _split_color_answer(label: str) -> list[tuple[str, str]]:
     return rows
 
 
-# Role labels, largest share first. Not colour names and not light-to-dark words.
-_FAMILY_ROLES = ("主色", "辅助色", "底色", "深色")
-_FAMILY_WEIGHTS = (35, 25, 20, 10)
+# Gold role order. Not colour names and not light-to-dark words.
+_FAMILY_ROLES = ("主色", "辅助", "底色", "中性")
+_MOOD_SPLITS = (35, 25, 20, 10)
+_SPEC_SPLITS = (35, 25, 25, 12)
 _MOOD_ACCENT_BUDGET = 10
-_SPEC_ACCENT_BUDGET = 5
+_SPEC_ACCENT_BUDGET = 3
+# Accent-only answers still get four role swatches. The model names them in neutrals.
+_NEUTRAL_FAMILY = "neutral ground"
+_INTENSITY_WORDS = (
+    "低饱和度", "更强", "更深", "更淡", "更浅", "自然感",
+    "more natural", "stronger", "deeper", "slightly",
+)
+
+
+def _strip_intensity(name: str) -> tuple[str, bool]:
+    """Drop generic intensity modifiers. True when a modifier was removed."""
+    text = str(name or "").strip()
+    changed = False
+    while text:
+        nxt = text
+        for word in _INTENSITY_WORDS:
+            if nxt.lower().endswith(word.lower()):
+                nxt = nxt[: len(nxt) - len(word)]
+            elif nxt.lower().startswith(word.lower()):
+                nxt = nxt[len(word):]
+        nxt = re.sub(r"^(?:偏|略)+", "", nxt)
+        nxt = re.sub(r"(?:偏|略)+$", "", nxt)
+        nxt = nxt.strip(" ，,;；、 ")
+        if nxt == text:
+            break
+        text = nxt
+        changed = True
+    return text, changed
 
 
 def _accent_names(name: str) -> list[str]:
@@ -1033,26 +1098,12 @@ def _share_percent(total: int, count: int) -> list[int]:
     return [base + (1 if index < extra else 0) for index in range(count)]
 
 
-def _scale_shares(weights: tuple[int, ...], total: int) -> list[int]:
-    """Spread total across weights. The largest remainder keeps the main role largest."""
-    denom = sum(weights)
-    if denom <= 0 or total <= 0:
-        return [0 for _ in weights]
-    raw = [weight * total for weight in weights]
-    base = [value // denom for value in raw]
-    leftover = total - sum(base)
-    order = sorted(range(len(weights)), key=lambda i: (raw[i] % denom, -i), reverse=True)
-    for index in order[:leftover]:
-        base[index] += 1
-    return base
-
-
 def _swatch_rows(label: str, accent_budget: int = _MOOD_ACCENT_BUDGET) -> list[tuple[str, str, int]]:
-    """Four role swatches of the main family, then one swatch per accent.
+    """Four role swatches, then one swatch per accent.
 
-    Names and order are the same for every budget. Moodboard accents share 10
-    and the family keeps 35/25/20/10. The spec budget is 5, and the family is
-    scaled to the rest. A direction with no main family keeps an even split.
+    Moodboard is 35/25/20/10 plus accents sharing 10. The spec card is
+    35/25/25/12 plus accents sharing 3. An accent-only answer keeps the four
+    roles under a neutral ground. A direction with no roles keeps an even split.
     """
     named = _split_color_answer(label)
     if not named:
@@ -1067,21 +1118,20 @@ def _swatch_rows(label: str, accent_budget: int = _MOOD_ACCENT_BUDGET) -> list[t
             accents.extend(_accent_names(name))
         else:
             others.append((name, role))
+    if accents and not mains:
+        mains = [_NEUTRAL_FAMILY]
     if not mains and not accents:
         amounts = _share_percent(100, len(named))
         return [(name, role, amounts[index]) for index, (name, role) in enumerate(named)]
     rows: list[tuple[str, str, int]] = []
     if mains:
         family = mains[0]
-        budget = accent_budget if accents else 0
-        if budget == _MOOD_ACCENT_BUDGET and accents:
-            percents = list(_FAMILY_WEIGHTS)
-        else:
-            percents = _scale_shares(_FAMILY_WEIGHTS, 100 - budget)
-        for role, pct in zip(_FAMILY_ROLES, percents):
+        splits = _MOOD_SPLITS if accent_budget == _MOOD_ACCENT_BUDGET else _SPEC_SPLITS
+        if not accents:
+            splits = (splits[0] + accent_budget, *splits[1:])
+        for role, pct in zip(_FAMILY_ROLES, splits):
             rows.append((family, role, pct))
-    accent_total = accent_budget if mains else 100
-    for name, pct in zip(accents, _share_percent(accent_total, len(accents))):
+    for name, pct in zip(accents, _share_percent(accent_budget if mains else 100, len(accents))):
         if pct:
             rows.append((name, "点缀", pct))
     if not rows and others:
@@ -1091,9 +1141,12 @@ def _swatch_rows(label: str, accent_budget: int = _MOOD_ACCENT_BUDGET) -> list[t
 
 
 def _swatch_copy_line(rows: list[tuple[str, str, int]]) -> str:
-    """The swatch list both the moodboard cell and the spec strip copy."""
+    """The swatch list. Moodboard and spec share names; the percentages differ."""
     body = "; ".join(f"{name} {role} {pct}%" for name, role, pct in rows)
-    return "copy only these: " + body
+    line = "copy only these: " + body
+    if any(name == _NEUTRAL_FAMILY for name, _role, _pct in rows):
+        line += ". Name each shade in neutrals consistent with the moodboard. Do not add a new hue"
+    return line
 
 
 def _mood_color_line() -> str:
@@ -1261,32 +1314,65 @@ def _slim_spec_subject(text: str, room: int) -> str:
     if not body or room <= 0:
         return ""
     chunks = re.split(r"\n+|(?<=[.。])\s+", body)
-    kept = []
+    kept: list[str] = []
+    # Low-priority essays go first. The annotation sentence, the lock, and the colour line stay.
     duplicated = (
         "soft vignette", "vignette", "sticker", "sparse empty card",
-        "wood-grain", "exactly 7 panels", "annotation density",
+        "wood-grain", "exactly 7 panels",
         "allowed on-card text", "one garbled character",
     )
     lock = _spec_lock()
     hint = default_hint()
+    color_line = _spec_assembly_line()
+
+    def _protected(piece: str) -> bool:
+        low = piece.lower()
+        if "annotation density follows the gold." in low:
+            return True
+        if color_line and piece in color_line:
+            return True
+        if lock and piece in lock and "annotation density follows the gold." in piece.lower():
+            return True
+        return False
+
     for chunk in chunks:
         piece = chunk.strip()
         if not piece:
             continue
+        if _protected(piece):
+            kept.append(piece)
+            continue
         low = piece.lower()
         if any(bit in low for bit in duplicated):
             continue
-        # A pasted planner hint or locked brief is already in the submission.
         if len(piece) >= 24 and (piece in lock or piece in hint):
             continue
         kept.append(piece)
-    subject = " ".join(kept).strip()
+
+    def _join(parts: list[str]) -> str:
+        return " ".join(parts).strip()
+
+    while kept and len(_join(kept)) > room:
+        drop_at = None
+        for index in range(len(kept) - 1, -1, -1):
+            if not _protected(kept[index]):
+                drop_at = index
+                break
+        if drop_at is None:
+            break
+        trial = kept[:drop_at] + kept[drop_at + 1:]
+        if not any(not _protected(part) for part in trial):
+            gap = 1 if trial else 0
+            room_for = room - len(_join(trial)) - gap
+            kept[drop_at] = _trim_at_sentence(kept[drop_at], max(room_for, 0))
+            if not kept[drop_at]:
+                del kept[drop_at]
+            break
+        del kept[drop_at]
+    subject = _join(kept)
     if len(subject) <= room:
         return subject
-    clipped = subject[:room].rstrip()
-    if " " in clipped:
-        clipped = clipped.rsplit(" ", 1)[0]
-    return clipped.strip()
+    return _trim_at_sentence(subject, room)
 
 
 # Role nouns a caller may prefix with a short hue word. Bare 色 is not a noun:
@@ -1598,9 +1684,11 @@ def fill_default(args: dict) -> dict:
         raw_prompt = _defer_object_color(raw_prompt)
     elif slot_id in ("cup", "bag"):
         raw_prompt = _defer_object_color(raw_prompt, _CUP_BAG_NOUN)
-    if slot_id in ("logo_a", "logo_b", "logo_c"):
-        _remember_mark(slot_id, raw_prompt)
     fixed = [part for part in (style, mark_line, preface, lead, str(lock or ""), color_line, brand_line, tail) if part]
+    # Exact blocks this call wrote before the subject. The guard strips this list and nothing else.
+    args["_server_leads"] = [
+        part for part in (style, mark_line, preface, lead, str(lock or "")) if part
+    ]
     fixed_len = sum(len(part) for part in fixed) + len(fixed)
     cap = _qwen_prompt_cap()
     if fixed_len > cap:
@@ -2855,18 +2943,18 @@ def default_hint() -> str:
         "the names, roles, and ratios are from the confirmed color direction; "
         "do not hardcode a palette and do not invent hex values), "
         "变体 / VARIANTS (the approved variants, each with a short label), "
-        "字体 / TYPE (this panel carries its full bilingual heading 字体 / TYPE, not clipped to 字; "
+        "字体 / TYPE (full bilingual heading 字体 / TYPE, not clipped to 字; "
         "hierarchy and annotation density follow the gold; "
-        "the Chinese brand name and the English brand name are copied character for character; "
-        "Do not drop a character and do not substitute a character), "
+        "copied character for character; "
+        "Do not drop a character), "
         "版式 / LAYOUT (one filled layout diagram), "
         "使用禁忌 / MISUSE (uses only the brand colors, draws a red X, and keeps short captions of the same kind as the gold), "
         "影像与材质 / IMAGE (keeps short captions of the same kind as the gold). "
         "No heading is repeated. Do not clip a heading. "
         "Annotation density follows the gold. "
-        "Allowed on-card text includes the bilingual headings, a Chinese color name plus a role plus a percentage on each swatch, "
-        "the in-panel 「最小使用尺寸」 annotation, short captions on 使用禁忌 / MISUSE and 影像与材质 / IMAGE of the same kind as the gold, "
-        "short labels on the approved variants, and the real Chinese brand name and the real English brand name from the brief, copied character for character. "
+        "Allowed on-card text includes the bilingual headings, a Chinese color name plus a role plus a percentage, "
+        "short captions on 使用禁忌 / MISUSE and 影像与材质 / IMAGE, "
+        "and the real Chinese brand name and the real English brand name, copied character for character. "
         "Do not write invented body copy. Do not invent English. "
         "Any text that does appear anywhere must be spelled correctly (one garbled character is not acceptable). "
         "Paper ground, not black. "

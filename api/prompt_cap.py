@@ -20,10 +20,37 @@ def over_prompt_cap(model: str, prompt: str) -> str:
     )
 
 
+def _hint_kind(text: str) -> str:
+    body = str(text or "").strip()
+    if body.startswith("Use only the visual style"):
+        return "style"
+    if body.startswith("Use image ") and "content reference" in body:
+        return "content"
+    return ""
+
+
 def finalize_qwen_prompt(model: str, prompt: str, hints: list[str] | None = None) -> tuple[str, str]:
-    """Join ref hints onto the prompt, then measure. Returns (final, error). Never slices."""
+    """Join ref hints onto the prompt, then measure. Returns (final, error). Never slices.
+
+    Exact duplicates are dropped. A caller that already brought one hint kind
+    does not receive a second kind.
+    """
     text = str(prompt or "")
-    extra = [str(hint).strip() for hint in (hints or []) if str(hint or "").strip() and str(hint).strip() not in text]
+    caller_kind = _hint_kind(text)
+    seen = {caller_kind} if caller_kind else set()
+    extra: list[str] = []
+    for hint in hints or []:
+        piece = str(hint or "").strip()
+        if not piece or piece in text or piece in extra:
+            continue
+        kind = _hint_kind(piece)
+        if caller_kind and kind and kind != caller_kind:
+            continue
+        if kind and kind in seen:
+            continue
+        if kind:
+            seen.add(kind)
+        extra.append(piece)
     if extra:
         if text.startswith("Use only the visual style") or text.startswith("Use image 1 as the content reference"):
             text = " ".join(extra + [text])
