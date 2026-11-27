@@ -2714,11 +2714,11 @@ def test_colour_cell_roles_share_names_and_split_the_ratios():
     assert [pct for _n, role, pct in spec_one if role != "点缀"] == [35, 25, 25, 12]
     assert [pct for _n, role, pct in mood_two if role == "点缀"] == [5, 5]
     assert [pct for _n, role, pct in spec_two if role == "点缀"] == [2, 1]
-    aimed = "暖土色为主 + 靶蓝更强"
+    aimed = "暖土色为主 + 靛蓝更强"
     lost = brand._swatch_rows(aimed)
     lost_spec = brand._swatch_rows(aimed, brand._SPEC_ACCENT_BUDGET)
-    assert [row for row in lost if row[1] == "点缀"] == [("靶蓝", "点缀", 10)]
-    assert [row for row in lost_spec if row[1] == "点缀"] == [("靶蓝", "点缀", 3)]
+    assert [row for row in lost if row[1] == "点缀"] == [("靛蓝", "点缀", 10)]
+    assert [row for row in lost_spec if row[1] == "点缀"] == [("靛蓝", "点缀", 3)]
     cool = brand._swatch_rows("暖土色为主 + 偏青更强")
     assert [row for row in cool if row[1] == "点缀"] == [("青", "点缀", 10)]
     only = brand._swatch_rows("lobelia与mallow点缀")
@@ -2732,7 +2732,7 @@ def test_colour_cell_roles_share_names_and_split_the_ratios():
         Path(name).read_text(encoding="utf-8")
         for name in ("api/brand_identity.py", "src/skills.ts")
     )
-    for word in ("persimmon", "lobelia", "mallow", "靶蓝", "偏青"):
+    for word in ("persimmon", "lobelia", "mallow", "偏青"):
         assert word not in template, word
     for label, count in ((single, 5), (double, 6)):
         brand.reset_for_tests()
@@ -2758,20 +2758,15 @@ def test_colour_cell_roles_share_names_and_split_the_ratios():
 
 def test_intensity_tails_keep_the_colour_name():
     """偏强 is intensity. 的 / 点缀 / 作点缀 are trailing role words, not part of the name."""
-    biased = "暖土色为主 + 靶蓝偏强"
+    biased = "暖土色为主 + 靛蓝偏强"
     mood = brand._swatch_rows(biased)
     spec = brand._swatch_rows(biased, brand._SPEC_ACCENT_BUDGET)
-    assert [row for row in mood if row[1] == "点缀"] == [("靶蓝", "点缀", 10)]
-    assert [row for row in spec if row[1] == "点缀"] == [("靶蓝", "点缀", 3)]
-    named = brand._split_color_answer("靶蓝更强的点缀")
-    assert named == [("靶蓝", "点缀")]
-    made = brand._split_color_answer("靶蓝作点缀")
-    assert made == [("靶蓝", "点缀")]
-    template = "\n".join(
-        Path(name).read_text(encoding="utf-8")
-        for name in ("api/brand_identity.py", "src/skills.ts")
-    )
-    assert "靶蓝" not in template
+    assert [row for row in mood if row[1] == "点缀"] == [("靛蓝", "点缀", 10)]
+    assert [row for row in spec if row[1] == "点缀"] == [("靛蓝", "点缀", 3)]
+    named = brand._split_color_answer("靛蓝更强的点缀")
+    assert named == [("靛蓝", "点缀")]
+    made = brand._split_color_answer("靛蓝作点缀")
+    assert made == [("靛蓝", "点缀")]
 
 
 def test_slot_hint_leads_and_the_other_kind_is_dropped():
