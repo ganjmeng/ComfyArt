@@ -1481,7 +1481,7 @@ _SHORT_SPEC_HEADINGS = (
 _SPEC_SUBJECT = (
     "Subject: COLOR is 35/25/25/12+3 (or 2/1 for two accents). "
     "Chips and ratios only in COLOR, never in MISUSE or IMAGE. "
-    "TYPE is its own complete bilingual heading (font / TYPE), not clipped and not collapsed into VARIANTS. "
+    "TYPE is its own complete bilingual heading (字体 / TYPE), not clipped and not collapsed into VARIANTS. "
     "MISUSE has no colour chips and no ratio figures."
 )
 _SPEC_SUBJECT_PARTS = tuple(
@@ -1649,6 +1649,7 @@ def guard_subject(slot_id: str, text: str) -> str:
     body = _sanitize_subject(slot_id, _drop_ref_hints(text))
     if slot_id == "moodboard":
         body = _drop_weak_mood_subject(body)
+        body = _drop_mood_swatch_list(body)
     if slot_id == "spec":
         chunks = re.split(r"\n+|(?<=[.。])\s+", body)
         kept = [
@@ -1846,6 +1847,113 @@ def _defer_english_color_words(text: str) -> str:
         re.I,
     )
     return _tidy_color_residue(phrase.sub(" ", str(text or "")))
+
+
+def _mood_swatch_item_pattern() -> re.Pattern[str]:
+    """A swatch item: palette words immediately followed by a percentage.
+
+    A role word ends the item, so a craft line such as a material palette
+    is not pulled into the following ratio. No colour name is listed here.
+    """
+    shade = "|".join(sorted(_EN_SHADE, key=len, reverse=True))
+    hue = "|".join(sorted(_EN_HUE, key=len, reverse=True))
+    role = "|".join(sorted(_EN_ROLE, key=len, reverse=True))
+    hue_tok = rf"(?:off-)?(?:{hue})"
+    return re.compile(
+        rf"\b(?:(?:{shade})\s+)?{hue_tok}(?:\s+{hue_tok}){{0,2}}(?:\s+(?:{role}))?\s+\d+(?:\.\d+)?\s*%"
+        rf"|\b(?:{role})\s+\d+(?:\.\d+)?\s*%",
+        re.I,
+    )
+
+
+_SWATCH_LABEL = re.compile(
+    r"(?i)\b(?:and|or|with|of|the|a|an|colou?r|colors?|colours?|swatches?|"
+    r"palettes?|ratios?|percents?|percentages?)\b"
+)
+# Spec-card ratios. The moodboard lock is 35/25/20/10 plus an accent at 10.
+_SPEC_RATIO = re.compile(r"(?<!\d)(?:3|12)\s*%(?:\s+[\w-]+)?|(?:\b[\w-]+\s+)(?<!\d)(?:3|12)\s*%")
+
+
+def _swatch_clause_empty(text: str) -> bool:
+    core = _SWATCH_LABEL.sub(" ", str(text or ""))
+    core = re.sub(r"[^A-Za-z0-9\u4e00-\u9fff]+", " ", core)
+    return not core.strip()
+
+
+def _drop_mood_swatch_list(text: str) -> str:
+    """Drop a caller swatch list that contradicts the locked moodboard ratios.
+
+    An English palette phrase tied to a percentage is a swatch item. A craft
+    sentence with no percentage stays. Spec ratios 3% and 12% are not moodboard
+    ratios. A confirmed card-1 name inside an item stays. The cut does not leave
+    a bare label clause.
+    """
+    raw = str(text or "")
+    item = _mood_swatch_item_pattern()
+    if not item.search(raw) and not re.search(r"(?<!\d)(?:3|12)\s*%", raw):
+        return raw
+    confirmed = tuple(name.lower() for name in _confirmed_color_names() if name)
+
+    def _keep_confirmed(match: re.Match[str]) -> str:
+        span = match.group(0)
+        if any(name in span.lower() for name in confirmed):
+            return span
+        return " "
+
+    def _scrub(clause: str) -> str:
+        body = clause.strip()
+        if not body:
+            return ""
+        cleaned = item.sub(_keep_confirmed, body)
+        cleaned = _SPEC_RATIO.sub(" ", cleaned)
+        if cleaned == body:
+            return body
+        cleaned = _tidy_color_residue(cleaned).strip(" ,;；、:：")
+        if _swatch_clause_empty(cleaned):
+            return ""
+        return cleaned
+
+    def _clean_block(block: str) -> str:
+        stripped = block.strip()
+        if not stripped:
+            return block
+        sentences = re.split(r"(?<=[.。])\s+", stripped)
+        changed = False
+        kept_sentences: list[str] = []
+        for sentence in sentences:
+            end = ""
+            core = sentence
+            if core.endswith((".", "。")):
+                end = core[-1]
+                core = core[:-1]
+            pieces = [piece.strip() for piece in re.split(r"\s*[,，、;；]\s*", core) if piece.strip()]
+            scrubbed = [_scrub(piece) for piece in pieces]
+            if scrubbed == pieces:
+                kept_sentences.append(sentence)
+                continue
+            changed = True
+            kept = [piece for piece in scrubbed if piece]
+            if not kept:
+                continue
+            rebuilt = ", ".join(kept)
+            if end:
+                rebuilt += end
+            if _swatch_clause_empty(rebuilt):
+                continue
+            kept_sentences.append(rebuilt)
+        if not changed:
+            return block
+        if not kept_sentences:
+            return ""
+        lead = block[: len(block) - len(block.lstrip())]
+        return lead + " ".join(kept_sentences)
+
+    blocks = re.split(r"(\n+)", raw)
+    cleaned = "".join(part if part.startswith("\n") else _clean_block(part) for part in blocks)
+    cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
+    cleaned = re.sub(r"\s+([,.。])", r"\1", cleaned)
+    cleaned = re.sub(r"(?i)(?:^|\n)\s*(?:and|or)\s+(?=[,.。])", " ", cleaned)
+    return cleaned.strip()
 
 
 def _defer_object_color(text: str, nouns: str | None = None) -> str:
@@ -2091,6 +2199,8 @@ def fill_default(args: dict) -> dict:
     elif slot_id in ("cup", "bag"):
         raw_prompt = _defer_object_color(raw_prompt, _CUP_BAG_NOUN)
     raw_prompt = _sanitize_subject(slot_id, raw_prompt)
+    if slot_id == "moodboard":
+        raw_prompt = _drop_mood_swatch_list(raw_prompt)
     fixed = [part for part in (style, mark_line, preface, lead, str(lock or ""), mood_subject, subject_lead, color_line, brand_line, tail) if part]
     # Exact blocks this call wrote before the subject. The guard strips this list and nothing else.
     args["_server_leads"] = [

@@ -874,6 +874,50 @@ def test_english_palette_phrases_leave_no_residue():
     assert "and a\n" not in paid and "small accent swatch" not in paid
 
 
+def test_replayed_moodboard_drops_the_contradictory_swatch_list():
+    """A paid moodboard caller may repeat spec ratios. The locked 35/25/20/10 line stays."""
+    from ComfyArt.api.prompt_cap import finalize_qwen_prompt
+
+    brand.record_card_answer(_card1(), {
+        "bi_delivery": {"selected": ["A"]},
+        "bi_color": {"selected": ["A"]},
+        "bi_mark": {"selected": ["A"]},
+        "bi_source": {"selected": ["A"]},
+        "brief": {"zh": "栖木", "en": "QIMU COFFEE"},
+    })
+    caller = (
+        "A craft-feeling 质感 cell in a warm wood brown and cream palette. "
+        "Colour swatches: terracotta accent 3%, cream off-white 25%, and warm grey 12%."
+    )
+    repaired = brand.guard_subject("moodboard", caller)
+    assert "warm wood brown and cream palette" in repaired
+    assert "terracotta accent 3%" not in repaired
+    assert "cream off-white 25%" not in repaired
+    assert "warm grey 12%" not in repaired
+    filled = brand.fill_default({"brand_slot": "moodboard", "prompt": caller})
+    err = str((filled.get("_brand_block") or {}).get("error") or "")
+    assert "not truncated" not in err, err
+    final, ferr = finalize_qwen_prompt(
+        "wavespeed-ai/qwen-image-2.0/edit", filled["prompt"], [],
+    )
+    assert ferr == "", ferr
+    assert "warm wood brown and cream palette" in final
+    for gone in ("terracotta accent 3%", "cream off-white 25%", "warm grey 12%", "3%", "12%"):
+        assert gone not in final, gone
+    assert "and ," not in final
+    assert not re.search(r"(?i)(?:^|[.。]\s*)palette\s*\.", final)
+    assert "exactly a 3 by 3 nine-grid" in final
+    for kept in (
+        "暖土色 主色 35%",
+        "暖土色 辅助 25%",
+        "暖土色 底色 20%",
+        "暖土色 中性 10%",
+        "低饱和靛蓝 点缀 10%",
+    ):
+        assert kept in final, kept
+    assert brand.fill_default({"brand_slot": "moodboard", "prompt": filled["prompt"]})["prompt"] == filled["prompt"]
+
+
 def test_logo_c_keeps_zone_4_and_the_badge_wording():
     """A four-zone caller keeps Zone 4 after fill_default and the Qwen cap check."""
     from ComfyArt.api.prompt_cap import finalize_qwen_prompt
@@ -3346,7 +3390,7 @@ def test_paid_fail_subjects_restate_the_rulings_and_keep_the_spec_heading():
     subject_line = next(line for line in official.splitlines() if line.startswith("Subject:"))
     assert subject_line == brand._SPEC_SUBJECT
     assert "35/25/25/12" in subject_line and "2/1" in subject_line
-    assert "its own complete bilingual heading" in subject_line and "font / TYPE" in subject_line
+    assert "its own complete bilingual heading" in subject_line and "字体 / TYPE" in subject_line
     assert "no colour chips" in subject_line and "no ratio figures" in subject_line
     assert "Headings once, in order" not in subject_line
     assert sum(heading in subject_line for heading in (
