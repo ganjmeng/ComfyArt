@@ -628,13 +628,13 @@ def color_hue_hint() -> str:
 # Static brief. A color answer appends one hue sentence in _spec_lock() only.
 _SPEC_BRIEF = (
     "The spec card is exactly 7 panels. Each heading appears once, in this order: "
-    "标识 / LOGO (the approved mark; a dimension annotation ≥ 20 mm sits inside this panel, not a separate panel), "
+    "标识 / LOGO (a dimension annotation ≥ 20 mm sits inside this panel, not a separate panel), "
     "色彩 / COLOR (four role swatches at 35/25/25/12 plus accent 3, or 2/1 for two accents, "
     "labeled 主色/辅助/底色/中性, names from the confirmed color direction; "
     "each swatch has a Chinese color name, a role, and a percentage; "
     "any accent is at most about 5%; "
     "ratio figures only in this panel; "
-    "do not hardcode a palette and do not invent hex values; paint these ratios), "
+    "do not hardcode a palette; paint these ratios), "
     "变体 / VARIANTS, "
     "字体 / TYPE (full bilingual heading 字体 / TYPE, not clipped to 字; "
     "hierarchy and annotation density follow the gold; "
@@ -1454,7 +1454,7 @@ def _lift_brand_line(text: str) -> tuple[str, str]:
     return line, body.strip()
 
 
-def _slim_spec_subject(text: str, room: int) -> str:
+def _slim_spec_subject(text: str, room: int, *, drop_hint_sentences: bool = False) -> str:
     """Drop duplicated panel essays and the vignette. Leave a short subject inside the budget."""
     body = str(text or "").strip()
     if not body or room <= 0:
@@ -1470,14 +1470,19 @@ def _slim_spec_subject(text: str, room: int) -> str:
     lock = _spec_lock()
     hint = default_hint()
     color_line = _spec_assembly_line()
+    # Whole hint sentences only. A short caller such as "规范" can sit inside a longer hint sentence.
+    hint_sentences = {
+        part.strip()
+        for part in re.split(r"\n+|(?<=[.。])\s+", hint)
+        if part.strip()
+    } if drop_hint_sentences else set()
 
     def _protected(piece: str) -> bool:
+        # A sentence already printed in the lock or the colour line is not kept again.
+        if (lock and piece in lock) or (color_line and piece in color_line):
+            return False
         low = piece.lower()
         if "annotation density follows the gold." in low:
-            return True
-        if color_line and piece in color_line:
-            return True
-        if lock and piece in lock and "annotation density follows the gold." in piece.lower():
             return True
         # The caller's own Zone 4 stays. A sentence already in the hint or the lock does not.
         if _ZONE4_MARK.search(piece) and piece not in hint and piece not in (lock or ""):
@@ -1495,6 +1500,8 @@ def _slim_spec_subject(text: str, room: int) -> str:
         if any(bit in low for bit in duplicated):
             continue
         if len(piece) >= 24 and (piece in lock or piece in hint):
+            continue
+        if piece in hint_sentences:
             continue
         kept.append(piece)
 
@@ -1879,7 +1886,9 @@ def fill_default(args: dict) -> dict:
             "user_message": f"prompt is {fixed_len} characters; the limit is {cap}. The prompt was not truncated.",
         }
         return args
-    raw_prompt = _slim_spec_subject(raw_prompt, cap - fixed_len)
+    raw_prompt = _slim_spec_subject(
+        raw_prompt, cap - fixed_len, drop_hint_sentences=(slot_id == "spec"),
+    )
     parts = [style, mark_line, preface, lead, str(lock or ""), mood_subject, raw_prompt, color_line, brand_line, tail]
     prompt = "\n".join(part for part in parts if part)
     args["prompt"] = scrub_internal_marks(prompt)

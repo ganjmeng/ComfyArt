@@ -3126,6 +3126,67 @@ def test_spec_fixed_part_leaves_room_and_long_subjects_are_not_blocked():
     assert len(bare) <= 2800
 
 
+def test_heron_qimu_empty_spec_final_string_fits_under_the_cap():
+    """The string measured immediately before submit, not the fixed-part figure.
+
+    heron/qimu is brand 栖木 / QIMU COFFEE with the English card-3 descriptions.
+    Card 3 B with an empty subject was 2807 and blocked. Official card 3 A,
+    Chinese descriptions and the skill hint as the caller, was 2797.
+    """
+    from ComfyArt.api.prompt_cap import finalize_qwen_prompt
+
+    def _answers(zh, en):
+        return {
+            "bi_delivery": {"selected": ["A"]},
+            "bi_color": {"selected": ["A"]},
+            "bi_mark": {"selected": ["A"]},
+            "bi_source": {"selected": ["A"]},
+            "brief": {"zh": zh, "en": en},
+        }
+
+    lengths = {}
+    for letter in ("A", "B", "C"):
+        brand.reset_for_tests()
+        brand.record_card_answer(_card1(), _answers("栖木", "QIMU COFFEE"))
+        brand.record_card_answer(
+            {"questions": [brand._CARD3_EN]},
+            {"bi_direction": {"selected": [letter]}},
+        )
+        filled = brand.fill_default({"brand_slot": "spec", "prompt": ""})
+        err = str((filled.get("_brand_block") or {}).get("error") or "")
+        assert "not truncated" not in err, (letter, err)
+        final, ferr = finalize_qwen_prompt(
+            "wavespeed-ai/qwen-image-2.0/edit", filled["prompt"], [],
+        )
+        assert ferr == ""
+        assert len(final) <= 2800, (letter, len(final))
+        assert "Do not drop or swap a character" in final
+        assert "any accent is at most about 5%" in final
+        assert "Annotation density follows the gold." in final
+        if letter == "B":
+            assert brand._BADGE_FLAT in final
+        lengths[letter] = len(final)
+    assert lengths["B"] <= 2800
+
+    brand.reset_for_tests()
+    brand.record_card_answer(_card1(), _answers("栖木咖啡", "QIMU COFFEE"))
+    brand.record_card_answer(
+        {"questions": [brand._CARD3_ZH]},
+        {"bi_direction": {"selected": ["A"]}},
+    )
+    official = brand.fill_default({"brand_slot": "spec", "prompt": brand.default_hint()})
+    err = str((official.get("_brand_block") or {}).get("error") or "")
+    assert "not truncated" not in err
+    official_final, ferr = finalize_qwen_prompt(
+        "wavespeed-ai/qwen-image-2.0/edit", official["prompt"], [],
+    )
+    assert ferr == ""
+    assert len(official_final) <= 2790, len(official_final)
+    assert "Annotation density follows the gold." in official_final
+    lengths["official_A"] = len(official_final)
+    test_heron_qimu_empty_spec_final_string_fits_under_the_cap.lengths = lengths
+
+
 _LONG_SUBJECT = {
     "moodboard": (
         "Side aisle of a small cafe at opening, ceramic stacks on the left, paper menus leaning "
