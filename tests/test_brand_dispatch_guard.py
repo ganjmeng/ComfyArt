@@ -52,7 +52,7 @@ async def test_prompt_mutated_after_binding_does_not_submit(monkeypatch):
     assert list(rec.get("dispatching_slots") or []) == []
     assert brand._progress()["phase"] == "logos"
     saved = [str(row.get("prompt") or "") for row in ((brand._grant_of(2) or {}).get("slots") or [])]
-    assert saved and all(row.startswith("logo a") for row in saved)
+    assert saved and all(row.startswith(brand._STYLE_REF) and "logo a" in row for row in saved)
     assert all("mutated after binding" not in row for row in saved)
 
 
@@ -92,6 +92,7 @@ async def test_confirmed_logo_a_submits_once_and_is_recorded(monkeypatch):
     gens = [args for _name, args in rig.paid_mcp()]
     assert len(gens) == 1, gens
     assert gens[0].get("brand_slot") == "logo_a"
-    assert str(gens[0].get("prompt") or "").startswith("logo a")
+    assert str(gens[0].get("prompt") or "").startswith(brand._STYLE_REF)
+    assert "logo a" in str(gens[0].get("prompt") or "")
     assert brand.submitted_slots(2) == {"logo_a"}
     assert brand._progress()["phase"] == "logos"

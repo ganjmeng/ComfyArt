@@ -2354,8 +2354,9 @@ class LocalLlmProvider(AgentProvider):
         The prompt must still be the assembled snapshot that was confirmed.
         """
         from ..api.brand_identity import (
-            BrandGrantPersistError, bind_brand_generate, note_brand_submitted,
-            reserve_brand_dispatch, submit_block_reason, submit_block_text,
+            BrandGrantPersistError, assembled_keeps_caller, bind_brand_generate,
+            note_brand_submitted, reserve_brand_dispatch, submit_block_reason,
+            submit_block_text,
         )
         from .shot_plan import bind_generate
         from .skill_output import is_single
@@ -2394,7 +2395,7 @@ class LocalLlmProvider(AgentProvider):
             return False, messages
         it["args"] = prepared
         filled = str(prepared.get("prompt") or "")
-        if incoming and not filled.startswith(incoming):
+        if incoming and not assembled_keeps_caller(filled, incoming):
             messages = await self._emit_result(
                 it, submit_block_text("mismatch", lang), emit=emit, done=done, lang=lang, is_error=True)
             return False, messages

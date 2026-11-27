@@ -29,6 +29,8 @@ import re
 import time
 import uuid
 
+from .prompt_cap import PROMPT_CHAR_CAP
+
 SKILL = "brand-identity-director"
 # Confirmation lifetime of a brand quote card. It starts when the card is created.
 # Pressing Start does not move it. 700s past creation is past this deadline.
@@ -636,7 +638,7 @@ def _spec_lock() -> str:
         "标识 / LOGO (the approved mark; 「最小使用尺寸」 is an annotation inside this panel, not a separate panel), "
         "色彩 / COLOR (a proportional color strip from the confirmed color direction; "
         "each swatch has a Chinese color name, a role, and a percentage; "
-        "any accent is at most about 5%; "
+        "accent swatches together are about 10%; "
         "the names, roles, and ratios are from the confirmed color direction; "
         "do not hardcode a palette and do not invent hex values), "
         "变体 / VARIANTS (the approved variants, each with a short label), "
@@ -647,15 +649,12 @@ def _spec_lock() -> str:
         "版式 / LAYOUT (one filled layout diagram), "
         "使用禁忌 / MISUSE (uses only the brand colors, draws a red X, and keeps short captions of the same kind as the gold), "
         "影像与材质 / IMAGE (keeps short captions of the same kind as the gold). "
-        "No heading is repeated. Do not add an eighth panel. Do not clip a heading. "
-        "Where the gold shows an English counterpart, write the heading as Chinese and English side by side. "
-        "Annotation density follows the gold. "
+        "No heading is repeated. Do not clip a heading. "
         "Allowed on-card text includes the bilingual headings, a Chinese color name plus a role plus a percentage on each swatch, "
         "the in-panel 「最小使用尺寸」 annotation, short captions on 使用禁忌 / MISUSE and 影像与材质 / IMAGE of the same kind as the gold, "
         "short labels on the approved variants, and the real Chinese brand name and the real English brand name from the brief, copied character for character. "
         "Do not write invented body copy. Do not invent English. "
-        "Any text that does appear anywhere must be spelled correctly (one garbled character is not acceptable). "
-        "Do not print an English instruction label."
+        "Any text that does appear anywhere must be spelled correctly (one garbled character is not acceptable)."
         + (f" {hint_line.strip()}" if hint_line else "")
         + " Paper ground, not black."
     )
@@ -793,7 +792,7 @@ def scrub_internal_marks(text: str) -> str:
     return cleaned.strip()
 
 
-# Appended to the image prompt. The three logos must not share one bird-on-a-branch drawing.
+# Appended to the image prompt. The three logos must not share one drawing.
 _SLOT_LOCK = {
     "moodboard": (
         "The board is exactly 3 equal columns and 3 equal rows, nine cells in row order from the top left. "
@@ -807,7 +806,7 @@ _SLOT_LOCK = {
         "Exactly three cells in each row. Warm paper ground, not a black field."
     ),
     "logo_a": (
-        "The mark is a bold monoline bird mark with a small accent dot. "
+        "The mark is a monoline mark with an accent dot. "
         "Not a filled plaque, not a round seal, not a cup silhouette, "
         "and not a generic coffee mug or an unrelated icon. "
         "The sheet has exactly four labelled zones, in this order: 主组合, 符号, 横版, 小尺寸. "
@@ -816,28 +815,26 @@ _SLOT_LOCK = {
         "小尺寸 includes the symbol, not the wordmark alone, as three small applications side by side: "
         "a rounded-square icon, a circular stamp, and a solid square badge. "
         "横版 appears once. Do not draw a second landscape treatment. "
-        "In each zone the Chinese brand name and the English brand name appear together exactly once. "
-        "No other small text. No bottom caption. Do not print an English instruction label."
+        "In each zone the Chinese brand name and the English brand name appear together exactly once."
     ),
     "logo_b": (
-        "The mark is a solid bird silhouette reversed out of the badge as negative space, plus a separate round seal. "
+        "The mark is a solid badge with the mark reversed out, plus a separate round seal. "
         "Not a generic coffee mug or an unrelated icon. "
         "The sheet has exactly four labelled zones, in this order: 主组合, 印章, 横版, 小尺寸. "
         "Each of the four zone labels appears exactly once. "
         "印章 shows the round seal. No empty placeholder box and no X box. "
         "小尺寸 includes the symbol, not the wordmark alone, as the seal, a horizontal plaque, a circle, and a square. "
         "横版 appears once. Do not draw a second landscape treatment. "
-        "In each zone the Chinese brand name and the English brand name appear together exactly once. "
-        "No other small text. No garbled English captions. No bottom caption. Do not print an English instruction label."
+        "In each zone the Chinese brand name and the English brand name appear together exactly once."
     ),
     "logo_c": (
-        "The mark is a solid bird silhouette reversed out of the badge as negative space. "
+        "The mark is a negative-space mark. "
         "The badge is a cup-shaped container, not a picture of a handled cup. "
         "The cup silhouette has no handle. "
         "The badge uses the accent color or the dark color from the confirmed color direction, "
-        "and the bird is reversed out inside it as negative space. "
-        "A perched bird is the negative space inside the cup, "
-        "not a bird drawn as a positive shape and not a bird standing on a branch outside it. "
+        "and the mark is reversed out inside it as negative space. "
+        "The subject is the negative space inside the cup, "
+        "not drawn as a positive shape and not standing outside it. "
         "Not a circular seal and not B's rectangular badge. "
         "Not a generic coffee mug or an unrelated icon. "
         "The sheet has exactly four labelled zones, in this order: 主组合, 负形, 反白与点缀, 小尺寸. "
@@ -846,8 +843,7 @@ _SLOT_LOCK = {
         "负形 shows the mark as negative space. No empty placeholder box and no X box. "
         "小尺寸 includes the symbol, not the wordmark alone, as an icon, a cup-lid sticker, and an emboss, "
         "plus one horizontal mark. "
-        "The wordmark appears exactly once per zone. "
-        "No other small text. No garbled English captions. No bottom caption. Do not print an English instruction label."
+        "The wordmark appears exactly once per zone."
     ),
     "cup": (
         "The takeaway cup must wear a cup sleeve (杯套). A bare cup with no sleeve is wrong. "
@@ -856,7 +852,6 @@ _SLOT_LOCK = {
         "One plain white cup alone is wrong. "
         "The cup body uses the confirmed main color. "
         "The print shows the Chinese brand name and the English brand name, both readable. "
-        "Do not print the English name alone. "
         "No extra English captions. A real cup on a light ground, not a black void."
     ),
     "bag": (
@@ -864,7 +859,7 @@ _SLOT_LOCK = {
         "Show two paper bags: a large bag standing and a smaller bag lying in front of it. "
         "A thin vertical stripe in the accent color of the confirmed color direction runs down the side of the standing bag. "
         "The Chinese name and the English name are both readable. "
-        "Not English only. No garbled captions. Real paper, not a black void."
+        "No garbled captions. Real paper, not a black void."
     ),
     "storefront": (
         "The full shopfront, front view, the facade filling the frame edge to edge. "
@@ -872,7 +867,7 @@ _SLOT_LOCK = {
         "The logo is reversed out of the signboard. "
         "The fascia carries the Chinese brand name and the English brand name once. "
         "An A-frame standing sign stands on the pavement in front of the entrance. "
-        "Not a hanging-sign close-up. No garbled small type."
+        "No garbled small type."
     ),
 }
 
@@ -895,8 +890,94 @@ _SPEC_PREFACE = (
     "Do not write 版式 / TYPE. "
     "使用禁忌 / MISUSE is an independent panel."
 )
-_SPEC_PROMPT_MAX = 2800
-_MOOD_PROMPT_MAX = 2800
+def _ref_hint(slot_id: str) -> str:
+    """The reference sentence that leads the slot. Logos and the moodboard are style; deliverables are content."""
+    if slot_id in ("moodboard", "logo_a", "logo_b", "logo_c"):
+        return _STYLE_REF
+    return _CONTENT_REF
+
+
+def _remember_mark(slot_id: str, subject: str) -> None:
+    """Keep this run's logo subject. The noun is the caller's text, never a built-in animal."""
+    if slot_id not in ("logo_a", "logo_b", "logo_c"):
+        return
+    text = " ".join(str(subject or "").split())
+    if not text:
+        return
+    # A second fill that failed to peel the lock must not replace the run's subject.
+    if text.startswith((
+        "The mark is a ",
+        "Use only the visual style",
+        "Use image 1 as the content reference",
+        "Draw seven separate panels",
+    )):
+        return
+    marks = _progress().setdefault("marks", {})
+    marks[slot_id] = text[:80]
+
+
+def _mark_type_phrase(slot_id: str) -> str:
+    """Type words from that direction's own lock, so the board and the deliverables match."""
+    lock = _SLOT_LOCK.get(slot_id) or ""
+    match = re.match(r"The mark is a ([^.]+)\.", lock)
+    return match.group(1).strip() if match else ""
+
+
+def _chosen_mark_sentence() -> str:
+    """One sentence for the four deliverables. Subject from this run; type words from the lock."""
+    progress = _progress()
+    chosen = str(progress.get("chosen") or "")
+    if chosen not in ("logo_a", "logo_b", "logo_c"):
+        return ""
+    phrase = _mark_type_phrase(chosen)
+    if not phrase:
+        return ""
+    subject = str((progress.get("marks") or {}).get(chosen) or "").strip()
+    typed = f"The mark is a {phrase}."
+    if not subject:
+        return typed
+    return f"The chosen mark is {subject}. {typed}"
+
+
+def _qwen_prompt_cap() -> int:
+    """The shared limit for both Qwen Image 2.0 routes. One dict owns the number."""
+    return min(
+        PROMPT_CHAR_CAP["wavespeed-ai/qwen-image-2.0/text-to-image"],
+        PROMPT_CHAR_CAP["wavespeed-ai/qwen-image-2.0/edit"],
+    )
+
+
+_SPEC_PROMPT_MAX = _qwen_prompt_cap()
+_MOOD_PROMPT_MAX = _SPEC_PROMPT_MAX
+_STYLE_REF = "Use only the visual style, palette and rendering of image 1, not its content."
+_CONTENT_REF = "Use image 1 as the content reference for the approved mark."
+
+
+def assembled_keeps_caller(filled: str, incoming: str) -> bool:
+    """The caller's words stay in the assembled prompt.
+
+    A reference sentence may lead. Replacing the caller text is still a mismatch.
+    """
+    text = str(filled or "")
+    caller = str(incoming or "").strip()
+    if not caller:
+        return True
+    if text.startswith(caller):
+        return True
+    if not (text.startswith(_STYLE_REF) or text.startswith(_CONTENT_REF)):
+        return False
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    return any(line == caller or line.startswith(caller) for line in lines)
+_DO_NOT_TAIL = {
+    "moodboard": "Do not paint broad bands.",
+    "logo_a": "No other small text. No bottom caption. Do not print an English instruction label.",
+    "logo_b": "No other small text. No bottom caption. Do not print an English instruction label.",
+    "logo_c": "No other small text. No bottom caption. Do not print an English instruction label.",
+    "spec": "Do not add an eighth panel. Do not print an English instruction label.",
+    "cup": "Do not print the English name alone.",
+    "bag": "Not English only.",
+    "storefront": "Not a hanging-sign close-up.",
+}
 
 
 def _split_color_answer(label: str) -> list[tuple[str, str]]:
@@ -931,36 +1012,67 @@ def _split_color_answer(label: str) -> list[tuple[str, str]]:
     return rows
 
 
+# Light to dark. Generic order words, not colour names. With an accent the four sum to 90.
+_TONE_ORDER = ("lightest", "light", "mid", "dark")
+_TONE_WITH_ACCENT = (35, 25, 20, 10)
+_TONE_ONLY = (40, 30, 20, 10)
+
+
+def _accent_names(name: str) -> list[str]:
+    """One accent clause may name two colours joined by 与."""
+    parts = re.split(r"\s*(?:与|and|&)\s*", str(name or ""), flags=re.I)
+    return [part.strip() for part in parts if part.strip()]
+
+
+def _share_percent(total: int, count: int) -> list[int]:
+    if count <= 0:
+        return []
+    base, extra = divmod(total, count)
+    return [base + (1 if index < extra else 0) for index in range(count)]
+
+
 def _swatch_rows(label: str) -> list[tuple[str, str, int]]:
-    """Names, roles, and percentages from card 1. An accent is 10%; the rest share what remains."""
+    """Four tonal steps of the main family, then one swatch per accent.
+
+    Tones are light to dark and total 90 when an accent is present. Accents
+    together total 10. A direction with no main family keeps an even split.
+    """
     named = _split_color_answer(label)
     if not named:
         return []
-    accents = [i for i, (_name, role) in enumerate(named) if role == "点缀"]
-    amounts = [0] * len(named)
-    if accents:
-        each = 10
-        used = each * len(accents)
-        if used >= 100:
-            each = max(1, 100 // len(accents))
-            used = each * len(accents)
-        for index in accents:
-            amounts[index] = each
-        others = [i for i in range(len(named)) if i not in accents]
-        if others:
-            rest = 100 - used
-            base, extra = divmod(rest, len(others))
-            for offset, index in enumerate(others):
-                amounts[index] = base + (1 if offset < extra else 0)
+    mains: list[str] = []
+    accents: list[str] = []
+    others: list[tuple[str, str]] = []
+    for name, role in named:
+        if role == "主色":
+            mains.append(name)
+        elif role == "点缀":
+            accents.extend(_accent_names(name))
         else:
-            base, extra = divmod(100, len(accents))
-            for offset, index in enumerate(accents):
-                amounts[index] = base + (1 if offset < extra else 0)
-    else:
-        base, extra = divmod(100, len(named))
-        for index in range(len(named)):
-            amounts[index] = base + (1 if index < extra else 0)
-    return [(name, role, amounts[index]) for index, (name, role) in enumerate(named)]
+            others.append((name, role))
+    if not mains and not accents:
+        amounts = _share_percent(100, len(named))
+        return [(name, role, amounts[index]) for index, (name, role) in enumerate(named)]
+    rows: list[tuple[str, str, int]] = []
+    if mains:
+        family = mains[0]
+        percents = _TONE_WITH_ACCENT if accents else _TONE_ONLY
+        for order, pct in zip(_TONE_ORDER, percents):
+            rows.append((family, f"{order} 主色", pct))
+    accent_total = 10 if mains else 100
+    for name, pct in zip(accents, _share_percent(accent_total, len(accents))):
+        if pct:
+            rows.append((name, "点缀", pct))
+    if not rows and others:
+        amounts = _share_percent(100, len(others))
+        return [(name, role, amounts[index]) for index, (name, role) in enumerate(others)]
+    return rows
+
+
+def _swatch_copy_line(rows: list[tuple[str, str, int]]) -> str:
+    """The swatch list both the moodboard cell and the spec strip copy."""
+    body = "; ".join(f"{name} {role} {pct}%" for name, role, pct in rows)
+    return "copy only these: " + body
 
 
 def _mood_color_line() -> str:
@@ -975,11 +1087,10 @@ def _mood_color_line() -> str:
             "and the confirmed accent is its own swatch at about 10%. "
             "Do not paint broad bands and do not replace the accent."
         )
-    body = "; ".join(f"{name} {role} {pct}%" for name, role, pct in rows)
     return (
-        "色彩 cell, flat swatches, copy only these: "
-        + body + ". "
-        "Do not paint broad bands and do not add a swatch."
+        "色彩 cell, flat swatches, " + _swatch_copy_line(rows) + ". "
+        "Name each tonal shade only within its confirmed family. "
+        "Do not add a hue outside this direction."
     )
 
 
@@ -1035,7 +1146,10 @@ def _spec_assembly_line() -> str:
         "影像格 small labels and captions on 影像与材质 / IMAGE must be spelled correctly, "
         "with no typo, no garble, and no invented heading fragment. 影像格小字不得写错."
     )
-    if hint:
+    rows = _swatch_rows(hint) if hint else []
+    if rows:
+        line += " " + _swatch_copy_line(rows)
+    elif hint:
         line += " Sample the swatches from the confirmed color direction: " + hint + "."
     return line
 
@@ -1203,8 +1317,10 @@ def _glued_color_modifier(before: str) -> str:
 
 
 _EN_INTENSITY = "small|tiny|subtle|little"
-# Object nouns a single hue may modify. Stripped only on the code-coloured slots.
-_OBJECT_NOUN = r"cups?|sleeves?|bags?|cornices?|eaves?|storefronts?|door\s+heads?"
+# Cup and bag nouns. Storefront adds the shopfront words below.
+_CUP_BAG_NOUN = r"cups?|sleeves?|bags?|cornices?|eaves?|storefronts?|door\s+heads?"
+# Fascia and the other shopfront nouns are stripped only on the storefront slot.
+_OBJECT_NOUN = _CUP_BAG_NOUN + r"|fascias?|signboards?|awnings?|doorheads?|shopfronts?"
 
 
 def _tidy_color_residue(text: str) -> str:
@@ -1255,11 +1371,12 @@ def _defer_english_color_words(text: str) -> str:
     return _tidy_color_residue(phrase.sub(" ", str(text or "")))
 
 
-def _defer_object_color(text: str) -> str:
+def _defer_object_color(text: str, nouns: str | None = None) -> str:
     """On a code-coloured slot, drop one hue word that directly modifies the object noun."""
     hue = "|".join(sorted(_EN_HUE, key=len, reverse=True))
+    noun = nouns or _OBJECT_NOUN
     cleaned = re.sub(
-        rf"\b(?:{hue})\b(?=\s+(?:[A-Za-z]+\s+){{0,2}}(?:{_OBJECT_NOUN})\b)",
+        rf"\b(?:{hue})\b(?=\s+(?:[A-Za-z]+\s+){{0,2}}(?:{noun})\b)",
         " ",
         str(text or ""),
         flags=re.I,
@@ -1317,7 +1434,6 @@ def _slot_command(slot_id: str) -> str:
     if slot_id == "logo_c":
         return (
             "Draw the mark first: a handle-less cup silhouette, not a handled cup and not a filled plaque. "
-            "Fill that badge from the confirmed accent or its dark color, and reverse the bird out of the fill. "
             "The small-size set is an icon, a cup-lid sticker, and an emboss, plus one horizontal mark, not a row of app icons. "
             "Draw the landscape zone once, and do not draw it again inside the small-size set."
         )
@@ -1437,41 +1553,44 @@ def fill_default(args: dict) -> dict:
         color_line = _spec_assembly_line()
     else:
         color_line = ""
-    # Preface stays first, the lock stays last, and the runtime color line stays
-    # after the lock. The slot command is one line immediately before the lock.
-    # Strip both extra lines before rebinding so a second fill is byte-identical.
-    lead = _slot_command(str(slot["id"]))
-    # Pull the structural blocks off before touching the subject. The spec lock
-    # quotes the confirmed hue, and that hue must stay byte-identical there.
+    # Order: style/reference, gold layout, subject and mark, confirmed colour, brand name, short do-not tail.
+    # Strip those blocks before rewriting the subject so a second fill is byte-identical.
+    slot_id = str(slot["id"])
+    lead = _slot_command(slot_id)
+    style = _ref_hint(slot_id)
+    tail = _DO_NOT_TAIL.get(slot_id, "")
+    mark_line = _chosen_mark_sentence() if slot_id in ("spec", "cup", "bag", "storefront") else ""
+    raw_prompt = _without_exact_line(raw_prompt, mark_line)
     raw_prompt = _without_exact_line(raw_prompt, color_line)
     raw_prompt = _without_exact_line(raw_prompt, lead)
     raw_prompt = _without_exact_line(raw_prompt, preface)
     raw_prompt = _without_exact_line(raw_prompt, str(lock or ""))
+    raw_prompt = _without_exact_line(raw_prompt, style)
+    raw_prompt = _without_exact_line(raw_prompt, tail)
     brand_line = ""
-    if str(slot["id"]) == "spec":
+    if slot_id == "spec":
         brand_line, raw_prompt = _lift_brand_line(raw_prompt)
         raw_prompt = _drop_noise_word(raw_prompt)
     if color_line:
         raw_prompt = _defer_color_words(raw_prompt)
-    if str(slot["id"]) in ("cup", "bag", "storefront"):
+    if slot_id == "storefront":
         raw_prompt = _defer_object_color(raw_prompt)
-    if str(slot["id"]) == "spec":
-        fixed = [part for part in (preface, brand_line, lead, str(lock or ""), color_line) if part]
-        fixed_len = sum(len(part) for part in fixed) + max(len(fixed) - 1, 0)
-        room = _SPEC_PROMPT_MAX - fixed_len - 1
-        raw_prompt = _slim_spec_subject(raw_prompt, room)
-        if brand_line:
-            raw_prompt = brand_line if not raw_prompt else brand_line + "\n" + raw_prompt
-    elif str(slot["id"]) == "moodboard":
-        fixed = [part for part in (lead, str(lock or ""), color_line) if part]
-        fixed_len = sum(len(part) for part in fixed) + max(len(fixed) - 1, 0)
-        room = _MOOD_PROMPT_MAX - fixed_len - 1
-        raw_prompt = _slim_spec_subject(raw_prompt, max(room, 0))
-    prompt = _bind_lock(raw_prompt, str(lock or ""), preface)
-    if lead:
-        prompt = _insert_before_lock(prompt, lead, str(lock or ""))
-    if color_line:
-        prompt = (prompt.rstrip() + "\n" + color_line).strip()
+    elif slot_id in ("cup", "bag"):
+        raw_prompt = _defer_object_color(raw_prompt, _CUP_BAG_NOUN)
+    if slot_id in ("logo_a", "logo_b", "logo_c"):
+        _remember_mark(slot_id, raw_prompt)
+    fixed = [part for part in (style, mark_line, preface, lead, str(lock or ""), color_line, brand_line, tail) if part]
+    fixed_len = sum(len(part) for part in fixed) + len(fixed)
+    cap = _qwen_prompt_cap()
+    if fixed_len > cap:
+        args["_brand_block"] = {
+            "error": f"prompt is {fixed_len} characters; the limit is {cap}. The prompt was not truncated.",
+            "user_message": f"prompt is {fixed_len} characters; the limit is {cap}. The prompt was not truncated.",
+        }
+        return args
+    raw_prompt = _slim_spec_subject(raw_prompt, cap - fixed_len)
+    parts = [style, mark_line, preface, lead, str(lock or ""), raw_prompt, color_line, brand_line, tail]
+    prompt = "\n".join(part for part in parts if part)
     args["prompt"] = scrub_internal_marks(prompt)
     refs = _refs_for(slot, progress)
     if str(slot["id"]) in ("logo_a", "logo_b", "logo_c"):
@@ -2689,10 +2808,10 @@ def default_hint() -> str:
         "No English captions and no garbled Latin. "
         "Card 2 bi_moodboard confirms that board. Only answer A (or Skip) may continue. B or C returns to the moodboard. "
         "Then exactly three SEPARATE logo direction boards, brand_slot logo_a then logo_b then logo_c, "
-        "each 2048x2048 1:1. logo_a is a bold monoline bird mark with a small accent dot. Its zones, each once, are 主组合, 符号, 横版, 小尺寸. "
-        "logo_b is a solid bird silhouette reversed out of the badge as negative space, plus a round seal in the confirmed accent. "
+        "each 2048x2048 1:1. logo_a is a monoline mark with an accent dot. Its zones, each once, are 主组合, 符号, 横版, 小尺寸. "
+        "logo_b is a solid badge with the mark reversed out, plus a round seal in the confirmed accent. "
         "Its zones, each once, are 主组合, 印章, 横版, 小尺寸. "
-        "logo_c is a solid bird silhouette reversed out of the badge as negative space. It is a cup-shaped badge, not a picture of a handled cup, and not B's rectangular badge. The badge uses the accent color or the dark color from the confirmed color direction, and the bird is reversed out inside it as negative space, not drawn as a positive bird and not a bird standing on a branch outside it. "
+        "logo_c is a negative-space mark. It is a cup-shaped badge, not a picture of a handled cup, and not B's rectangular badge. The badge uses the accent color or the dark color from the confirmed color direction, and the mark is reversed out inside it as negative space, not drawn as a positive shape and not standing outside it. "
         "The cup silhouette has no handle. 小尺寸 is an icon, a cup-lid sticker, and an emboss. "
         "The small-size set also includes one horizontal mark. "
         "横版 appears once and must not be drawn a second time. "
@@ -2711,7 +2830,7 @@ def default_hint() -> str:
         "标识 / LOGO (the approved mark; 「最小使用尺寸」 is an annotation inside this panel, not a separate panel), "
         "色彩 / COLOR (a proportional color strip from the confirmed color direction; "
         "each swatch has a Chinese color name, a role, and a percentage; "
-        "any accent is at most about 5%; "
+        "accent swatches together are about 10%; "
         "the names, roles, and ratios are from the confirmed color direction; "
         "do not hardcode a palette and do not invent hex values), "
         "变体 / VARIANTS (the approved variants, each with a short label), "
@@ -2722,15 +2841,12 @@ def default_hint() -> str:
         "版式 / LAYOUT (one filled layout diagram), "
         "使用禁忌 / MISUSE (uses only the brand colors, draws a red X, and keeps short captions of the same kind as the gold), "
         "影像与材质 / IMAGE (keeps short captions of the same kind as the gold). "
-        "No heading is repeated. Do not add an eighth panel. Do not clip a heading. "
-        "Where the gold shows an English counterpart, write the heading as Chinese and English side by side. "
-        "Annotation density follows the gold. "
+        "No heading is repeated. Do not clip a heading. "
         "Allowed on-card text includes the bilingual headings, a Chinese color name plus a role plus a percentage on each swatch, "
         "the in-panel 「最小使用尺寸」 annotation, short captions on 使用禁忌 / MISUSE and 影像与材质 / IMAGE of the same kind as the gold, "
         "short labels on the approved variants, and the real Chinese brand name and the real English brand name from the brief, copied character for character. "
         "Do not write invented body copy. Do not invent English. "
         "Any text that does appear anywhere must be spelled correctly (one garbled character is not acceptable). "
-        "Do not print an English instruction label. "
         "Paper ground, not black. "
         "影像格 small labels and captions on 影像与材质 / IMAGE must be spelled correctly, with no typo, no garble, and no invented heading fragment. 影像格小字不得写错. "
         "The storefront is the full shopfront, front view, with the names once on the fascia and an A-frame standing sign. "

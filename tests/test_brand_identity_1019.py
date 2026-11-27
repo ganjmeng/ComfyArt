@@ -25,6 +25,17 @@ def teardown_function():
     brand.reset_for_tests()
 
 
+def _caller_line(prompt: str, slot: str) -> str:
+    """The caller's subject sits on the first line after that slot's lock."""
+    lock = brand._spec_lock() if slot == "spec" else brand._SLOT_LOCK[slot]
+    rest = prompt.split(lock, 1)[-1]
+    for line in rest.split("\n"):
+        text = line.strip()
+        if text:
+            return text
+    return ""
+
+
 def _card1():
     return validate_spec({"questions": [
         {"id": "bi_delivery", "prompt": "这次「基础品牌视觉系统」要交付哪些物料？", "options": [{"id": "A", "label": "x"}, {"id": "B", "label": "y"}]},
@@ -176,16 +187,17 @@ def test_each_slot_prompt_locks_a_different_structure():
     a = brand.fill_default({"brand_slot": "logo_a", "prompt": "方向A"})
     b = brand.fill_default({"brand_slot": "logo_b", "prompt": "方向B"})
     c = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})
-    assert "bold monoline bird mark" in a["prompt"]
+    assert "monoline mark with an accent dot" in a["prompt"]
     assert "small accent dot" in a["prompt"]
     assert "主组合, 符号, 横版, 小尺寸" in a["prompt"]
     assert "符号构造" not in a["prompt"]
-    assert "solid bird silhouette reversed out of the badge as negative space" in b["prompt"]
+    assert "solid badge with the mark reversed out" in b["prompt"]
     assert "monoline" not in b["prompt"]
     assert "round seal" in b["prompt"]
     assert "wood plaque" not in b["prompt"].lower()
     assert "主组合, 印章, 横版, 小尺寸" in b["prompt"]
-    assert "solid bird silhouette reversed out of the badge as negative space" in c["prompt"]
+    assert "negative-space mark" in c["prompt"]
+    assert "solid silhouette" not in c["prompt"]
     assert "monoline" not in c["prompt"]
     assert "not B's rectangular badge" in c["prompt"]
     assert "flat dark badge" not in c["prompt"]
@@ -193,14 +205,14 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "主组合, 负形, 反白与点缀, 小尺寸" in c["prompt"]
     assert "horizontal mark" in c["prompt"]
     assert "single-line" not in b["prompt"]
-    assert "perched bird is the negative space inside the cup" in c["prompt"]
+    assert "negative space inside the cup" in c["prompt"]
     assert "accent color or the dark color from the confirmed color direction" in c["prompt"]
     assert "reversed out inside it as negative space" in c["prompt"]
     assert "indigo" not in c["prompt"].lower() and "靛蓝" not in c["prompt"]
     assert "indigo" not in brand._SLOT_LOCK["logo_c"].lower() and "靛蓝" not in brand._SLOT_LOCK["logo_c"]
     assert "indigo" not in hint.lower() and "靛蓝" not in hint
     assert "handled cup" in c["prompt"] and "positive shape" in c["prompt"]
-    assert "bird standing on a branch" in c["prompt"]
+    assert "not standing outside it" in c["prompt"]
     assert "The wordmark appears exactly once per zone." in c["prompt"]
     for board in (a, b, c):
         assert "generic coffee mug" in board["prompt"]
@@ -239,7 +251,7 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "from the confirmed color direction" in spec["prompt"]
     assert "moodboard 色彩 cell" not in spec["prompt"]
     assert "each swatch has a Chinese color name, a role, and a percentage" in spec["prompt"]
-    assert "any accent is at most about 5%" in spec["prompt"]
+    assert "accent swatches together are about 10%" in spec["prompt"]
     assert "do not hardcode a palette" in spec["prompt"]
     assert "栖木咖啡" not in spec["prompt"]
     assert "no color-name label" not in spec["prompt"]
@@ -273,7 +285,7 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "must wear a cup sleeve" in cup["prompt"] and "杯套" in cup["prompt"]
     assert "A bare cup with no sleeve is wrong." in cup["prompt"]
     again = brand.fill_default({"brand_slot": "logo_a", "prompt": a["prompt"]})
-    assert again["prompt"].count("The mark is a bold monoline bird mark with a small accent dot.") == 1
+    assert again["prompt"].count("The mark is a monoline mark with an accent dot.") == 1
     leaked = brand.fill_default({
         "brand_slot": "logo_c",
         "prompt": "bottom caption STRUCTURE LOCK C: keep the cup",
@@ -428,13 +440,15 @@ def test_spec_card_is_seven_lovart_panels_and_brand_prompts_have_no_lock_words()
     assert "Paper ground, not black." in spec
     # The locked brief still ends on this sentence. The visual-assembly line follows it.
     assert brand._spec_lock().rstrip().endswith("Paper ground, not black.")
-    assert spec.rstrip().endswith(brand._spec_assembly_line())
+    assert spec.startswith(brand._CONTENT_REF)
+    assert spec.rstrip().endswith(brand._DO_NOT_TAIL["spec"])
+    assert spec.rindex(brand._spec_assembly_line()) < spec.rindex(brand._DO_NOT_TAIL["spec"])
     brief_at = spec.index("Paper ground, not black.")
     assert spec[brief_at:].lstrip().startswith("Paper ground, not black.")
     logo_c = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C STRUCTURE LOCK C"})["prompt"]
     assert "STRUCTURE LOCK" not in logo_c
     assert "主组合, 负形, 反白与点缀, 小尺寸" in logo_c
-    assert "perched bird is the negative space inside the cup" in logo_c
+    assert "negative space inside the cup" in logo_c
     assert "The wordmark appears exactly once per zone." in logo_c
     for name, text in _brand_prompt_sources():
         assert _LOCK_DIRECTIVE.search(text) is None, name
@@ -460,17 +474,16 @@ def test_spec_card_is_seven_lovart_panels_and_brand_prompts_have_no_lock_words()
         assert "APPLICATION LOCK" not in assembled, slot
         assert "Do not print an English instruction label." in assembled, slot
         assert "keep the cup" in assembled, slot
-        if slot == "spec":
-            assert len(assembled) <= 2800
-        else:
-            assert "no industry template was selected" in assembled, slot
+        assert len(assembled) <= 2800, (slot, len(assembled))
+        if slot != "spec":
+            assert "keep the cup" in assembled, slot
         if slot == "spec":
             for heading in SPEC_HEADINGS:
                 assert heading in assembled, heading
             for old in OLD_SPEC_HEADINGS:
                 assert old not in assembled, old
             assert "each swatch has a Chinese color name, a role, and a percentage" in assembled
-            assert "any accent is at most about 5%" in assembled
+            assert "accent swatches together are about 10%" in assembled
             assert "Allowed on-card text includes the bilingual headings" in assembled
             assert "short captions on 使用禁忌 / MISUSE and 影像与材质 / IMAGE" in assembled
             assert "no small text at all" not in assembled
@@ -498,7 +511,7 @@ def test_closing_rules_are_in_the_skill_instructions():
     assert "from the confirmed color direction" in skill
     assert "moodboard color cell" not in skill
     assert "each swatch has a Chinese color name, a role, and a percentage" in skill
-    assert "any accent is at most about 5%" in skill
+    assert "accent swatches together are about 10%" in skill
     assert "no color-name label" not in skill
     assert "no percentage text" not in skill
     assert "ratios are shown only by the width" not in skill
@@ -516,7 +529,7 @@ def test_closing_rules_are_in_the_skill_instructions():
     assert "no small text at all" not in skill and "one garbled character is not acceptable" in skill
     assert "Do not print an English instruction label." in skill
     assert "accent color or the dark color from the confirmed color direction" in skill
-    assert "reversed out inside it as negative space" in skill and "not drawn as a positive bird" in skill
+    assert "reversed out inside it as negative space" in skill and "not drawn as a positive shape" in skill
     assert "indigo" not in skill.lower() and "靛蓝" not in skill
     assert "Paper ground, not black." in skill
     assert "full bilingual heading" in skill and "wordmark at three sizes" not in skill
@@ -732,7 +745,8 @@ def test_third_stage_cumulative_is_the_sum_of_the_confirmed_stages():
 def test_spec_prompt_leads_with_the_panel_contract_and_keeps_the_locked_brief_last():
     caller = brand._spec_lock() + "\nMerge the type and layout panels into 版式 / TYPE."
     spec = brand.fill_default({"brand_slot": "spec", "prompt": caller})["prompt"]
-    assert spec.startswith("Draw seven separate panels")
+    assert spec.startswith(brand._CONTENT_REF)
+    assert spec.index(brand._CONTENT_REF) < spec.index("Draw seven separate panels")
     assert "字体 / TYPE is its own panel" in spec
     assert "版式 / LAYOUT is a different panel" in spec
     assert "percentages sum to 100%" in spec
@@ -740,7 +754,9 @@ def test_spec_prompt_leads_with_the_panel_contract_and_keeps_the_locked_brief_la
     assert "drawn 「最小使用尺寸」 diagram" in spec
     assert len(spec) <= 2800
     assert brand._spec_lock().rstrip().endswith("Paper ground, not black.")
-    assert spec.rstrip().endswith(brand._spec_assembly_line())
+    assert spec.startswith(brand._CONTENT_REF)
+    assert spec.rstrip().endswith(brand._DO_NOT_TAIL["spec"])
+    assert spec.rindex(brand._spec_assembly_line()) < spec.rindex(brand._DO_NOT_TAIL["spec"])
     assert brand._spec_lock() in spec
     assert spec.index("版式 / TYPE") < spec.rindex("Paper ground, not black.")
     assert spec.index("Paper ground, not black.") < spec.index(brand._spec_assembly_line())
@@ -748,7 +764,7 @@ def test_spec_prompt_leads_with_the_panel_contract_and_keeps_the_locked_brief_la
     again = brand.fill_default({"brand_slot": "spec", "prompt": spec})["prompt"]
     assert again.count("Draw seven separate panels") == 1
     assert again.count("exactly 7 panels") == 1
-    assert again.rstrip().endswith(brand._spec_assembly_line())
+    assert again.rstrip().endswith(brand._DO_NOT_TAIL["spec"])
     assert again == spec
 
 
@@ -760,7 +776,7 @@ def test_moodboard_prompt_keeps_the_locked_color_direction():
         "bi_source": {"selected": ["A"]},
     })
     mood = brand.fill_default({"brand_slot": "moodboard", "prompt": "暖木棕 + 米白"})
-    assert "暖土色 主色 90%" in mood["prompt"]
+    assert "暖土色 lightest 主色 35%" in mood["prompt"]
     assert "低饱和靛蓝 点缀 10%" in mood["prompt"]
     assert "copy only these" in mood["prompt"]
     again_mood = brand.fill_default({"brand_slot": "moodboard", "prompt": mood["prompt"]})
@@ -842,7 +858,7 @@ def test_moodboard_color_cell_is_code_written_and_capped():
     subject = "board " + ("long cell note " * 400)
     mood = brand.fill_default({"brand_slot": "moodboard", "prompt": subject})["prompt"]
     assert len(mood) <= 2800
-    assert "暖土色 主色 90%" in mood
+    assert "暖土色 lightest 主色 35%" in mood
     assert "低饱和靛蓝 点缀 10%" in mood
     assert "flat named swatches with percentages" not in mood
     assert "broad bands" not in mood.split("\n")[0]
@@ -934,7 +950,7 @@ def test_a_modifier_glued_to_a_role_noun_is_dropped(modifier, noun):
     _answer_color_a()
     phrase = modifier + noun
     filled = brand.fill_default({"brand_slot": "cup", "prompt": f"方案：{phrase}。"})["prompt"]
-    subject = filled.split("\n", 1)[0]
+    subject = _caller_line(filled, "cup")
     assert phrase not in subject
     assert noun in subject
     assert brand.fill_default({"brand_slot": "cup", "prompt": filled})["prompt"] == filled
@@ -964,7 +980,7 @@ def test_phrases_without_a_glued_hue_mark_stay_whole(phrase):
 def test_a_glued_hue_mark_is_dropped_and_the_noun_stays(raw, kept):
     _answer_color_a()
     filled = brand.fill_default({"brand_slot": "cup", "prompt": raw})["prompt"]
-    assert filled.split("\n", 1)[0] == kept
+    assert _caller_line(filled, "cup") == kept
     assert brand.fill_default({"brand_slot": "cup", "prompt": filled})["prompt"] == filled
 
 
@@ -972,7 +988,7 @@ def test_a_glued_hue_mark_is_dropped_and_the_noun_stays(raw, kept):
 def test_longer_role_nouns_keep_the_noun(phrase, noun):
     _answer_color_a()
     filled = brand.fill_default({"brand_slot": "cup", "prompt": f"方案：{phrase}。"})["prompt"]
-    subject = filled.split("\n", 1)[0]
+    subject = _caller_line(filled, "cup")
     assert phrase not in subject
     assert noun in subject
 
@@ -1140,7 +1156,8 @@ def test_visual_assembly_follows_the_gold_sheet():
     assert "fascia eave" in store and "not bare wood" in store
     assert "full shopfront, front view" in store
     spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})["prompt"]
-    assert spec.startswith("Draw seven separate panels")
+    assert spec.startswith(brand._CONTENT_REF)
+    assert spec.index(brand._CONTENT_REF) < spec.index("Draw seven separate panels")
     assert spec.count("exactly 7 panels") == 1
     assert spec.count("Draw seven separate panels") == 1
     assert "3 by 3 grid" in spec
@@ -1155,7 +1172,9 @@ def test_visual_assembly_follows_the_gold_sheet():
     assert "影像格小字不得写错" not in brand._spec_lock()
     assert "影像格小字不得写错" not in brand._SPEC_PREFACE
     assert "影像格小字不得写错" in brand.default_hint()
-    assert spec.rstrip().endswith(brand._spec_assembly_line())
+    assert spec.startswith(brand._CONTENT_REF)
+    assert spec.rstrip().endswith(brand._DO_NOT_TAIL["spec"])
+    assert spec.rindex(brand._spec_assembly_line()) < spec.rindex(brand._DO_NOT_TAIL["spec"])
     assert brand._spec_lock().rstrip().endswith("Paper ground, not black.")
     again = brand.fill_default({"brand_slot": "spec", "prompt": spec})["prompt"]
     assert again == spec
@@ -1168,7 +1187,7 @@ def test_visual_assembly_follows_the_gold_sheet():
     })
     hint = "暖土色为主 + 低饱和靛蓝点缀"
     mood = brand.fill_default({"brand_slot": "moodboard", "prompt": "板"})["prompt"]
-    assert "暖土色 主色 90%" in mood
+    assert "暖土色 lightest 主色 35%" in mood
     assert "低饱和靛蓝 点缀 10%" in mood
     assert "Do not paint broad bands" in mood
     assert "flat named swatches with percentages" not in mood
@@ -1186,7 +1205,10 @@ def test_visual_assembly_follows_the_gold_sheet():
         assert "The confirmed color direction for the " + part + " is: " + hint in filled
         assert brand.fill_default({"brand_slot": slot, "prompt": filled})["prompt"] == filled
     spec_a = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})["prompt"]
-    assert "Sample the swatches from the confirmed color direction: " + hint in spec_a
+    assert "copy only these:" in spec_a
+    assert "暖土色 lightest 主色 35%" in spec_a
+    assert "低饱和靛蓝 点缀 10%" in spec_a
+    assert "do not add a swatch" not in spec_a.lower()
     assert brand.fill_default({"brand_slot": "spec", "prompt": spec_a})["prompt"] == spec_a
 
     brand.reset_for_tests()
@@ -1979,7 +2001,7 @@ async def test_prompt_mutated_after_binding_does_not_submit(monkeypatch):
         assert list((brand._stage_record(2) or {}).get("dispatching_slots") or []) == []
         assert brand._progress()["phase"] == "logos"
         saved = [str(row.get("prompt") or "") for row in ((brand._grant_of(2) or {}).get("slots") or [])]
-        assert saved and all(row.startswith("logo a") for row in saved)
+        assert saved and all(row.startswith(brand._STYLE_REF) and "logo a" in row for row in saved)
         assert all("mutated after binding" not in row for row in saved)
     finally:
         BOT_CHAT_ID.reset(token)
@@ -2033,7 +2055,8 @@ async def test_confirmed_logo_a_submits_once_and_is_recorded(monkeypatch):
         assert submits == []
         assert len(gens) == 1
         assert gens[0].get("brand_slot") == "logo_a"
-        assert str(gens[0].get("prompt") or "").startswith("logo a")
+        assert str(gens[0].get("prompt") or "").startswith(brand._STYLE_REF)
+        assert "logo a" in str(gens[0].get("prompt") or "")
         assert brand.submitted_slots(2) == {"logo_a"}
         assert brand._progress()["phase"] == "logos"
     finally:
@@ -2464,10 +2487,12 @@ def test_spec_submission_stays_under_2800_and_keeps_the_panel_commands():
         assert "Color: flat swatches, no wood grain, with the confirmed accent. Never write COLR, TISUS, INMAGE." in spec
         assert "noise" not in spec.lower()
         assert brand._spec_lock() in spec
-        assert spec.index(brand._SPEC_PREFACE) < spec.index("栖木咖啡 QIMU COFFEE")
-        assert spec.index("栖木咖啡 QIMU COFFEE") < spec.index(brand._slot_command("spec"))
+        assert spec.startswith(brand._CONTENT_REF)
+        assert spec.index(brand._SPEC_PREFACE) < spec.index(brand._slot_command("spec"))
         assert spec.index(brand._slot_command("spec")) < spec.index(brand._spec_lock())
-        assert spec.rstrip().endswith(brand._spec_assembly_line())
+        assert spec.index(brand._spec_lock()) < spec.index("栖木咖啡 QIMU COFFEE")
+        assert spec.rstrip().endswith(brand._DO_NOT_TAIL["spec"])
+        assert spec.rindex(brand._spec_assembly_line()) < spec.rindex(brand._DO_NOT_TAIL["spec"])
         assert brand.fill_default({"brand_slot": "spec", "prompt": spec})["prompt"] == spec
     custom = "长" * 1000
     spec = _spec_for("", custom)
@@ -2515,14 +2540,16 @@ def test_submitted_prompts_put_the_gold_commands_before_the_lock():
         lead = brand._slot_command(slot)
         lock = brand._spec_lock() if slot == "spec" else brand._SLOT_LOCK[slot]
         assert lead in filled, slot
-        assert filled.index(caller) < filled.index(lead) < filled.index(lock), slot
+        assert filled.startswith(brand._ref_hint(slot)), slot
+        assert filled.index(brand._ref_hint(slot)) < filled.index(lead) < filled.index(lock), slot
+        assert filled.rstrip().endswith(brand._DO_NOT_TAIL[slot]), slot
         if slot == "spec":
-            assert filled.startswith("Draw seven separate panels")
-            assert filled.rstrip().endswith(brand._spec_assembly_line())
+            assert filled.index(brand._CONTENT_REF) < filled.index("Draw seven separate panels")
+            assert filled.rindex(brand._spec_assembly_line()) < filled.rindex(brand._DO_NOT_TAIL["spec"])
             assert filled.count("exactly 7 panels") == 1
             assert filled.count("Draw seven separate panels") == 1
-        else:
-            assert filled.startswith(caller), slot
+        elif caller not in lock and caller not in lead:
+            assert filled.index(lock) < filled.index(caller), slot
         if slot == "logo_c":
             assert filled.count("cup-shaped") == 1
             assert "not a row of app icons" in filled
@@ -2531,3 +2558,211 @@ def test_submitted_prompts_put_the_gold_commands_before_the_lock():
         assert lead not in lock
         assert lead not in brand._SPEC_PREFACE
         assert lead not in brand.default_hint()
+
+
+def test_qwen_cap_measures_the_final_string_and_never_truncates():
+    """One shared check: exactly at the constant passes, one over is blocked, hints can push it over."""
+    from ComfyArt.api.prompt_cap import PROMPT_CHAR_CAP, finalize_qwen_prompt
+
+    model = "wavespeed-ai/qwen-image-2.0/edit"
+    cap = PROMPT_CHAR_CAP[model]
+    assert cap == PROMPT_CHAR_CAP["wavespeed-ai/qwen-image-2.0/text-to-image"] == 2800
+    exact, err = finalize_qwen_prompt(model, "a" * cap, [])
+    assert err == "" and exact == "a" * cap and len(exact) == cap
+    over, err = finalize_qwen_prompt(model, "b" * (cap + 1), [])
+    assert "not truncated" in err and len(over) == cap + 1 and over == "b" * (cap + 1)
+    base = "c" * (cap - 40)
+    hint = "Use only the visual style, palette and rendering of image 9, not its content."
+    assert len(base) <= cap < len(base) + 1 + len(hint)
+    final, err = finalize_qwen_prompt(model, base, [hint])
+    assert final == f"{base} {hint}" and len(final) > cap and "not truncated" in err
+    src = Path("api/wavespeed.py").read_text(encoding="utf-8")
+    guard = src.index("finalize_qwen_prompt")
+    post = src.index('session.post(f"{_base()}/api/v3/{model}"', guard)
+    assert guard < post
+    assert "[:cap]" not in src[guard:post] and "prompt[: " not in src[guard:post]
+
+
+def test_every_slot_with_a_long_subject_stays_within_the_qwen_cap():
+    from ComfyArt.api.prompt_cap import PROMPT_CHAR_CAP
+
+    cap = min(PROMPT_CHAR_CAP.values())
+    subject = "mark " * 2000
+    for slot in ("moodboard", "logo_a", "logo_b", "logo_c", "spec", "cup", "bag", "storefront"):
+        brand.reset_for_tests()
+        filled = brand.fill_default({"brand_slot": slot, "prompt": subject})
+        assert len(filled["prompt"]) <= cap, (slot, len(filled["prompt"]))
+        assert filled["prompt"].startswith(brand._ref_hint(slot)), slot
+
+
+_FIXTURE_BRANDS = (
+    ("logo_a", "A", "a quokka on a reed", "marigold", "北屿", "NORTHFOLD"),
+    ("logo_c", "C", "an okapi over a dune", "verdigris", "澜隅", "LANYU"),
+)
+
+
+def test_deliverables_take_the_chosen_mark_from_that_run():
+    """Two brands: the mark noun and the colour follow the run. Neither is in the template."""
+    slots = ("spec", "cup", "bag", "storefront")
+    prompts = {}
+    for logo_slot, pick, subject, colour, zh, en in _FIXTURE_BRANDS:
+        brand.reset_for_tests()
+        brand.record_card_answer(_card1(), {
+            "bi_delivery": {"selected": ["A"]},
+            "bi_color": {"other_text": colour},
+            "bi_mark": {"selected": ["A"]},
+            "bi_source": {"selected": ["A"]},
+        })
+        logo = brand.fill_default({"brand_slot": logo_slot, "prompt": subject})["prompt"]
+        phrase = brand._mark_type_phrase(logo_slot)
+        assert phrase and phrase in logo and phrase in brand._SLOT_LOCK[logo_slot]
+        brand._progress()["chosen"] = logo_slot
+        made = {}
+        for slot in slots:
+            text = brand.fill_default({"brand_slot": slot, "prompt": f"{zh} {en} application"})["prompt"]
+            made[slot] = text
+            assert text.startswith(brand._CONTENT_REF)
+            sentence = text.split("\n", 2)[1]
+            assert subject in sentence and phrase in sentence
+            assert text.index(sentence) < text.index(brand._SLOT_LOCK[slot] if slot != "spec" else brand._spec_lock())
+            assert colour in text
+            assert zh in text and en in text
+        prompts[logo_slot] = made
+    for slot in slots:
+        assert "quokka" in prompts["logo_a"][slot] and "okapi" not in prompts["logo_a"][slot]
+        assert "marigold" in prompts["logo_a"][slot] and "verdigris" not in prompts["logo_a"][slot]
+        assert "okapi" in prompts["logo_c"][slot] and "quokka" not in prompts["logo_c"][slot]
+        assert "verdigris" in prompts["logo_c"][slot] and "marigold" not in prompts["logo_c"][slot]
+        assert "negative-space mark" in prompts["logo_c"][slot]
+        assert "solid silhouette" not in prompts["logo_c"][slot]
+        assert "monoline mark with an accent dot" in prompts["logo_a"][slot]
+    banned = ("quokka", "okapi", "marigold", "verdigris", "北屿", "NORTHFOLD", "澜隅", "LANYU")
+    template = "\n".join(
+        Path(name).read_text(encoding="utf-8")
+        for name in ("api/brand_identity.py", "api/prompt_cap.py", "src/skills.ts", "src/refModes.ts")
+    )
+    for word in banned:
+        assert word not in template, word
+
+
+def test_storefront_drops_a_hue_on_the_fascia_and_keeps_the_lock():
+    assert brand._defer_object_color("black fascia") == "fascia"
+    assert brand._defer_object_color("paint the indigo eave and the black fascia") == "paint the eave and the fascia"
+    assert brand._defer_object_color("black signboard") == "signboard"
+    assert brand._defer_object_color("white awning") == "awning"
+    assert brand._defer_object_color("black doorhead") == "doorhead"
+    assert brand._defer_object_color("brown door head") == "door head"
+    assert brand._defer_object_color("grey shopfront") == "shopfront"
+    brand.record_card_answer(_card1(), {
+        "bi_delivery": {"selected": ["A"]},
+        "bi_color": {"selected": ["A"]},
+        "bi_mark": {"selected": ["A"]},
+        "bi_source": {"selected": ["A"]},
+    })
+    store = brand.fill_default({
+        "brand_slot": "storefront",
+        "prompt": "paint the indigo eave and the black fascia",
+    })["prompt"]
+    assert "paint the eave and the fascia" in store
+    assert "black fascia" not in store and "indigo eave" not in store
+    assert "The fascia carries the Chinese brand name and the English brand name once." in store
+    cup = brand.fill_default({"brand_slot": "cup", "prompt": "black fascia beside the cup"})["prompt"]
+    assert "black fascia" in cup
+
+
+def test_colour_cell_is_four_tones_plus_one_swatch_per_accent():
+    """One accent is five swatches; two accents joined by 与 are six. Spec matches."""
+    single = "persimmon为主 + lobelia点缀"
+    double = "persimmon为主 + lobelia与mallow点缀"
+    one = brand._swatch_rows(single)
+    two = brand._swatch_rows(double)
+    assert len(one) == 5 and len(two) == 6
+    assert sum(pct for _n, _r, pct in one) == 100
+    assert sum(pct for _n, _r, pct in two) == 100
+    assert sum(pct for _n, role, pct in one if role == "点缀") == 10
+    assert sum(pct for _n, role, pct in two if role == "点缀") == 10
+    assert [pct for _n, role, pct in two if role == "点缀"] == [5, 5]
+    assert [role.split()[0] for _n, role, _p in one if "主色" in role] == list(brand._TONE_ORDER)
+    assert [pct for _n, role, pct in one if "主色" in role] == [35, 25, 20, 10]
+    template = "\n".join(
+        Path(name).read_text(encoding="utf-8")
+        for name in ("api/brand_identity.py", "src/skills.ts")
+    )
+    for word in ("persimmon", "lobelia", "mallow"):
+        assert word not in template, word
+    for label, count in ((single, 5), (double, 6)):
+        brand.reset_for_tests()
+        brand.record_card_answer(_card1(), {
+            "bi_delivery": {"selected": ["A"]},
+            "bi_color": {"other_text": label},
+            "bi_mark": {"selected": ["A"]},
+            "bi_source": {"selected": ["A"]},
+        })
+        rows = brand._swatch_rows(brand.color_hue_hint())
+        assert len(rows) == count
+        line = brand._swatch_copy_line(rows)
+        mood = brand.fill_default({"brand_slot": "moodboard", "prompt": "board"})["prompt"]
+        spec = brand.fill_default({"brand_slot": "spec", "prompt": "sheet"})["prompt"]
+        assert line in mood and line in spec
+        assert "do not add a swatch" not in mood.lower()
+        assert "do not add a hue outside this direction" in mood.lower()
+        assert "lightest" in mood and mood.index("lightest") < mood.index(" dark ")
+
+
+_LONG_SUBJECT = {
+    "moodboard": (
+        "Side aisle of a small cafe at opening, ceramic stacks on the left, paper menus leaning "
+        "on the counter, one wide view that fills every cell edge to edge."
+    ),
+    "logo_a": (
+        "A standing animal on a reed, drawn as one continuous gesture, with the bilingual name "
+        "locked beside it and a quiet ground around the mark."
+    ),
+    "logo_b": (
+        "A standing animal inside a rectangular badge, the round seal set apart, bilingual name "
+        "once in each zone, quiet paper ground."
+    ),
+    "logo_c": (
+        "A standing animal held as the empty interior of a handle-less cup badge. "
+        "The bilingual name sits once in each labelled zone. The badge is filled from the confirmed "
+        "direction and the animal is the empty interior, not a picture standing beside the badge."
+    ),
+    "spec": "Guideline sheet, seven panels, bilingual name copied once.",
+    "cup": (
+        "Two takeaway vessels on a pale counter, the sleeved paper cup in front, the clear iced "
+        "cup behind, one flat sleeve lying flat."
+    ),
+    "bag": (
+        "Two handled shopping bags on a pale counter, the tall bag standing, the shorter bag "
+        "lying in front, one side stripe."
+    ),
+    "storefront": (
+        "Full shopfront from across the street, fascia across the top, an A-frame on the pavement, "
+        "the entrance centered, no hanging-sign crop."
+    ),
+}
+
+
+def test_long_realistic_subjects_fit_with_the_style_hint():
+    """Previous-round subjects, including logo_c plus its style hint, stay within the shared cap."""
+    from ComfyArt.api.prompt_cap import PROMPT_CHAR_CAP
+
+    cap = PROMPT_CHAR_CAP["wavespeed-ai/qwen-image-2.0/edit"]
+    brand.record_card_answer(_card1(), {
+        "bi_delivery": {"selected": ["A"]},
+        "bi_color": {"selected": ["A"]},
+        "bi_mark": {"selected": ["A"]},
+        "bi_source": {"selected": ["A"]},
+    })
+    for slot, subject in _LONG_SUBJECT.items():
+        brand._progress()["marks"] = {}
+        text = brand.fill_default({"brand_slot": slot, "prompt": subject})["prompt"]
+        assert subject in text, slot
+        assert len(text) <= cap, (slot, len(text))
+        assert text.startswith(brand._ref_hint(slot)), slot
+    logo = brand.fill_default({"brand_slot": "logo_c", "prompt": _LONG_SUBJECT["logo_c"]})["prompt"]
+    assert "主组合, 负形, 反白与点缀, 小尺寸" in logo
+    assert "negative-space mark" in logo
+    assert "The confirmed color direction for this badge's accent is:" in logo
+    assert logo.startswith(brand._STYLE_REF)
+    assert len(logo) <= cap

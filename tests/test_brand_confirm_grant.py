@@ -1767,8 +1767,8 @@ async def test_two_chats_do_not_share_brand_progress(monkeypatch, bot_client):
         assert list(frozen_b) == ["logo_a", "logo_b"]
         assert frozen_a["logo_b"]["refs"] == ["shape:mood-a"]
         assert frozen_b["logo_a"]["refs"] == ["shape:mood-b"]
-        assert frozen_a["logo_b"]["prompt"].startswith("alpha-")
-        assert frozen_b["logo_a"]["prompt"].startswith("beta-")
+        assert frozen_a["logo_b"]["prompt"].startswith(brand._STYLE_REF) and "alpha-" in frozen_a["logo_b"]["prompt"]
+        assert frozen_b["logo_a"]["prompt"].startswith(brand._STYLE_REF) and "beta-" in frozen_b["logo_a"]["prompt"]
         assert quoted_a.spec["frozen"]["chat"] == chat_a
         assert quoted_b.spec["frozen"]["project"] == "proj-b"
         assert quoted_a.spec["frozen"]["digest"] != quoted_b.spec["frozen"]["digest"]
@@ -1795,8 +1795,8 @@ async def test_two_chats_do_not_share_brand_progress(monkeypatch, bot_client):
         assert list(again_b) == ["logo_a", "logo_b"]
         assert again_a["logo_c"]["refs"] == ["shape:mood-a"]
         assert again_b["logo_b"]["refs"] == ["shape:mood-b"]
-        assert again_a["logo_c"]["prompt"].startswith("alpha-")
-        assert again_b["logo_b"]["prompt"].startswith("beta-")
+        assert again_a["logo_c"]["prompt"].startswith(brand._STYLE_REF) and "alpha-" in again_a["logo_c"]["prompt"]
+        assert again_b["logo_b"]["prompt"].startswith(brand._STYLE_REF) and "beta-" in again_b["logo_b"]["prompt"]
         assert _read_chat(chat_a)["submitted"] == {"logo_a"}
         assert _read_chat(chat_b)["submitted"] == {"logo_c"}
         assert _read_chat(chat_a)["mood"] == "shape:mood-a"

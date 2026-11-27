@@ -171,10 +171,13 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
     ? viewUrl(await uploadImage(await paletteImage(colors), `palette-mosaic-${colors.join('').replace(/#/g, '')}.png`))
     : null
   const used = palette ? [...picked, { src: palette, mode: PALETTE_MODE }] : picked
-  const hints = refHints(used)
+  const head = [shape.props.prompt, suffix, transparent && 'isolated subject on a plain white background'].filter(Boolean).join(', ')
+  const hints = refHints(used).filter((hint) => hint && !head.includes(hint))
+  const brandLead = head.startsWith('Use only the visual style') || head.startsWith('Use image 1 as the content reference')
   const prompt = [
-    [shape.props.prompt, suffix, transparent && 'isolated subject on a plain white background'].filter(Boolean).join(', '),
-    ...hints,
+    ...(brandLead ? hints : []),
+    head,
+    ...(brandLead ? [] : hints),
     colors.length > 0 && palettePrompt(colors),
   ].filter(Boolean).join(' ')
   if (isVideo(workflow) && isCloudModel(workflow)) {

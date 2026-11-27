@@ -158,7 +158,8 @@ async def test_unchanged_frozen_snapshot_submits_once(monkeypatch):
         posted = session.generate_posts[0]["prompt"]
         frozen = brand._grant_of(2)["slots"][0]["prompt"]
         assert posted == frozen
-        assert posted.startswith(LEGIT)
+        assert posted.startswith(brand._STYLE_REF)
+        assert LEGIT in posted
         assert "主组合" in posted
         assert session.wavespeed_posts == []
 
@@ -204,8 +205,9 @@ async def test_requote_of_changed_prompt_submits_once_across_repeat_and_reload(m
         posted = session.generate_posts[0]["prompt"]
         frozen = brand._grant_of(2)["slots"][0]["prompt"]
         assert posted == frozen
-        assert posted.startswith(UNRELATED)
-        assert LEGIT not in posted.split("\n", 1)[0]
+        assert posted.startswith(brand._STYLE_REF)
+        assert UNRELATED in posted
+        assert LEGIT not in posted
         assert brand._grant_of(2)["digest"] != first_digest
         assert brand.submitted_slots(2) == {"logo_a"}
 
@@ -298,9 +300,10 @@ async def test_normal_stages_do_not_requote_because_of_program_assembly(monkeypa
                 assert prompt in posted_prompt
                 assert posted_prompt != prompt
                 if slot == "spec":
-                    assert posted_prompt.startswith("Draw seven separate panels")
+                    assert posted_prompt.startswith(brand._CONTENT_REF)
                 else:
-                    assert posted_prompt.startswith(prompt)
+                    assert posted_prompt.startswith(brand._ref_hint(slot))
+                    assert posted_prompt.index(prompt) > posted_prompt.index(brand._SLOT_LOCK[slot])
             assert session.wavespeed_posts == []
 
             def second(messages, n, generates=generates):
