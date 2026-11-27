@@ -568,6 +568,7 @@ def test_stage1_stays_text_to_image_and_later_slots_refuse_without_a_base():
         logo = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})
         assert logo["edit_model"] == brand.QWEN_EDIT
         assert logo["refs"] == ["shape:mood"]
+        assert logo["ref_modes"] == ["style"]
         assert "_brand_block" not in logo
 
         spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})
@@ -579,7 +580,8 @@ def test_stage1_stays_text_to_image_and_later_slots_refuse_without_a_base():
         brand._progress()["shapes"]["logo_a"] = "shape:logo_a"
         ready = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})
         assert ready["edit_model"] == brand.QWEN_EDIT
-        assert ready["refs"] == ["shape:logo_a", "shape:mood"]
+        assert ready["refs"] == ["shape:logo_a"]
+        assert ready["ref_modes"] == ["content"]
     finally:
         brand.reset_for_tests()
 

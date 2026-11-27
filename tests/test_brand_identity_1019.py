@@ -114,7 +114,7 @@ def test_default_path_sizes_do_not_squash_to_1024():
     logos = [apply_generate({"skill": brand.SKILL, "prompt": f"logo {i}"}, brand.SKILL) for i in range(3)]
     assert [(a["brand_slot"], a["width"], a["height"]) for a in logos] == [
         ("logo_a", 2048, 2048), ("logo_b", 2048, 2048), ("logo_c", 2048, 2048)]
-    assert all(a["refs"] == ["shape:mood"] for a in logos)
+    assert all(a["refs"] == ["shape:mood"] and a["ref_modes"] == ["style"] for a in logos)
     for i, slot in enumerate(("logo_a", "logo_b", "logo_c")):
         brand.record_submitted(logos[i], {"ids": [f"holder-{slot}"]})
         brand.record_wait({"results": [{"id": f"holder-{slot}", "shapes": [f"shape:{slot}"], "urls": [f"/view?f={slot}.png"]}]})
@@ -134,7 +134,7 @@ def test_default_path_sizes_do_not_squash_to_1024():
               for name in ("spec", "cup", "bag", "store")]
     assert [(a["brand_slot"], a["width"], a["height"]) for a in finals] == [
         ("spec", 1536, 2048), ("cup", 1536, 2048), ("bag", 1536, 2048), ("storefront", 2048, 1152)]
-    assert all(a["refs"] == ["shape:logo_a", "shape:mood"] for a in finals)
+    assert all(a["refs"] == ["shape:logo_a"] and a["ref_modes"] == ["content"] for a in finals)
     assert all(a["size_lock"] is True and a["brand_opaque"] is True for a in finals)
 
 
@@ -176,9 +176,15 @@ def test_each_slot_prompt_locks_a_different_structure():
     a = brand.fill_default({"brand_slot": "logo_a", "prompt": "方向A"})
     b = brand.fill_default({"brand_slot": "logo_b", "prompt": "方向B"})
     c = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})
-    assert "one open single-line drawing" in a["prompt"] and "single-line" in a["prompt"]
-    assert "solid filled wood plaque and a circular seal" in b["prompt"] and "circular seal" in b["prompt"]
+    assert "flat solid monoline mark" in a["prompt"]
+    assert "small accent dot" in a["prompt"]
+    assert "主组合, 符号构造, 横版, 小尺寸" in a["prompt"]
+    assert "flat dark badge" in b["prompt"] and "round seal" in b["prompt"]
+    assert "wood plaque" not in b["prompt"].lower()
+    assert "主组合, 印章, 横版, 小尺寸" in b["prompt"]
     assert "cup-shaped" in c["prompt"]
+    assert "主组合, 负形, 反白与点缀, 小尺寸" in c["prompt"]
+    assert "horizontal mark" in c["prompt"]
     assert "single-line" not in b["prompt"]
     assert "perched bird is the negative space inside the cup" in c["prompt"]
     assert "accent color or the dark color from the confirmed color direction" in c["prompt"]
@@ -190,7 +196,8 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "bird standing on a branch" in c["prompt"]
     assert "The wordmark appears exactly once per zone." in c["prompt"]
     for board in (a, b, c):
-        assert "主组合, 符号构造, 横版, 小尺寸" in board["prompt"]
+        assert "flat solid monoline mark" in board["prompt"]
+        assert "generic coffee mug" in board["prompt"]
         assert "exactly once" in board["prompt"]
         assert "No other small text." in board["prompt"]
         assert "No bottom caption." in board["prompt"]
@@ -258,7 +265,7 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "must wear a cup sleeve" in cup["prompt"] and "杯套" in cup["prompt"]
     assert "A bare cup with no sleeve is wrong." in cup["prompt"]
     again = brand.fill_default({"brand_slot": "logo_a", "prompt": a["prompt"]})
-    assert again["prompt"].count("one open single-line drawing of a bird perched on a branch") == 1
+    assert again["prompt"].count("The mark is a flat solid monoline mark.") == 1
     leaked = brand.fill_default({
         "brand_slot": "logo_c",
         "prompt": "bottom caption STRUCTURE LOCK C: keep the cup",
@@ -418,7 +425,7 @@ def test_spec_card_is_seven_lovart_panels_and_brand_prompts_have_no_lock_words()
     assert spec[brief_at:].lstrip().startswith("Paper ground, not black.")
     logo_c = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C STRUCTURE LOCK C"})["prompt"]
     assert "STRUCTURE LOCK" not in logo_c
-    assert "主组合, 符号构造, 横版, 小尺寸" in logo_c
+    assert "主组合, 负形, 反白与点缀, 小尺寸" in logo_c
     assert "perched bird is the negative space inside the cup" in logo_c
     assert "The wordmark appears exactly once per zone." in logo_c
     for name, text in _brand_prompt_sources():
@@ -755,6 +762,84 @@ def test_moodboard_prompt_keeps_the_locked_color_direction():
     assert again["prompt"] == logo["prompt"]
 
 
+def test_english_palette_wording_is_stripped_and_a_clay_cup_stays():
+    brand.record_card_answer(_card1(), {
+        "bi_delivery": {"selected": ["A"]},
+        "bi_color": {"selected": ["A"]},
+        "bi_mark": {"selected": ["A"]},
+        "bi_source": {"selected": ["A"]},
+    })
+    subject = (
+        "a clay cup on the counter, warm wood brown, oat beige, cream white "
+        "and a small touch of deep clay accent"
+    )
+    cup = brand.fill_default({"brand_slot": "cup", "prompt": subject})["prompt"]
+    assert "clay cup" in cup
+    for gone in ("deep clay accent", "warm wood brown", "oat beige", "cream white"):
+        assert gone not in cup, gone
+    assert brand.fill_default({"brand_slot": "cup", "prompt": cup})["prompt"] == cup
+
+
+def test_moodboard_color_cell_is_code_written_and_capped():
+    brand.record_card_answer(_card1(), {
+        "bi_delivery": {"selected": ["A"]},
+        "bi_color": {"selected": ["A"]},
+        "bi_mark": {"selected": ["A"]},
+        "bi_source": {"selected": ["A"]},
+    })
+    subject = "board " + ("long cell note " * 400)
+    mood = brand.fill_default({"brand_slot": "moodboard", "prompt": subject})["prompt"]
+    assert len(mood) <= 2800
+    assert "flat named swatches with percentages" in mood
+    assert "about 10%" in mood
+    assert brand.color_hue_hint() in mood
+    assert "broad bands" not in mood.split("\n")[0]
+    assert brand.fill_default({"brand_slot": "moodboard", "prompt": mood})["prompt"] == mood
+
+
+def test_deliverables_reference_only_the_chosen_logo():
+    progress = brand._progress()
+    progress["shapes"]["moodboard"] = "shape:mood"
+    progress["shapes"]["logo_b"] = "shape:logo_b"
+    progress["chosen"] = "logo_b"
+    for slot in ("spec", "cup", "bag", "storefront"):
+        job = brand.fill_default({
+            "brand_slot": slot,
+            "prompt": slot,
+            "refs": ["shape:mood", "https://example.com/board.png"],
+        })
+        assert job["refs"] == ["shape:logo_b"], slot
+        assert job["ref_modes"] == ["content"], slot
+        assert "shape:mood" not in job["refs"]
+    logo = brand.fill_default({
+        "brand_slot": "logo_a",
+        "prompt": "方向A",
+        "refs": ["shape:mood", "https://example.com/board.png"],
+        "ref_modes": ["content"],
+    })
+    assert logo["refs"] == ["shape:mood"]
+    assert logo["ref_modes"] == ["style"]
+
+
+def test_shared_prompt_code_has_no_example_palette_outside_locked_cards():
+    import re
+    from pathlib import Path
+
+    body = Path("api/brand_identity.py").read_text(encoding="utf-8")
+    body = re.sub(r"(?ms)^_CARD[123]_(?:ZH|EN) = \[.*?^\]\n", "", body)
+    skill = Path("src/skills.ts").read_text(encoding="utf-8")
+    start = skill.index("id: 'brand-identity-director'")
+    skill = skill[start:skill.index("id: 'packaging-design-director'", start)]
+    for banned in ("terracotta", "caramel", "oat", "cream"):
+        assert re.search(rf"(?i)\b{banned}\b", body) is None, banned
+        assert re.search(rf"(?i)\b{banned}\b", skill) is None, banned
+    hint = brand.default_hint()
+    for banned in ("栖木", "QIMU"):
+        assert banned not in hint
+        assert banned not in skill
+    assert '"clay"' in body and '"wood"' in body
+
+
 def test_logo_c_warm_earth_prompt_does_not_name_indigo():
     """Pure warm earth has no indigo, so the assembled logo C prompt must not invent one."""
     brand.record_card_answer(_card1(), {
@@ -879,7 +964,7 @@ def test_unselected_color_phrases_leave_product_names_and_change_with_the_pick()
     assert "暖木檐口" not in picked_c and "陶土点缀" not in picked_c
     assert "焦糖拿铁" in picked_c and "陶土杯" in picked_c and "暖木质吧台" in picked_c
     plain = brand.fill_default({"brand_slot": "logo_a", "prompt": subject})["prompt"]
-    assert "陶土点缀" in plain and "暖木檐口" in plain
+    assert "陶土点缀" not in plain and "暖木檐口" not in plain
     answer("A")
     mood = brand.fill_default({"brand_slot": "moodboard", "prompt": subject})["prompt"]
     logo_c = brand.fill_default({"brand_slot": "logo_c", "prompt": subject})["prompt"]
@@ -923,6 +1008,7 @@ def test_unselected_color_phrases_leave_product_names_and_change_with_the_pick()
         ],
     })
     assert drawn["refs"] == ["shape:mood"]
+    assert drawn["ref_modes"] == ["style"]
     assert "/view?f=logo_a.png" not in drawn["refs"]
     assert "shape:upload-9" not in drawn["refs"]
     assert "https://example.com/handled-cup.png" not in drawn["refs"]
@@ -1026,8 +1112,9 @@ def test_visual_assembly_follows_the_gold_sheet():
     })
     hint = "暖土色为主 + 低饱和靛蓝点缀"
     mood = brand.fill_default({"brand_slot": "moodboard", "prompt": "板"})["prompt"]
-    assert "print this direction as the cell annotation" in mood
-    assert "Do not swap the accent for a different hue." in mood
+    assert "flat named swatches with percentages" in mood
+    assert "about 10%" in mood
+    assert "Do not paint broad bands" in mood
     assert hint in mood
     assert brand.fill_default({"brand_slot": "moodboard", "prompt": mood})["prompt"] == mood
     badge = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})["prompt"]
@@ -2355,10 +2442,10 @@ def test_submitted_prompts_put_the_gold_commands_before_the_lock():
         "storefront": "门头",
     }
     expected = {
-        "moodboard": "write the confirmed direction as the annotation",
+        "moodboard": "flat named swatches with percentages",
         "logo_a": "rounded-square icon, a circular stamp, and a solid square badge",
         "logo_b": "The main seal is a circular stamp filled with the confirmed accent or its dark color.",
-        "logo_c": "not a wood-grain brown plaque",
+        "logo_c": "not a filled plaque",
         "spec": "One clean, reviewable sheet",
         "cup": "the thin stripe on the sleeve is the confirmed accent",
         "bag": "down the side gusset, not only across the front face",

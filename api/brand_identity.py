@@ -774,8 +774,7 @@ def _refs_for(slot: dict, progress: dict) -> list[str]:
         return [mood]
     if slot["stage"] == 3:
         chosen = str(shapes.get(progress.get("chosen") or "logo_a") or "")
-        refs = [r for r in (chosen, mood) if r]
-        return refs
+        return [chosen] if chosen else []
     return []
 
 
@@ -808,8 +807,9 @@ _SLOT_LOCK = {
         "Exactly three cells in each row. Warm paper ground, not a black field."
     ),
     "logo_a": (
-        "The mark is one open single-line drawing of a bird perched on a branch. "
-        "No filled plaque, no circular seal, no cup silhouette. "
+        "The mark is a flat solid monoline mark. "
+        "Not a filled plaque, not a round seal, not a cup silhouette, "
+        "and not a generic coffee mug or an unrelated icon. "
         "The sheet has exactly four labelled zones, in this order: 主组合, 符号构造, 横版, 小尺寸. "
         "Each of the four zone labels appears exactly once. "
         "符号构造 shows the actual symbol construction. No empty placeholder box and no X box. "
@@ -820,29 +820,32 @@ _SLOT_LOCK = {
         "No other small text. No bottom caption. Do not print an English instruction label."
     ),
     "logo_b": (
-        "The mark is two separate parts, a solid filled wood plaque and a circular seal. "
-        "Not a line-drawing bird standing on a branch. "
-        "The sheet has exactly four labelled zones, in this order: 主组合, 符号构造, 横版, 小尺寸. "
+        "The mark is a flat solid monoline mark reversed out of a flat dark badge, plus a separate round seal. "
+        "Not a generic coffee mug or an unrelated icon. "
+        "The sheet has exactly four labelled zones, in this order: 主组合, 印章, 横版, 小尺寸. "
         "Each of the four zone labels appears exactly once. "
-        "符号构造 shows the actual symbol construction. No empty placeholder box and no X box. "
+        "印章 shows the round seal. No empty placeholder box and no X box. "
         "小尺寸 includes the symbol, not the wordmark alone, as the seal, a horizontal plaque, a circle, and a square. "
         "横版 appears once. Do not draw a second landscape treatment. "
         "In each zone the Chinese brand name and the English brand name appear together exactly once. "
         "No other small text. No garbled English captions. No bottom caption. Do not print an English instruction label."
     ),
     "logo_c": (
+        "The mark is a flat solid monoline mark. "
         "The badge is a cup-shaped container, not a picture of a handled cup. "
         "The cup silhouette has no handle. "
         "The badge uses the accent color or the dark color from the confirmed color direction, "
         "and the bird is reversed out inside it as negative space. "
         "A perched bird is the negative space inside the cup, "
         "not a bird drawn as a positive shape and not a bird standing on a branch outside it. "
-        "Not a circular seal, not a wood plaque. "
-        "The sheet has exactly four labelled zones, in this order: 主组合, 符号构造, 横版, 小尺寸. "
+        "Not a circular seal and not a flat dark badge. "
+        "Not a generic coffee mug or an unrelated icon. "
+        "The sheet has exactly four labelled zones, in this order: 主组合, 负形, 反白与点缀, 小尺寸. "
         "Each of the four zone labels appears exactly once. "
         "横版 appears once. Do not draw a second landscape treatment. "
-        "符号构造 shows the actual symbol construction. No empty placeholder box and no X box. "
-        "小尺寸 includes the symbol, not the wordmark alone, as an icon, a cup-lid sticker, and an emboss. "
+        "负形 shows the mark as negative space. No empty placeholder box and no X box. "
+        "小尺寸 includes the symbol, not the wordmark alone, as an icon, a cup-lid sticker, and an emboss, "
+        "plus one horizontal mark. "
         "The wordmark appears exactly once per zone. "
         "No other small text. No garbled English captions. No bottom caption. Do not print an English instruction label."
     ),
@@ -851,12 +854,14 @@ _SLOT_LOCK = {
         "Show two vessels: a paper takeaway cup wearing the sleeve, and a clear iced cup with the mark on the cup. "
         "A flat sleeve lies in front. The sleeve carries one thin stripe in the accent color of the confirmed color direction. "
         "One plain white cup alone is wrong. "
+        "The cup body uses the confirmed main color. "
         "The print shows the Chinese brand name and the English brand name, both readable. "
         "Do not print the English name alone. "
         "No extra English captions. A real cup on a light ground, not a black void."
     ),
     "bag": (
-        "Paper bag. Show two paper bags: a large bag standing and a smaller bag lying in front of it. "
+        "Paper bag. The bags are shopping bags with handles. "
+        "Show two paper bags: a large bag standing and a smaller bag lying in front of it. "
         "A thin vertical stripe in the accent color of the confirmed color direction runs down the side of the standing bag. "
         "The Chinese name and the English name are both readable. "
         "Not English only. No garbled captions. Real paper, not a black void."
@@ -864,6 +869,7 @@ _SLOT_LOCK = {
     "storefront": (
         "The full shopfront, front view, the facade filling the frame edge to edge. "
         "The fascia eave is the accent color or the dark color from the confirmed color direction, not bare wood. "
+        "The logo is reversed out of the signboard. "
         "The fascia carries the Chinese brand name and the English brand name once. "
         "An A-frame standing sign stands on the pavement in front of the entrance. "
         "Not a hanging-sign close-up. No garbled small type."
@@ -890,6 +896,7 @@ _SPEC_PREFACE = (
     "使用禁忌 / MISUSE is an independent panel."
 )
 _SPEC_PROMPT_MAX = 2800
+_MOOD_PROMPT_MAX = 2800
 
 
 def _mood_color_line() -> str:
@@ -898,9 +905,34 @@ def _mood_color_line() -> str:
     if not hint:
         return ""
     return (
-        "Confirmed color direction, keep it in the 色彩 cell and do not replace it: " + hint + ". "
-        "Paint that cell as flat swatches from this direction, including its accent, "
-        "and print this direction as the cell annotation. Do not swap the accent for a different hue."
+        "Confirmed color direction, written into the 色彩 cell as flat named swatches with percentages: "
+        + hint + ". "
+        "Include that direction's accent as its own swatch at about 10%. "
+        "Do not paint broad bands and do not replace the accent."
+    )
+
+
+def _logo_a_accent_line() -> str:
+    """Runtime only. The mark takes a small dot from the confirmed accent."""
+    hint = color_hue_hint()
+    if not hint:
+        return ""
+    return (
+        "The confirmed color direction for this mark is: " + hint + ". "
+        "The mark has a small accent dot taken from that direction's accent. "
+        "Do not invent a hue that is outside this direction."
+    )
+
+
+def _logo_b_accent_line() -> str:
+    """Runtime only. The round seal is filled from the confirmed accent."""
+    hint = color_hue_hint()
+    if not hint:
+        return ""
+    return (
+        "The confirmed color direction for this seal is: " + hint + ". "
+        "Fill the round seal with that direction's accent. "
+        "Do not invent a hue that is outside this direction."
     )
 
 
@@ -1058,6 +1090,20 @@ _COLOR_ROLE_NOUNS = ("点缀色", "强调色", "主色", "点缀", "檐口")
 _COLOR_MODIFIER_BREAKS = ("采用", "的", "与", "和")
 # Generic hue and material marks. A glued word is removed only when it contains one.
 _HUE_MATERIAL = frozenset("红橙黄绿青蓝靛紫棕褐灰黑白米金银粉木土陶焦")
+# The same hue and material set in English. A word is dropped only inside a palette
+# phrase (a shade, a second hue, or a role such as accent), never as a lone noun modifier.
+_EN_HUE = frozenset({
+    "red", "orange", "yellow", "green", "cyan", "blue", "indigo", "purple", "violet",
+    "brown", "tan", "gray", "grey", "black", "white", "beige", "gold", "silver",
+    "pink", "wood", "wooden", "clay", "earth",
+})
+_EN_SHADE = frozenset({
+    "deep", "warm", "soft", "light", "dark", "pale", "rich", "muted", "small",
+})
+_EN_ROLE = frozenset({
+    "accent", "accents", "palette", "palettes", "tone", "tones",
+    "swatch", "swatches", "hue", "hues", "color", "colors", "colour", "colours",
+})
 
 
 def _glued_color_modifier(before: str) -> str:
@@ -1084,9 +1130,31 @@ def _glued_color_modifier(before: str) -> str:
     return modifier
 
 
+def _defer_english_color_words(text: str) -> str:
+    """Drop an English palette phrase. Keep a single hue word that names an object."""
+    shade = "|".join(sorted(_EN_SHADE, key=len, reverse=True))
+    hue = "|".join(sorted(_EN_HUE, key=len, reverse=True))
+    role = "|".join(sorted(_EN_ROLE, key=len, reverse=True))
+    phrase = re.compile(
+        rf"\b(?:(?:{shade})\s+)+(?:(?:{hue})\b\s*)+(?:(?:{role})\b)?|"
+        rf"\b(?:(?:{hue})\b\s*){{2,}}(?:(?:{role})\b)?|"
+        rf"\b(?:{hue})\b\s+(?:{role})\b",
+        re.I,
+    )
+    cleaned = phrase.sub("", str(text or ""))
+    cleaned = re.sub(
+        rf",\s+(?:(?!(?:{hue})\b)[A-Za-z]+\s+){{0,2}}(?:{hue})\b(?=\s*(?:,|\.|$|\band\b|\bor\b))",
+        "",
+        cleaned,
+        flags=re.I,
+    )
+    cleaned = re.sub(r",\s*,", ",", cleaned)
+    return cleaned
+
+
 def _defer_color_words(text: str) -> str:
     """Drop a short hue word glued to a role noun. Keep the noun. No palette is named here."""
-    raw = str(text or "")
+    raw = _defer_english_color_words(str(text or ""))
     out: list[str] = []
     i = 0
     while i < len(raw):
@@ -1133,39 +1201,42 @@ def _slot_command(slot_id: str) -> str:
         )
     if slot_id == "logo_c":
         return (
-            "Draw the badge first: a handle-less cup silhouette, not a handled cup and not a wood-grain brown plaque. "
+            "Draw the mark first: a handle-less cup silhouette, not a handled cup and not a filled plaque. "
             "Fill that badge from the confirmed accent or its dark color, and reverse the bird out of the fill. "
-            "The small-size set is an icon, a cup-lid sticker, and an emboss, not a row of app icons. "
+            "The small-size set is an icon, a cup-lid sticker, and an emboss, plus one horizontal mark, not a row of app icons. "
             "Draw the landscape zone once, and do not draw it again inside the small-size set."
         )
     if slot_id == "moodboard":
         return (
-            "In the color cell, write the confirmed direction as the annotation and show that direction's accent as its own swatch. "
-            "Do not replace that accent with a different hue."
+            "The color cell is flat named swatches with percentages, and the confirmed accent is its own swatch at about 10%. "
+            "Do not paint broad bands and do not replace that accent with a different hue."
         )
     if slot_id == "logo_a":
         return (
-            "Draw the small-size row first, in this order: a rounded-square icon, a circular stamp, and a solid square badge."
+            "Draw the mark first, and give it a small accent dot. "
+            "Draw the small-size row in this order: a rounded-square icon, a circular stamp, and a solid square badge."
         )
     if slot_id == "logo_b":
         return (
+            "Draw the mark first, reversed out of a flat dark badge. "
             "The main seal is a circular stamp filled with the confirmed accent or its dark color. "
             "The small-size row shows that seal, a horizontal plaque, a circle, and a square."
         )
     if slot_id == "cup":
         return (
+            "The cup body uses the confirmed main color. "
             "The set is the paper cup in its sleeve, the clear iced cup, and one flat sleeve, "
             "and the thin stripe on the sleeve is the confirmed accent. "
             "A single plain white cup without that stripe is not this set."
         )
     if slot_id == "bag":
         return (
-            "Show the standing bag and a second, smaller shopping bag in front of it. "
+            "Show a shopping bag with handles, standing, and a second, smaller shopping bag in front of it. "
             "Run the accent stripe down the side gusset, not only across the front face."
         )
     if slot_id == "storefront":
         return (
-            "Paint the fascia eave in the confirmed accent or its dark color. "
+            "Paint the fascia eave in the confirmed accent or its dark color, and reverse the logo out of the signboard. "
             "Leave it neither bare wood nor a hue invented outside that confirmed direction."
         )
     return ""
@@ -1230,6 +1301,10 @@ def fill_default(args: dict) -> dict:
     raw_prompt = str(args.get("prompt") or "")
     if str(slot["id"]) == "moodboard":
         color_line = _mood_color_line()
+    elif str(slot["id"]) == "logo_a":
+        color_line = _logo_a_accent_line()
+    elif str(slot["id"]) == "logo_b":
+        color_line = _logo_b_accent_line()
     elif str(slot["id"]) == "logo_c":
         color_line = _logo_c_accent_line()
     elif str(slot["id"]) == "cup":
@@ -1265,6 +1340,11 @@ def fill_default(args: dict) -> dict:
         raw_prompt = _slim_spec_subject(raw_prompt, room)
         if brand_line:
             raw_prompt = brand_line if not raw_prompt else brand_line + "\n" + raw_prompt
+    elif str(slot["id"]) == "moodboard":
+        fixed = [part for part in (lead, str(lock or ""), color_line) if part]
+        fixed_len = sum(len(part) for part in fixed) + max(len(fixed) - 1, 0)
+        room = _MOOD_PROMPT_MAX - fixed_len - 1
+        raw_prompt = _slim_spec_subject(raw_prompt, max(room, 0))
     prompt = _bind_lock(raw_prompt, str(lock or ""), preface)
     if lead:
         prompt = _insert_before_lock(prompt, lead, str(lock or ""))
@@ -1272,11 +1352,22 @@ def fill_default(args: dict) -> dict:
         prompt = (prompt.rstrip() + "\n" + color_line).strip()
     args["prompt"] = scrub_internal_marks(prompt)
     refs = _refs_for(slot, progress)
-    if str(slot["id"]) == "logo_c":
-        # Logo C is drawn from the moodboard alone. Any other caller image is dropped.
+    if str(slot["id"]) in ("logo_a", "logo_b", "logo_c"):
+        # The moodboard is a style reference only. A content image would override the mark.
+        # Logo C still drops every caller URL that is not the moodboard.
         args["refs"] = refs
+        if refs:
+            args["ref_modes"] = ["style"]
+        else:
+            args.pop("ref_modes", None)
+    elif int(slot["stage"]) >= 3:
+        # Deliverables follow the card-3 logo only. The moodboard is not a content reference.
+        args["refs"] = refs
+        if refs:
+            args["ref_modes"] = ["content"]
+        else:
+            args.pop("ref_modes", None)
     elif refs:
-        # The moodboard / chosen logo lead. A caller-supplied ref stays behind them.
         extra = [str(r) for r in (args.get("refs") or []) if str(r) not in refs]
         args["refs"] = refs + extra
     missing = missing_base_message(str(slot["id"]))
@@ -2476,22 +2567,25 @@ def default_hint() -> str:
         "No English captions and no garbled Latin. "
         "Card 2 bi_moodboard confirms that board. Only answer A (or Skip) may continue. B or C returns to the moodboard. "
         "Then exactly three SEPARATE logo direction boards, brand_slot logo_a then logo_b then logo_c, "
-        "each 2048x2048 1:1. logo_a is one open single-line bird on a branch. "
-        "logo_b is a filled wood plaque plus a separate circular seal. "
+        "each 2048x2048 1:1. logo_a is a flat solid monoline mark. Its zones, each once, are 主组合, 符号构造, 横版, 小尺寸. "
+        "logo_b is a flat solid monoline mark reversed out of a flat dark badge, plus a round seal in the confirmed accent. "
+        "Its zones, each once, are 主组合, 印章, 横版, 小尺寸. "
         "logo_c is a cup-shaped badge, not a picture of a handled cup. The badge uses the accent color or the dark color from the confirmed color direction, and the bird is reversed out inside it as negative space, not drawn as a positive bird and not a bird standing on a branch outside it. "
         "The cup silhouette has no handle. 小尺寸 is an icon, a cup-lid sticker, and an emboss. "
+        "The small-size set also includes one horizontal mark. "
         "横版 appears once and must not be drawn a second time. "
-        "Each logo board has four labelled zones: 主组合, 符号构造, 横版, 小尺寸. "
+        "logo_c zones, each once, are 主组合, 负形, 反白与点缀, 小尺寸. "
         "Each zone label appears exactly once. "
-        "符号构造 shows the actual symbol construction. No empty placeholder box and no X box. "
+        "The construction zone shows the actual symbol, not an empty placeholder box and not an X box. "
         "小尺寸 includes the symbol, not the wordmark alone. "
         "The Chinese name and the English name appear together exactly once in each zone. No other small text. "
         "Do not print an English instruction label. "
         "On direction C the wordmark appears exactly once per zone. "
-        "Pass the moodboard shape id in refs. "
+        "Pass the moodboard shape id in refs with ref_modes style, not content. "
         "Card 3 bi_direction: three options with image_url of those boards, exactly one recommended, nothing preselected. "
         "Then exactly four deliverables, brand_slot spec, cup, bag (each 1536x2048 3:4) and storefront (2048x1152 16:9). "
-        "refs are the chosen logo shape and the moodboard. The spec card is exactly 7 panels. Each heading appears once, in this order: "
+        "refs are the chosen logo shape only, with ref_modes content. Do not pass the moodboard as a content reference. "
+        "The spec card is exactly 7 panels. Each heading appears once, in this order: "
         "标识 / LOGO (the approved mark; 「最小使用尺寸」 is an annotation inside this panel, not a separate panel), "
         "色彩 / COLOR (a proportional color strip sampled from the moodboard 色彩 cell; "
         "each swatch has a Chinese color name, a role, and a percentage; "
