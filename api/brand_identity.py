@@ -627,13 +627,11 @@ def color_hue_hint() -> str:
 
 # Static brief. A color answer appends one hue sentence in _spec_lock() only.
 _SPEC_BRIEF = (
-    "The spec card is exactly 7 panels. Each heading appears once, in this order: "
-    "标识 / LOGO (a dimension annotation ≥ 20 mm sits inside this panel, not a separate panel), "
-    "色彩 / COLOR (four role swatches at 35/25/25/12 plus accent 3, or 2/1 for two accents, "
-    "labeled 主色/辅助/底色/中性, names from the confirmed color direction; "
+    "The spec card is exactly 7 panels. "
+    "标识 / LOGO (a dimension annotation ≥ 20 mm, not a separate panel), "
+    "色彩 / COLOR (35/25/25/12, names from the confirmed color direction; "
     "each swatch has a Chinese color name, a role, and a percentage; "
     "any accent is at most about 5%; "
-    "ratio figures only in this panel; "
     "do not hardcode a palette; paint these ratios), "
     "变体 / VARIANTS, "
     "字体 / TYPE (full bilingual heading 字体 / TYPE, not clipped to 字; "
@@ -642,7 +640,7 @@ _SPEC_BRIEF = (
     "版式 / LAYOUT (one filled layout diagram, not just the logo), "
     "使用禁忌 / MISUSE (uses only the brand colors, draws a red X, "
     "keeps short captions of the same kind as the gold, no colour chips and no ratio figures), "
-    "影像与材质 / IMAGE (keeps short captions of the same kind as the gold, no colour chips and no ratio figures). "
+    "影像与材质 / IMAGE (no colour chips and no ratio figures). "
     "No heading is repeated. "
     "Annotation density follows the gold. "
     "Allowed on-card text includes the bilingual headings, a Chinese color name plus a role plus a percentage, "
@@ -909,9 +907,10 @@ _SLOT_LOCK = {
 # stay in that same order.
 _SPEC_PREFACE = (
     "Draw seven separate panels. "
-    "标识 / LOGO. Exactly 7 stacked panels, not a 3 by 3 grid and not a 2 by 3 grid. "
-    "The 色彩 / COLOR swatch percentages sum to 100%. "
-    "变体 / VARIANTS is its own panel. "
+    "标识 / LOGO. "
+    "Exactly 7 stacked panels, not a 3 by 3 grid and not a 2 by 3 grid. "
+    "色彩 / COLOR percentages sum to 100%. "
+    "变体 / VARIANTS. "
     "字体 / TYPE is its own panel. "
     "版式 / LAYOUT is a different panel. "
     "Do not write 版式 / TYPE. "
@@ -1374,7 +1373,6 @@ def _spec_assembly_line() -> str:
     """Runtime only. The locked brief stays byte-identical and still ends the lock."""
     hint = color_hue_hint()
     line = (
-        "Not a 3 by 3 grid. "
         "影像格 small labels and captions on 影像与材质 / IMAGE must be spelled correctly, "
         "with no typo, no garble, and no invented heading fragment. 影像格小字不得写错."
     )
@@ -1479,10 +1477,28 @@ _SHORT_SPEC_HEADINGS = (
     "Exactly 7 stacked panels, not a 3 by 3 grid and not a 2 by 3 grid. "
     "Headings once, in order: " + ", ".join(_PANEL_HEADINGS) + "."
 )
+# Fewer than four bilingual panel headings, so this line is not a heading essay.
+_SPEC_SUBJECT = (
+    "Subject: COLOR is 35/25/25/12+3 (or 2/1 for two accents). "
+    "Chips and ratios only in COLOR, never in MISUSE or IMAGE. "
+    "TYPE is its own complete bilingual heading (font / TYPE), not clipped and not collapsed into VARIANTS. "
+    "MISUSE has no colour chips and no ratio figures."
+)
+_SPEC_SUBJECT_PARTS = tuple(
+    part.strip() for part in re.split(r"(?<=[.。])\s+", _SPEC_SUBJECT) if part.strip()
+)
+
+
+def _spec_subject_piece(piece: str) -> bool:
+    """True for the spec Subject line or one of its sentences."""
+    piece = str(piece or "").strip()
+    return piece == _SPEC_SUBJECT or piece in _SPEC_SUBJECT_PARTS
 
 
 def _heading_essay(piece: str) -> bool:
     """A caller paragraph that lists the spec panels. The lock already states them in full."""
+    if _spec_subject_piece(piece):
+        return False
     return sum(1 for heading in _PANEL_HEADINGS if heading in piece) >= 4
 
 
@@ -1532,6 +1548,8 @@ def _subject_restatement(slot_id: str) -> str:
             "Subject: shopping bags with handles. One side stripe only, not a double side stripe. "
             "Do not print zone labels or a logo sheet (主组合, 符号, 横版, 小尺寸) on the lying bag."
         )
+    if slot_id == "spec":
+        return _SPEC_SUBJECT
     if slot_id == "storefront":
         return (
             "Subject: the fascia (招牌) is the confirmed dark color or the accent, not the 主色, and carries the bird mark. "
@@ -1633,7 +1651,10 @@ def guard_subject(slot_id: str, text: str) -> str:
         body = _drop_weak_mood_subject(body)
     if slot_id == "spec":
         chunks = re.split(r"\n+|(?<=[.。])\s+", body)
-        kept = [chunk.strip() for chunk in chunks if chunk.strip() and not _heading_essay(chunk.strip())]
+        kept = [
+            chunk.strip() for chunk in chunks
+            if chunk.strip() and (_spec_subject_piece(chunk) or not _heading_essay(chunk.strip()))
+        ]
         body = " ".join(kept).strip()
     return body
 
@@ -1662,6 +1683,8 @@ def _slim_spec_subject(text: str, room: int, *, drop_hint_sentences: bool = Fals
     } if drop_hint_sentences else set()
 
     def _protected(piece: str) -> bool:
+        if _spec_subject_piece(piece):
+            return True
         if piece == _SHORT_SPEC_HEADINGS:
             return True
         # A sentence already printed in the lock or the colour line is not kept again.
@@ -1675,13 +1698,11 @@ def _slim_spec_subject(text: str, room: int, *, drop_hint_sentences: bool = Fals
             return True
         return False
 
-    want_short = False
     for chunk in chunks:
         piece = chunk.strip()
         if not piece:
             continue
         if drop_hint_sentences and _heading_essay(piece) and len(piece) > room:
-            want_short = True
             continue
         if _protected(piece):
             kept.append(piece)
@@ -1694,9 +1715,6 @@ def _slim_spec_subject(text: str, room: int, *, drop_hint_sentences: bool = Fals
         if piece in hint_sentences:
             continue
         kept.append(piece)
-    if want_short and _SHORT_SPEC_HEADINGS not in kept and len(_SHORT_SPEC_HEADINGS) <= room:
-        kept.append(_SHORT_SPEC_HEADINGS)
-
     def _join(parts: list[str]) -> str:
         return " ".join(parts).strip()
 
@@ -1718,11 +1736,12 @@ def _slim_spec_subject(text: str, room: int, *, drop_hint_sentences: bool = Fals
             break
         del kept[drop_at]
     subject = _finish_broken_heading(_join(kept))
+    pieces = [part.strip() for part in re.split(r"(?<=[.。])\s+", subject) if part.strip()]
+    if pieces and all(_spec_subject_piece(part) for part in pieces):
+        return subject
     if len(subject) <= room:
         return subject
     subject = _finish_broken_heading(_trim_keeping_zone4(subject, room))
-    if want_short and _SHORT_SPEC_HEADINGS not in subject and len(_SHORT_SPEC_HEADINGS) <= room:
-        return _SHORT_SPEC_HEADINGS
     return subject
 
 

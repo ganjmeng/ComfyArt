@@ -3342,6 +3342,28 @@ def test_paid_fail_subjects_restate_the_rulings_and_keep_the_spec_heading():
     image = official.split("影像与材质 / IMAGE (", 1)[1].split(")", 1)[0]
     assert "%" not in misuse and "%" not in image
     assert "35/25/25/12" not in misuse and "35/25/25/12" not in image
+    assert brand._SPEC_SUBJECT in official
+    subject_line = next(line for line in official.splitlines() if line.startswith("Subject:"))
+    assert subject_line == brand._SPEC_SUBJECT
+    assert "35/25/25/12" in subject_line and "2/1" in subject_line
+    assert "its own complete bilingual heading" in subject_line and "font / TYPE" in subject_line
+    assert "no colour chips" in subject_line and "no ratio figures" in subject_line
+    assert "Headings once, in order" not in subject_line
+    assert sum(heading in subject_line for heading in (
+        "标识 / LOGO", "色彩 / COLOR", "变体 / VARIANTS", "字体 / TYPE",
+        "版式 / LAYOUT", "使用禁忌 / MISUSE", "影像与材质 / IMAGE",
+    )) < 4
+    assert brand.guard_subject("spec", brand._SPEC_SUBJECT) == brand._SPEC_SUBJECT
+    assert brand._heading_essay(brand._SPEC_SUBJECT) is False
+    dropped = brand.guard_subject("spec", _official_spec_subject())
+    assert brand._SHORT_SPEC_HEADINGS not in dropped
+    kept = brand._slim_spec_subject(
+        _official_spec_subject() + "\n" + brand._SPEC_SUBJECT,
+        500,
+        drop_hint_sentences=True,
+    )
+    assert brand._SPEC_SUBJECT in kept
+    assert kept != brand._SHORT_SPEC_HEADINGS
 
     _ready("B", "en", "栖木")
     bare = brand.fill_default({"brand_slot": "spec", "prompt": ""})
@@ -3352,6 +3374,8 @@ def test_paid_fail_subjects_restate_the_rulings_and_keep_the_spec_heading():
     )
     assert ferr == ""
     assert len(bare_final) <= 2800, len(bare_final)
+    assert brand._SPEC_SUBJECT in bare_final
+    assert "Headings once, in order" not in bare_final
 
     _ready("A", "zh", "栖木咖啡")
     cup = _final("cup", "A paper cup on the counter, labeled 主组合 and 小尺寸.")
