@@ -263,7 +263,7 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "short captions on 使用禁忌 / MISUSE and 影像与材质 / IMAGE" in spec["prompt"]
     assert "real Chinese brand name" in spec["prompt"] and "real English brand name" in spec["prompt"]
     assert "character for character" in spec["prompt"]
-    assert "Do not drop a character" in spec["prompt"]
+    assert "Do not drop or swap a character" in spec["prompt"]
     assert "red X" in spec["prompt"]
     assert "Do not write invented body copy" in spec["prompt"]
     assert "Do not invent English" in spec["prompt"]
@@ -2714,8 +2714,11 @@ def test_colour_cell_roles_share_names_and_split_the_ratios():
     assert [pct for _n, role, pct in spec_one if role != "点缀"] == [35, 25, 25, 12]
     assert [pct for _n, role, pct in mood_two if role == "点缀"] == [5, 5]
     assert [pct for _n, role, pct in spec_two if role == "点缀"] == [2, 1]
-    lost = brand._swatch_rows("暖土色为主 + 靴蓝更强")
-    assert [row for row in lost if row[1] == "点缀"] == [("靴蓝", "点缀", 10)]
+    aimed = "暖土色为主 + 靶蓝更强"
+    lost = brand._swatch_rows(aimed)
+    lost_spec = brand._swatch_rows(aimed, brand._SPEC_ACCENT_BUDGET)
+    assert [row for row in lost if row[1] == "点缀"] == [("靶蓝", "点缀", 10)]
+    assert [row for row in lost_spec if row[1] == "点缀"] == [("靶蓝", "点缀", 3)]
     cool = brand._swatch_rows("暖土色为主 + 偏青更强")
     assert [row for row in cool if row[1] == "点缀"] == [("青", "点缀", 10)]
     only = brand._swatch_rows("lobelia与mallow点缀")
@@ -2729,7 +2732,7 @@ def test_colour_cell_roles_share_names_and_split_the_ratios():
         Path(name).read_text(encoding="utf-8")
         for name in ("api/brand_identity.py", "src/skills.ts")
     )
-    for word in ("persimmon", "lobelia", "mallow", "靴蓝", "偏青"):
+    for word in ("persimmon", "lobelia", "mallow", "靶蓝", "偏青"):
         assert word not in template, word
     for label, count in ((single, 5), (double, 6)):
         brand.reset_for_tests()
@@ -2751,6 +2754,57 @@ def test_colour_cell_roles_share_names_and_split_the_ratios():
         assert "do not add a hue outside this direction" in mood.lower()
         assert "Annotation density follows the gold." in spec
         assert "any accent is at most about 5%" in spec
+
+
+def test_intensity_tails_keep_the_colour_name():
+    """偏强 is intensity. 的 / 点缀 / 作点缀 are trailing role words, not part of the name."""
+    biased = "暖土色为主 + 靶蓝偏强"
+    mood = brand._swatch_rows(biased)
+    spec = brand._swatch_rows(biased, brand._SPEC_ACCENT_BUDGET)
+    assert [row for row in mood if row[1] == "点缀"] == [("靶蓝", "点缀", 10)]
+    assert [row for row in spec if row[1] == "点缀"] == [("靶蓝", "点缀", 3)]
+    named = brand._split_color_answer("靶蓝更强的点缀")
+    assert named == [("靶蓝", "点缀")]
+    made = brand._split_color_answer("靶蓝作点缀")
+    assert made == [("靶蓝", "点缀")]
+    template = "\n".join(
+        Path(name).read_text(encoding="utf-8")
+        for name in ("api/brand_identity.py", "src/skills.ts")
+    )
+    assert "靶蓝" not in template
+
+
+def test_slot_hint_leads_and_the_other_kind_is_dropped():
+    """A caller hint of the wrong kind does not sit beside the slot hint."""
+    content = "Use image 4 as the content reference for the approved mark."
+    style = "Use only the visual style, palette and rendering of image 2, not its content."
+    logo = brand.fill_default({
+        "brand_slot": "logo_a",
+        "prompt": content + "\nDraw the mark.",
+    })
+    logo_text = logo["prompt"]
+    assert logo_text.startswith(brand._STYLE_REF)
+    assert content not in logo_text
+    assert "content reference" not in logo_text
+    assert logo_text.count("Use only the visual style") == 1
+    assert "Draw the mark." in logo_text
+    assert brand.fill_default({"brand_slot": "logo_a", "prompt": logo_text})["prompt"] == logo_text
+    body = brand._drop_ref_hints(content + "\nDraw the mark.")
+    assert body == "Draw the mark."
+    assert brand.assembled_keeps_caller(logo_text, body, logo["_server_leads"])
+    cup = brand.fill_default({
+        "brand_slot": "cup",
+        "prompt": style + "\nA paper cup.",
+    })
+    cup_text = cup["prompt"]
+    assert cup_text.startswith(brand._CONTENT_REF)
+    assert style not in cup_text
+    assert "Use only the visual style" not in cup_text
+    assert cup_text.count("content reference") == 1
+    assert "A paper cup." in cup_text
+    assert brand.fill_default({"brand_slot": "cup", "prompt": cup_text})["prompt"] == cup_text
+    cup_body = brand._drop_ref_hints(style + "\nA paper cup.")
+    assert brand.assembled_keeps_caller(cup_text, cup_body, cup["_server_leads"])
 
 
 def test_accent_only_keeps_four_neutral_roles():

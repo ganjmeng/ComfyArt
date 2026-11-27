@@ -645,7 +645,7 @@ def _spec_lock() -> str:
         "字体 / TYPE (full bilingual heading 字体 / TYPE, not clipped to 字; "
         "hierarchy and annotation density follow the gold; "
         "copied character for character; "
-        "Do not drop a character), "
+        "Do not drop or swap a character), "
         "版式 / LAYOUT (one filled layout diagram), "
         "使用禁忌 / MISUSE (uses only the brand colors, draws a red X, and keeps short captions of the same kind as the gold), "
         "影像与材质 / IMAGE (keeps short captions of the same kind as the gold). "
@@ -964,6 +964,20 @@ _SPEC_PROMPT_MAX = _qwen_prompt_cap()
 _MOOD_PROMPT_MAX = _SPEC_PROMPT_MAX
 _STYLE_REF = "Use only the visual style, palette and rendering of image 1, not its content."
 _CONTENT_REF = "Use image 1 as the content reference for the approved mark."
+_REF_HINT_SENTENCE = re.compile(
+    r"Use only the visual style, palette and rendering of image \d+, not its content\."
+    r"|Use image \d+ as the content reference for the approved mark\.",
+    re.I,
+)
+
+
+def _drop_ref_hints(text: str) -> str:
+    """Remove style and content hint sentences. The slot adds its own hint later."""
+    cleaned = _REF_HINT_SENTENCE.sub(" ", str(text or ""))
+    cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
+    cleaned = re.sub(r" *\n *", "\n", cleaned)
+    cleaned = re.sub(r"\n{2,}", "\n", cleaned)
+    return cleaned.strip()
 
 
 def _caller_is_fragment(caller: str) -> bool:
@@ -1032,9 +1046,9 @@ def _split_color_answer(label: str) -> list[tuple[str, str]]:
             continue
         role = "色"
         name = piece
-        if re.search(r"点缀|\baccent\b", name, re.I):
+        if re.search(r"作点缀|点缀|\baccent\b", name, re.I):
             role = "点缀"
-            name = re.sub(r"点缀|\baccent\b", "", name, flags=re.I)
+            name = re.sub(r"作点缀|点缀|\baccent\b", "", name, flags=re.I)
         elif re.search(r"为主|主色|as the base|\bmain\b", name, re.I):
             role = "主色"
             name = re.sub(r"为主|主色|as the base|\bmain\b", "", name, flags=re.I)
@@ -1059,13 +1073,15 @@ _SPEC_ACCENT_BUDGET = 3
 # Accent-only answers still get four role swatches. The model names them in neutrals.
 _NEUTRAL_FAMILY = "neutral ground"
 _INTENSITY_WORDS = (
-    "低饱和度", "更强", "更深", "更淡", "更浅", "自然感",
+    "低饱和度", "偏强", "更强", "更深", "更淡", "更浅", "自然感",
     "more natural", "stronger", "deeper", "slightly",
 )
+# Trailing particles and role words. Longest first so 作点缀 is not left as 作.
+_ROLE_TAILS = ("作点缀", "点缀", "的")
 
 
 def _strip_intensity(name: str) -> tuple[str, bool]:
-    """Drop generic intensity modifiers. True when a modifier was removed."""
+    """Drop generic intensity modifiers and trailing role particles. True when one was removed."""
     text = str(name or "").strip()
     changed = False
     while text:
@@ -1077,6 +1093,9 @@ def _strip_intensity(name: str) -> tuple[str, bool]:
                 nxt = nxt[len(word):]
         nxt = re.sub(r"^(?:偏|略)+", "", nxt)
         nxt = re.sub(r"(?:偏|略)+$", "", nxt)
+        for tail in _ROLE_TAILS:
+            if nxt.endswith(tail):
+                nxt = nxt[: -len(tail)]
         nxt = nxt.strip(" ，,;；、 ")
         if nxt == text:
             break
@@ -1674,6 +1693,8 @@ def fill_default(args: dict) -> dict:
     raw_prompt = _without_exact_line(raw_prompt, str(lock or ""))
     raw_prompt = _without_exact_line(raw_prompt, style)
     raw_prompt = _without_exact_line(raw_prompt, tail)
+    # The slot hint is the only reference sentence. A caller hint of either kind is dropped.
+    raw_prompt = _drop_ref_hints(raw_prompt)
     brand_line = ""
     if slot_id == "spec":
         brand_line, raw_prompt = _lift_brand_line(raw_prompt)
@@ -2946,7 +2967,7 @@ def default_hint() -> str:
         "字体 / TYPE (full bilingual heading 字体 / TYPE, not clipped to 字; "
         "hierarchy and annotation density follow the gold; "
         "copied character for character; "
-        "Do not drop a character), "
+        "Do not drop or swap a character), "
         "版式 / LAYOUT (one filled layout diagram), "
         "使用禁忌 / MISUSE (uses only the brand colors, draws a red X, and keeps short captions of the same kind as the gold), "
         "影像与材质 / IMAGE (keeps short captions of the same kind as the gold). "
