@@ -772,6 +772,67 @@ def test_logo_c_warm_earth_prompt_does_not_name_indigo():
     assert "靛蓝" not in brand.default_hint().lower()
 
 
+def test_caller_color_words_defer_to_the_confirmed_line_and_logo_c_drops_logo_drafts():
+    """The planner's own pigment words leave the subject. Logo C is not drawn from Logo A."""
+    from pathlib import Path
+    brand.record_card_answer(_card1(), {
+        "bi_delivery": {"selected": ["A"]},
+        "bi_color": {"selected": ["A"]},
+        "bi_mark": {"selected": ["A"]},
+        "bi_source": {"selected": ["A"]},
+    })
+    subject = "色彩格用陶土点缀。门头暖木檐口。焦糖棕点缀。terracotta accent."
+    for slot in ("moodboard", "logo_a", "logo_b", "logo_c", "cup", "bag", "storefront"):
+        filled = brand.fill_default({"brand_slot": slot, "prompt": subject})
+        text = filled["prompt"]
+        for word in ("陶土", "暖木", "焦糖", "terracotta"):
+            assert word not in text, (slot, word)
+        again = brand.fill_default({"brand_slot": slot, "prompt": text})
+        assert again["prompt"] == text, slot
+    mood = brand.fill_default({"brand_slot": "moodboard", "prompt": subject})["prompt"]
+    assert "暖土色为主 + 低饱和靛蓝点缀" in mood
+    logo_c = brand.fill_default({"brand_slot": "logo_c", "prompt": subject})["prompt"]
+    assert "handle-less cup silhouette" in logo_c
+    assert "The confirmed color direction for this badge's accent is: 暖土色为主 + 低饱和靛蓝点缀" in logo_c
+    logo_a = brand.fill_default({"brand_slot": "logo_a", "prompt": subject})["prompt"]
+    assert "横版 appears once" in logo_a
+    logo_b = brand.fill_default({"brand_slot": "logo_b", "prompt": subject})["prompt"]
+    assert "The main seal is a circular stamp filled with the confirmed accent" in logo_b
+    bag = brand.fill_default({"brand_slot": "bag", "prompt": subject})["prompt"]
+    assert "side gusset" in bag
+    store = brand.fill_default({"brand_slot": "storefront", "prompt": subject})["prompt"]
+    assert "Paint the fascia eave in the confirmed accent" in store
+    cup = brand.fill_default({"brand_slot": "cup", "prompt": subject})["prompt"]
+    assert "thin stripe on the sleeve is the confirmed accent" in cup
+    hint = brand.default_hint()
+    skill_text = Path("src/skills.ts").read_text(encoding="utf-8")
+    skill_at = skill_text.index("id: 'brand-identity-director'")
+    skill = skill_text[skill_at:skill_text.index("category: 'branding'", skill_at)]
+    instruction = "Do not name a pigment, a hue, or a material"
+    assert instruction in hint
+    assert instruction in skill
+    for banned in ("陶土", "暖木", "焦糖", "靛蓝"):
+        assert banned not in hint
+        assert banned not in skill
+    mood_job = brand.fill_default({"brand_slot": "moodboard", "prompt": "board"})
+    brand.record_submitted(mood_job, {"ids": ["holder-mood"]})
+    brand.record_wait({"results": [{"id": "holder-mood", "shapes": ["shape:mood"], "urls": ["/view?f=mood.png"]}]})
+    logo_a_job = brand.fill_default({"brand_slot": "logo_a", "prompt": "direction a"})
+    brand.record_submitted(logo_a_job, {"ids": ["holder-a"]})
+    brand.record_wait({"results": [{"id": "holder-a", "shapes": ["shape:logo_a"], "urls": ["/view?f=a.png"]}]})
+    logo_b_job = brand.fill_default({"brand_slot": "logo_b", "prompt": "direction b"})
+    brand.record_submitted(logo_b_job, {"ids": ["holder-b"]})
+    brand.record_wait({"results": [{"id": "holder-b", "shapes": ["shape:logo_b"], "urls": ["/view?f=b.png"]}]})
+    drawn = brand.fill_default({
+        "brand_slot": "logo_c",
+        "prompt": "draw from the handled cup",
+        "refs": ["shape:logo_a", "shape:logo_b", "shape:mood"],
+    })
+    assert drawn["refs"] == ["shape:mood"]
+    assert "shape:logo_a" not in drawn["refs"]
+    assert "shape:logo_b" not in drawn["refs"]
+
+
 def test_visual_assembly_follows_the_gold_sheet():
     """Slot prompts and runtime color lines carry the gold layout. The shared lock names no palette."""
     from pathlib import Path
@@ -2116,7 +2177,7 @@ def test_submitted_prompts_put_the_gold_commands_before_the_lock():
     line is still the final line. A second fill is the same bytes.
     """
     slots = {
-        "moodboard": "暖木棕 + 米白",
+        "moodboard": "情绪板",
         "logo_a": "方向A",
         "logo_b": "方向B",
         "logo_c": "方向C",

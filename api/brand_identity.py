@@ -968,6 +968,51 @@ def _slim_spec_subject(text: str, room: int) -> str:
     return clipped.strip()
 
 
+# Caller subjects have named a pigment the confirmed card did not pick (陶土点缀, 暖木檐口).
+# Strip those from the subject only. The runtime color line, added after this, is the
+# color instruction, and it is built from the saved card answer.
+_CONFLICTING_COLOR = (
+    "低饱和靛蓝",
+    "燕麦奶白",
+    "暖木檐口",
+    "陶土点缀",
+    "陶土橙",
+    "陶土橘",
+    "焦糖棕",
+    "深焙棕",
+    "暖木",
+    "靛蓝",
+    "陶土",
+    "焦糖",
+)
+
+
+def _defer_color_words(text: str) -> str:
+    """Remove a caller hue or material so the confirmed-color line is the only color instruction."""
+    cleaned = str(text or "")
+    for phrase in _CONFLICTING_COLOR:
+        cleaned = cleaned.replace(phrase, "")
+    cleaned = re.sub(
+        r"(?i)\b(?:terracotta(?:\s+accent)?|warm[- ]wood(?:\s+eave)?|indigo(?:\s+accent)?)\b",
+        "",
+        cleaned,
+    )
+    cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
+    cleaned = re.sub(r"\n{2,}", "\n", cleaned)
+    cleaned = re.sub(r"\s+([,，。])", r"\1", cleaned)
+    cleaned = re.sub(r"[，,]+(?=[。.]|$)", "", cleaned)
+    cleaned = re.sub(r"^[，,。.\s]+", "", cleaned)
+    return cleaned.strip()
+
+
+def _logo_draft_shapes(progress: dict) -> set[str]:
+    """Shape ids of the other logo boards. Logo C must not be drawn from a handled-cup draft."""
+    shapes = (progress or {}).get("shapes") or {}
+    found = {str(shapes.get(slot) or "") for slot in ("logo_a", "logo_b")}
+    found.discard("")
+    return found
+
+
 def _without_exact_line(prompt: str, line: str) -> str:
     """Drop one runtime line so a second fill puts it back in the same place."""
     if not line or line not in prompt:
@@ -1101,11 +1146,14 @@ def fill_default(args: dict) -> dict:
     # after the lock. The slot command is one line immediately before the lock.
     # Strip both extra lines before rebinding so a second fill is byte-identical.
     lead = _slot_command(str(slot["id"]))
+    # Pull the structural blocks off before touching the subject. The spec lock
+    # quotes the confirmed hue, and that hue must stay byte-identical there.
     raw_prompt = _without_exact_line(raw_prompt, color_line)
     raw_prompt = _without_exact_line(raw_prompt, lead)
+    raw_prompt = _without_exact_line(raw_prompt, preface)
+    raw_prompt = _without_exact_line(raw_prompt, str(lock or ""))
+    raw_prompt = _defer_color_words(raw_prompt)
     if str(slot["id"]) == "spec":
-        raw_prompt = _without_exact_line(raw_prompt, preface)
-        raw_prompt = _without_exact_line(raw_prompt, str(lock or ""))
         base = "\n".join(part for part in (preface, lead, str(lock or "")) if part)
         if color_line:
             base = base.rstrip() + "\n" + color_line
@@ -1117,10 +1165,19 @@ def fill_default(args: dict) -> dict:
         prompt = (prompt.rstrip() + "\n" + color_line).strip()
     args["prompt"] = scrub_internal_marks(prompt)
     refs = _refs_for(slot, progress)
+    caller_refs = [str(r) for r in (args.get("refs") or [])]
+    if str(slot["id"]) == "logo_c":
+        # Stage 2's own ref is the moodboard. A handled-cup Logo A (or Logo B) draft
+        # must not ride along as a second reference.
+        dropped = _logo_draft_shapes(progress)
+        refs = [r for r in refs if r not in dropped]
+        caller_refs = [r for r in caller_refs if r not in dropped]
     if refs:
         # The moodboard / chosen logo lead. A caller-supplied ref stays behind them.
-        extra = [str(r) for r in (args.get("refs") or []) if str(r) not in refs]
+        extra = [r for r in caller_refs if r not in refs]
         args["refs"] = refs + extra
+    elif str(slot["id"]) == "logo_c" and args.get("refs"):
+        args["refs"] = caller_refs
     missing = missing_base_message(str(slot["id"]))
     if missing:
         args["_brand_block"] = {"error": missing, "user_message": missing}
@@ -2361,6 +2418,8 @@ def default_hint() -> str:
         "影像格 small labels and captions on 影像与材质 / IMAGE must be spelled correctly, with no typo, no garble, and no invented heading fragment. 影像格小字不得写错. "
         "The storefront is the full shopfront, front view, with the names once on the fascia and an A-frame standing sign. "
         "The fascia eave is the accent color or the dark color from the confirmed color direction, not bare wood. "
+        "Do not name a pigment, a hue, or a material for an accent, a swatch, a stripe, or the fascia eave "
+        "inside the image prompt; the confirmed color direction is appended for you. "
         "The takeaway cup must wear a cup sleeve (杯套). A bare cup is wrong. "
         "Show two vessels: a paper takeaway cup wearing the sleeve, and a clear iced cup with the mark on the cup. "
         "A flat sleeve lies in front. The sleeve carries one thin stripe in the accent color of the confirmed color direction. "
