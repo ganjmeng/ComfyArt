@@ -176,12 +176,19 @@ def test_each_slot_prompt_locks_a_different_structure():
     a = brand.fill_default({"brand_slot": "logo_a", "prompt": "方向A"})
     b = brand.fill_default({"brand_slot": "logo_b", "prompt": "方向B"})
     c = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})
-    assert "flat solid monoline mark" in a["prompt"]
+    assert "bold monoline bird mark" in a["prompt"]
     assert "small accent dot" in a["prompt"]
-    assert "主组合, 符号构造, 横版, 小尺寸" in a["prompt"]
-    assert "flat dark badge" in b["prompt"] and "round seal" in b["prompt"]
+    assert "主组合, 符号, 横版, 小尺寸" in a["prompt"]
+    assert "符号构造" not in a["prompt"]
+    assert "solid bird silhouette reversed out of the badge as negative space" in b["prompt"]
+    assert "monoline" not in b["prompt"]
+    assert "round seal" in b["prompt"]
     assert "wood plaque" not in b["prompt"].lower()
     assert "主组合, 印章, 横版, 小尺寸" in b["prompt"]
+    assert "solid bird silhouette reversed out of the badge as negative space" in c["prompt"]
+    assert "monoline" not in c["prompt"]
+    assert "not B's rectangular badge" in c["prompt"]
+    assert "flat dark badge" not in c["prompt"]
     assert "cup-shaped" in c["prompt"]
     assert "主组合, 负形, 反白与点缀, 小尺寸" in c["prompt"]
     assert "horizontal mark" in c["prompt"]
@@ -196,7 +203,6 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "bird standing on a branch" in c["prompt"]
     assert "The wordmark appears exactly once per zone." in c["prompt"]
     for board in (a, b, c):
-        assert "flat solid monoline mark" in board["prompt"]
         assert "generic coffee mug" in board["prompt"]
         assert "exactly once" in board["prompt"]
         assert "No other small text." in board["prompt"]
@@ -230,7 +236,8 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "no small text at all" not in spec["prompt"]
     assert "short captions of the same kind as the gold" in spec["prompt"]
     assert "one garbled character is not acceptable" in spec["prompt"]
-    assert "moodboard 色彩 cell" in spec["prompt"]
+    assert "from the confirmed color direction" in spec["prompt"]
+    assert "moodboard 色彩 cell" not in spec["prompt"]
     assert "each swatch has a Chinese color name, a role, and a percentage" in spec["prompt"]
     assert "any accent is at most about 5%" in spec["prompt"]
     assert "do not hardcode a palette" in spec["prompt"]
@@ -252,7 +259,8 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "uses only the brand colors" in spec["prompt"]
     assert "title, subtitle" not in spec["prompt"]
     assert "#" not in spec["prompt"]
-    assert "moodboard 色彩 cell" in hint
+    assert "from the confirmed color direction" in hint
+    assert "moodboard 色彩 cell" not in hint
     assert "Do not state hex values" in hint and "exact values are on the spec card" in hint
     assert "#" not in hint
     store = brand.fill_default({"brand_slot": "storefront", "prompt": "门头"})
@@ -265,7 +273,7 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "must wear a cup sleeve" in cup["prompt"] and "杯套" in cup["prompt"]
     assert "A bare cup with no sleeve is wrong." in cup["prompt"]
     again = brand.fill_default({"brand_slot": "logo_a", "prompt": a["prompt"]})
-    assert again["prompt"].count("The mark is a flat solid monoline mark.") == 1
+    assert again["prompt"].count("The mark is a bold monoline bird mark with a small accent dot.") == 1
     leaked = brand.fill_default({
         "brand_slot": "logo_c",
         "prompt": "bottom caption STRUCTURE LOCK C: keep the cup",
@@ -487,7 +495,8 @@ def test_closing_rules_are_in_the_skill_instructions():
     assert "words consistent with the moodboard" in skill
     assert "does not state hex values" in skill
     assert "exact values are on the spec card" in skill
-    assert "moodboard color cell" in skill
+    assert "from the confirmed color direction" in skill
+    assert "moodboard color cell" not in skill
     assert "each swatch has a Chinese color name, a role, and a percentage" in skill
     assert "any accent is at most about 5%" in skill
     assert "no color-name label" not in skill
@@ -777,6 +786,9 @@ def test_english_palette_wording_is_stripped_and_a_clay_cup_stays():
     assert "clay cup" in cup
     for gone in ("deep clay accent", "warm wood brown", "oat beige", "cream white"):
         assert gone not in cup, gone
+    kept = brand.fill_default({"brand_slot": "cup", "prompt": "a small white cup"})["prompt"]
+    assert "small white cup" in kept
+    assert "white" in kept
     assert brand.fill_default({"brand_slot": "cup", "prompt": cup})["prompt"] == cup
 
 
@@ -1269,7 +1281,8 @@ def test_spec_palette_is_sampled_and_the_color_answer_is_only_a_hue_hint():
     assert "6B4A32" not in spec["prompt"]
     assert "#C46A3A" not in spec["prompt"] and "#C4784A" not in spec["prompt"]
     assert "#" not in spec["prompt"]
-    assert "sampled from the moodboard 色彩 cell" in spec["prompt"]
+    assert "from the confirmed color direction" in spec["prompt"]
+    assert "moodboard 色彩 cell" not in spec["prompt"]
     assert "never a printed swatch" in spec["prompt"]
     brand.reset_for_tests()
     brand.record_card_answer(_card1(), {

@@ -634,10 +634,10 @@ def _spec_lock() -> str:
     return (
         "The spec card is exactly 7 panels. Each heading appears once, in this order: "
         "标识 / LOGO (the approved mark; 「最小使用尺寸」 is an annotation inside this panel, not a separate panel), "
-        "色彩 / COLOR (a proportional color strip sampled from the moodboard 色彩 cell; "
+        "色彩 / COLOR (a proportional color strip from the confirmed color direction; "
         "each swatch has a Chinese color name, a role, and a percentage; "
         "any accent is at most about 5%; "
-        "the names, roles, and ratios are sampled from that cell; "
+        "the names, roles, and ratios are from the confirmed color direction; "
         "do not hardcode a palette and do not invent hex values), "
         "变体 / VARIANTS (the approved variants, each with a short label), "
         "字体 / TYPE (this panel carries its full bilingual heading 字体 / TYPE, not clipped to 字; "
@@ -807,12 +807,12 @@ _SLOT_LOCK = {
         "Exactly three cells in each row. Warm paper ground, not a black field."
     ),
     "logo_a": (
-        "The mark is a flat solid monoline mark. "
+        "The mark is a bold monoline bird mark with a small accent dot. "
         "Not a filled plaque, not a round seal, not a cup silhouette, "
         "and not a generic coffee mug or an unrelated icon. "
-        "The sheet has exactly four labelled zones, in this order: 主组合, 符号构造, 横版, 小尺寸. "
+        "The sheet has exactly four labelled zones, in this order: 主组合, 符号, 横版, 小尺寸. "
         "Each of the four zone labels appears exactly once. "
-        "符号构造 shows the actual symbol construction. No empty placeholder box and no X box. "
+        "符号 shows the actual symbol construction. No empty placeholder box and no X box. "
         "小尺寸 includes the symbol, not the wordmark alone, as three small applications side by side: "
         "a rounded-square icon, a circular stamp, and a solid square badge. "
         "横版 appears once. Do not draw a second landscape treatment. "
@@ -820,7 +820,7 @@ _SLOT_LOCK = {
         "No other small text. No bottom caption. Do not print an English instruction label."
     ),
     "logo_b": (
-        "The mark is a flat solid monoline mark reversed out of a flat dark badge, plus a separate round seal. "
+        "The mark is a solid bird silhouette reversed out of the badge as negative space, plus a separate round seal. "
         "Not a generic coffee mug or an unrelated icon. "
         "The sheet has exactly four labelled zones, in this order: 主组合, 印章, 横版, 小尺寸. "
         "Each of the four zone labels appears exactly once. "
@@ -831,14 +831,14 @@ _SLOT_LOCK = {
         "No other small text. No garbled English captions. No bottom caption. Do not print an English instruction label."
     ),
     "logo_c": (
-        "The mark is a flat solid monoline mark. "
+        "The mark is a solid bird silhouette reversed out of the badge as negative space. "
         "The badge is a cup-shaped container, not a picture of a handled cup. "
         "The cup silhouette has no handle. "
         "The badge uses the accent color or the dark color from the confirmed color direction, "
         "and the bird is reversed out inside it as negative space. "
         "A perched bird is the negative space inside the cup, "
         "not a bird drawn as a positive shape and not a bird standing on a branch outside it. "
-        "Not a circular seal and not a flat dark badge. "
+        "Not a circular seal and not B's rectangular badge. "
         "Not a generic coffee mug or an unrelated icon. "
         "The sheet has exactly four labelled zones, in this order: 主组合, 负形, 反白与点缀, 小尺寸. "
         "Each of the four zone labels appears exactly once. "
@@ -1098,7 +1098,7 @@ _EN_HUE = frozenset({
     "pink", "wood", "wooden", "clay", "earth",
 })
 _EN_SHADE = frozenset({
-    "deep", "warm", "soft", "light", "dark", "pale", "rich", "muted", "small",
+    "deep", "warm", "soft", "light", "dark", "pale", "rich", "muted",
 })
 _EN_ROLE = frozenset({
     "accent", "accents", "palette", "palettes", "tone", "tones",
@@ -1218,7 +1218,7 @@ def _slot_command(slot_id: str) -> str:
         )
     if slot_id == "logo_b":
         return (
-            "Draw the mark first, reversed out of a flat dark badge. "
+            "Draw the mark first, reversed out of a rectangular badge. "
             "The main seal is a circular stamp filled with the confirmed accent or its dark color. "
             "The small-size row shows that seal, a horizontal plaque, a circle, and a square."
         )
@@ -2567,10 +2567,10 @@ def default_hint() -> str:
         "No English captions and no garbled Latin. "
         "Card 2 bi_moodboard confirms that board. Only answer A (or Skip) may continue. B or C returns to the moodboard. "
         "Then exactly three SEPARATE logo direction boards, brand_slot logo_a then logo_b then logo_c, "
-        "each 2048x2048 1:1. logo_a is a flat solid monoline mark. Its zones, each once, are 主组合, 符号构造, 横版, 小尺寸. "
-        "logo_b is a flat solid monoline mark reversed out of a flat dark badge, plus a round seal in the confirmed accent. "
+        "each 2048x2048 1:1. logo_a is a bold monoline bird mark with a small accent dot. Its zones, each once, are 主组合, 符号, 横版, 小尺寸. "
+        "logo_b is a solid bird silhouette reversed out of the badge as negative space, plus a round seal in the confirmed accent. "
         "Its zones, each once, are 主组合, 印章, 横版, 小尺寸. "
-        "logo_c is a cup-shaped badge, not a picture of a handled cup. The badge uses the accent color or the dark color from the confirmed color direction, and the bird is reversed out inside it as negative space, not drawn as a positive bird and not a bird standing on a branch outside it. "
+        "logo_c is a solid bird silhouette reversed out of the badge as negative space. It is a cup-shaped badge, not a picture of a handled cup, and not B's rectangular badge. The badge uses the accent color or the dark color from the confirmed color direction, and the bird is reversed out inside it as negative space, not drawn as a positive bird and not a bird standing on a branch outside it. "
         "The cup silhouette has no handle. 小尺寸 is an icon, a cup-lid sticker, and an emboss. "
         "The small-size set also includes one horizontal mark. "
         "横版 appears once and must not be drawn a second time. "
@@ -2587,10 +2587,10 @@ def default_hint() -> str:
         "refs are the chosen logo shape only, with ref_modes content. Do not pass the moodboard as a content reference. "
         "The spec card is exactly 7 panels. Each heading appears once, in this order: "
         "标识 / LOGO (the approved mark; 「最小使用尺寸」 is an annotation inside this panel, not a separate panel), "
-        "色彩 / COLOR (a proportional color strip sampled from the moodboard 色彩 cell; "
+        "色彩 / COLOR (a proportional color strip from the confirmed color direction; "
         "each swatch has a Chinese color name, a role, and a percentage; "
         "any accent is at most about 5%; "
-        "the names, roles, and ratios are sampled from that cell; "
+        "the names, roles, and ratios are from the confirmed color direction; "
         "do not hardcode a palette and do not invent hex values), "
         "变体 / VARIANTS (the approved variants, each with a short label), "
         "字体 / TYPE (this panel carries its full bilingual heading 字体 / TYPE, not clipped to 字; "
