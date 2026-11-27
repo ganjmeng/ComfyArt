@@ -1131,44 +1131,52 @@ def record_submitted(args: dict, result: object) -> None:
     progress["batch"] = max(0, int(progress.get("batch") or 0) - 1)
 
 
-def image_is_full_frame_noise(data: bytes) -> bool:
-    """True only for a frame that is essentially random static.
+# Native pixels, every 8th one. Shrinking to 48px averages real static into a mild texture.
+# On the full paid sheets (stride 8): noise flat 0.30–0.31, corr 0.59–0.60, neighbor mean ~45.
+# The other paid outputs and the Lovart gold stay at flat >= 0.82 and corr >= 0.82.
+# 96px crops of those same files still separate: noise flat <= 0.39, reviewable flat >= 0.57.
+_NOISE_STRIDE = 8
+_NOISE_FLAT_MAX = 0.48
+_NOISE_CORR_MAX = 0.75
+_NOISE_MEAN_MIN = 32.0
 
-    A flat sheet, a panel layout, or any image with neighboring pixels that
-    still agree with each other stays reviewable. Empty bytes are not noise;
-    the caller treats those as an empty result.
+
+def image_noise_metrics(data: bytes) -> dict | None:
+    """Neighbor stats at native resolution. None when the bytes are not an image.
+
+    Samples every ``_NOISE_STRIDE`` pixel and compares it with the next native
+    pixel, not with a resized average.
     """
     if not data or len(data) < 32:
-        return False
+        return None
     from PIL import Image
 
     try:
         img = Image.open(io.BytesIO(data)).convert("RGB")
     except Exception:
-        return False
-    img = img.resize((48, 48))
+        return None
+    w, h = img.size
     raw = img.tobytes()
-    px = [raw[i:i + 3] for i in range(0, len(raw), 3)]
-    w = img.size[0]
-    diffs = []
+    stride = _NOISE_STRIDE
+    diffs: list[int] = []
     flat = 0
-    lag_a = []
-    lag_b = []
-    for i, (r, g, b) in enumerate(px):
-        y = (0.3 * r) + (0.59 * g) + (0.11 * b)
-        if (i + 1) % w == 0:
-            continue
-        r2, g2, b2 = px[i + 1][0], px[i + 1][1], px[i + 1][2]
-        d = abs(r - r2) + abs(g - g2) + abs(b - b2)
-        diffs.append(d)
-        if d < 18:
-            flat += 1
-        if (i + 2) % w != 0 and (i + 2) < len(px):
-            lag_a.append(y)
-            rr, gg, bb = px[i + 2][0], px[i + 2][1], px[i + 2][2]
-            lag_b.append((0.3 * rr) + (0.59 * gg) + (0.11 * bb))
+    lag_a: list[float] = []
+    lag_b: list[float] = []
+    for y in range(0, h, stride):
+        row = y * w
+        for x in range(0, w - 2, stride):
+            i = (row + x) * 3
+            r, g, b = raw[i], raw[i + 1], raw[i + 2]
+            r2, g2, b2 = raw[i + 3], raw[i + 4], raw[i + 5]
+            d = abs(r - r2) + abs(g - g2) + abs(b - b2)
+            diffs.append(d)
+            if d < 18:
+                flat += 1
+            r3, g3, b3 = raw[i + 6], raw[i + 7], raw[i + 8]
+            lag_a.append((0.3 * r) + (0.59 * g) + (0.11 * b))
+            lag_b.append((0.3 * r3) + (0.59 * g3) + (0.11 * b3))
     if len(diffs) < 16 or len(lag_a) < 16:
-        return False
+        return None
     mean = sum(diffs) / len(diffs)
     flat_ratio = flat / len(diffs)
     mean_a = sum(lag_a) / len(lag_a)
@@ -1176,10 +1184,26 @@ def image_is_full_frame_noise(data: bytes) -> bool:
     var_a = sum((v - mean_a) ** 2 for v in lag_a)
     var_b = sum((v - mean_b) ** 2 for v in lag_b)
     if var_a <= 1 or var_b <= 1:
-        return False
+        return {"mean": mean, "flat": flat_ratio, "corr": 1.0, "samples": len(diffs)}
     corr = sum((a - mean_a) * (b - mean_b) for a, b in zip(lag_a, lag_b)) / ((var_a * var_b) ** 0.5)
-    # Static has a large neighbor jump, almost no flat run, and no lag-2 structure.
-    return mean >= 90 and flat_ratio <= 0.12 and abs(corr) <= 0.2
+    return {"mean": mean, "flat": flat_ratio, "corr": corr, "samples": len(diffs)}
+
+
+def image_is_full_frame_noise(data: bytes) -> bool:
+    """True only for a frame that is essentially random static.
+
+    A flat sheet, a panel layout, or any image with neighboring pixels that
+    still agree with each other stays reviewable. Empty bytes are not noise;
+    the caller treats those as an empty result.
+    """
+    stats = image_noise_metrics(data)
+    if not stats:
+        return False
+    return (
+        stats["flat"] <= _NOISE_FLAT_MAX
+        and abs(stats["corr"]) <= _NOISE_CORR_MAX
+        and stats["mean"] >= _NOISE_MEAN_MIN
+    )
 
 
 def delivery_void_reason(row: dict, image: bytes | None = None) -> str:

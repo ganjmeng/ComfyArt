@@ -2623,6 +2623,26 @@ def stamp_wait_charge(result: dict, task: str, cost, *, refunded: bool = False) 
     return result
 
 
+def completed_noise_failure(task: str, job: dict, blobs: list) -> dict | None:
+    """A finished brand image that is full-frame noise is a charged failure.
+
+    The history is ``failed``, not completed. Outputs stay empty, so nothing is
+    placed on the canvas. ``charged`` and ``refunded`` are fields on that payload.
+    """
+    if not isinstance(job, dict) or not job.get("brand_opaque"):
+        return None
+    from .brand_identity import image_is_full_frame_noise
+    for blob in blobs or []:
+        if blob and image_is_full_frame_noise(blob):
+            cost = job.get("quoted")
+            result = _fail(task, WaveSpeedError(
+                "full-frame noise is not a deliverable",
+                502, kind="noOutput", charged=cost,
+            ))
+            return stamp_wait_charge(result, task, cost, refunded=False)
+    return None
+
+
 def _fail(task: str, message: "str | WaveSpeedError") -> dict:
     info: dict = {"exception_message": str(message)}
     if isinstance(message, WaveSpeedError) and message.kind:
@@ -2790,18 +2810,9 @@ async def _poll_once(task: str, job: dict, now: float) -> dict:
     # completed, so the quoted charge stands and the caller must quote again.
     # A reviewable file is left untouched and is placed as usual.
     if job.get("brand_opaque"):
-        from .brand_identity import image_is_full_frame_noise
-        for ref in refs:
-            blob = _ref_bytes(ref)
-            if blob and image_is_full_frame_noise(blob):
-                cost = job.get("quoted")
-                result = _fail(task, WaveSpeedError(
-                    "full-frame noise is not a deliverable",
-                    502, kind="noOutput", charged=cost,
-                ))
-                # Completion already billed this attempt. The wait row carries
-                # charged and refunded as fields; record_wait does not parse the sentence.
-                return stamp_wait_charge(result, task, cost, refunded=False)
+        failed = completed_noise_failure(task, job, [_ref_bytes(ref) for ref in refs])
+        if failed is not None:
+            return failed
     # #707: the saved file's pixels are checked against the lock. No stretch, crop, or second submit.
     # P1 hotfix (#911): the job completed, so it was charged. A failed size check never drops the
     # image: it is delivered as returned, logged, and carries a zh/en size_notice for the user.

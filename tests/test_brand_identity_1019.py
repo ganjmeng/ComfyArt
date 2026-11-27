@@ -5,6 +5,7 @@ Industry templates stay on the #979 3+1 contract. No WaveSpeed call.
 from __future__ import annotations
 
 import io
+from pathlib import Path
 
 import pytest
 from PIL import Image
@@ -1789,6 +1790,89 @@ def _submit_slot(slot: str) -> dict:
     brand.note_brand_submitted(args)
     brand.record_submitted(args, {"ids": [f"h-{slot}"]})
     return args
+
+
+def test_real_sheets_separate_noise_from_reviewable_crops():
+    """96px native crops of the paid rounds and the Lovart gold.
+
+    The two failed spec cards are noise. Every other output, including the
+    reviewable 25f07710 spec, stays a deliverable.
+    """
+    root = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "brand_noise"
+    files = sorted(root.glob("*.png"))
+    assert len(files) == 25
+    positives = []
+    negatives = []
+    for path in files:
+        blob = path.read_bytes()
+        flagged = brand.image_is_full_frame_noise(blob)
+        if path.name.startswith("pos-"):
+            positives.append(path.name)
+            assert flagged, path.name
+        else:
+            negatives.append(path.name)
+            assert not flagged, path.name
+    assert positives == ["pos-4a41cc5a-spec.png", "pos-74f9e13a-spec.png"]
+    assert "neg-25f07710-spec.png" in negatives
+    assert "neg-lovart-spec.png" in negatives
+    assert len(negatives) == 23
+
+
+def test_shipped_bundle_contains_delivery_charge():
+    root = Path(__file__).resolve().parents[1]
+    blobs = "".join(p.read_text(encoding="utf-8", errors="ignore") for p in (root / "dist" / "assets").glob("*.js"))
+    assert "deliveryCharge" in blobs
+
+
+def test_completed_noise_is_a_charged_failure_and_not_a_delivered_spec():
+    """A finished brand image of full-frame noise is failed, charged, and not placed.
+
+    It does not stay in the canvas record, and the wrap-up does not count it as
+    a delivered spec card.
+    """
+    from ComfyArt.api import wavespeed
+
+    noise = (Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "brand_noise" / "pos-4a41cc5a-spec.png").read_bytes()
+    good = (Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "brand_noise" / "neg-lovart-spec.png").read_bytes()
+    failed = wavespeed.completed_noise_failure("task-spec", {"brand_opaque": True, "quoted": 0.12}, [noise])
+    entry = failed["ws:task-spec"]
+    assert entry["status"]["status_str"] == "error"
+    assert entry.get("generation_succeeded") is False
+    assert entry["outputs"] == {}
+    assert entry["charged"] is True and entry["refunded"] is False and entry["charged_usd"] == 0.12
+    info = entry["status"]["messages"][0][1]
+    assert info["charged"] is True and info["refunded"] is False
+    assert "full-frame noise is not a deliverable" in info["exception_message"]
+    assert wavespeed.completed_noise_failure("task-ok", {"brand_opaque": True, "quoted": 0.12}, [good]) is None
+
+    _quote_the_default_total()
+    brand._progress()["phase"] = "finals"
+    for slot in ("cup", "bag", "storefront"):
+        _submit_slot(slot)
+        brand.record_wait({"results": [{
+            "id": f"h-{slot}", "status": "done", "shapes": [f"shape:{slot}"],
+            "urls": [f"/{slot}.png"], "generation_succeeded": True,
+        }]})
+    _submit_slot("spec")
+    brand.hold_wrapup("本次交付清单：规范卡、外带杯与杯套、纸袋、门店门头。")
+    brand._progress()["shapes"]["spec"] = "shape:spec"
+    brand.record_wait({"results": [{
+        "id": "h-spec", "status": "error",
+        "error": "full-frame noise is not a deliverable",
+        "shapes": ["shape:spec"], "urls": ["/noise.png"],
+        "generation_succeeded": False,
+        "charged": True, "charged_usd": 0.12, "refunded": False,
+    }]})
+    progress = brand._progress()
+    assert "spec" not in progress["shapes"]
+    assert set(progress["shapes"]) == {"cup", "bag", "storefront"}
+    ledger = progress["delivery_ledger"][-1]
+    assert ledger["slot"] == "spec" and ledger["charged"] is True and ledger["requote"] is True
+    assert ledger["retry"] is False
+    note = brand.release_wrapup("zh")
+    assert note == "没有落图：规范卡。"
+    assert "本次交付清单" not in note
+    assert progress["spent"] == 0.24
 
 
 def test_full_frame_noise_is_void_and_a_reviewable_sheet_is_kept():
