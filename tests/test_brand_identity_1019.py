@@ -444,7 +444,10 @@ def test_spec_card_is_seven_lovart_panels_and_brand_prompts_have_no_lock_words()
         assert "APPLICATION LOCK" not in assembled, slot
         assert "Do not print an English instruction label." in assembled, slot
         assert "keep the cup" in assembled, slot
-        assert "no industry template was selected" in assembled, slot
+        if slot == "spec":
+            assert len(assembled) <= 2700
+        else:
+            assert "no industry template was selected" in assembled, slot
         if slot == "spec":
             for heading in SPEC_HEADINGS:
                 assert heading in assembled, heading
@@ -716,8 +719,9 @@ def test_spec_prompt_leads_with_the_panel_contract_and_keeps_the_locked_brief_la
     assert "字体 / TYPE is its own panel" in spec
     assert "版式 / LAYOUT is a different panel" in spec
     assert "percentages sum to 100%" in spec
-    assert "soft vignette" in spec
+    assert "soft vignette" not in spec
     assert "drawn 「最小使用尺寸」 diagram" in spec
+    assert len(spec) <= 2700
     assert brand._spec_lock().rstrip().endswith("Paper ground, not black.")
     assert spec.rstrip().endswith(brand._spec_assembly_line())
     assert brand._spec_lock() in spec
@@ -831,9 +835,9 @@ def test_visual_assembly_follows_the_gold_sheet():
     assert spec.count("Draw seven separate panels") == 1
     assert "3 by 3 grid" in spec
     assert "independent panel" in spec
-    assert "minimum-size diagram of the mark with measurement lines" in spec
-    assert "The hue hint is not a swatch and it does not remove the swatches." in spec
-    assert "Do not write COLR, TISUS, or INMAGE." in spec
+    assert "drawn 「最小使用尺寸」 diagram" in spec
+    assert "The hue hint is not a swatch" not in spec
+    assert "COLR, TISUS, or INMAGE" not in spec
     assert "影像格小字不得写错" in spec
     assert "影像格 small labels and captions on 影像与材质 / IMAGE must be spelled correctly" in spec
     assert "no typo, no garble, and no invented heading fragment" in spec
@@ -2073,6 +2077,36 @@ def test_raw_noise_text_without_a_charged_flag_is_not_a_free_retry():
     source = open("api/wavespeed.py", encoding="utf-8").read()
     noise_at = source.index("full-frame noise is not a deliverable")
     assert source.index("stamp_wait_charge(", noise_at) > noise_at
+
+
+def test_spec_submission_stays_under_2700_and_keeps_the_panel_commands():
+    """The locked brief stays whole. Duplicated essays and the vignette do not."""
+    brand.record_card_answer(_card1(), {
+        "bi_delivery": {"selected": ["A"]},
+        "bi_color": {"selected": ["A"]},
+        "bi_mark": {"selected": ["A"]},
+        "bi_source": {"selected": ["A"]},
+    })
+    caller = (
+        "栖木咖啡 QIMU COFFEE spec card. "
+        "Warm paper ground with a soft vignette. Not a sparse empty card. "
+        + brand.default_hint()
+    )
+    spec = brand.fill_default({"brand_slot": "spec", "prompt": caller})["prompt"]
+    assert len(spec) <= 2700
+    assert spec.startswith("Draw seven separate panels")
+    assert "字体 / TYPE is its own panel" in spec
+    assert "版式 / LAYOUT is a different panel" in spec
+    assert "drawn 「最小使用尺寸」 diagram" in spec
+    assert "independent panel" in spec
+    assert "percentages sum to 100%" in spec
+    assert "Sample the swatches from the confirmed color direction: 暖土色为主 + 低饱和靛蓝点缀" in spec
+    assert "soft vignette" not in spec
+    assert brand._spec_lock() in spec
+    assert spec.index(brand._SPEC_PREFACE) < spec.index(brand._slot_command("spec"))
+    assert spec.index(brand._slot_command("spec")) < spec.index(brand._spec_lock())
+    assert spec.rstrip().endswith(brand._spec_assembly_line())
+    assert brand.fill_default({"brand_slot": "spec", "prompt": spec})["prompt"] == spec
 
 
 def test_submitted_prompts_put_the_gold_commands_before_the_lock():

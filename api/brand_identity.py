@@ -871,20 +871,21 @@ _SLOT_LOCK = {
 
 # Generation preface for the spec image. This is not the locked brief. The brief stays
 # in _spec_lock(), default_hint(), and the skill instructions, and is still appended last.
+# The locked brief already lists the seven headings. This preface keeps only the
+# layout commands that brief does not draw: separate type and layout panels, the
+# minimum-size diagram, misuse as its own panel, and swatches that sum to 100%.
 _SPEC_PREFACE = (
-    "Draw seven separate panels, one heading each, in this order: "
+    "Draw seven separate panels, in this order: "
     "标识 / LOGO, 色彩 / COLOR, 变体 / VARIANTS, 字体 / TYPE, 版式 / LAYOUT, "
     "使用禁忌 / MISUSE, 影像与材质 / IMAGE. "
-    "字体 / TYPE is its own panel with a type hierarchy. "
-    "版式 / LAYOUT is a different panel with one filled layout diagram. "
-    "Do not merge them and do not write a heading such as 版式 / TYPE. "
-    "色彩 / COLOR is flat color swatches sampled from the moodboard, not a wood-grain texture. "
-    "Each swatch prints one correctly spelled simplified-Chinese color name, a role, and a percentage, "
-    "and the percentages sum to 100%. "
-    "标识 / LOGO contains a drawn 「最小使用尺寸」 diagram of the mark at its smallest size, "
-    "inside that panel, not only the quoted words. "
-    "Warm paper ground with a soft vignette. Not a black background and not a sparse empty card."
+    "字体 / TYPE is its own panel. "
+    "版式 / LAYOUT is a different panel. "
+    "Do not write 版式 / TYPE. "
+    "标识 / LOGO contains a drawn 「最小使用尺寸」 diagram. "
+    "使用禁忌 / MISUSE is an independent panel. "
+    "Each swatch has a color name, a role, and a percentage, and the percentages sum to 100%."
 )
+_SPEC_PROMPT_MAX = 2700
 
 
 def _mood_color_line() -> str:
@@ -927,17 +928,44 @@ def _spec_assembly_line() -> str:
         named = " Sample the swatches from the confirmed color direction: " + hint + "."
     return (
         "Do not copy the reference moodboard into a 3 by 3 grid. "
-        "Spell each heading exactly once. Do not write COLR, TISUS, or INMAGE. "
         "影像格 small labels and captions on 影像与材质 / IMAGE must be spelled correctly, "
-        "with no typo, no garble, and no invented heading fragment. 影像格小字不得写错. "
-        "使用禁忌 / MISUSE is an independent panel, not merged into another panel. "
-        "The hue hint is not a swatch and it does not remove the swatches. "
-        "色彩 / COLOR is flat swatches, each with one simplified-Chinese color name, a role, and a percentage, "
-        "and the percentages sum to 100%, including the accent from the confirmed color direction. "
-        "标识 / LOGO draws a minimum-size diagram of the mark with measurement lines, "
-        "not only the words 「最小使用尺寸」."
+        "with no typo, no garble, and no invented heading fragment. 影像格小字不得写错."
         + named
     )
+
+
+def _slim_spec_subject(text: str, room: int) -> str:
+    """Drop duplicated panel essays and the vignette. Leave a short subject inside the budget."""
+    body = str(text or "").strip()
+    if not body or room <= 0:
+        return ""
+    chunks = re.split(r"\n+|(?<=[.。])\s+", body)
+    kept = []
+    duplicated = (
+        "soft vignette", "vignette", "sticker", "sparse empty card",
+        "wood-grain", "exactly 7 panels", "annotation density",
+        "allowed on-card text", "one garbled character",
+    )
+    lock = _spec_lock()
+    hint = default_hint()
+    for chunk in chunks:
+        piece = chunk.strip()
+        if not piece:
+            continue
+        low = piece.lower()
+        if any(bit in low for bit in duplicated):
+            continue
+        # A pasted planner hint or locked brief is already in the submission.
+        if len(piece) >= 24 and (piece in lock or piece in hint):
+            continue
+        kept.append(piece)
+    subject = " ".join(kept).strip()
+    if len(subject) <= room:
+        return subject
+    clipped = subject[:room].rstrip()
+    if " " in clipped:
+        clipped = clipped.rsplit(" ", 1)[0]
+    return clipped.strip()
 
 
 def _without_exact_line(prompt: str, line: str) -> str:
@@ -957,11 +985,7 @@ def _slot_command(slot_id: str) -> str:
     copy of the hint or the skill text, and they do not name a palette.
     """
     if slot_id == "spec":
-        return (
-            "Deliver a sheet a person can review, never a full-frame noise field and never a nine-cell copy of the moodboard. "
-            "Keep the misuse zone independent, draw a minimum-size diagram inside the logo panel, "
-            "and paint the color panel as flat swatches whose shares sum to about 100 percent, including the confirmed accent."
-        )
+        return "never a full-frame noise field."
     if slot_id == "logo_c":
         return (
             "Draw the badge first: a handle-less cup silhouette, not a handled cup and not a wood-grain brown plaque. "
@@ -1079,6 +1103,13 @@ def fill_default(args: dict) -> dict:
     lead = _slot_command(str(slot["id"]))
     raw_prompt = _without_exact_line(raw_prompt, color_line)
     raw_prompt = _without_exact_line(raw_prompt, lead)
+    if str(slot["id"]) == "spec":
+        raw_prompt = _without_exact_line(raw_prompt, preface)
+        raw_prompt = _without_exact_line(raw_prompt, str(lock or ""))
+        base = "\n".join(part for part in (preface, lead, str(lock or "")) if part)
+        if color_line:
+            base = base.rstrip() + "\n" + color_line
+        raw_prompt = _slim_spec_subject(raw_prompt, _SPEC_PROMPT_MAX - len(base) - 1)
     prompt = _bind_lock(raw_prompt, str(lock or ""), preface)
     if lead:
         prompt = _insert_before_lock(prompt, lead, str(lock or ""))
