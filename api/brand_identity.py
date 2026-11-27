@@ -638,7 +638,7 @@ def _spec_lock() -> str:
         "标识 / LOGO (the approved mark; 「最小使用尺寸」 is an annotation inside this panel, not a separate panel), "
         "色彩 / COLOR (a proportional color strip from the confirmed color direction; "
         "each swatch has a Chinese color name, a role, and a percentage; "
-        "accent swatches together are about 10%; "
+        "any accent is at most about 5%; "
         "the names, roles, and ratios are from the confirmed color direction; "
         "do not hardcode a palette and do not invent hex values), "
         "变体 / VARIANTS (the approved variants, each with a short label), "
@@ -650,6 +650,7 @@ def _spec_lock() -> str:
         "使用禁忌 / MISUSE (uses only the brand colors, draws a red X, and keeps short captions of the same kind as the gold), "
         "影像与材质 / IMAGE (keeps short captions of the same kind as the gold). "
         "No heading is repeated. Do not clip a heading. "
+        "Annotation density follows the gold. "
         "Allowed on-card text includes the bilingual headings, a Chinese color name plus a role plus a percentage on each swatch, "
         "the in-panel 「最小使用尺寸」 annotation, short captions on 使用禁忌 / MISUSE and 影像与材质 / IMAGE of the same kind as the gold, "
         "short labels on the approved variants, and the real Chinese brand name and the real English brand name from the brief, copied character for character. "
@@ -1012,10 +1013,11 @@ def _split_color_answer(label: str) -> list[tuple[str, str]]:
     return rows
 
 
-# Light to dark. Generic order words, not colour names. With an accent the four sum to 90.
-_TONE_ORDER = ("lightest", "light", "mid", "dark")
-_TONE_WITH_ACCENT = (35, 25, 20, 10)
-_TONE_ONLY = (40, 30, 20, 10)
+# Role labels, largest share first. Not colour names and not light-to-dark words.
+_FAMILY_ROLES = ("主色", "辅助色", "底色", "深色")
+_FAMILY_WEIGHTS = (35, 25, 20, 10)
+_MOOD_ACCENT_BUDGET = 10
+_SPEC_ACCENT_BUDGET = 5
 
 
 def _accent_names(name: str) -> list[str]:
@@ -1031,11 +1033,26 @@ def _share_percent(total: int, count: int) -> list[int]:
     return [base + (1 if index < extra else 0) for index in range(count)]
 
 
-def _swatch_rows(label: str) -> list[tuple[str, str, int]]:
-    """Four tonal steps of the main family, then one swatch per accent.
+def _scale_shares(weights: tuple[int, ...], total: int) -> list[int]:
+    """Spread total across weights. The largest remainder keeps the main role largest."""
+    denom = sum(weights)
+    if denom <= 0 or total <= 0:
+        return [0 for _ in weights]
+    raw = [weight * total for weight in weights]
+    base = [value // denom for value in raw]
+    leftover = total - sum(base)
+    order = sorted(range(len(weights)), key=lambda i: (raw[i] % denom, -i), reverse=True)
+    for index in order[:leftover]:
+        base[index] += 1
+    return base
 
-    Tones are light to dark and total 90 when an accent is present. Accents
-    together total 10. A direction with no main family keeps an even split.
+
+def _swatch_rows(label: str, accent_budget: int = _MOOD_ACCENT_BUDGET) -> list[tuple[str, str, int]]:
+    """Four role swatches of the main family, then one swatch per accent.
+
+    Names and order are the same for every budget. Moodboard accents share 10
+    and the family keeps 35/25/20/10. The spec budget is 5, and the family is
+    scaled to the rest. A direction with no main family keeps an even split.
     """
     named = _split_color_answer(label)
     if not named:
@@ -1056,10 +1073,14 @@ def _swatch_rows(label: str) -> list[tuple[str, str, int]]:
     rows: list[tuple[str, str, int]] = []
     if mains:
         family = mains[0]
-        percents = _TONE_WITH_ACCENT if accents else _TONE_ONLY
-        for order, pct in zip(_TONE_ORDER, percents):
-            rows.append((family, f"{order} 主色", pct))
-    accent_total = 10 if mains else 100
+        budget = accent_budget if accents else 0
+        if budget == _MOOD_ACCENT_BUDGET and accents:
+            percents = list(_FAMILY_WEIGHTS)
+        else:
+            percents = _scale_shares(_FAMILY_WEIGHTS, 100 - budget)
+        for role, pct in zip(_FAMILY_ROLES, percents):
+            rows.append((family, role, pct))
+    accent_total = accent_budget if mains else 100
     for name, pct in zip(accents, _share_percent(accent_total, len(accents))):
         if pct:
             rows.append((name, "点缀", pct))
@@ -1089,7 +1110,7 @@ def _mood_color_line() -> str:
         )
     return (
         "色彩 cell, flat swatches, " + _swatch_copy_line(rows) + ". "
-        "Name each tonal shade only within its confirmed family. "
+        "Name each shade only within its confirmed family. "
         "Do not add a hue outside this direction."
     )
 
@@ -1146,7 +1167,7 @@ def _spec_assembly_line() -> str:
         "影像格 small labels and captions on 影像与材质 / IMAGE must be spelled correctly, "
         "with no typo, no garble, and no invented heading fragment. 影像格小字不得写错."
     )
-    rows = _swatch_rows(hint) if hint else []
+    rows = _swatch_rows(hint, _SPEC_ACCENT_BUDGET) if hint else []
     if rows:
         line += " " + _swatch_copy_line(rows)
     elif hint:
@@ -2830,7 +2851,7 @@ def default_hint() -> str:
         "标识 / LOGO (the approved mark; 「最小使用尺寸」 is an annotation inside this panel, not a separate panel), "
         "色彩 / COLOR (a proportional color strip from the confirmed color direction; "
         "each swatch has a Chinese color name, a role, and a percentage; "
-        "accent swatches together are about 10%; "
+        "any accent is at most about 5%; "
         "the names, roles, and ratios are from the confirmed color direction; "
         "do not hardcode a palette and do not invent hex values), "
         "变体 / VARIANTS (the approved variants, each with a short label), "
@@ -2842,6 +2863,7 @@ def default_hint() -> str:
         "使用禁忌 / MISUSE (uses only the brand colors, draws a red X, and keeps short captions of the same kind as the gold), "
         "影像与材质 / IMAGE (keeps short captions of the same kind as the gold). "
         "No heading is repeated. Do not clip a heading. "
+        "Annotation density follows the gold. "
         "Allowed on-card text includes the bilingual headings, a Chinese color name plus a role plus a percentage on each swatch, "
         "the in-panel 「最小使用尺寸」 annotation, short captions on 使用禁忌 / MISUSE and 影像与材质 / IMAGE of the same kind as the gold, "
         "short labels on the approved variants, and the real Chinese brand name and the real English brand name from the brief, copied character for character. "

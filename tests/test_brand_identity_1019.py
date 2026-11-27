@@ -251,7 +251,8 @@ def test_each_slot_prompt_locks_a_different_structure():
     assert "from the confirmed color direction" in spec["prompt"]
     assert "moodboard 色彩 cell" not in spec["prompt"]
     assert "each swatch has a Chinese color name, a role, and a percentage" in spec["prompt"]
-    assert "accent swatches together are about 10%" in spec["prompt"]
+    assert "any accent is at most about 5%" in spec["prompt"]
+    assert "Annotation density follows the gold." in spec["prompt"]
     assert "do not hardcode a palette" in spec["prompt"]
     assert "栖木咖啡" not in spec["prompt"]
     assert "no color-name label" not in spec["prompt"]
@@ -483,7 +484,8 @@ def test_spec_card_is_seven_lovart_panels_and_brand_prompts_have_no_lock_words()
             for old in OLD_SPEC_HEADINGS:
                 assert old not in assembled, old
             assert "each swatch has a Chinese color name, a role, and a percentage" in assembled
-            assert "accent swatches together are about 10%" in assembled
+            assert "any accent is at most about 5%" in assembled
+            assert "Annotation density follows the gold." in assembled
             assert "Allowed on-card text includes the bilingual headings" in assembled
             assert "short captions on 使用禁忌 / MISUSE and 影像与材质 / IMAGE" in assembled
             assert "no small text at all" not in assembled
@@ -511,7 +513,7 @@ def test_closing_rules_are_in_the_skill_instructions():
     assert "from the confirmed color direction" in skill
     assert "moodboard color cell" not in skill
     assert "each swatch has a Chinese color name, a role, and a percentage" in skill
-    assert "accent swatches together are about 10%" in skill
+    assert "any accent is at most about 5%" in skill
     assert "no color-name label" not in skill
     assert "no percentage text" not in skill
     assert "ratios are shown only by the width" not in skill
@@ -776,7 +778,7 @@ def test_moodboard_prompt_keeps_the_locked_color_direction():
         "bi_source": {"selected": ["A"]},
     })
     mood = brand.fill_default({"brand_slot": "moodboard", "prompt": "暖木棕 + 米白"})
-    assert "暖土色 lightest 主色 35%" in mood["prompt"]
+    assert "暖土色 主色 35%" in mood["prompt"]
     assert "低饱和靛蓝 点缀 10%" in mood["prompt"]
     assert "copy only these" in mood["prompt"]
     again_mood = brand.fill_default({"brand_slot": "moodboard", "prompt": mood["prompt"]})
@@ -858,7 +860,7 @@ def test_moodboard_color_cell_is_code_written_and_capped():
     subject = "board " + ("long cell note " * 400)
     mood = brand.fill_default({"brand_slot": "moodboard", "prompt": subject})["prompt"]
     assert len(mood) <= 2800
-    assert "暖土色 lightest 主色 35%" in mood
+    assert "暖土色 主色 35%" in mood
     assert "低饱和靛蓝 点缀 10%" in mood
     assert "flat named swatches with percentages" not in mood
     assert "broad bands" not in mood.split("\n")[0]
@@ -1187,7 +1189,7 @@ def test_visual_assembly_follows_the_gold_sheet():
     })
     hint = "暖土色为主 + 低饱和靛蓝点缀"
     mood = brand.fill_default({"brand_slot": "moodboard", "prompt": "板"})["prompt"]
-    assert "暖土色 lightest 主色 35%" in mood
+    assert "暖土色 主色 35%" in mood
     assert "低饱和靛蓝 点缀 10%" in mood
     assert "Do not paint broad bands" in mood
     assert "flat named swatches with percentages" not in mood
@@ -1206,8 +1208,10 @@ def test_visual_assembly_follows_the_gold_sheet():
         assert brand.fill_default({"brand_slot": slot, "prompt": filled})["prompt"] == filled
     spec_a = brand.fill_default({"brand_slot": "spec", "prompt": "规范"})["prompt"]
     assert "copy only these:" in spec_a
-    assert "暖土色 lightest 主色 35%" in spec_a
-    assert "低饱和靛蓝 点缀 10%" in spec_a
+    assert "暖土色 主色 37%" in spec_a
+    assert "低饱和靛蓝 点缀 5%" in spec_a
+    assert "Annotation density follows the gold." in spec_a
+    assert "any accent is at most about 5%" in spec_a
     assert "do not add a swatch" not in spec_a.lower()
     assert brand.fill_default({"brand_slot": "spec", "prompt": spec_a})["prompt"] == spec_a
 
@@ -2670,20 +2674,27 @@ def test_storefront_drops_a_hue_on_the_fascia_and_keeps_the_lock():
     assert "black fascia" in cup
 
 
-def test_colour_cell_is_four_tones_plus_one_swatch_per_accent():
-    """One accent is five swatches; two accents joined by 与 are six. Spec matches."""
+def test_colour_cell_roles_share_names_and_split_the_ratios():
+    """Moodboard and spec use the same names and order. Spec accents stay at 5%."""
     single = "persimmon为主 + lobelia点缀"
     double = "persimmon为主 + lobelia与mallow点缀"
-    one = brand._swatch_rows(single)
-    two = brand._swatch_rows(double)
-    assert len(one) == 5 and len(two) == 6
-    assert sum(pct for _n, _r, pct in one) == 100
-    assert sum(pct for _n, _r, pct in two) == 100
-    assert sum(pct for _n, role, pct in one if role == "点缀") == 10
-    assert sum(pct for _n, role, pct in two if role == "点缀") == 10
-    assert [pct for _n, role, pct in two if role == "点缀"] == [5, 5]
-    assert [role.split()[0] for _n, role, _p in one if "主色" in role] == list(brand._TONE_ORDER)
-    assert [pct for _n, role, pct in one if "主色" in role] == [35, 25, 20, 10]
+    mood_one = brand._swatch_rows(single)
+    mood_two = brand._swatch_rows(double)
+    spec_one = brand._swatch_rows(single, brand._SPEC_ACCENT_BUDGET)
+    spec_two = brand._swatch_rows(double, brand._SPEC_ACCENT_BUDGET)
+    assert len(mood_one) == 5 and len(mood_two) == 6
+    assert [(n, r) for n, r, _p in mood_one] == [(n, r) for n, r, _p in spec_one]
+    assert [(n, r) for n, r, _p in mood_two] == [(n, r) for n, r, _p in spec_two]
+    for rows, accent_total in ((mood_one, 10), (mood_two, 10), (spec_one, 5), (spec_two, 5)):
+        assert sum(pct for _n, _r, pct in rows) == 100
+        assert sum(pct for _n, role, pct in rows if role == "点缀") == accent_total
+        family = [(role, pct) for _n, role, pct in rows if role != "点缀"]
+        assert [role for role, _pct in family] == list(brand._FAMILY_ROLES)
+        assert family[0][1] == max(pct for _role, pct in family)
+    assert [pct for _n, _r, pct in mood_one if _n][:4] == [35, 25, 20, 10]
+    assert [pct for _n, role, pct in spec_one if role != "点缀"] == [37, 26, 21, 11]
+    assert [pct for _n, role, pct in mood_two if role == "点缀"] == [5, 5]
+    assert [pct for _n, role, pct in spec_two if role == "点缀"] == [3, 2]
     template = "\n".join(
         Path(name).read_text(encoding="utf-8")
         for name in ("api/brand_identity.py", "src/skills.ts")
@@ -2698,15 +2709,18 @@ def test_colour_cell_is_four_tones_plus_one_swatch_per_accent():
             "bi_mark": {"selected": ["A"]},
             "bi_source": {"selected": ["A"]},
         })
-        rows = brand._swatch_rows(brand.color_hue_hint())
-        assert len(rows) == count
-        line = brand._swatch_copy_line(rows)
+        hint = brand.color_hue_hint()
+        mood_rows = brand._swatch_rows(hint)
+        spec_rows = brand._swatch_rows(hint, brand._SPEC_ACCENT_BUDGET)
+        assert len(mood_rows) == count and len(spec_rows) == count
         mood = brand.fill_default({"brand_slot": "moodboard", "prompt": "board"})["prompt"]
         spec = brand.fill_default({"brand_slot": "spec", "prompt": "sheet"})["prompt"]
-        assert line in mood and line in spec
-        assert "do not add a swatch" not in mood.lower()
+        assert brand._swatch_copy_line(mood_rows) in mood
+        assert brand._swatch_copy_line(spec_rows) in spec
+        assert brand._swatch_copy_line(mood_rows) not in spec
         assert "do not add a hue outside this direction" in mood.lower()
-        assert "lightest" in mood and mood.index("lightest") < mood.index(" dark ")
+        assert "Annotation density follows the gold." in spec
+        assert "any accent is at most about 5%" in spec
 
 
 _LONG_SUBJECT = {
