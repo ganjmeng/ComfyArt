@@ -773,7 +773,7 @@ def test_logo_c_warm_earth_prompt_does_not_name_indigo():
     assert "靛蓝" not in brand.default_hint().lower()
 
 
-_ROLE_MODIFIERS = ("陶土", "焦糖", "靛蓝", "暖木", "燕麦", "深焙", "鼠尾草")
+_ROLE_MODIFIERS = ("陶土", "焦糖", "靛蓝", "暖木", "米白", "棕褐", "金粉")
 _ROLE_NOUNS = ("点缀", "檐口", "主色")
 
 
@@ -799,11 +799,32 @@ def test_a_modifier_glued_to_a_role_noun_is_dropped(modifier, noun):
     assert brand.fill_default({"brand_slot": "cup", "prompt": filled})["prompt"] == filled
 
 
-@pytest.mark.parametrize("phrase", ("特色咖啡", "出色", "焦糖拿铁", "陶土杯", "暖木质吧台"))
-def test_products_and_unrelated_words_are_not_color_modifiers(phrase):
+@pytest.mark.parametrize("phrase", (
+    "玻璃橱窗檐口",
+    "门头主体檐口",
+    "A-frame 立牌与檐口",
+    "特色咖啡",
+    "出色",
+    "焦糖拿铁",
+    "陶土杯",
+    "暖木质吧台",
+))
+def test_phrases_without_a_glued_hue_mark_stay_whole(phrase):
     _answer_color_a()
     filled = brand.fill_default({"brand_slot": "cup", "prompt": phrase})["prompt"]
     assert phrase in filled
+    assert brand.fill_default({"brand_slot": "cup", "prompt": filled})["prompt"] == filled
+
+
+@pytest.mark.parametrize("raw,kept", (
+    ("杯身采用温暖的陶土点缀", "杯身采用温暖的点缀"),
+    ("木质檐口", "檐口"),
+))
+def test_a_glued_hue_mark_is_dropped_and_the_noun_stays(raw, kept):
+    _answer_color_a()
+    filled = brand.fill_default({"brand_slot": "cup", "prompt": raw})["prompt"]
+    assert filled.split("\n", 1)[0] == kept
+    assert brand.fill_default({"brand_slot": "cup", "prompt": filled})["prompt"] == filled
 
 
 @pytest.mark.parametrize("phrase,noun", (("靛蓝强调色", "强调色"), ("暖木点缀色", "点缀色")))
@@ -984,7 +1005,7 @@ def test_visual_assembly_follows_the_gold_sheet():
     assert "independent panel" in spec
     assert "drawn 「最小使用尺寸」 diagram" in spec
     assert "The hue hint is not a swatch" not in spec
-    assert "never COLR, TISUS, INMAGE" in spec
+    assert "Never write COLR, TISUS, INMAGE." in spec
     assert "noise" not in spec.lower()
     assert "影像格小字不得写错" in spec
     assert "影像格 small labels and captions on 影像与材质 / IMAGE must be spelled correctly" in spec
@@ -2296,9 +2317,7 @@ def test_spec_submission_stays_under_2800_and_keeps_the_panel_commands():
         assert "soft vignette" not in spec
         assert "Spell each heading exactly once" not in spec
         assert "Warm paper ground" in spec
-        assert "flat swatches (no wood grain)" in spec
-        assert "confirmed accent" in spec
-        assert "never COLR, TISUS, INMAGE" in spec
+        assert "Color: flat swatches, no wood grain, with the confirmed accent. Never write COLR, TISUS, INMAGE." in spec
         assert "noise" not in spec.lower()
         assert brand._spec_lock() in spec
         assert spec.index(brand._SPEC_PREFACE) < spec.index("栖木咖啡 QIMU COFFEE")

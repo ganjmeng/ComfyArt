@@ -1051,13 +1051,41 @@ def _slim_spec_subject(text: str, room: int) -> str:
     return clipped.strip()
 
 
-# Role nouns a caller may prefix with a hue or a material. Bare 色 is not a noun:
+# Role nouns a caller may prefix with a short hue word. Bare 色 is not a noun:
 # 出色 and 特色 stay whole. Longer nouns are tried first so 点缀色 is not read as 点缀.
 _COLOR_ROLE_NOUNS = ("点缀色", "强调色", "主色", "点缀", "檐口")
+# The hue word is only the 1-3 Han chars glued to the noun. These words end that word.
+_COLOR_MODIFIER_BREAKS = ("采用", "的", "与", "和")
+# Generic hue and material marks. A glued word is removed only when it contains one.
+_HUE_MATERIAL = frozenset("红橙黄绿青蓝靛紫棕褐灰黑白米金银粉木土陶焦")
+
+
+def _glued_color_modifier(before: str) -> str:
+    """1-3 Han chars glued to a role noun, when that span carries a hue or material mark."""
+    chars: list[str] = []
+    for ch in reversed(before):
+        if not ("\u4e00" <= ch <= "\u9fff"):
+            break
+        chars.append(ch)
+    if not chars:
+        return ""
+    run = "".join(reversed(chars))
+    cut = 0
+    for word in _COLOR_MODIFIER_BREAKS:
+        at = run.rfind(word)
+        if at >= 0:
+            cut = max(cut, at + len(word))
+    segment = run[cut:]
+    if not segment:
+        return ""
+    modifier = segment[-3:]
+    if not any(ch in _HUE_MATERIAL for ch in modifier):
+        return ""
+    return modifier
 
 
 def _defer_color_words(text: str) -> str:
-    """Drop the modifier glued to a role noun. Keep the noun. No palette is named here."""
+    """Drop a short hue word glued to a role noun. Keep the noun. No palette is named here."""
     raw = str(text or "")
     out: list[str] = []
     i = 0
@@ -1067,10 +1095,9 @@ def _defer_color_words(text: str) -> str:
             out.append(raw[i])
             i += 1
             continue
-        popped = 0
-        while out and popped < 8 and "\u4e00" <= out[-1] <= "\u9fff":
-            out.pop()
-            popped += 1
+        modifier = _glued_color_modifier("".join(out))
+        if modifier:
+            del out[-len(modifier):]
         out.append(noun)
         i += len(noun)
     cleaned = "".join(out)
@@ -1101,8 +1128,8 @@ def _slot_command(slot_id: str) -> str:
     if slot_id == "spec":
         return (
             "One clean, reviewable sheet. Warm paper ground. "
-            "Color panel: flat swatches (no wood grain) include the confirmed accent "
-            "(never COLR, TISUS, INMAGE)."
+            "Color: flat swatches, no wood grain, with the confirmed accent. "
+            "Never write COLR, TISUS, INMAGE."
         )
     if slot_id == "logo_c":
         return (
