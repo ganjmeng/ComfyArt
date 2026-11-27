@@ -1,4 +1,4 @@
-import { agentError, agentErrorText } from './wsErrors'
+import { agentError, agentErrorText, deliveryCharge } from './wsErrors'
 import { react, type Editor, type TLImageShape, type TLShapeId, type TLVideoShape } from 'tldraw'
 
 import * as actions from './actions'
@@ -334,7 +334,8 @@ function waitResults(editor: Editor, ids: string[], timeout: number) {
       if (/已取消该生成，未扣费|Cancelled this generation; nothing was charged|已取消：未确认费用|Cancelled: cost not confirmed/.test(r.error)) {
         return { id, status: 'declined', cancelled: true, error: r.error }
       }
-      return { id, status: 'error', ...agentError(r.error) }
+      const flags = deliveryCharge(r.error)
+      return { id, status: 'error', ...agentError(r.error), charged: flags.charged, refunded: flags.refunded }
     })
   }
   return new Promise<object>((resolve) => {

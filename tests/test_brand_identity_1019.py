@@ -1766,3 +1766,180 @@ def test_failed_generate_row_renders_the_tool_error_sentence():
     assert "function toolErrorLine" in chat
     assert 'data-testid="process-row-error"' in chat
     assert "ca-process__errtext" in css
+
+
+def _png(draw) -> bytes:
+    img = Image.new("RGB", (96, 96), (236, 228, 214))
+    draw(img)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def _quote_the_default_total():
+    """The confirmed default path is 3 + 9 + 12 = 24 credits, stored as 0.24 USD."""
+    brand.note_confirmed(0.03, 1, stage=1)
+    brand.note_confirmed(0.09, 3, stage=2)
+    brand.note_confirmed(0.12, 4, stage=3)
+    assert brand._progress()["spent"] == 0.24
+
+
+def _submit_slot(slot: str) -> dict:
+    args = {"skill": brand.SKILL, "brand_slot": slot, "prompt": slot}
+    brand.note_brand_submitted(args)
+    brand.record_submitted(args, {"ids": [f"h-{slot}"]})
+    return args
+
+
+def test_full_frame_noise_is_void_and_a_reviewable_sheet_is_kept():
+    import random
+    rng = random.Random(7)
+
+    def noise(img: Image.Image):
+        px = img.load()
+        for y in range(img.size[1]):
+            for x in range(img.size[0]):
+                px[x, y] = (rng.randrange(256), rng.randrange(256), rng.randrange(256))
+
+    def sheet(img: Image.Image):
+        px = img.load()
+        for y in range(20, 76):
+            for x in range(12, 84):
+                px[x, y] = (92, 64, 48)
+
+    noise_png = _png(noise)
+    sheet_png = _png(sheet)
+    assert brand.image_is_full_frame_noise(noise_png)
+    assert not brand.image_is_full_frame_noise(sheet_png)
+    assert not brand.image_is_full_frame_noise(b"")
+    reviewable = {
+        "status": "done", "shapes": ["shape:spec"], "urls": ["/spec.png"],
+        "generation_succeeded": True,
+    }
+    assert brand.delivery_void_reason(reviewable, image=sheet_png) == ""
+    assert brand.delivery_void_reason(reviewable, image=noise_png) == "noise"
+    assert brand.delivery_void_reason({"status": "running", "shapes": [], "urls": []}) == ""
+    assert brand.delivery_void_reason({
+        "status": "error", "error": "generation failed", "shapes": ["shape:bad"], "urls": ["/bad.png"],
+        "generation_succeeded": False,
+    }) == "explicit_failure"
+    assert brand.delivery_void_reason({"status": "done", "shapes": [], "urls": []}) == "empty"
+
+
+def test_failed_image_is_not_a_deliverable_and_retries_once_only_when_uncharged():
+    """A failed canvas image is dropped. One silent retry keeps the confirmed 24.
+
+    A charged failure is not retried. It has to be quoted again, and the ledger says which.
+    """
+    _quote_the_default_total()
+    _submit_slot("spec")
+    brand.record_wait({"results": [{
+        "id": "h-spec", "status": "error", "error": "generation failed",
+        "shapes": ["shape:noise"], "urls": ["/noise.png"],
+        "generation_succeeded": False, "charged": False,
+    }]})
+    progress = brand._progress()
+    assert "spec" not in (progress.get("shapes") or {})
+    assert "spec" in progress["failed"]
+    entry = progress["delivery_ledger"][-1]
+    assert entry["reason"] == "explicit_failure"
+    assert entry["retry"] is True and entry["requote"] is False
+    assert entry["charged"] is False and entry["quote_kept"] is True
+    assert "spec" not in brand.submitted_slots(3)
+    assert progress["spent"] == 0.24
+    assert brand.submit_block_reason({"brand_slot": "spec", "skill": brand.SKILL}) != "requote"
+
+    _submit_slot("cup")
+    brand.record_wait({"results": [{
+        "id": "h-cup", "status": "error", "error": "The task finished but returned no image, and it may have been charged about $0.12.",
+        "shapes": ["shape:cup"], "urls": ["/cup.png"],
+        "generation_succeeded": False, "charged": True, "charged_usd": 0.12,
+    }]})
+    progress = brand._progress()
+    assert "cup" not in (progress.get("shapes") or {})
+    charged = progress["delivery_ledger"][-1]
+    assert charged["retry"] is False and charged["requote"] is True and charged["charged"] is True
+    assert "cup" in brand.submitted_slots(3)
+    assert brand.submit_block_reason({"brand_slot": "cup", "skill": brand.SKILL}) == "requote"
+    assert "重新取价" in brand.submit_block_text("requote", "zh")
+    assert progress["spent"] == 0.24
+
+    _submit_slot("bag")
+    brand.record_wait({"results": [{
+        "id": "h-bag", "status": "error", "error": "charge refunded",
+        "shapes": ["shape:bag"], "generation_succeeded": False,
+        "charged": True, "refunded": True,
+    }]})
+    refunded = brand._progress()["delivery_ledger"][-1]
+    assert refunded["retry"] is True and refunded["requote"] is False and refunded["refunded"] is True
+    assert "bag" not in brand.submitted_slots(3)
+    assert brand._progress()["spent"] == 0.24
+
+    brand.record_submitted({"skill": brand.SKILL, "brand_slot": "spec"}, {"ids": ["h-spec-2"]})
+    brand.note_brand_submitted({"skill": brand.SKILL, "brand_slot": "spec"})
+    brand.record_wait({"results": [{
+        "id": "h-spec-2", "status": "done", "shapes": [], "urls": [], "charged": False,
+    }]})
+    second = brand._progress()["delivery_ledger"][-1]
+    assert second["slot"] == "spec" and second["attempt"] == 2
+    assert second["retry"] is False and second["requote"] is True
+    assert brand._progress()["spent"] == 0.24
+
+    _submit_slot("storefront")
+    brand.record_wait({"results": [{
+        "id": "h-storefront", "status": "done", "shapes": ["shape:store"],
+        "urls": ["/store.png"], "generation_succeeded": True,
+    }]})
+    assert brand._progress()["shapes"]["storefront"] == "shape:store"
+    assert "storefront" not in brand._progress()["failed"]
+
+
+def test_submitted_prompts_put_the_gold_commands_before_the_lock():
+    """The command sits in the submitted body, immediately before the lock.
+
+    The preface still leads the spec, the lock is still last, and the runtime
+    line is still the final line. A second fill is the same bytes.
+    """
+    slots = {
+        "moodboard": "暖木棕 + 米白",
+        "logo_a": "方向A",
+        "logo_b": "方向B",
+        "logo_c": "方向C",
+        "spec": "规范",
+        "cup": "杯",
+        "bag": "袋",
+        "storefront": "门头",
+    }
+    expected = {
+        "moodboard": "write the confirmed direction as the annotation",
+        "logo_a": "rounded-square icon, a circular stamp, and a solid square badge",
+        "logo_b": "The main seal is a circular stamp filled with the confirmed accent or its dark color.",
+        "logo_c": "not a wood-grain brown plaque",
+        "spec": "never a full-frame noise field",
+        "cup": "the thin stripe on the sleeve is the confirmed accent",
+        "bag": "down the side gusset, not only across the front face",
+        "storefront": "nor a hue invented outside that confirmed direction",
+    }
+    for slot, caller in slots.items():
+        filled = brand.fill_default({"brand_slot": slot, "prompt": caller})["prompt"]
+        again = brand.fill_default({"brand_slot": slot, "prompt": filled})["prompt"]
+        assert again == filled, slot
+        lead = brand._slot_command(slot)
+        lock = brand._spec_lock() if slot == "spec" else brand._SLOT_LOCK[slot]
+        assert lead in filled, slot
+        assert filled.index(caller) < filled.index(lead) < filled.index(lock), slot
+        if slot == "spec":
+            assert filled.startswith("Draw seven separate panels")
+            assert filled.rstrip().endswith(brand._spec_assembly_line())
+            assert filled.count("exactly 7 panels") == 1
+            assert filled.count("Draw seven separate panels") == 1
+        else:
+            assert filled.startswith(caller), slot
+        if slot == "logo_c":
+            assert filled.count("cup-shaped") == 1
+            assert "not a row of app icons" in filled
+            assert "do not draw it again inside the small-size set" in filled
+        assert expected[slot] in filled
+        assert lead not in lock
+        assert lead not in brand._SPEC_PREFACE
+        assert lead not in brand.default_hint()

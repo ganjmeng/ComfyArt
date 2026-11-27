@@ -2761,6 +2761,19 @@ async def _poll_once(task: str, job: dict, now: float) -> dict:
                                               502, kind="noOutput", charged=cost))
         # CDN URLs expire after 7 days: keep a local copy right away
         refs = [await _download(session, task, i, url) for i, url in enumerate(outputs) if isinstance(url, str)]
+    # A brand image that is full-frame noise is not a deliverable. The job already
+    # completed, so the quoted charge stands and the caller must quote again.
+    # A reviewable file is left untouched and is placed as usual.
+    if job.get("brand_opaque"):
+        from .brand_identity import image_is_full_frame_noise
+        for ref in refs:
+            blob = _ref_bytes(ref)
+            if blob and image_is_full_frame_noise(blob):
+                cost = job.get("quoted")
+                return _fail(task, WaveSpeedError(
+                    "full-frame noise is not a deliverable",
+                    502, kind="noOutput", charged=cost,
+                ))
     # #707: the saved file's pixels are checked against the lock. No stretch, crop, or second submit.
     # P1 hotfix (#911): the job completed, so it was charged. A failed size check never drops the
     # image: it is delivered as returned, logged, and carries a zh/en size_notice for the user.

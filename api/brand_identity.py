@@ -950,6 +950,67 @@ def _without_exact_line(prompt: str, line: str) -> str:
     return prompt.strip()
 
 
+def _slot_command(slot_id: str) -> str:
+    """One executable line for the submitted prompt, placed immediately before that slot's lock.
+
+    These are the gold-layout commands the model has to follow. They are not a
+    copy of the hint or the skill text, and they do not name a palette.
+    """
+    if slot_id == "spec":
+        return (
+            "Deliver a sheet a person can review, never a full-frame noise field and never a nine-cell copy of the moodboard. "
+            "Keep the misuse zone independent, draw a minimum-size diagram inside the logo panel, "
+            "and paint the color panel as flat swatches whose shares sum to about 100 percent, including the confirmed accent."
+        )
+    if slot_id == "logo_c":
+        return (
+            "Draw the badge first: a handle-less cup silhouette, not a handled cup and not a wood-grain brown plaque. "
+            "Fill that badge from the confirmed accent or its dark color, and reverse the bird out of the fill. "
+            "The small-size set is an icon, a cup-lid sticker, and an emboss, not a row of app icons. "
+            "Draw the landscape zone once, and do not draw it again inside the small-size set."
+        )
+    if slot_id == "moodboard":
+        return (
+            "In the color cell, write the confirmed direction as the annotation and show that direction's accent as its own swatch. "
+            "Do not replace that accent with a different hue."
+        )
+    if slot_id == "logo_a":
+        return (
+            "Draw the small-size row first, in this order: a rounded-square icon, a circular stamp, and a solid square badge."
+        )
+    if slot_id == "logo_b":
+        return (
+            "The main seal is a circular stamp filled with the confirmed accent or its dark color. "
+            "The small-size row shows that seal, a horizontal plaque, a circle, and a square."
+        )
+    if slot_id == "cup":
+        return (
+            "The set is the paper cup in its sleeve, the clear iced cup, and one flat sleeve, "
+            "and the thin stripe on the sleeve is the confirmed accent. "
+            "A single plain white cup without that stripe is not this set."
+        )
+    if slot_id == "bag":
+        return (
+            "Show the standing bag and a second, smaller shopping bag in front of it. "
+            "Run the accent stripe down the side gusset, not only across the front face."
+        )
+    if slot_id == "storefront":
+        return (
+            "Paint the fascia eave in the confirmed accent or its dark color. "
+            "Leave it neither bare wood nor a hue invented outside that confirmed direction."
+        )
+    return ""
+
+
+def _insert_before_lock(prompt: str, lead: str, lock: str) -> str:
+    """Keep the lock as the last structural block. The command sits on the line above it."""
+    if not lead:
+        return prompt
+    if lock and lock in prompt:
+        return prompt.replace(lock, lead + "\n" + lock, 1)
+    return (prompt.rstrip() + "\n" + lead).strip()
+
+
 def _bind_lock(prompt: str, lock: str, preface: str = "") -> str:
     """Put the slot lock last. A caller who already pasted it, then added other words, does not bury it."""
     body = str(prompt or "")
@@ -1012,10 +1073,15 @@ def fill_default(args: dict) -> dict:
         color_line = _spec_assembly_line()
     else:
         color_line = ""
-    # The confirmed color is a runtime line after the lock. Strip it before rebinding
-    # so a second fill, the one the grant freezes and the one dispatch submits, match.
+    # Preface stays first, the lock stays last, and the runtime color line stays
+    # after the lock. The slot command is one line immediately before the lock.
+    # Strip both extra lines before rebinding so a second fill is byte-identical.
+    lead = _slot_command(str(slot["id"]))
     raw_prompt = _without_exact_line(raw_prompt, color_line)
+    raw_prompt = _without_exact_line(raw_prompt, lead)
     prompt = _bind_lock(raw_prompt, str(lock or ""), preface)
+    if lead:
+        prompt = _insert_before_lock(prompt, lead, str(lock or ""))
     if color_line:
         prompt = (prompt.rstrip() + "\n" + color_line).strip()
     args["prompt"] = scrub_internal_marks(prompt)
@@ -1065,6 +1131,185 @@ def record_submitted(args: dict, result: object) -> None:
     progress["batch"] = max(0, int(progress.get("batch") or 0) - 1)
 
 
+def image_is_full_frame_noise(data: bytes) -> bool:
+    """True only for a frame that is essentially random static.
+
+    A flat sheet, a panel layout, or any image with neighboring pixels that
+    still agree with each other stays reviewable. Empty bytes are not noise;
+    the caller treats those as an empty result.
+    """
+    if not data or len(data) < 32:
+        return False
+    from PIL import Image
+
+    try:
+        img = Image.open(io.BytesIO(data)).convert("RGB")
+    except Exception:
+        return False
+    img = img.resize((48, 48))
+    raw = img.tobytes()
+    px = [raw[i:i + 3] for i in range(0, len(raw), 3)]
+    w = img.size[0]
+    diffs = []
+    flat = 0
+    lag_a = []
+    lag_b = []
+    for i, (r, g, b) in enumerate(px):
+        y = (0.3 * r) + (0.59 * g) + (0.11 * b)
+        if (i + 1) % w == 0:
+            continue
+        r2, g2, b2 = px[i + 1][0], px[i + 1][1], px[i + 1][2]
+        d = abs(r - r2) + abs(g - g2) + abs(b - b2)
+        diffs.append(d)
+        if d < 18:
+            flat += 1
+        if (i + 2) % w != 0 and (i + 2) < len(px):
+            lag_a.append(y)
+            rr, gg, bb = px[i + 2][0], px[i + 2][1], px[i + 2][2]
+            lag_b.append((0.3 * rr) + (0.59 * gg) + (0.11 * bb))
+    if len(diffs) < 16 or len(lag_a) < 16:
+        return False
+    mean = sum(diffs) / len(diffs)
+    flat_ratio = flat / len(diffs)
+    mean_a = sum(lag_a) / len(lag_a)
+    mean_b = sum(lag_b) / len(lag_b)
+    var_a = sum((v - mean_a) ** 2 for v in lag_a)
+    var_b = sum((v - mean_b) ** 2 for v in lag_b)
+    if var_a <= 1 or var_b <= 1:
+        return False
+    corr = sum((a - mean_a) * (b - mean_b) for a, b in zip(lag_a, lag_b)) / ((var_a * var_b) ** 0.5)
+    # Static has a large neighbor jump, almost no flat run, and no lag-2 structure.
+    return mean >= 90 and flat_ratio <= 0.12 and abs(corr) <= 0.2
+
+
+def delivery_void_reason(row: dict, image: bytes | None = None) -> str:
+    """Why this result must not stay on the canvas, or "" when it is still reviewable.
+
+    Void only an explicit model failure, an empty finished result, or full-frame
+    noise. A running row, and a finished image that can still be reviewed, stay.
+    """
+    if not isinstance(row, dict):
+        return ""
+    status = str(row.get("status") or "").lower()
+    if status in {"running", "pending", "queued"}:
+        return ""
+    if row.get("generation_succeeded") is False or status in {"error", "failed", "cancelled", "canceled", "declined"}:
+        return "explicit_failure"
+    err = row.get("error")
+    if isinstance(err, str) and err.strip():
+        low = err.lower()
+        if any(tok in low for tok in ("fail", "error", "noise")) or "失败" in err:
+            return "explicit_failure"
+    if image and image_is_full_frame_noise(image):
+        return "noise"
+    if row.get("noise") is True:
+        return "noise"
+    shapes = row.get("shapes") if isinstance(row.get("shapes"), list) else []
+    urls = row.get("urls") if isinstance(row.get("urls"), list) else []
+    has_shape = any(str(item or "").strip() for item in shapes)
+    has_url = any(str(item or "").strip() for item in urls)
+    if status in {"done", "complete", "completed", "success"} and not has_shape and not has_url and not image:
+        return "empty"
+    return ""
+
+
+def _attempt_charged(row: dict) -> bool:
+    if row.get("charged") is False:
+        return False
+    if row.get("charged") is True or row.get("refunded") is True:
+        return True
+    cost = row.get("charged_usd")
+    if isinstance(cost, (int, float)) and not isinstance(cost, bool):
+        return float(cost) > 0
+    text = " ".join(str(row.get(key) or "") for key in ("error", "user_message"))
+    low = text.lower()
+    if "nothing was charged" in low or "未扣费" in text or "没有扣" in text:
+        return False
+    if "may have been charged" in low or "charged about" in low or "可能已扣费" in text:
+        return True
+    return False
+
+
+def _attempt_refunded(row: dict) -> bool:
+    if row.get("refunded") is True:
+        return True
+    text = " ".join(str(row.get(key) or "") for key in ("error", "user_message"))
+    return "refunded" in text.lower() or "已退款" in text
+
+
+def _release_slot_for_retry(slot: str) -> None:
+    """Let one uncharged failure use the confirmation it already has.
+
+    The stage amount and the confirmed total stay where they are.
+    """
+    rec = _stage_record(stage_of(slot))
+    if not isinstance(rec, dict):
+        return
+    rec["submitted_slots"] = [item for item in (rec.get("submitted_slots") or []) if str(item) != slot]
+    rec["dispatching_slots"] = [item for item in (rec.get("dispatching_slots") or []) if str(item) != slot]
+    rec["dispatched"] = False
+    try:
+        _persist_grants()
+    except Exception:
+        return
+
+
+def account_failed_attempt(slot: str, *, charged: bool, refunded: bool, reason: str) -> dict:
+    """Record one failed image and decide whether it may run again.
+
+    A free retry happens once, and only when this attempt was not charged or
+    the charge was already refunded. The confirmed 3+9+12 total is not increased.
+    A charged failure is not resubmitted; the next generate has to be quoted again.
+    """
+    progress = _progress()
+    attempts = progress.setdefault("fail_attempts", {})
+    n = int(attempts.get(slot) or 0) + 1
+    attempts[slot] = n
+    free = (not charged) or bool(refunded)
+    retry = bool(free and n == 1)
+    requote = (not free) or n > 1
+    entry = {
+        "slot": slot,
+        "attempt": n,
+        "reason": reason,
+        "charged": bool(charged),
+        "refunded": bool(refunded),
+        "retry": retry,
+        "requote": requote,
+        "quote_kept": True,
+    }
+    progress.setdefault("delivery_ledger", []).append(entry)
+    progress.setdefault("shapes", {}).pop(slot, None)
+    urls = progress.get("urls")
+    if isinstance(urls, dict):
+        urls.pop(slot, None)
+    unplaced = progress.get("unplaced")
+    if isinstance(unplaced, dict):
+        unplaced.pop(slot, None)
+    failed = progress.setdefault("failed", [])
+    if slot not in failed:
+        failed.append(slot)
+    unknown = progress.get("unknown")
+    if isinstance(unknown, list) and slot in unknown:
+        unknown.remove(slot)
+    if retry:
+        _release_slot_for_retry(slot)
+    return entry
+
+
+def _delivery_block(slot: str) -> str | None:
+    """A charged failure, or a second failure, must be quoted again before it runs."""
+    progress = _progress()
+    if slot in (progress.get("shapes") or {}):
+        return None
+    if slot not in (progress.get("failed") or []):
+        return None
+    rows = [row for row in (progress.get("delivery_ledger") or []) if isinstance(row, dict) and row.get("slot") == slot]
+    if rows and rows[-1].get("requote"):
+        return "requote"
+    return None
+
+
 def record_wait(result: object) -> None:
     if not isinstance(result, dict):
         return
@@ -1099,6 +1344,27 @@ def record_wait(result: object) -> None:
         def _clear_open(slot: str) -> None:
             if slot in progress["inflight"]:
                 progress["inflight"].remove(slot)
+
+        # An explicit failure, an empty result, or full-frame noise is not a deliverable,
+        # even when a shape id came back with it. A reviewable image still falls through.
+        void = delivery_void_reason(row)
+        if void:
+            _clear_open(slot_id)
+            seen = progress.setdefault("void_seen", [])
+            key = f"{slot_id}:{row.get('id')}:{void}"
+            if key not in seen:
+                seen.append(key)
+                account_failed_attempt(
+                    slot_id,
+                    charged=_attempt_charged(row),
+                    refunded=_attempt_refunded(row),
+                    reason=void,
+                )
+            else:
+                progress.setdefault("shapes", {}).pop(slot_id, None)
+                unplaced.pop(slot_id, None)
+            _advance(progress)
+            continue
 
         # A shape is on the canvas. A URL with no shape was generated and not placed.
         # Only running / pending / queued stay in flight.
@@ -2802,6 +3068,9 @@ def submit_block_reason(args: dict, turn: object = None, *, now: float | None = 
     if not isinstance(args, dict) or not args.get("brand_slot"):
         return None
     slot = str(args.get("brand_slot") or "")
+    blocked = _delivery_block(slot)
+    if blocked:
+        return blocked
     if slot in _held_slots(stage_of(slot)):
         return "reconcile"
     if slot_already_submitted(args):
@@ -2837,6 +3106,11 @@ def submit_block_text(reason: str, lang: str) -> str:
             return "该槽位已生成但确认记录未能落盘，状态待核对，不会自动重发。"
         return ("This slot was generated but the confirmation record was not saved. "
                 "It is pending review and will not be sent again.")
+    if reason == "requote":
+        if lang_key == "zh":
+            return "这一张已经扣过费，失败图不会当作交付。请重新取价后再生成，不要静默重试。"
+        return ("This image was already charged, so it is not a deliverable. "
+                "Request a new price before generating it again. Do not retry it silently.")
     if reason == "unconfirmed":
         if lang_key == "zh":
             return "确认没有保存成功，没有开始，也没有扣积分。请重新取价。"
