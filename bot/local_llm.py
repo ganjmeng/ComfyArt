@@ -2356,7 +2356,7 @@ class LocalLlmProvider(AgentProvider):
         from ..api.brand_identity import (
             BrandGrantPersistError, assembled_keeps_caller, bind_brand_generate,
             note_brand_submitted, reserve_brand_dispatch, submit_block_reason,
-            submit_block_text, _drop_ref_hints, _drop_weak_mood_subject,
+            submit_block_text, _drop_ref_hints, _drop_weak_mood_subject, guard_subject,
         )
         from .shot_plan import bind_generate
         from .skill_output import is_single
@@ -2401,14 +2401,19 @@ class LocalLlmProvider(AgentProvider):
         if incoming and not assembled_keeps_caller(filled, incoming, leads):
             caller_body = _drop_ref_hints(incoming)
             mood_body = _drop_weak_mood_subject(caller_body)
+            slot_id = str(prepared.get("brand_slot") or "")
+            repaired = guard_subject(slot_id, incoming)
             weak_dropped = mood_body != caller_body.strip()
+            repaired_ok = repaired != caller_body.strip() and (
+                not repaired or assembled_keeps_caller(filled, repaired, leads)
+            )
             if (
                 not caller_body
                 or caller_body == incoming.strip()
                 or not assembled_keeps_caller(filled, caller_body, leads)
             ) and not (
                 weak_dropped and assembled_keeps_caller(filled, mood_body, leads)
-            ):
+            ) and not repaired_ok:
                 messages = await self._emit_result(
                     it, submit_block_text("mismatch", lang), emit=emit, done=done, lang=lang, is_error=True)
                 return False, messages

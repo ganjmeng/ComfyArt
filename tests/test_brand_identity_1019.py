@@ -31,7 +31,8 @@ def _caller_line(prompt: str, slot: str) -> str:
     rest = prompt.split(lock, 1)[-1]
     for line in rest.split("\n"):
         text = line.strip()
-        if text:
+        # Slot restatements lead the subject. The caller's own line follows them.
+        if text and not text.startswith("Subject:"):
             return text
     return ""
 
@@ -299,7 +300,8 @@ def test_each_slot_prompt_locks_a_different_structure():
     })
     assert "STRUCTURE LOCK" not in leaked["prompt"]
     assert "keep the cup" in leaked["prompt"]
-    assert leaked["prompt"].count("cup-shaped") == 1
+    assert "handle-less cup-shaped badge" in leaked["prompt"]
+    assert "not a white positive illustration" in leaked["prompt"]
     leaked_spec = brand.fill_default({"brand_slot": "spec", "prompt": "规范 GUIDELINE LOCK"})
     assert "GUIDELINE LOCK" not in leaked_spec["prompt"]
     assert "Do not print an English instruction label." in leaked_spec["prompt"]
@@ -980,6 +982,8 @@ def test_shared_prompt_code_has_no_example_palette_outside_locked_cards():
     table = re.search(r"_EN_HUE = frozenset\(\{.*?\}\)", body, re.S)
     assert table is not None
     outside = body[:table.start()] + body[table.end():]
+    # The logo B ruling names the outline it forbids. That prohibition is not a palette.
+    outside = outside.replace("not a cream or light outline", "not a light outline")
     for banned in ("terracotta", "caramel", "oat", "cream", "kraft"):
         assert re.search(rf"(?i)\b{banned}\b", outside) is None, banned
         assert re.search(rf"(?i)\b{banned}\b", skill) is None, banned
@@ -1215,7 +1219,8 @@ def test_visual_assembly_follows_the_gold_sheet():
     logo_c = brand.fill_default({"brand_slot": "logo_c", "prompt": "方向C"})["prompt"]
     assert "The cup silhouette has no handle." in logo_c
     assert "not a picture of a handled cup" in logo_c
-    assert logo_c.count("cup-shaped") == 1
+    assert "handle-less cup-shaped badge" in logo_c
+    assert "not a white positive illustration" in logo_c
     assert "an icon, a cup-lid sticker, and an emboss" in logo_c
     assert "Do not draw a second landscape treatment." in logo_c
     assert "横版 appears once." in logo_c
@@ -2638,7 +2643,8 @@ def test_submitted_prompts_put_the_gold_commands_before_the_lock():
         elif caller not in lock and caller not in lead:
             assert filled.index(lock) < filled.index(caller), slot
         if slot == "logo_c":
-            assert filled.count("cup-shaped") == 1
+            assert "handle-less cup-shaped badge" in filled
+            assert "not a white positive illustration" in filled
             assert "not a row of app icons" in filled
             assert "does not draw a second 横版" in filled
         assert expected[slot] in filled
@@ -3244,3 +3250,142 @@ def test_long_realistic_subjects_fit_with_the_style_hint():
     assert "The confirmed color direction for this badge's accent is:" in logo
     assert logo.startswith(brand._STYLE_REF)
     assert len(logo) <= cap
+
+
+def _official_spec_subject() -> str:
+    """The spec paragraph the paid model copies from the skill. This path was cut at 2796."""
+    skill = Path("src/skills.ts").read_text(encoding="utf-8")
+    at = skill.index("id: 'brand-identity-director'")
+    block = skill[at:skill.index("category: 'branding'", at)]
+    text = block.split("instructions: '", 1)[1].split("',", 1)[0].replace("\\n", "\n")
+    start = text.index("On the spec card")
+    end = text.index("The storefront is")
+    return text[start:end].strip()
+
+
+def test_paid_fail_subjects_restate_the_rulings_and_keep_the_spec_heading():
+    """Product+Design fail on card 1 A / card 3 A. Subjects carry the rulings; the spec heading is whole."""
+    from ComfyArt.api.prompt_cap import finalize_qwen_prompt
+
+    def _ready(letter, card, zh):
+        brand.reset_for_tests()
+        brand.record_card_answer(_card1(), {
+            "bi_delivery": {"selected": ["A"]},
+            "bi_color": {"selected": ["A"]},
+            "bi_mark": {"selected": ["A"]},
+            "bi_source": {"selected": ["A"]},
+            "brief": {"zh": zh, "en": "QIMU COFFEE"},
+        })
+        questions = brand._CARD3_ZH if card == "zh" else brand._CARD3_EN
+        brand.record_card_answer(
+            {"questions": [questions]},
+            {"bi_direction": {"selected": [letter]}},
+        )
+
+    def _final(slot, prompt):
+        filled = brand.fill_default({"brand_slot": slot, "prompt": prompt})
+        err = str((filled.get("_brand_block") or {}).get("error") or "")
+        assert "not truncated" not in err, (slot, err)
+        final, ferr = finalize_qwen_prompt(
+            "wavespeed-ai/qwen-image-2.0/edit", filled["prompt"], [],
+        )
+        assert ferr == "", (slot, ferr, len(final))
+        return final
+
+    _ready("A", "zh", "栖木咖啡")
+    logo_c = _final(
+        "logo_c",
+        "Zone 4 小尺寸 is a handle-less badge plus one horizontal lockup for a takeaway cup.",
+    )
+    assert "handle-less cup-shaped badge" in logo_c
+    assert "not a mug" in logo_c
+    assert "not a white positive illustration" in logo_c
+    assert "solid reversed-out shape" in logo_c
+    assert "plus one horizontal lockup" not in logo_c
+    assert "takeaway" not in logo_c.lower()
+    assert "主组合 appears once only." in logo_c
+    assert "only in the 横版 zone" in logo_c
+    assert logo_c.index("Subject: a handle-less cup-shaped badge") < logo_c.index("Zone 4")
+
+    logo_b = _final("logo_b", "方向B")
+    assert brand._LOGO_B_SOLID in logo_b
+    assert brand._LOGO_B_RING in logo_b
+    assert brand._BADGE_FLAT in logo_b
+    assert "not a large eye" not in logo_b
+
+    logo_a = _final("logo_a", "方向A")
+    assert "not used as a large eye" in logo_a
+    _ready("A", "zh", "栖木咖啡")
+    for slot in ("spec", "cup", "bag", "storefront"):
+        text = _final(slot, "piece")
+        assert "not used as a large eye" in text, slot
+        assert "Do not add wood grain." in text, slot
+
+    official = _final("spec", _official_spec_subject())
+    assert len(official) <= 2750, len(official)
+    assert 2800 - len(official) >= 50, len(official)
+    for heading in (
+        "标识 / LOGO", "色彩 / COLOR", "变体 / VARIANTS", "字体 / TYPE",
+        "版式 / LAYOUT", "使用禁忌 / MISUSE", "影像与材质 / IMAGE",
+    ):
+        assert heading in official, heading
+    assert "影像与材质 /" not in official.replace("影像与材质 / IMAGE", "")
+    assert "Exactly 7 stacked panels" in official
+    assert "not a 2 by 3 grid" in official
+    assert "not a 3 by 3 grid" in official or "Not a 3 by 3 grid" in official
+    assert official.count("版式 / TYPE") == 1
+    assert "Do not write 版式 / TYPE." in official
+    assert "Do not drop or swap a character" in official
+    assert "any accent is at most about 5%" in official
+    assert "Annotation density follows the gold." in official
+    misuse = official.split("使用禁忌 / MISUSE (", 1)[1].split(")", 1)[0]
+    image = official.split("影像与材质 / IMAGE (", 1)[1].split(")", 1)[0]
+    assert "%" not in misuse and "%" not in image
+    assert "35/25/25/12" not in misuse and "35/25/25/12" not in image
+
+    _ready("B", "en", "栖木")
+    bare = brand.fill_default({"brand_slot": "spec", "prompt": ""})
+    err = str((bare.get("_brand_block") or {}).get("error") or "")
+    assert "not truncated" not in err, err
+    bare_final, ferr = finalize_qwen_prompt(
+        "wavespeed-ai/qwen-image-2.0/edit", bare["prompt"], [],
+    )
+    assert ferr == ""
+    assert len(bare_final) <= 2800, len(bare_final)
+
+    _ready("A", "zh", "栖木咖啡")
+    cup = _final("cup", "A paper cup on the counter, labeled 主组合 and 小尺寸.")
+    assert "the paper cup body is the confirmed 主色" in cup
+    assert "No white shows above or below the sleeve." in cup
+    assert "Exactly one worn sleeve" in cup
+    assert "exactly one laid-flat sleeve" in cup
+    assert "not two flat sleeves" in cup
+    assert "not two stripes on one and none on the other" in cup
+    assert "Do not print zone labels such as 主组合 or 小尺寸" in cup
+    assert "labeled  and ." in cup or "labeled" in cup
+    assert "主组合" in cup  # the prohibition, not a second sheet
+    subject = cup.split("Subject: ", 1)[1]
+    assert "confirmed 主色" in subject
+    assert "No white shows above or below the sleeve." in subject
+
+    mood = _final("moodboard", "Collapse this into three panels with leftover labels along the bottom.")
+    assert "exactly a 3 by 3 nine-grid" in mood
+    assert "nine filled cells" in mood
+    for label in ("质感", "色彩", "符号", "字标", "版式", "材料", "外带杯", "门头", "数字"):
+        assert label in mood
+    assert "three panels" not in mood
+    assert "labels along the bottom" not in mood
+
+    bag = _final("bag", "A lying bag printed with 主组合 符号 横版 小尺寸.")
+    assert "One side stripe only, not a double side stripe." in bag
+    assert "logo sheet" in bag
+    assert "主组合, 符号, 横版, 小尺寸" in bag
+    assert "lying bag printed with" in bag
+    assert "主组合 符号" not in bag
+
+    store = _final("storefront", "Paint an unpainted wood eave in the 主色.")
+    assert "not the 主色" in store
+    assert "carries the bird mark" in store
+    assert "不是裸木" in store
+    assert "not bare wood" in store
+    assert "unpainted" not in store.lower()

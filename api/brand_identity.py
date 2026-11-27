@@ -818,7 +818,7 @@ _SLOT_LOCK = {
     ),
     "logo_a": (
         "The mark is a monoline mark with an accent dot. "
-        "The accent is a small dot on the mark, not a separate large circle. "
+        "The accent is a small dot on the mark, not a separate large circle and not used as a large eye. "
         "Do not add wood grain. "
         "Not a filled plaque, not a round seal, not a cup silhouette, "
         "and not a generic coffee mug or an unrelated icon. "
@@ -840,7 +840,9 @@ _SLOT_LOCK = {
         "横版 appears once. Do not draw a second landscape treatment. "
         "In each zone the Chinese brand name and the English brand name appear together exactly once. "
         "The badge is a solid dark badge, the mark reversed out. "
+        "The mark is a solid shape reversed out of the dark badge, not a cream or light outline. "
         "The seal is a circular ink stamp of this same mark, not a cup and not a laurel wreath. "
+        "The circular ink seal of this bird includes the brand names on the ring. "
         "The badge is flat and printed, not a carved 3D block or embossed; the seal is a flat ink stamp, not wax."
     ),
     "logo_c": (
@@ -886,6 +888,8 @@ _SLOT_LOCK = {
     "storefront": (
         "The full shopfront, front view, the facade filling the frame edge to edge. "
         "The fascia eave is the accent color or the dark color from the confirmed color direction, not bare wood. "
+        "The fascia (招牌) is that dark color or the accent, not the 主色, and it carries the bird mark. "
+        "The eave is not bare wood (不是裸木). "
         "The fascia carries the mark. "
         "The logo is reversed out of the signboard. "
         "The fascia carries the Chinese brand name and the English brand name once. "
@@ -905,7 +909,7 @@ _SLOT_LOCK = {
 # stay in that same order.
 _SPEC_PREFACE = (
     "Draw seven separate panels. "
-    "标识 / LOGO has a dimension annotation ≥ 20 mm. "
+    "标识 / LOGO. Exactly 7 stacked panels, not a 3 by 3 grid and not a 2 by 3 grid. "
     "The 色彩 / COLOR swatch percentages sum to 100%. "
     "变体 / VARIANTS is its own panel. "
     "字体 / TYPE is its own panel. "
@@ -1175,9 +1179,14 @@ _BADGE_FLAT = (
     "The badge is flat and printed, not a carved 3D block or embossed; "
     "the seal is a flat ink stamp, not wax."
 )
+_ACCENT_DOT = (
+    "The accent is a small dot on the mark, not a separate large circle and not used as a large eye."
+)
+_LOGO_B_SOLID = "The mark is a solid shape reversed out of the dark badge, not a cream or light outline."
+_LOGO_B_RING = "The circular ink seal of this bird includes the brand names on the ring."
 # Sentences copied from the chosen lock onto the four deliverables. Order is stable.
 _MARK_CARRY = (
-    "The accent is a small dot on the mark, not a separate large circle.",
+    _ACCENT_DOT,
     "Do not add wood grain.",
     "The badge is a solid dark badge, the mark reversed out.",
     "The seal is a circular ink stamp of this same mark, not a cup and not a laurel wreath.",
@@ -1355,7 +1364,10 @@ def _apply_color_line(part: str) -> str:
     hint = color_hue_hint()
     if not hint:
         return ""
-    return "The confirmed color direction for the " + part + " is: " + hint + "."
+    line = "The confirmed color direction for the " + part + " is: " + hint + "."
+    if part == "fascia eave":
+        line += " The fascia (招牌) uses the dark color or the accent from that direction, not the 主色."
+    return line
 
 
 def _spec_assembly_line() -> str:
@@ -1454,6 +1466,121 @@ def _lift_brand_line(text: str) -> tuple[str, str]:
     return line, body.strip()
 
 
+_PANEL_HEADINGS = (
+    "标识 / LOGO",
+    "色彩 / COLOR",
+    "变体 / VARIANTS",
+    "字体 / TYPE",
+    "版式 / LAYOUT",
+    "使用禁忌 / MISUSE",
+    "影像与材质 / IMAGE",
+)
+_SHORT_SPEC_HEADINGS = (
+    "Exactly 7 stacked panels, not a 3 by 3 grid and not a 2 by 3 grid. "
+    "Headings once, in order: " + ", ".join(_PANEL_HEADINGS) + "."
+)
+
+
+def _heading_essay(piece: str) -> bool:
+    """A caller paragraph that lists the spec panels. The lock already states them in full."""
+    return sum(1 for heading in _PANEL_HEADINGS if heading in piece) >= 4
+
+
+def _finish_broken_heading(text: str) -> str:
+    """Do not leave a heading cut before its English half."""
+    body = str(text or "").rstrip()
+    for heading in _PANEL_HEADINGS:
+        zh, en = heading.split(" / ", 1)
+        broken = zh + " /"
+        if heading in body:
+            continue
+        if body.endswith(broken) or body.endswith(broken + " "):
+            body = body[: body.rfind(broken)].rstrip(" ,;，")
+    return body.strip()
+
+
+def _subject_restatement(slot_id: str) -> str:
+    """The product sentence the image follows. It restates the lock in the subject."""
+    if slot_id == "logo_c":
+        return (
+            "Subject: a handle-less cup-shaped badge (not a mug, not a picture of a handled cup, no handle). "
+            "The bird is negative space cut out of the badge, a solid reversed-out shape, "
+            "not a white positive illustration sitting inside the cup."
+        )
+    if slot_id == "logo_b":
+        return (
+            "Subject: " + _LOGO_B_SOLID + " " + _LOGO_B_RING
+        )
+    if slot_id == "logo_a":
+        return "Subject: " + _ACCENT_DOT
+    if slot_id == "moodboard":
+        return (
+            "Subject: exactly a 3 by 3 nine-grid, nine filled cells. "
+            "Labels in order: 质感, 色彩, 符号, 字标, 版式, 材料, 外带杯, 门头, 数字. "
+            "One label per cell, and every cell is filled."
+        )
+    if slot_id == "cup":
+        return (
+            "Subject: the paper cup body is the confirmed 主色. "
+            "No white shows above or below the sleeve. "
+            "Exactly one worn sleeve on the cup and exactly one laid-flat sleeve. "
+            "Each has exactly one thin accent stripe, not two stripes on one and none on the other, and not two flat sleeves. "
+            "Do not print zone labels such as 主组合 or 小尺寸 in the scene."
+        )
+    if slot_id == "bag":
+        return (
+            "Subject: shopping bags with handles. One side stripe only, not a double side stripe. "
+            "Do not print zone labels or a logo sheet (主组合, 符号, 横版, 小尺寸) on the lying bag."
+        )
+    if slot_id == "storefront":
+        return (
+            "Subject: the fascia (招牌) is the confirmed dark color or the accent, not the 主色, and carries the bird mark. "
+            "The eave is not bare wood (不是裸木)."
+        )
+    return ""
+
+
+def _sanitize_subject(slot_id: str, text: str) -> str:
+    """Drop caller phrases that contradict the slot. The rest of the caller stays."""
+    body = str(text or "")
+    patterns: tuple[str, ...] = ()
+    if slot_id == "logo_c":
+        patterns = (
+            r"(?i)plus one horizontal lockup",
+            r"(?i)plus one horizontal mark",
+            r"(?i)\btakeaway\b",
+        )
+    elif slot_id == "moodboard":
+        patterns = (
+            r"(?i)\bthree panels\b",
+            r"(?i)\b3 panels\b",
+            r"(?i)leftover labels along the bottom",
+            r"(?i)labels along the bottom",
+        )
+    elif slot_id == "storefront":
+        patterns = (r"(?i)\bunpainted\b", r"主色", r"裸木")
+    elif slot_id in ("cup", "bag"):
+        patterns = (r"主组合", r"小尺寸", r"横版", r"符号")
+    for pattern in patterns:
+        body = re.sub(pattern, " ", body)
+    body = re.sub(r"[ \t]{2,}", " ", body)
+    body = re.sub(r" +([,.])", r"\1", body)
+    body = re.sub(r"\n{2,}", "\n", body)
+    return body.strip()
+
+
+def guard_subject(slot_id: str, text: str) -> str:
+    """Caller text after the repairs this slot always makes. Empty when only a heading essay was removed."""
+    body = _sanitize_subject(slot_id, _drop_ref_hints(text))
+    if slot_id == "moodboard":
+        body = _drop_weak_mood_subject(body)
+    if slot_id == "spec":
+        chunks = re.split(r"\n+|(?<=[.。])\s+", body)
+        kept = [chunk.strip() for chunk in chunks if chunk.strip() and not _heading_essay(chunk.strip())]
+        body = " ".join(kept).strip()
+    return body
+
+
 def _slim_spec_subject(text: str, room: int, *, drop_hint_sentences: bool = False) -> str:
     """Drop duplicated panel essays and the vignette. Leave a short subject inside the budget."""
     body = str(text or "").strip()
@@ -1478,6 +1605,8 @@ def _slim_spec_subject(text: str, room: int, *, drop_hint_sentences: bool = Fals
     } if drop_hint_sentences else set()
 
     def _protected(piece: str) -> bool:
+        if piece == _SHORT_SPEC_HEADINGS:
+            return True
         # A sentence already printed in the lock or the colour line is not kept again.
         if (lock and piece in lock) or (color_line and piece in color_line):
             return False
@@ -1489,9 +1618,13 @@ def _slim_spec_subject(text: str, room: int, *, drop_hint_sentences: bool = Fals
             return True
         return False
 
+    want_short = False
     for chunk in chunks:
         piece = chunk.strip()
         if not piece:
+            continue
+        if drop_hint_sentences and _heading_essay(piece) and len(piece) > room:
+            want_short = True
             continue
         if _protected(piece):
             kept.append(piece)
@@ -1504,6 +1637,8 @@ def _slim_spec_subject(text: str, room: int, *, drop_hint_sentences: bool = Fals
         if piece in hint_sentences:
             continue
         kept.append(piece)
+    if want_short and _SHORT_SPEC_HEADINGS not in kept and len(_SHORT_SPEC_HEADINGS) <= room:
+        kept.append(_SHORT_SPEC_HEADINGS)
 
     def _join(parts: list[str]) -> str:
         return " ".join(parts).strip()
@@ -1525,10 +1660,13 @@ def _slim_spec_subject(text: str, room: int, *, drop_hint_sentences: bool = Fals
                 del kept[drop_at]
             break
         del kept[drop_at]
-    subject = _join(kept)
+    subject = _finish_broken_heading(_join(kept))
     if len(subject) <= room:
         return subject
-    return _trim_keeping_zone4(subject, room)
+    subject = _finish_broken_heading(_trim_keeping_zone4(subject, room))
+    if want_short and _SHORT_SPEC_HEADINGS not in subject and len(_SHORT_SPEC_HEADINGS) <= room:
+        return _SHORT_SPEC_HEADINGS
+    return subject
 
 
 # Role nouns a caller may prefix with a short hue word. Bare 色 is not a noun:
@@ -1740,13 +1878,14 @@ def _slot_command(slot_id: str) -> str:
         )
     if slot_id == "logo_a":
         return (
-            "Draw the mark first, and give it a small accent dot on the mark, not a separate large circle. "
+            "Draw the mark first, and give it a small accent dot on the mark, not a separate large circle and not used as a large eye. "
             "Draw the small-size row in this order: a rounded-square icon, a circular stamp, and a solid square badge."
         )
     if slot_id == "logo_b":
         return (
-            "Draw the mark first, reversed out of a solid dark badge. "
+            "Draw the mark first, a solid shape reversed out of the dark badge, not a cream or light outline. "
             "The seal is a circular ink stamp of this same mark, not a cup and not a laurel wreath. "
+            "The circular ink seal includes the brand names on the ring. "
             "The small-size row shows that seal, a horizontal plaque, a circle, and a square."
         )
     if slot_id == "cup":
@@ -1851,6 +1990,8 @@ def fill_default(args: dict) -> dict:
     tail = _DO_NOT_TAIL.get(slot_id, "")
     mark_line = _chosen_mark_sentence() if slot_id in ("spec", "cup", "bag", "storefront") else ""
     mood_subject = _mood_subject_line() if slot_id == "moodboard" else ""
+    subject_lead = _subject_restatement(slot_id)
+    raw_prompt = _without_exact_line(raw_prompt, subject_lead)
     raw_prompt = _without_exact_line(raw_prompt, mood_subject)
     raw_prompt = _without_exact_line(raw_prompt, mark_line)
     raw_prompt = _without_exact_line(raw_prompt, color_line)
@@ -1873,10 +2014,11 @@ def fill_default(args: dict) -> dict:
         raw_prompt = _defer_object_color(raw_prompt)
     elif slot_id in ("cup", "bag"):
         raw_prompt = _defer_object_color(raw_prompt, _CUP_BAG_NOUN)
-    fixed = [part for part in (style, mark_line, preface, lead, str(lock or ""), mood_subject, color_line, brand_line, tail) if part]
+    raw_prompt = _sanitize_subject(slot_id, raw_prompt)
+    fixed = [part for part in (style, mark_line, preface, lead, str(lock or ""), mood_subject, subject_lead, color_line, brand_line, tail) if part]
     # Exact blocks this call wrote before the subject. The guard strips this list and nothing else.
     args["_server_leads"] = [
-        part for part in (style, mark_line, preface, lead, str(lock or ""), mood_subject) if part
+        part for part in (style, mark_line, preface, lead, str(lock or ""), mood_subject, subject_lead) if part
     ]
     fixed_len = sum(len(part) for part in fixed) + len(fixed)
     cap = _qwen_prompt_cap()
@@ -1886,10 +2028,14 @@ def fill_default(args: dict) -> dict:
             "user_message": f"prompt is {fixed_len} characters; the limit is {cap}. The prompt was not truncated.",
         }
         return args
+    # The spec card leaves at least 50 characters under the cap when the fixed part allows it.
+    subject_room = cap - fixed_len
+    if slot_id == "spec" and fixed_len <= 2750:
+        subject_room = min(subject_room, 2750 - fixed_len)
     raw_prompt = _slim_spec_subject(
-        raw_prompt, cap - fixed_len, drop_hint_sentences=(slot_id == "spec"),
+        raw_prompt, subject_room, drop_hint_sentences=(slot_id == "spec"),
     )
-    parts = [style, mark_line, preface, lead, str(lock or ""), mood_subject, raw_prompt, color_line, brand_line, tail]
+    parts = [style, mark_line, preface, lead, str(lock or ""), mood_subject, subject_lead, raw_prompt, color_line, brand_line, tail]
     prompt = "\n".join(part for part in parts if part)
     args["prompt"] = scrub_internal_marks(prompt)
     refs = _refs_for(slot, progress)
