@@ -1214,18 +1214,23 @@ def delivery_void_reason(row: dict, image: bytes | None = None) -> str:
 
 
 def _attempt_charged(row: dict) -> bool:
+    """The charged and refunded fields are the record. Error prose is not a charge.
+
+    A missing flag on the raw completed-noise sentence is still a charge: that
+    sentence is written only after the job completed, and completion was billed
+    unless ``refunded`` is set. An explicit ``charged`` false stays uncharged.
+    """
+    if row.get("refunded") is True:
+        return True
+    if row.get("charged") is True:
+        return True
     if row.get("charged") is False:
         return False
-    if row.get("charged") is True or row.get("refunded") is True:
-        return True
     cost = row.get("charged_usd")
     if isinstance(cost, (int, float)) and not isinstance(cost, bool):
         return float(cost) > 0
     text = " ".join(str(row.get(key) or "") for key in ("error", "user_message"))
-    low = text.lower()
-    if "nothing was charged" in low or "未扣费" in text or "没有扣" in text:
-        return False
-    if "may have been charged" in low or "charged about" in low or "可能已扣费" in text:
+    if "full-frame noise is not a deliverable" in text:
         return True
     return False
 
@@ -2134,6 +2139,34 @@ def spend_before(stage: int) -> float:
     return round(max(0.0, spent - _stage_amount(already)), 4)
 
 
+def _settle_requote_blocks(stage: int) -> None:
+    """A newly confirmed quote replaces the requote block for slots in this stage.
+
+    The stage amount is already the new quote. This does not add the failed
+    attempt on top of it. The slot leaves ``failed`` and can be submitted once.
+    """
+    progress = _progress()
+    failed = progress.get("failed")
+    if not isinstance(failed, list):
+        return
+    ledger = progress.get("delivery_ledger") or []
+    stage = int(stage or 0)
+    for slot in list(failed):
+        if stage_of(slot) != stage:
+            continue
+        rows = [row for row in ledger if isinstance(row, dict) and row.get("slot") == slot]
+        if not rows or not rows[-1].get("requote"):
+            continue
+        rows[-1]["requote"] = False
+        rows[-1]["settled"] = True
+        failed.remove(slot)
+        rec = _stage_record(stage)
+        if isinstance(rec, dict):
+            rec["submitted_slots"] = [item for item in (rec.get("submitted_slots") or []) if str(item) != slot]
+            rec["dispatching_slots"] = [item for item in (rec.get("dispatching_slots") or []) if str(item) != slot]
+            rec["dispatched"] = False
+
+
 def note_confirmed(total_usd: float, units: int = 0, stage: int = 0) -> None:
     """Record the stage price once. A second confirm of the same stage replaces it and does not add."""
     progress = _progress()
@@ -2151,6 +2184,7 @@ def note_confirmed(total_usd: float, units: int = 0, stage: int = 0) -> None:
         done[key] = {"amount": amount, "fingerprint": None, "dispatched": False}
     if key:
         progress["spent"] = _sum_stage_usd(progress)
+        _settle_requote_blocks(key)
     else:
         progress["spent"] = round(float(progress.get("spent") or 0) + amount, 4)
     _persist_grants()

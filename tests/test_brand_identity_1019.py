@@ -1894,6 +1894,103 @@ def test_failed_image_is_not_a_deliverable_and_retries_once_only_when_uncharged(
     assert "storefront" not in brand._progress()["failed"]
 
 
+def test_a_confirmed_requote_lets_the_slot_submit_once():
+    """A charged failure stays blocked until note_confirmed records the new quote.
+
+    The new stage amount replaces the old one. Spent stays 3+9+12, and the slot
+    can be submitted once under that confirmation.
+    """
+    _quote_the_default_total()
+    args = _submit_slot("spec")
+    brand.record_wait({"results": [{
+        "id": "h-spec", "status": "error", "error": "generation failed",
+        "shapes": ["shape:bad"], "generation_succeeded": False,
+        "charged": True, "charged_usd": 0.12, "refunded": False,
+    }]})
+    assert brand.submit_block_reason(args) == "requote"
+    assert "spec" in brand._progress()["failed"]
+    assert brand._progress()["spent"] == 0.24
+    # Still blocked until the new quote is confirmed.
+    assert brand.submit_block_reason(args) == "requote"
+    brand.note_confirmed(0.12, 4, stage=3)
+    assert brand._progress()["spent"] == 0.24
+    assert "spec" not in brand._progress()["failed"]
+    settled = [row for row in brand._progress()["delivery_ledger"] if row.get("slot") == "spec"][-1]
+    assert settled["requote"] is False and settled["settled"] is True
+    assert brand._delivery_block("spec") is None
+    assert brand.submit_block_reason(args) != "requote"
+    assert "spec" not in brand.submitted_slots(3)
+    brand.note_brand_submitted(args)
+    assert "spec" in brand.submitted_slots(3)
+    assert brand.submit_block_reason(args) == "submitted"
+    assert brand._progress()["spent"] == 0.24
+
+
+def test_raw_noise_text_without_a_charged_flag_is_not_a_free_retry():
+    """The completed-noise sentence is a charge even when the flag was left off.
+
+    An explicit charged or refunded field still wins, and the confirmed 24 stays put.
+    """
+    from ComfyArt.api import wavespeed
+
+    _quote_the_default_total()
+    _submit_slot("spec")
+    brand.record_wait({"results": [{
+        "id": "h-spec", "status": "error",
+        "error": "full-frame noise is not a deliverable",
+        "shapes": ["shape:noise"], "generation_succeeded": False,
+    }]})
+    entry = brand._progress()["delivery_ledger"][-1]
+    assert entry["charged"] is True
+    assert entry["retry"] is False and entry["requote"] is True
+    assert brand.submit_block_reason({"skill": brand.SKILL, "brand_slot": "spec"}) == "requote"
+    assert "may have been charged" not in entry["reason"]
+    assert brand._progress()["spent"] == 0.24
+
+    _submit_slot("cup")
+    brand.record_wait({"results": [{
+        "id": "h-cup", "status": "error",
+        "error": "full-frame noise is not a deliverable",
+        "shapes": ["shape:cup"], "generation_succeeded": False,
+        "charged": True, "charged_usd": 0.03, "refunded": False,
+    }]})
+    flagged = brand._progress()["delivery_ledger"][-1]
+    assert flagged["retry"] is False and flagged["requote"] is True and flagged["charged"] is True
+
+    _submit_slot("bag")
+    brand.record_wait({"results": [{
+        "id": "h-bag", "status": "error", "error": "generation failed",
+        "generation_succeeded": False, "charged": False, "refunded": False,
+    }]})
+    free = brand._progress()["delivery_ledger"][-1]
+    assert free["retry"] is True and free["requote"] is False
+    assert brand._progress()["spent"] == 0.24
+
+    _submit_slot("storefront")
+    brand.record_wait({"results": [{
+        "id": "h-storefront", "status": "error", "error": "full-frame noise is not a deliverable",
+        "generation_succeeded": False, "charged": True, "refunded": True,
+    }]})
+    refunded = brand._progress()["delivery_ledger"][-1]
+    assert refunded["retry"] is True and refunded["requote"] is False and refunded["refunded"] is True
+    assert brand._progress()["spent"] == 0.24
+
+    stamped = wavespeed.stamp_wait_charge(
+        {"ws:task-1": {"status": {"messages": [["execution_error", {
+            "exception_message": "full-frame noise is not a deliverable",
+        }]]}}},
+        "task-1", 0.12, refunded=False,
+    )
+    payload = stamped["ws:task-1"]
+    assert payload["charged"] is True and payload["refunded"] is False
+    assert payload["charged_usd"] == 0.12
+    info = payload["status"]["messages"][0][1]
+    assert info["charged"] is True and info["refunded"] is False and info["charged_usd"] == 0.12
+    source = open("api/wavespeed.py", encoding="utf-8").read()
+    noise_at = source.index("full-frame noise is not a deliverable")
+    assert source.index("stamp_wait_charge(", noise_at) > noise_at
+
+
 def test_submitted_prompts_put_the_gold_commands_before_the_lock():
     """The command sits in the submitted body, immediately before the lock.
 

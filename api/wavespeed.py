@@ -2598,6 +2598,31 @@ def _history(task: str, status: str, messages: list, outputs: dict) -> dict:
     return {f"ws:{task}": entry}
 
 
+def stamp_wait_charge(result: dict, task: str, cost, *, refunded: bool = False) -> dict:
+    """Put the completed attempt's charge on the wait payload as fields.
+
+    ``charged`` is true because the job finished. ``refunded`` is explicit.
+    The amount is the quoted cost when one was recorded.
+    """
+    if not isinstance(result, dict):
+        return result
+    entry = result.get(f"ws:{task}")
+    if not isinstance(entry, dict):
+        return result
+    entry["charged"] = True
+    entry["refunded"] = bool(refunded)
+    if cost is not None:
+        entry["charged_usd"] = cost
+    messages = (entry.get("status") or {}).get("messages") or []
+    for message in messages:
+        if isinstance(message, (list, tuple)) and len(message) > 1 and isinstance(message[1], dict):
+            message[1]["charged"] = True
+            message[1]["refunded"] = bool(refunded)
+            if cost is not None:
+                message[1]["charged_usd"] = cost
+    return result
+
+
 def _fail(task: str, message: "str | WaveSpeedError") -> dict:
     info: dict = {"exception_message": str(message)}
     if isinstance(message, WaveSpeedError) and message.kind:
@@ -2770,10 +2795,13 @@ async def _poll_once(task: str, job: dict, now: float) -> dict:
             blob = _ref_bytes(ref)
             if blob and image_is_full_frame_noise(blob):
                 cost = job.get("quoted")
-                return _fail(task, WaveSpeedError(
+                result = _fail(task, WaveSpeedError(
                     "full-frame noise is not a deliverable",
                     502, kind="noOutput", charged=cost,
                 ))
+                # Completion already billed this attempt. The wait row carries
+                # charged and refunded as fields; record_wait does not parse the sentence.
+                return stamp_wait_charge(result, task, cost, refunded=False)
     # #707: the saved file's pixels are checked against the lock. No stretch, crop, or second submit.
     # P1 hotfix (#911): the job completed, so it was charged. A failed size check never drops the
     # image: it is delivered as returned, logged, and carries a zh/en size_notice for the user.
