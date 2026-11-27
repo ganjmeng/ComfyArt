@@ -334,7 +334,7 @@ function waitResults(editor: Editor, ids: string[], timeout: number) {
       if (/已取消该生成，未扣费|Cancelled this generation; nothing was charged|已取消：未确认费用|Cancelled: cost not confirmed/.test(r.error)) {
         return { id, status: 'declined', cancelled: true, error: r.error }
       }
-      const flags = { deliveryCharge }.deliveryCharge(r.error)
+      const flags = deliveryCharge(r.error)
       return { id, status: 'error', ...agentError(r.error), charged: flags.charged, refunded: flags.refunded }
     })
   }

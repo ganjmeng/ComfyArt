@@ -5,6 +5,7 @@ Industry templates stay on the #979 3+1 contract. No WaveSpeed call.
 from __future__ import annotations
 
 import io
+import re
 from pathlib import Path
 
 import pytest
@@ -445,7 +446,7 @@ def test_spec_card_is_seven_lovart_panels_and_brand_prompts_have_no_lock_words()
         assert "Do not print an English instruction label." in assembled, slot
         assert "keep the cup" in assembled, slot
         if slot == "spec":
-            assert len(assembled) <= 2700
+            assert len(assembled) <= 2800
         else:
             assert "no industry template was selected" in assembled, slot
         if slot == "spec":
@@ -721,7 +722,7 @@ def test_spec_prompt_leads_with_the_panel_contract_and_keeps_the_locked_brief_la
     assert "percentages sum to 100%" in spec
     assert "soft vignette" not in spec
     assert "drawn 「最小使用尺寸」 diagram" in spec
-    assert len(spec) <= 2700
+    assert len(spec) <= 2800
     assert brand._spec_lock().rstrip().endswith("Paper ground, not black.")
     assert spec.rstrip().endswith(brand._spec_assembly_line())
     assert brand._spec_lock() in spec
@@ -772,25 +773,52 @@ def test_logo_c_warm_earth_prompt_does_not_name_indigo():
     assert "靛蓝" not in brand.default_hint().lower()
 
 
-def test_caller_color_words_defer_to_the_confirmed_line_and_logo_c_drops_logo_drafts():
-    """The planner's own pigment words leave the subject. Logo C is not drawn from Logo A."""
+def test_unselected_color_phrases_leave_product_names_and_change_with_the_pick():
+    """Strip whole color phrases from directions that were not picked. Products stay."""
     from pathlib import Path
-    brand.record_card_answer(_card1(), {
-        "bi_delivery": {"selected": ["A"]},
-        "bi_color": {"selected": ["A"]},
-        "bi_mark": {"selected": ["A"]},
-        "bi_source": {"selected": ["A"]},
-    })
-    subject = "色彩格用陶土点缀。门头暖木檐口。焦糖棕点缀。terracotta accent."
-    for slot in ("moodboard", "logo_a", "logo_b", "logo_c", "cup", "bag", "storefront"):
-        filled = brand.fill_default({"brand_slot": slot, "prompt": subject})
-        text = filled["prompt"]
-        for word in ("陶土", "暖木", "焦糖", "terracotta"):
-            assert word not in text, (slot, word)
-        again = brand.fill_default({"brand_slot": slot, "prompt": text})
-        assert again["prompt"] == text, slot
+    spec = {
+        "questions": [
+            {"id": "bi_delivery", "options": [{"id": "A", "label": "核心套装"}]},
+            {"id": "bi_color", "options": [
+                {"id": "A", "label": "暖土色为主 + 低饱和靛蓝点缀"},
+                {"id": "B", "label": "陶土点缀"},
+                {"id": "C", "label": "暖木檐口"},
+            ]},
+            {"id": "bi_mark", "options": [{"id": "A", "label": "图形符号"}]},
+            {"id": "bi_source", "options": [{"id": "A", "label": "没有实拍图"}]},
+        ],
+    }
+    subject = "焦糖拿铁。陶土杯。暖木质吧台。陶土点缀。暖木檐口。"
+
+    def answer(selected: str) -> None:
+        brand.reset_for_tests()
+        brand.record_card_answer(spec, {
+            "bi_delivery": {"selected": ["A"]},
+            "bi_color": {"selected": [selected]},
+            "bi_mark": {"selected": ["A"]},
+            "bi_source": {"selected": ["A"]},
+        })
+
+    answer("A")
+    cup = brand.fill_default({"brand_slot": "cup", "prompt": subject})["prompt"]
+    assert "焦糖拿铁" in cup
+    assert "陶土杯" in cup
+    assert "暖木质吧台" in cup
+    assert "陶土点缀" not in cup
+    assert "暖木檐口" not in cup
+    assert brand.fill_default({"brand_slot": "cup", "prompt": cup})["prompt"] == cup
+    answer("B")
+    picked_b = brand.fill_default({"brand_slot": "moodboard", "prompt": subject})["prompt"]
+    assert "陶土点缀" in picked_b
+    assert "暖木檐口" not in picked_b
+    assert "焦糖拿铁" in picked_b and "暖木质吧台" in picked_b
+    answer("C")
+    picked_c = brand.fill_default({"brand_slot": "storefront", "prompt": subject})["prompt"]
+    assert "暖木檐口" in picked_c
+    assert "陶土点缀" not in picked_c
+    assert "焦糖拿铁" in picked_c and "陶土杯" in picked_c and "暖木质吧台" in picked_c
+    answer("A")
     mood = brand.fill_default({"brand_slot": "moodboard", "prompt": subject})["prompt"]
-    assert "暖土色为主 + 低饱和靛蓝点缀" in mood
     logo_c = brand.fill_default({"brand_slot": "logo_c", "prompt": subject})["prompt"]
     assert "handle-less cup silhouette" in logo_c
     assert "The confirmed color direction for this badge's accent is: 暖土色为主 + 低饱和靛蓝点缀" in logo_c
@@ -826,11 +854,15 @@ def test_caller_color_words_defer_to_the_confirmed_line_and_logo_c_drops_logo_dr
     drawn = brand.fill_default({
         "brand_slot": "logo_c",
         "prompt": "draw from the handled cup",
-        "refs": ["shape:logo_a", "shape:logo_b", "shape:mood"],
+        "refs": [
+            "shape:logo_a", "shape:logo_b", "shape:mood",
+            "https://example.com/handled-cup.png", "/view?f=logo_a.png", "shape:upload-9",
+        ],
     })
     assert drawn["refs"] == ["shape:mood"]
-    assert "shape:logo_a" not in drawn["refs"]
-    assert "shape:logo_b" not in drawn["refs"]
+    assert "/view?f=logo_a.png" not in drawn["refs"]
+    assert "shape:upload-9" not in drawn["refs"]
+    assert "https://example.com/handled-cup.png" not in drawn["refs"]
 
 
 def test_visual_assembly_follows_the_gold_sheet():
@@ -853,6 +885,18 @@ def test_visual_assembly_follows_the_gold_sheet():
         assert banned not in brand._spec_lock(), banned
         assert banned not in brand._SPEC_PREFACE, banned
         assert banned not in hint, banned
+        assert banned not in skill, banned
+        assert banned not in brand._slot_command("spec"), banned
+        assert banned not in brand._slot_command("logo_c"), banned
+        assert banned not in brand._slot_command("moodboard"), banned
+    shared = Path("api/brand_identity.py").read_text(encoding="utf-8")
+    shared = re.sub(
+        r"(?ms)^_CARD1_ZH = \[.*?^_CARD3_ZH = ",
+        "_CARD3_ZH = ",
+        shared,
+    )
+    for banned in banned_names:
+        assert banned not in shared, banned
         assert banned not in skill, banned
     for source in (hint, skill):
         assert "The cup silhouette has no handle." in source
@@ -898,7 +942,8 @@ def test_visual_assembly_follows_the_gold_sheet():
     assert "independent panel" in spec
     assert "drawn 「最小使用尺寸」 diagram" in spec
     assert "The hue hint is not a swatch" not in spec
-    assert "COLR, TISUS, or INMAGE" not in spec
+    assert "never COLR, TISUS, INMAGE" in spec
+    assert "noise" not in spec.lower()
     assert "影像格小字不得写错" in spec
     assert "影像格 small labels and captions on 影像与材质 / IMAGE must be spelled correctly" in spec
     assert "no typo, no garble, and no invented heading fragment" in spec
@@ -1883,10 +1928,26 @@ def test_real_sheets_separate_noise_from_reviewable_crops():
     assert len(negatives) == 23
 
 
-def test_shipped_bundle_contains_delivery_charge():
+def test_built_bundle_charges_when_the_error_says_it_may_have_been_charged():
+    """Run the compiled charge function. A string search is not the check."""
+    import subprocess
     root = Path(__file__).resolve().parents[1]
-    blobs = "".join(p.read_text(encoding="utf-8", errors="ignore") for p in (root / "dist" / "assets").glob("*.js"))
-    assert "deliveryCharge" in blobs
+    blobs = "\n".join(p.read_text(encoding="utf-8", errors="ignore") for p in (root / "dist" / "assets").glob("*.js"))
+    match = re.search(
+        r"function (\w+)\((\w)\)\{let (\w+)=/refunded\|已退款/\.test\(\2\);return\{charged:(.+?),refunded:\3\}\}",
+        blobs,
+    )
+    assert match, "built bundle is missing the compiled charge function"
+    script = (
+        match.group(0)
+        + "\nconst hit = " + match.group(1)
+        + "('The task finished but returned no image, and it may have been charged about $0.12.');\n"
+        + "if (hit.charged !== true || hit.refunded !== false) process.exit(2);\n"
+        + "const clean = " + match.group(1) + "('Cancelled this generation; nothing was charged');\n"
+        + "if (clean.charged !== false) process.exit(3);\n"
+    )
+    done = subprocess.run(["node", "-e", script], check=False, capture_output=True, text=True)
+    assert done.returncode == 0, done.stderr or done.stdout
 
 
 def test_completed_noise_is_a_charged_failure_and_not_a_delivered_spec():
@@ -2140,11 +2201,11 @@ def test_raw_noise_text_without_a_charged_flag_is_not_a_free_retry():
     assert source.index("stamp_wait_charge(", noise_at) > noise_at
 
 
-def test_spec_submission_stays_under_2700_and_keeps_the_panel_commands():
-    """The locked brief stays whole. Duplicated essays and the vignette do not."""
+def _spec_for(color: str, other: str = "") -> str:
+    brand.reset_for_tests()
     brand.record_card_answer(_card1(), {
         "bi_delivery": {"selected": ["A"]},
-        "bi_color": {"selected": ["A"]},
+        "bi_color": {"selected": [color] if color else [], "other_text": other},
         "bi_mark": {"selected": ["A"]},
         "bi_source": {"selected": ["A"]},
     })
@@ -2153,21 +2214,40 @@ def test_spec_submission_stays_under_2700_and_keeps_the_panel_commands():
         "Warm paper ground with a soft vignette. Not a sparse empty card. "
         + brand.default_hint()
     )
-    spec = brand.fill_default({"brand_slot": "spec", "prompt": caller})["prompt"]
-    assert len(spec) <= 2700
-    assert spec.startswith("Draw seven separate panels")
-    assert "字体 / TYPE is its own panel" in spec
-    assert "版式 / LAYOUT is a different panel" in spec
-    assert "drawn 「最小使用尺寸」 diagram" in spec
-    assert "independent panel" in spec
-    assert "percentages sum to 100%" in spec
-    assert "Sample the swatches from the confirmed color direction: 暖土色为主 + 低饱和靛蓝点缀" in spec
-    assert "soft vignette" not in spec
-    assert brand._spec_lock() in spec
-    assert spec.index(brand._SPEC_PREFACE) < spec.index(brand._slot_command("spec"))
-    assert spec.index(brand._slot_command("spec")) < spec.index(brand._spec_lock())
-    assert spec.rstrip().endswith(brand._spec_assembly_line())
+    return brand.fill_default({"brand_slot": "spec", "prompt": caller})["prompt"]
+
+
+def test_spec_submission_stays_under_2800_and_keeps_the_panel_commands():
+    """The whole spec submission stays within 2800 for every card-1 color, including a long custom one."""
+    lengths = {}
+    for color in ("A", "B", "C"):
+        spec = _spec_for(color)
+        lengths[color] = len(spec)
+        assert len(spec) <= 2800, (color, len(spec))
+        assert "栖木咖啡 QIMU COFFEE" in spec.splitlines()
+        assert "QIMU COFFEE" in spec
+        assert "soft vignette" not in spec
+        assert "Spell each heading exactly once" in spec
+        assert "Warm paper ground" in spec
+        assert "flat swatches (no wood grain)" in spec
+        assert "confirmed accent" in spec
+        assert "never COLR, TISUS, INMAGE" in spec
+        assert "noise" not in spec.lower()
+        assert brand._spec_lock() in spec
+        assert spec.index(brand._SPEC_PREFACE) < spec.index("栖木咖啡 QIMU COFFEE")
+        assert spec.index("栖木咖啡 QIMU COFFEE") < spec.index(brand._slot_command("spec"))
+        assert spec.index(brand._slot_command("spec")) < spec.index(brand._spec_lock())
+        assert spec.rstrip().endswith(brand._spec_assembly_line())
+        assert brand.fill_default({"brand_slot": "spec", "prompt": spec})["prompt"] == spec
+    custom = "自定义长色盘：雾绿点缀与岩灰檐口并置，再加一份比卡片选项更长的方向说明，用来卡住整段提交的上限。"
+    spec = _spec_for("", custom)
+    lengths["custom"] = len(spec)
+    assert len(spec) <= 2800, ("custom", len(spec))
+    assert custom in spec
+    assert "栖木咖啡 QIMU COFFEE" in spec.splitlines()
+    assert "noise" not in spec.lower()
     assert brand.fill_default({"brand_slot": "spec", "prompt": spec})["prompt"] == spec
+    test_spec_submission_stays_under_2800_and_keeps_the_panel_commands.lengths = lengths
 
 
 def test_submitted_prompts_put_the_gold_commands_before_the_lock():
@@ -2191,7 +2271,7 @@ def test_submitted_prompts_put_the_gold_commands_before_the_lock():
         "logo_a": "rounded-square icon, a circular stamp, and a solid square badge",
         "logo_b": "The main seal is a circular stamp filled with the confirmed accent or its dark color.",
         "logo_c": "not a wood-grain brown plaque",
-        "spec": "never a full-frame noise field",
+        "spec": "One clean, reviewable sheet",
         "cup": "the thin stripe on the sleeve is the confirmed accent",
         "bag": "down the side gusset, not only across the front face",
         "storefront": "nor a hue invented outside that confirmed direction",

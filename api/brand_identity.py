@@ -694,7 +694,16 @@ def record_card_answer(spec: dict, answers: object) -> str | None:
     progress = _progress()
     if kind == "card1":
         selected, other = _selected(answers, _Q_COLOR)
-        progress["color"] = {"selected": selected[:1], "other": other}
+        options = []
+        for question in (spec or {}).get("questions") or []:
+            if not isinstance(question, dict) or str(question.get("id") or "") != _Q_COLOR:
+                continue
+            options = [
+                {"id": str(opt.get("id") or ""), "label": str(opt.get("label") or "")}
+                for opt in (question.get("options") or [])
+                if isinstance(opt, dict)
+            ]
+        progress["color"] = {"selected": selected[:1], "other": other, "options": options}
         if progress["phase"] in {"need_card1", "done"}:
             progress["phase"] = "moodboard"
             progress["mood_inflight"] = False
@@ -875,17 +884,17 @@ _SLOT_LOCK = {
 # layout commands that brief does not draw: separate type and layout panels, the
 # minimum-size diagram, misuse as its own panel, and swatches that sum to 100%.
 _SPEC_PREFACE = (
-    "Draw seven separate panels, in this order: "
+    "Draw seven separate panels: "
     "标识 / LOGO, 色彩 / COLOR, 变体 / VARIANTS, 字体 / TYPE, 版式 / LAYOUT, "
     "使用禁忌 / MISUSE, 影像与材质 / IMAGE. "
     "字体 / TYPE is its own panel. "
     "版式 / LAYOUT is a different panel. "
     "Do not write 版式 / TYPE. "
-    "标识 / LOGO contains a drawn 「最小使用尺寸」 diagram. "
+    "标识 / LOGO has a drawn 「最小使用尺寸」 diagram. "
     "使用禁忌 / MISUSE is an independent panel. "
-    "Each swatch has a color name, a role, and a percentage, and the percentages sum to 100%."
+    "percentages sum to 100%."
 )
-_SPEC_PROMPT_MAX = 2700
+_SPEC_PROMPT_MAX = 2800
 
 
 def _mood_color_line() -> str:
@@ -923,15 +932,54 @@ def _apply_color_line(part: str) -> str:
 def _spec_assembly_line() -> str:
     """Runtime only. The locked brief stays byte-identical and still ends the lock."""
     hint = color_hue_hint()
-    named = ""
-    if hint:
-        named = " Sample the swatches from the confirmed color direction: " + hint + "."
-    return (
-        "Do not copy the reference moodboard into a 3 by 3 grid. "
+    line = (
+        "Not a 3 by 3 grid. "
         "影像格 small labels and captions on 影像与材质 / IMAGE must be spelled correctly, "
         "with no typo, no garble, and no invented heading fragment. 影像格小字不得写错."
-        + named
     )
+    if hint:
+        line += " Sample the swatches from the confirmed color direction: " + hint + "."
+    return line
+
+
+_EN_BRAND = re.compile(r"\b[A-Z]{2,}(?:\s+[A-Z]{2,})+\b")
+_CJK_BRAND = re.compile(r"[\u4e00-\u9fff]{2,}")
+# A color direction phrase, not a product or a material: 点缀 / 檐口 / 色.
+_COLOR_PHRASE = re.compile(r"[\u4e00-\u9fff]{1,16}(?:点缀|檐口|色)")
+
+
+def _drop_noise_word(text: str) -> str:
+    cleaned = re.sub(r"(?i)\bnoise\b", "", str(text or ""))
+    cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
+    return cleaned.strip()
+
+
+def _brand_name_line(text: str) -> str:
+    """Chinese name and English name, taken from the caller brief. Nothing is hardcoded."""
+    body = str(text or "")
+    english = _EN_BRAND.search(body)
+    if not english:
+        return ""
+    before = _CJK_BRAND.findall(body[max(0, english.start() - 80):english.start()])
+    after = _CJK_BRAND.findall(body[english.end():english.end() + 80])
+    chinese = before[-1] if before else (after[0] if after else "")
+    if not chinese:
+        return ""
+    return f"{chinese} {english.group()}"
+
+
+def _lift_brand_line(text: str) -> tuple[str, str]:
+    """Pull the two brand names onto one line so a later clip cannot cut the English name."""
+    line = _brand_name_line(text)
+    if not line:
+        return "", str(text or "")
+    chinese, english = line.split(" ", 1)
+    chunks = re.split(r"(\n+|(?<=[.。])\s+)", str(text or ""))
+    kept = [chunk for chunk in chunks if not (chinese in chunk and english in chunk)]
+    body = "".join(kept)
+    body = re.sub(r"[ \t]{2,}", " ", body)
+    body = re.sub(r"\n{2,}", "\n", body)
+    return line, body.strip()
 
 
 def _slim_spec_subject(text: str, room: int) -> str:
@@ -968,49 +1016,64 @@ def _slim_spec_subject(text: str, room: int) -> str:
     return clipped.strip()
 
 
-# Caller subjects have named a pigment the confirmed card did not pick (陶土点缀, 暖木檐口).
-# Strip those from the subject only. The runtime color line, added after this, is the
-# color instruction, and it is built from the saved card answer.
-_CONFLICTING_COLOR = (
-    "低饱和靛蓝",
-    "燕麦奶白",
-    "暖木檐口",
-    "陶土点缀",
-    "陶土橙",
-    "陶土橘",
-    "焦糖棕",
-    "深焙棕",
-    "暖木",
-    "靛蓝",
-    "陶土",
-    "焦糖",
-)
+def _color_option_rows() -> list[dict]:
+    """Option rows from the answered card. The locked card is the fallback."""
+    color = _progress().get("color") if isinstance(_progress().get("color"), dict) else {}
+    saved = color.get("options")
+    if isinstance(saved, list) and saved:
+        return [row for row in saved if isinstance(row, dict)]
+    for row in _CARD1_ZH:
+        if row["id"] == _Q_COLOR:
+            return list(row["options"])
+    return []
+
+
+def _unselected_color_phrases() -> list[str]:
+    """Color-direction phrases from options the user did not pick.
+
+    Only a whole phrase that ends in 点缀, 檐口, or 色. A product name or a
+    material noun is not a phrase. Nothing is stripped when no color answer
+    is saved, and a phrase that also appears in the confirmed answer stays.
+    """
+    color = _progress().get("color") if isinstance(_progress().get("color"), dict) else {}
+    selected = color.get("selected") or []
+    if not selected and not str(color.get("other") or "").strip():
+        return []
+    key = str(selected[0]).upper()[:1] if selected else ""
+    confirmed = color_hue_hint()
+    selected_label = ""
+    found: list[str] = []
+    seen: set[str] = set()
+    for opt in _color_option_rows():
+        label = str(opt.get("label") or "")
+        if key and str(opt.get("id") or "").upper()[:1] == key:
+            selected_label = label
+            continue
+        for phrase in _COLOR_PHRASE.findall(label):
+            if phrase in seen:
+                continue
+            if confirmed and phrase in confirmed:
+                continue
+            if selected_label and phrase in selected_label:
+                continue
+            seen.add(phrase)
+            found.append(phrase)
+    found.sort(key=len, reverse=True)
+    return found
 
 
 def _defer_color_words(text: str) -> str:
-    """Remove a caller hue or material so the confirmed-color line is the only color instruction."""
+    """Remove an unselected color phrase. Leave a product name or a material noun."""
     cleaned = str(text or "")
-    for phrase in _CONFLICTING_COLOR:
-        cleaned = cleaned.replace(phrase, "")
-    cleaned = re.sub(
-        r"(?i)\b(?:terracotta(?:\s+accent)?|warm[- ]wood(?:\s+eave)?|indigo(?:\s+accent)?)\b",
-        "",
-        cleaned,
-    )
+    for phrase in _unselected_color_phrases():
+        # Whole phrase: do not cut the phrase out of a longer word that continues it.
+        cleaned = re.sub(re.escape(phrase) + r"(?![\u4e00-\u9fffA-Za-z0-9])", "", cleaned)
     cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
     cleaned = re.sub(r"\n{2,}", "\n", cleaned)
     cleaned = re.sub(r"\s+([,，。])", r"\1", cleaned)
     cleaned = re.sub(r"[，,]+(?=[。.]|$)", "", cleaned)
     cleaned = re.sub(r"^[，,。.\s]+", "", cleaned)
     return cleaned.strip()
-
-
-def _logo_draft_shapes(progress: dict) -> set[str]:
-    """Shape ids of the other logo boards. Logo C must not be drawn from a handled-cup draft."""
-    shapes = (progress or {}).get("shapes") or {}
-    found = {str(shapes.get(slot) or "") for slot in ("logo_a", "logo_b")}
-    found.discard("")
-    return found
 
 
 def _without_exact_line(prompt: str, line: str) -> str:
@@ -1030,7 +1093,11 @@ def _slot_command(slot_id: str) -> str:
     copy of the hint or the skill text, and they do not name a palette.
     """
     if slot_id == "spec":
-        return "never a full-frame noise field."
+        return (
+            "One clean, reviewable sheet. Spell each heading exactly once. Warm paper ground. "
+            "Color panel: flat swatches (no wood grain) include the confirmed accent "
+            "(never COLR, TISUS, INMAGE)."
+        )
     if slot_id == "logo_c":
         return (
             "Draw the badge first: a handle-less cup silhouette, not a handled cup and not a wood-grain brown plaque. "
@@ -1152,12 +1219,18 @@ def fill_default(args: dict) -> dict:
     raw_prompt = _without_exact_line(raw_prompt, lead)
     raw_prompt = _without_exact_line(raw_prompt, preface)
     raw_prompt = _without_exact_line(raw_prompt, str(lock or ""))
+    brand_line = ""
+    if str(slot["id"]) == "spec":
+        brand_line, raw_prompt = _lift_brand_line(raw_prompt)
+        raw_prompt = _drop_noise_word(raw_prompt)
     raw_prompt = _defer_color_words(raw_prompt)
     if str(slot["id"]) == "spec":
-        base = "\n".join(part for part in (preface, lead, str(lock or "")) if part)
-        if color_line:
-            base = base.rstrip() + "\n" + color_line
-        raw_prompt = _slim_spec_subject(raw_prompt, _SPEC_PROMPT_MAX - len(base) - 1)
+        fixed = [part for part in (preface, brand_line, lead, str(lock or ""), color_line) if part]
+        fixed_len = sum(len(part) for part in fixed) + max(len(fixed) - 1, 0)
+        room = _SPEC_PROMPT_MAX - fixed_len - 1
+        raw_prompt = _slim_spec_subject(raw_prompt, room)
+        if brand_line:
+            raw_prompt = brand_line if not raw_prompt else brand_line + "\n" + raw_prompt
     prompt = _bind_lock(raw_prompt, str(lock or ""), preface)
     if lead:
         prompt = _insert_before_lock(prompt, lead, str(lock or ""))
@@ -1165,19 +1238,13 @@ def fill_default(args: dict) -> dict:
         prompt = (prompt.rstrip() + "\n" + color_line).strip()
     args["prompt"] = scrub_internal_marks(prompt)
     refs = _refs_for(slot, progress)
-    caller_refs = [str(r) for r in (args.get("refs") or [])]
     if str(slot["id"]) == "logo_c":
-        # Stage 2's own ref is the moodboard. A handled-cup Logo A (or Logo B) draft
-        # must not ride along as a second reference.
-        dropped = _logo_draft_shapes(progress)
-        refs = [r for r in refs if r not in dropped]
-        caller_refs = [r for r in caller_refs if r not in dropped]
-    if refs:
+        # Logo C is drawn from the moodboard alone. Any other caller image is dropped.
+        args["refs"] = refs
+    elif refs:
         # The moodboard / chosen logo lead. A caller-supplied ref stays behind them.
-        extra = [r for r in caller_refs if r not in refs]
+        extra = [str(r) for r in (args.get("refs") or []) if str(r) not in refs]
         args["refs"] = refs + extra
-    elif str(slot["id"]) == "logo_c" and args.get("refs"):
-        args["refs"] = caller_refs
     missing = missing_base_message(str(slot["id"]))
     if missing:
         args["_brand_block"] = {"error": missing, "user_message": missing}
