@@ -2820,10 +2820,61 @@ def test_accent_only_keeps_four_neutral_roles():
     assert "lobelia 点缀 2%" in spec and "mallow 点缀 1%" in spec
     assert "lobelia 点缀 50%" not in mood and "lobelia 点缀 50%" not in spec
     equal = brand._swatch_rows("纯暖土色系：陶土橘 / 焦糖 / 米白 / 深焙棕")
-    assert [role for _n, role, _p in equal] == ["色", "色", "色", "色"]
+    assert [(role, pct) for _n, role, pct in equal] == [
+        ("主色", 45), ("辅助", 25), ("底色", 20), ("中性", 10),
+    ]
     assert sum(pct for _n, _r, pct in equal) == 100
     dropped = brand._split_color_answer("鼠尾草绿 + 原木 + 米白，自然感更强")
     assert all(name != "自然感" for name, _role in dropped)
+
+
+def test_option_c_assigns_family_roles_and_folds_the_accent_onto_the_main():
+    """Card 1 C has no accent. Roles follow 主色/辅助/底色 and the leftover goes to 主色."""
+    brand.reset_for_tests()
+    brand.record_card_answer(_card1(), {
+        "bi_delivery": {"selected": ["A"]},
+        "bi_color": {"selected": ["C"]},
+        "bi_mark": {"selected": ["A"]},
+        "bi_source": {"selected": ["A"]},
+    })
+    assert brand.color_hue_hint() == "鼠尾草绿 + 原木 + 米白，自然感更强"
+    mood_rows = brand._swatch_rows(brand.color_hue_hint())
+    spec_rows = brand._swatch_rows(brand.color_hue_hint(), brand._SPEC_ACCENT_BUDGET)
+    assert mood_rows == [("鼠尾草绿", "主色", 55), ("原木", "辅助", 25), ("米白", "底色", 20)]
+    assert spec_rows == [("鼠尾草绿", "主色", 50), ("原木", "辅助", 25), ("米白", "底色", 25)]
+    assert sum(pct for _n, _r, pct in mood_rows) == 100
+    assert sum(pct for _n, _r, pct in spec_rows) == 100
+    mood = brand.fill_default({"brand_slot": "moodboard", "prompt": "board"})["prompt"]
+    spec = brand.fill_default({"brand_slot": "spec", "prompt": "sheet"})["prompt"]
+    assert brand._swatch_copy_line(mood_rows) in mood
+    assert brand._swatch_copy_line(spec_rows) in spec
+    assert "自然感" not in brand._swatch_copy_line(mood_rows)
+    assert "自然感" not in brand._swatch_copy_line(spec_rows)
+    assert "色 34%" not in mood and "色 33%" not in spec
+
+
+def test_logo_b_flat_badge_sentence_reaches_the_logo_and_the_deliverables():
+    """The solid-badge lock stays generic. Deliverables repeat it when B is chosen."""
+    sentence = brand._BADGE_FLAT
+    brand.reset_for_tests()
+    brand.record_card_answer(_card1(), {
+        "bi_delivery": {"selected": ["A"]},
+        "bi_color": {"selected": ["A"]},
+        "bi_mark": {"selected": ["A"]},
+        "bi_source": {"selected": ["A"]},
+    })
+    brand.record_card_answer(
+        {"questions": [brand._CARD3_ZH]},
+        {"bi_direction": {"selected": ["B"]}},
+    )
+    logo = brand.fill_default({"brand_slot": "logo_b", "prompt": "方向B"})["prompt"]
+    assert sentence in logo
+    lock = brand._SLOT_LOCK["logo_b"].lower()
+    assert "wood" not in lock and "colour" not in lock and "color" not in lock
+    for slot in ("spec", "cup", "bag", "storefront"):
+        text = brand.fill_default({"brand_slot": slot, "prompt": "piece"})["prompt"]
+        assert sentence in text, slot
+        assert "实心木牌" in text, slot
 
 
 def test_guard_strips_only_the_leads_this_call_built():
@@ -2876,6 +2927,13 @@ def test_mark_sentence_uses_the_card3_description_not_the_logo_sheet():
         assert "sheet" not in lowered and "zones" not in lowered and "2048" not in lowered
 
 
+def _choose_logo_b():
+    brand.record_card_answer(
+        {"questions": [brand._CARD3_ZH]},
+        {"bi_direction": {"selected": ["B"]}},
+    )
+
+
 def test_spec_fixed_part_leaves_room_and_long_subjects_are_not_blocked():
     from ComfyArt.api.prompt_cap import PROMPT_CHAR_CAP
 
@@ -2888,12 +2946,15 @@ def test_spec_fixed_part_leaves_room_and_long_subjects_are_not_blocked():
             "bi_mark": {"selected": ["A"]},
             "bi_source": {"selected": ["A"]},
         })
-        brand._progress()["chosen"] = "logo_b"
+        _choose_logo_b()
         subject = ("A quiet paper cup on the counter. " * 40)[:size]
         filled = brand.fill_default({"brand_slot": "spec", "prompt": subject})
         block = str((filled.get("_brand_block") or {}).get("error") or "")
         assert "not truncated" not in block
         assert len(filled["prompt"]) <= cap
+        assert "The chosen mark is 实心木牌，旁边一枚圆形印章." in filled["prompt"]
+        assert brand._BADGE_FLAT in filled["prompt"]
+        assert "Do not drop or swap a character" in filled["prompt"]
         assert "Annotation density follows the gold." in filled["prompt"]
         assert "any accent is at most about 5%" in filled["prompt"]
         assert "暖土色 中性 12%" in filled["prompt"]
@@ -2905,9 +2966,11 @@ def test_spec_fixed_part_leaves_room_and_long_subjects_are_not_blocked():
         "bi_mark": {"selected": ["A"]},
         "bi_source": {"selected": ["A"]},
     })
-    brand._progress()["chosen"] = "logo_b"
+    _choose_logo_b()
     bare = brand.fill_default({"brand_slot": "spec", "prompt": ""})["prompt"]
-    assert len(bare) <= 2400
+    assert "The chosen mark is 实心木牌，旁边一枚圆形印章." in bare
+    assert brand._BADGE_FLAT in bare
+    assert len(bare) <= 2500
 
 
 _LONG_SUBJECT = {

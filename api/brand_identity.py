@@ -655,7 +655,7 @@ def _spec_lock() -> str:
         "short captions on 使用禁忌 / MISUSE and 影像与材质 / IMAGE, "
         "and the real Chinese brand name and the real English brand name, copied character for character. "
         "Do not write invented body copy. Do not invent English. "
-        "Any text that does appear anywhere must be spelled correctly (one garbled character is not acceptable)."
+        "Keep the spelling: one garbled character is not acceptable."
         + (f" {hint_line.strip()}" if hint_line else "")
         + " Paper ground, not black."
     )
@@ -827,7 +827,8 @@ _SLOT_LOCK = {
         "印章 shows the round seal. No empty placeholder box and no X box. "
         "小尺寸 includes the symbol, not the wordmark alone, as the seal, a horizontal plaque, a circle, and a square. "
         "横版 appears once. Do not draw a second landscape treatment. "
-        "In each zone the Chinese brand name and the English brand name appear together exactly once."
+        "In each zone the Chinese brand name and the English brand name appear together exactly once. "
+        "The badge is flat and printed, not a carved 3D block or embossed; the seal is a flat ink stamp, not wax."
     ),
     "logo_c": (
         "The mark is a negative-space mark. "
@@ -946,6 +947,9 @@ def _chosen_mark_sentence() -> str:
     if not phrase:
         return ""
     typed = f"The mark is a {phrase}."
+    lock = _SLOT_LOCK.get(chosen) or ""
+    if _BADGE_FLAT in lock:
+        typed = f"{typed} {_BADGE_FLAT}"
     desc = _trim_at_sentence(str(progress.get("mark_desc") or ""), 180)
     if not desc:
         return typed
@@ -1110,6 +1114,12 @@ def _accent_names(name: str) -> list[str]:
     return [part.strip() for part in parts if part.strip()]
 
 
+_BADGE_FLAT = (
+    "The badge is flat and printed, not a carved 3D block or embossed; "
+    "the seal is a flat ink stamp, not wax."
+)
+
+
 def _share_percent(total: int, count: int) -> list[int]:
     if count <= 0:
         return []
@@ -1117,12 +1127,24 @@ def _share_percent(total: int, count: int) -> list[int]:
     return [base + (1 if index < extra else 0) for index in range(count)]
 
 
+def _unnamed_family_rows(names: list[str], accent_budget: int) -> list[tuple[str, str, int]]:
+    """Unnamed colours take 主色/辅助/底色/中性 in order. No accent; leftover goes to 主色."""
+    count = min(len(names), len(_FAMILY_ROLES))
+    if count <= 0:
+        return []
+    splits = list(_MOOD_SPLITS if accent_budget == _MOOD_ACCENT_BUDGET else _SPEC_SPLITS)
+    used = splits[:count]
+    used[0] += sum(splits[count:]) + accent_budget
+    return [(names[index], _FAMILY_ROLES[index], used[index]) for index in range(count)]
+
+
 def _swatch_rows(label: str, accent_budget: int = _MOOD_ACCENT_BUDGET) -> list[tuple[str, str, int]]:
     """Four role swatches, then one swatch per accent.
 
     Moodboard is 35/25/20/10 plus accents sharing 10. The spec card is
     35/25/25/12 plus accents sharing 3. An accent-only answer keeps the four
-    roles under a neutral ground. A direction with no roles keeps an even split.
+    roles under a neutral ground. Unnamed colours take those roles in order,
+    and with no accent the unused share goes to 主色.
     """
     named = _split_color_answer(label)
     if not named:
@@ -1140,8 +1162,7 @@ def _swatch_rows(label: str, accent_budget: int = _MOOD_ACCENT_BUDGET) -> list[t
     if accents and not mains:
         mains = [_NEUTRAL_FAMILY]
     if not mains and not accents:
-        amounts = _share_percent(100, len(named))
-        return [(name, role, amounts[index]) for index, (name, role) in enumerate(named)]
+        return _unnamed_family_rows([name for name, _role in named], accent_budget)
     rows: list[tuple[str, str, int]] = []
     if mains:
         family = mains[0]
@@ -2977,7 +2998,7 @@ def default_hint() -> str:
         "short captions on 使用禁忌 / MISUSE and 影像与材质 / IMAGE, "
         "and the real Chinese brand name and the real English brand name, copied character for character. "
         "Do not write invented body copy. Do not invent English. "
-        "Any text that does appear anywhere must be spelled correctly (one garbled character is not acceptable). "
+        "Keep the spelling: one garbled character is not acceptable. "
         "Paper ground, not black. "
         "影像格 small labels and captions on 影像与材质 / IMAGE must be spelled correctly, with no typo, no garble, and no invented heading fragment. 影像格小字不得写错. "
         "The storefront is the full shopfront, front view, with the names once on the fascia and an A-frame standing sign. "
