@@ -506,10 +506,10 @@ def test_self_check_still_reports_a_failed_set(lang, goal, warn):
 # computed once from those same pinned bytes. A one-byte edit still fails.
 PINNED_SHA256 = {
     "api/auto_models.json": "70c1e5ebcc2a877e8b9a93c3e69b218e9efc615edf67151df40f8c53fa03f9a4",
-    "api/skill_size.py": "6aa1723ce5d34f050c44bcf658056b6f8ce93044a4c56e418671e7dad42a1d5f",
+    "api/skill_size.py": "1d4efa799c7c85ae3d219d15476eec5aff04a17cbb9f7c1e4f04308482c9884e",
     "api/curated_models.json": "53c77b0a449f86b8b2aa9b48044678dddaf5aa3cdad40486f0c981386b8d2dce",
     "api/wavespeed_models.json": "3f70cc34de378fd675a2afffb7b7c15b533c67db424e1ae25b6ba3356dd082d1",
-    "bot/skill_output.py": "7222f7be59308a11b4121e9b0a28f845adea9f9629df1aacccee5f6ce883ab9a",  # #1019: exact-size pin only when the user named pixels; ratio otherwise
+    "bot/skill_output.py": "8506a7d2f831078096e3a65954ed6051d4cabbc2da580ce14fe107b121dabba6",  # #1019: exact-size pin only when the user named pixels; ratio otherwise
     "api/portrait_studio.py": "61257848a9e23d13c066d01c103c565d6804e58c926d3905c6ed8b0890569224",
     "bot/self_check.py": "1a9b4f7eda7e915adf83df42ff31ccf3c27e83253d9636ba5c85aead447993b6",
 }
