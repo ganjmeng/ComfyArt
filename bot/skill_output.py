@@ -696,6 +696,14 @@ TEMPLATE_BLOCK_START = "[ComfyArt selected template]"
 TEMPLATE_BLOCK_END = "[/ComfyArt selected template]"
 _TEMPLATE_BLOCK_PATTERN = re.escape(TEMPLATE_BLOCK_START) + r"[\s\S]*?" + re.escape(TEMPLATE_BLOCK_END)
 TEMPLATE_BLOCK_RE = re.compile(_TEMPLATE_BLOCK_PATTERN + r"[ \t]*\n?")
+
+
+def own_user_text(text: object) -> str:
+    """The user's own words. Strips the skill-start line, Output lock, and selected-template block
+    the app prepends to the turn (`compose_provider_text`). Size and pixel parsers must use this
+    so a ratio table such as ``1:1 = 2048x2048`` is not treated as pixels the user asked for.
+    """
+    return _INJECTED_RE.sub(" ", TEMPLATE_BLOCK_RE.sub(" ", str(text or "")))
 USER_RATIO_KEY = "_user_ratio"
 
 # #911: skills whose output ratio follows image 1 (the first reference). The
@@ -738,8 +746,7 @@ def user_ratio(sid: str, user_text: object) -> str | None:
     if not table:
         return None
     # #978 HOLD: user_text may be the whole provider turn, including our template block; strip it first.
-    text = TEMPLATE_BLOCK_RE.sub(" ", str(user_text or ""))
-    text = _INJECTED_RE.sub(" ", text)
+    text = own_user_text(user_text)
     for m in _RATIO_RE.finditer(text):
         r = f"{int(m.group(1))}:{int(m.group(2))}"
         if r in table:
@@ -1101,11 +1108,12 @@ def _preset_hint(sid: str, preset_id: str, user_text: str) -> str:
 def _agent_plan_hint(sid: str, row: dict, picked: str | None) -> str:
     """No template on an agent-planned row: constraints only. The brief and the cards decide the plan."""
     table = row.get("ratio_pixels") or {}
-    sizes = ", ".join(f"{r} = {w}x{h}" for r, (w, h) in table.items())
+    # Ratios only: listing ``2048x2048`` here used to be read as pixels the user asked for
+    # and pinned Qwen over the shared router. The server fills width/height from this table.
+    sizes = ", ".join(str(r) for r in table)
     override = ""
     if picked:
-        w, h = USER_RATIOS[sid][picked]
-        override = f" The user named ratio {picked}, so use width={w} height={h} ratio={picked} on every image."
+        override = f" The user named ratio {picked}, so use ratio={picked} on every image."
     return (
         "Output lock: no template selected. Plan the images from the skill brief and the user's answers; "
         "the number of images and each image's ratio follow that plan. "

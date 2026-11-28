@@ -188,7 +188,10 @@ def test_unselected_and_unknown_template_use_the_skill_default_and_say_so():
     assert "skill default template" in hint and "template=eco" in hint
     # #1019: no template is agent-planned (no fixed count). An unknown template id stays on geometric.
     bare_hint = run_hint(BRAND, "", preset_id="")
-    assert "no template selected" in bare_hint and "2048x1152" in bare_hint and "quote_plan" in bare_hint
+    # Ratios only — listing 2048x1152 here was read as user-stated pixels and pinned Qwen.
+    assert "no template selected" in bare_hint and "quote_plan" in bare_hint
+    assert "16:9" in bare_hint and "1:1" in bare_hint
+    assert "2048x1152" not in bare_hint and "2048x2048" not in bare_hint
     assert "template=geometric" not in bare_hint
     unknown_hint = run_hint(BRAND, "", preset_id="nope")
     assert "template=geometric" in unknown_hint and "stage 1 = 3 image(s)" in unknown_hint

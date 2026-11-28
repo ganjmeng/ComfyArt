@@ -213,3 +213,100 @@ def test_image_instructions_do_not_invent_color_dates_or_the_title_language():
     # These lines are the shared prompt, not a brand brief or a lock.
     assert "STRUCTURE LOCK" not in IMAGE_PROMPT_RULES
     assert "brand-identity" not in IMAGE_PROMPT_RULES
+
+
+def _provider_text(brief: str = "Brand brief: 需要 logo 与基础品牌视觉系统。") -> str:
+    """The real user_text of a skill turn: compose_provider_text prepends the Output lock."""
+    from ComfyArt.api.bot_send import compose_provider_text
+    return compose_provider_text(brief, skill_name="Brand Identity")
+
+
+def test_output_lock_table_pixels_are_not_user_stated_pixels():
+    """QA 6957803e: the Output lock lists 1:1 = 2048x2048, and that string is in turn.user_text.
+    Those are skill-table sizes. They must not arm the exact-size Qwen pin."""
+    from ComfyArt.api.skill_size import explicit_user_pixels
+    from ComfyArt.bot.skill_output import run_hint
+
+    lock = run_hint("Brand Identity", "做一个品牌")
+    assert "2048" in lock or "x" in lock or "1:1" in lock
+    provider = _provider_text()
+    assert "Output lock:" in provider
+    assert explicit_user_pixels(provider, {}) is None
+    assert explicit_user_pixels("规范卡请按 1584x396 像素", {}) == (1584, 396)
+    # A user request still wins when it sits beside the injected lock.
+    assert explicit_user_pixels(provider + "\n请按 1584x396 出图", {}) == (1584, 396)
+
+
+def test_guidelines_edit_on_a_skill_turn_is_priced_as_gpt_image_2_edit():
+    """Delivery guidelines page: refs + 规范页/guideline, only a ratio (or table pixels),
+    provider_text includes the lock table. Quote and submit are gpt-image-2/edit, ratio only,
+    and the card does not claim the skill submits exact pixels. 16:9 is not forced."""
+    provider = _provider_text()
+    # Agent-chosen 3:4 must not be rewritten to a hardcoded 16:9 guidelines canvas.
+    args = {"prompt": "品牌规范页 / guideline sheet: logo usage, color, type hierarchy, one page",
+            "refs": ["shape:logoA"], "skill": BRAND, "ratio": "3:4", "count": 1}
+    prepared = apply_generate(dict(args), BRAND, user_text=provider)
+    assert prepared.get("ratio") == "3:4"
+    assert "exact_size_pin" not in prepared
+    assert prepared.get("size_lock_mode") == RATIO_MODE
+    assert prepared.get("model") not in (QWEN_T2I, QWEN_EDIT)
+    assert prepared.get("edit_model") not in (QWEN_T2I, QWEN_EDIT)
+    choice = select_model("generate_image", prepared, user_text=provider)
+    assert choice["category"] == "dense_typography"
+    assert choice["model"] == choice.get("edit_model") == GPT
+    quoted, _inputs = quote_route("generate_image", prepared, user_text=provider)
+    assert quoted == GPT
+
+    async def pricer(model, _inputs):
+        return (0.07 if model == GPT else 0.03, "quote", "test")
+
+    quote = asyncio.run(build_quote(
+        [{"text": "品牌规范页（16:9）", "tool": "generate_image", "model": "", "arguments": prepared}],
+        "en", threshold=0.0, pricer=pricer, models_for=_no_models, router=quote_route))
+    assert quote is not None and len(quote.lines) == 1
+    line = quote.lines[0]
+    assert short_name(GPT) in line.text
+    assert short_name(QWEN_EDIT) not in line.text and short_name(QWEN_T2I) not in line.text
+    assert "exact pixel" not in line.text.lower()
+    assert "精确像素" not in line.text
+
+    # No ratio on the call: the skill default must not become a forced 16:9 guidelines page.
+    bare = apply_generate(
+        {"prompt": "品牌规范页 guideline sheet", "refs": ["shape:logoA"], "skill": BRAND},
+        BRAND, user_text=provider)
+    assert bare.get("ratio") != "16:9"
+
+
+def test_moodboard_and_logo_directions_are_not_dense_typography():
+    provider = _provider_text()
+    mood = _route({"prompt": "Brand identity moodboard, palette, materials, imagery, 1:1 artboard",
+                   "skill": BRAND, "ratio": "1:1", "count": 1}, provider)
+    logo = _route({"prompt": "Logo direction A, circular badge on a cream board",
+                   "skill": BRAND, "ratio": "1:1", "count": 1}, provider)
+    for choice in (mood, logo):
+        assert choice.get("category") != "dense_typography"
+        assert choice.get("model") != GPT
+        assert choice.get("edit_model") != GPT
+
+
+def test_cups_bags_and_storefronts_use_ordinary_auto_not_qwen_or_dense():
+    """Same delivery segment as the guidelines page: refs, but not typography-dense wording.
+    Skill-table sizes must not pin Qwen; ordinary Auto routing applies."""
+    provider = _provider_text()
+    cases = [
+        ("咖啡杯应用 coffee cup mockup with the chosen logo on a ceramic cup", "4:5"),
+        ("豆袋包装应用 kraft coffee bag with the logo", "4:5"),
+        ("门店招牌应用 storefront signage with the logo over the door", "16:9"),
+    ]
+    for prompt, ratio in cases:
+        args = {"prompt": prompt, "refs": ["shape:logoA"], "skill": BRAND, "ratio": ratio, "count": 1}
+        prepared = apply_generate(dict(args), BRAND, user_text=provider)
+        assert "exact_size_pin" not in prepared, prompt
+        assert prepared.get("model") not in (QWEN_T2I, QWEN_EDIT), prompt
+        assert prepared.get("edit_model") not in (QWEN_T2I, QWEN_EDIT), prompt
+        choice = select_model("generate_image", prepared, user_text=provider) or {}
+        assert choice.get("category") != "dense_typography", prompt
+        assert choice.get("model") != GPT, prompt
+        assert "qwen" not in str(choice.get("model") or "").lower(), prompt
+        assert "精确像素" not in str((choice.get("reason") or {})), prompt
+        assert "exact pixel" not in str((choice.get("reason") or {})).lower(), prompt

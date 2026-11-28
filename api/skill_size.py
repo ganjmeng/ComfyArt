@@ -50,9 +50,18 @@ def explicit_user_pixels(user_text: str | None, args: dict | None = None) -> tup
 
     Only the user's own message counts, plus the ``_user_pixels`` marker a previous
     pass stored so the relay agrees. ``2048x1152`` inside the prompt does not.
+    App-injected turn text (the skill start line and Output lock, which may list
+    ``1:1 = 2048x2048``) is stripped first: those are skill-table sizes, not a
+    user request.
     """
     args = args or {}
-    for blob in (str(args.get(USER_PIXELS_KEY) or ""), str(user_text or "")):
+    text = str(user_text or "")
+    try:
+        from ..bot.skill_output import own_user_text
+        text = own_user_text(text)
+    except Exception:
+        pass
+    for blob in (str(args.get(USER_PIXELS_KEY) or ""), text):
         found = _pixel_pair(blob)
         if found:
             return found
