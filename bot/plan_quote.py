@@ -86,6 +86,16 @@ EXPIRED_TEXT = {
     "zh": "报价已过期，请重新取价",
     "en": "This quote has expired. Request a new price.",
 }
+REQUOTED_TEXT = {
+    "zh": "报价已过期，已按最新价格重新报价，请在新卡片上确认。",
+    "en": "That quote expired. Here is a fresh price; confirm on the new card.",
+}
+ALREADY_SENT_TEXT = {
+    "zh": "这些步骤已经提交，无需重新报价。",
+    "en": "Those steps were already submitted; nothing is left to quote.",
+}
+# A card that expires while someone is waiting is re-issued at most this many times in one turn.
+MAX_REQUOTES = 2
 # #968: an unpriced step forces a confirm card without claiming any amount (never "约 0 积分").
 _PROMPT_UNPRICED = {
     "zh": "这个任务共 {n} 步，价格暂未确定，需要你确认后按实际价格执行。确定开始吗？",

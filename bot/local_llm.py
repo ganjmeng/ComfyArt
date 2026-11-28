@@ -19,7 +19,7 @@ from .assistant_history import assistant_history_message
 from . import robustness as _rb
 from .agent_host import AgentHost
 from .guide import AGENT_GUIDE, CORE_MCP_TOOLS, PAID_TOOLS, resolve_host  # noqa: F401
-from .plan_quote import CANCEL_TEXT, QUOTE_TOOL, canon_key
+from .plan_quote import CANCEL_TEXT, MAX_REQUOTES, QUOTE_TOOL, canon_key
 from .skill_output import TEMPLATE_BLOCK_END, TEMPLATE_BLOCK_START
 from .ratio_display import ratio_refusal_display
 from .providers import (
@@ -2427,37 +2427,79 @@ class LocalLlmProvider(AgentProvider):
                     unattended = run is not None and run.mode == "unattended"
                     # #418 ruling: unattended (routine / headless / no live client) never waits: the
                     # card is not approved -> zero paid calls, turn ends normally as awaiting_confirm:not_approved.
-                    spec = quote.ask_spec()
-                    try:
-                        choice = "unattended" if unattended else await self._confirm_plan(
-                            spec, turn, handle, run=run, messages=messages)
-                    except Exception as e:
-                        # A confirm that raises is not approval. Do not submit the paid tools.
-                        _log.exception("[ComfyArt/local-llm] plan confirm failed")
-                        quote_error = f"[error] {type(e).__name__}: {e}"
-                        choice = "error"
-                    confirmation_id = str(spec.get("confirmation_id") or "")
-                    if handle.stop_requested:
-                        return TurnResult(aborted=True, usage=usage)
-                    if choice == "error":
-                        decision = "error"
-                    elif choice == "expired":
-                        # Start after the card's lifetime is not approval. Nothing is submitted.
-                        from .plan_quote import EXPIRED_TEXT
-                        quote_error = EXPIRED_TEXT["zh" if lang == "zh" else "en"]
-                        decision = "error"
-                    elif choice == "start":
-                        if not single:  # #418: one OK covers this call only; don't arm the plan gate
-                            gate.allow(quote, True)
-                        decision = "start"
-                    else:
-                        decision = "cancel"
-                        if run is not None:
-                            step = run.budget.used.steps
-                            # only the user's own Cancel is a user stop
-                            run.pending_stop = (Stop(StopReason.USER_STOP, "quote_declined", step=step)
-                                                if choice == "cancel" else
-                                                Stop(StopReason.AWAITING_CONFIRM, "not_approved", step=step))
+                    requotes = 0
+                    narrowed = False
+                    while True:
+                        spec = quote.ask_spec()
+                        try:
+                            choice = "unattended" if unattended else await self._confirm_plan(
+                                spec, turn, handle, run=run, messages=messages)
+                        except Exception as e:
+                            # A confirm that raises is not approval. Do not submit the paid tools.
+                            _log.exception("[ComfyArt/local-llm] plan confirm failed")
+                            quote_error = f"[error] {type(e).__name__}: {e}"
+                            choice = "error"
+                        confirmation_id = str(spec.get("confirmation_id") or "")
+                        if handle.stop_requested:
+                            return TurnResult(aborted=True, usage=usage)
+                        if choice == "expired" and requotes < MAX_REQUOTES:
+                            # The card outlived its lifetime. The same frozen steps are priced again
+                            # and a new live card replaces it; the expired Start approved nothing.
+                            requotes += 1
+                            from .plan_quote import REQUOTED_TEXT
+                            await emit(BotEvent(t="notify", text=REQUOTED_TEXT["zh" if lang == "zh" else "en"]))
+                            # Only what has not been sent yet is priced again: a step this chat
+                            # already submitted under an earlier Start is never quoted a second time.
+                            sent = loop.get("submitted") or set()
+                            all_steps = steps if isinstance(steps, list) else []
+                            narrowed = False
+                            try:
+                                fresh = await self._quote_steps(all_steps, lang)
+                                if fresh is not None and sent and len(fresh.lines) == len(all_steps):
+                                    # Line keys are the plan-gate keys, the same space the submitted set uses.
+                                    rest = [st for st, ln in zip(all_steps, fresh.lines) if ln.key not in sent]
+                                    narrowed = len(rest) < len(all_steps)
+                                    if not rest:
+                                        from .plan_quote import ALREADY_SENT_TEXT
+                                        quote_error = ALREADY_SENT_TEXT["zh" if lang == "zh" else "en"]
+                                        decision = "error"
+                                        break
+                                    if narrowed:
+                                        fresh = await self._quote_steps(rest, lang)
+                            except Exception as e:
+                                _log.exception("[ComfyArt/local-llm] plan requote failed")
+                                quote_error = f"[error] {type(e).__name__}: {e}"
+                                decision = "error"
+                                break
+                            if fresh is None:
+                                quote, decision = None, "passthrough"
+                                break
+                            quote = fresh
+                            if not quote.ask:
+                                gate.allow(quote, narrowed)
+                                decision = "start"
+                                break
+                            continue
+                        if choice == "error":
+                            decision = "error"
+                        elif choice == "expired":
+                            # Start after the card's lifetime is not approval. Nothing is submitted.
+                            from .plan_quote import EXPIRED_TEXT
+                            quote_error = EXPIRED_TEXT["zh" if lang == "zh" else "en"]
+                            decision = "error"
+                        elif choice == "start":
+                            if not single or narrowed:  # #418: one OK covers this call only; don't arm the plan gate
+                                gate.allow(quote, True)
+                            decision = "start"
+                        else:
+                            decision = "cancel"
+                            if run is not None:
+                                step = run.budget.used.steps
+                                # only the user's own Cancel is a user stop
+                                run.pending_stop = (Stop(StopReason.USER_STOP, "quote_declined", step=step)
+                                                    if choice == "cancel" else
+                                                    Stop(StopReason.AWAITING_CONFIRM, "not_approved", step=step))
+                        break
 
         if quote is not None and decision == "start":
             # #909: no whole-group count in the user's message -> the plan the card
@@ -2553,6 +2595,7 @@ class LocalLlmProvider(AgentProvider):
                 chunks[i] = await self._emit_result(
                     it, it["refuse"], emit=emit, done=done, lang=lang, is_error=True)
                 continue
+            plan_key = canon_key(name, it["args"], plan=True) if name in PAID_TOOLS else None
             if name == "generate_image":
                 bound, refuse = bind_generate(run_for_plan, it["args"], consume=True)
                 if refuse:
@@ -2565,6 +2608,14 @@ class LocalLlmProvider(AgentProvider):
                         bound.get("skill"), str(bound.get("preset") or "")):
                     run_for_plan.single_image_gens = int(getattr(run_for_plan, "single_image_gens", 0) or 0) + 1
             await run_mcp(i)
+            if name in PAID_TOOLS and chunks[i] and not model_call_failed(
+                    name, it["args"], str(chunks[i][0].get("content") or "")):
+                # The key is the quote line's when this call was quoted, so a later quote of the
+                # same step (which carries the model's own arguments) matches it.
+                line_key = None
+                if quote is not None and len(paid) == len(quote.lines):
+                    line_key = next((ln.key for p_it, ln in zip(paid, quote.lines) if p_it is it), None)
+                loop.setdefault("submitted", set()).add(line_key or plan_key)
 
         for ch in chunks:
             if ch:
@@ -2660,6 +2711,34 @@ class LocalLlmProvider(AgentProvider):
         data = _json_obj(text) or {}
         return data.get("status") == "answered" and "yes" in (data.get("selected") or [])
 
+    async def _confirm_fallback_quote(self, turn, handle, run, messages, lang: str, tool: str,
+                                      fb_args: dict, target: str) -> bool:
+        """True when the fallback submit may go: a fresh quote card got Start, or the fresh quote
+        needs no card. A quote that fails, no live turn, Cancel or expiry do not submit."""
+        if turn is None:
+            return False
+        step = self._implicit_step({"name": tool, "args": fb_args}, lang)
+        step["model"] = target
+        try:
+            quote = await self._quote_steps([step], lang)
+        except Exception:
+            _log.exception("[ComfyArt/local-llm] fallback quote failed")
+            return False
+        if quote is None or not quote.ask:
+            return True
+        spec = quote.ask_spec()
+        if run is not None and run.mode == "unattended":
+            return False
+        try:
+            choice = await self._confirm_plan(spec, turn, handle, run=run, messages=messages)
+        except Exception:
+            _log.exception("[ComfyArt/local-llm] fallback confirm failed")
+            return False
+        if choice == "start":
+            from ..api import paid_guard
+            paid_guard.allow_planned_cap(turn.chat_id, quote.units)
+        return choice == "start" and not handle.stop_requested
+
     async def _maybe_model_fallback(self, session: aiohttp.ClientSession, endpoint: str,
                                     handle: TurnHandle, emit: EmitFn, lang: str,
                                     messages: list[dict], done: list[str], chat_id: str,
@@ -2720,6 +2799,12 @@ class LocalLlmProvider(AgentProvider):
             if handle.stop_requested or not agreed:
                 if not handle.stop_requested:
                     await self._speak(messages, emit, _no_switch_note(failed, target, lang))
+                return
+            # Switching the model is a new paid submit: it gets its own quote card and runs only
+            # after Start. The confirmation of the failed call is never reused.
+            if not await self._confirm_fallback_quote(
+                    turn, handle, run, messages, lang, tool, {**call_args, "fallback_for": failed}, target):
+                await self._speak(messages, emit, _no_switch_note(failed, target, lang))
                 return
         fb_args = {**call_args, "fallback_for": failed}
         price = 0.0

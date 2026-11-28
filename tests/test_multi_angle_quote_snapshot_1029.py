@@ -386,7 +386,9 @@ async def test_changed_aspect_before_start_does_not_submit(monkeypatch):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("choice", ["cancel", "expired"])
 async def test_cancel_or_expired_quote_submits_nothing(monkeypatch, choice):
-    out = await _send(monkeypatch, choice=choice)
+    # #1027: an expired card is re-issued as a new card; here that new card is cancelled, so
+    # neither card submits anything. (Start on the new card submits: see test_requote_and_void_1027.)
+    out = await _send(monkeypatch, choice=choice, second_choice="cancel")
     assert out["sent"] == []
     token = BOT_CHAT_ID.set(out["cid"])
     try:

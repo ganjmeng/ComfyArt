@@ -1053,6 +1053,8 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                 _log.warning("[ComfyArt/agent] run %s non-retryable %s error, stopping", ctx.run_id, fatal.tool)
                 return await finish(Stop(StopReason.STUCK, "non_retryable", step=ctx.budget.used.steps))
             over = ctx.tracker.over_budget(obs)  # #705: hard cap, no nudge (e.g. every step a new image, never done)
+            paid_void(ctx, ctx.tracker.voided_new)
+            ctx.tracker.voided_new.clear()
             if ctx.tracker.confirmed_generates:
                 point = ""
                 if any(o.tool == "generate_image" for o in obs) and not any(
@@ -1178,9 +1180,39 @@ async def paid_gate(ctx: RunContext, name: str, args: dict, emit_confirm,
     return "call", None, price
 
 
+def paid_void(ctx: RunContext, ids: list) -> None:
+    """Give back what a submitted image cost once it failed with no charge kept.
+
+    Finds the paid call that produced the id, releases that image's share of the run's credits and
+    marks the metering row; the call's other images keep their share. Idempotent per id."""
+    if not ids:
+        return
+    for gid in ids:
+        for key, entry in ctx.paid.items():
+            held = entry.get("ids") or entry.get("artifacts") or []
+            if entry.get("status") != "done" or gid not in held or gid in (entry.get("voided") or []):
+                continue
+            share = round(float(entry.get("price") or 0.0) / max(1, len(held)), 6)
+            entry["voided"] = [*(entry.get("voided") or []), gid]
+            ctx.budget.used.credits = round(max(0.0, ctx.budget.used.credits - share), 6)
+            left = round(max(0.0, float(entry.get("price") or 0.0) - share * len(entry["voided"])), 6)
+            if len(entry["voided"]) >= len(held):
+                entry["status"] = "void"
+            eid = entry.get("event_id")
+            reason = f"{entry.get('tool') or 'generate_image'}: {gid} failed, refunded (void)"
+            if eid is not None and ctx.store:
+                ctx.store.finish_usage_event(eid, status="void" if entry["status"] == "void" else "done",
+                                             amount_usd=left, artifact_ids=list(held), reason=reason)
+            else:
+                ctx.usage_event(kind="paid_void", tool=str(entry.get("tool") or "generate_image"),
+                                amount_usd=0.0, reason=reason, artifact_ids=[gid], status="void", call_id=key)
+            break
+    ctx.checkpoint()
+
+
 def paid_done(ctx: RunContext, name: str, args: dict, text: str, price: float, failed: bool,
               messages_ref: Optional[list] = None, call_id: str = "") -> None:
-    from .run_budget import artifact_ids
+    from .run_budget import artifact_ids, generation_ids
     key = paid_key(ctx, name, args, call_id)
     ids = sorted(artifact_ids(text))
     eid = (ctx.paid.get(key) or {}).get("event_id")
@@ -1188,7 +1220,7 @@ def paid_done(ctx: RunContext, name: str, args: dict, text: str, price: float, f
         ctx.paid.pop(key, None)
     else:
         ctx.paid[key] = {"status": "done", "price": price, "result": text[:_BLOCK_TEXT_CAP], "artifacts": ids,
-                         "tool": name}
+                         "tool": name, "ids": generation_ids(text), **({"event_id": eid} if eid is not None else {})}
         ctx.budget.charge_credits(price)
     ctx.paid_calls += 1
     reason = f"{name} at step {ctx.budget.used.steps + 1}" + (" (failed, not charged)" if failed else "")
