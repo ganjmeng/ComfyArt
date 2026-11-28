@@ -68,15 +68,34 @@ def test_no_template_count_is_not_fixed():
 
 
 def test_exact_size_model_follows_refs_and_marks_opaque():
+    """A ratio the skill filled is not an exact-pixel request, so Qwen is not pinned.
+
+    Opaque output stays. The user naming pixels still pins the row's exact-size model,
+    and a second relay pass (no user text) keeps that pin.
+    """
+    from ComfyArt.api.skill_size import RATIO_MODE
+
     models = OUTPUTS[SKILL]["exact_size_models"]
-    t2i = apply_generate({"skill": SKILL, "prompt": "x", "ratio": "16:9"}, user_text="")
-    assert t2i["model"] == models["t2i"] and "edit_model" not in t2i
-    assert t2i["exact_size_pin"] is True and t2i["opaque_output"] is True
-    edit = apply_generate({"skill": SKILL, "prompt": "x", "ratio": "1:1", "refs": ["shape:a"]}, user_text="")
-    assert edit["edit_model"] == models["edit"] and "model" not in edit
-    # A second relay pass is idempotent.
+    t2i = apply_generate({"skill": SKILL, "prompt": "x", "ratio": "16:9",
+                          "width": 2048, "height": 1152}, user_text="")
+    assert "model" not in t2i and "edit_model" not in t2i and "exact_size_pin" not in t2i
+    assert t2i["opaque_output"] is True and t2i["size_lock_mode"] == RATIO_MODE
+    edit = apply_generate({"skill": SKILL, "prompt": "guideline sheet", "ratio": "1:1",
+                           "refs": ["shape:a"]}, user_text="做一张规范卡")
+    assert "edit_model" not in edit and "model" not in edit and "exact_size_pin" not in edit
     again = apply_generate(dict(edit), user_text=None)
-    assert (again["width"], again["height"], again["edit_model"]) == (edit["width"], edit["height"], edit["edit_model"])
+    assert (again["width"], again["height"]) == (edit["width"], edit["height"])
+    assert "exact_size_pin" not in again
+    explicit = apply_generate(
+        {"skill": SKILL, "prompt": "guideline sheet", "ratio": "16:9", "refs": ["shape:a"]},
+        user_text="按 1584x396 像素出规范卡",
+    )
+    assert explicit["edit_model"] == models["edit"] and "model" not in explicit
+    assert explicit["exact_size_pin"] is True and explicit["opaque_output"] is True
+    assert (explicit["width"], explicit["height"]) == (1584, 396)
+    kept = apply_generate(dict(explicit), user_text=None)
+    assert kept["edit_model"] == models["edit"] and kept["exact_size_pin"] is True
+    assert (kept["width"], kept["height"]) == (1584, 396)
 
 
 def test_template_path_keeps_its_declared_stages_and_no_exact_pin():

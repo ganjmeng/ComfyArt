@@ -414,10 +414,17 @@ async def test_approved_quote_plan_releases_exactly_the_quoted_calls(monkeypatch
     assert len(cards) == 2, "one card per quote_plan, never re-issued in a loop"
     results = [e.text for e in events if e.t == "tool_result" and e.text]
     assert sum(_PLAN_REFUSE["zh"] in r or _PLAN_REFUSE["en"] in r for r in results) == 1
-    # The card prices the model the call will really use (the skill's exact-size pin), not a guess.
-    from ComfyArt.bot.skill_output import OUTPUTS
-    pinned = OUTPUTS[SKILL]["exact_size_models"]["t2i"]
-    assert all(m == pinned for models in priced for m in models), priced
+    # Ratio-only calls are not pinned to Qwen. The card names the model that will run.
+    from ComfyArt.api.auto_models import short_name
+    from ComfyArt.api.mcp_tools.canvas import quote_route
+    from ComfyArt.bot.skill_output import OUTPUTS, apply_generate
+    prepared = apply_generate(dict(mood), SKILL, user_text="做一个品牌")
+    routed, _inputs = quote_route("generate_image", prepared, user_text="做一个品牌")
+    qwen = OUTPUTS[SKILL]["exact_size_models"]["t2i"]
+    assert routed and routed != qwen
+    assert all(m != qwen for models in priced for m in models), priced
+    label = short_name(routed)
+    assert cards and all(label in line["text"] for line in cards[0]["lines"])
 
 
 @pytest.mark.parametrize("budget", [True, False], ids=["agent_loop", "local_llm"])

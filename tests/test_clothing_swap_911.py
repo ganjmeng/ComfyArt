@@ -29,7 +29,7 @@ BOT_SEND = ROOT / "api/bot_send.py"
 # #935: these are literal hashes of the base bytes; no git object is opened.
 PORTRAIT_SHOTS_708_CONST_SHA256 = "97edb7c18215e4a283b86633908872f3b3c4146d9bb748d71c0d3510798cfc8b"
 CLOTHING_SWAP_TAIL_SHA256 = "f3036b3d1ebcb3320bcee7d76c961014b38cbb443783ae53485261625c0627fe"
-AUTO_MODELS_SHA256 = "9ef106b6133d427f04347d0c31c31931e641e1cd47d2a86c0d0769cde48c5d7b"
+AUTO_MODELS_SHA256 = "70c1e5ebcc2a877e8b9a93c3e69b218e9efc615edf67151df40f8c53fa03f9a4"
 OTHER_SKILL_ENTRIES_SHA256 = "f088dd000ad53f7802bec2675b815cb40d0343da3127c413fadc12b40895488a"
 # #1003: multi-angle skill read keeps the nine-grid contract and still asks source after an upload.
 UNCHANGED_SKILL_ENTRIES_SHA256 = "19c87df3bbd730f8af01b3bf67e88204b8f59b16bb0ac449462daca4a4fac904"

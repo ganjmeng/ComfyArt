@@ -69,16 +69,21 @@ def test_six_templates_submit_three_square_then_one_board(relay):
 
 
 def test_no_template_submits_the_ratio_the_agent_planned(relay):
-    """No template: the call's own ratio picks the row's declared 2K canvas and exact-size model.
-    The relay does not refuse it for a missing card or slot and does not substitute 1024x1024."""
+    """No template: the call's own ratio picks the row's declared 2K canvas.
+    The user did not give pixels, so the relay does not pin Qwen. It does not
+    refuse the call for a missing card or slot and does not substitute 1024x1024."""
     for ratio, size in (("16:9", (2048, 1152)), ("1:1", (2048, 2048)), ("3:4", (1536, 2048))):
         SENT.clear()
         out = _run(skill=SKILL, prompt="栖木咖啡", ratio=ratio)
         assert len(SENT) == 1, out
         body = SENT[0][1]
         assert (body["width"], body["height"], body["ratio"], body["count"]) == (*size, ratio, 1), body
-        assert body["model"] == "wavespeed-ai/qwen-image-2.0/text-to-image"
-        assert body.get("size_lock") is True and body.get("opaque_output") is True
+        # The agent passed a ratio, not pixels. Qwen is not pinned over the router.
+        assert body.get("model") != "wavespeed-ai/qwen-image-2.0/text-to-image"
+        assert body.get("edit_model") != "wavespeed-ai/qwen-image-2.0/edit"
+        assert "exact_size_pin" not in body
+        assert body.get("size_lock") is True and body.get("size_lock_mode") == "ratio"
+        assert body.get("opaque_output") is True
         assert "brand_slot" not in body
 
 

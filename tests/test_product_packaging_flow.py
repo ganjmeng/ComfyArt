@@ -505,11 +505,11 @@ def test_self_check_still_reports_a_failed_set(lang, goal, warn):
 # read e8c4a855:<path> from history and compared bytes; they are now literal sha256 values
 # computed once from those same pinned bytes. A one-byte edit still fails.
 PINNED_SHA256 = {
-    "api/auto_models.json": "9ef106b6133d427f04347d0c31c31931e641e1cd47d2a86c0d0769cde48c5d7b",
-    "api/skill_size.py": "ec90c1098ad359dc017c4c470ab5ee0f16e12f5baff9924da2376a8b1153e312",
+    "api/auto_models.json": "70c1e5ebcc2a877e8b9a93c3e69b218e9efc615edf67151df40f8c53fa03f9a4",
+    "api/skill_size.py": "6aa1723ce5d34f050c44bcf658056b6f8ce93044a4c56e418671e7dad42a1d5f",
     "api/curated_models.json": "53c77b0a449f86b8b2aa9b48044678dddaf5aa3cdad40486f0c981386b8d2dce",
     "api/wavespeed_models.json": "3f70cc34de378fd675a2afffb7b7c15b533c67db424e1ae25b6ba3356dd082d1",
-    "bot/skill_output.py": "fc10a201f388be358440646f81ed03cefc2a293f7f5e5f501a290aca55df1cbf",  # #1019: brand row is agent-planned (no fixed default); generic exact-size pin and LOCK scrub; template hint strings unchanged
+    "bot/skill_output.py": "7222f7be59308a11b4121e9b0a28f845adea9f9629df1aacccee5f6ce883ab9a",  # #1019: exact-size pin only when the user named pixels; ratio otherwise
     "api/portrait_studio.py": "61257848a9e23d13c066d01c103c565d6804e58c926d3905c6ed8b0890569224",
     "bot/self_check.py": "1a9b4f7eda7e915adf83df42ff31ccf3c27e83253d9636ba5c85aead447993b6",
 }

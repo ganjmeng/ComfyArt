@@ -194,6 +194,10 @@ def table_row_for_choice(feature: str, choice: dict) -> dict | None:
     for c in spec.get("categories") or []:
         if c.get("id") == cat_id:
             return dict(c)
+    # A named row that is not a category (dense_typography) still owns its fallback.
+    row = spec.get(str(cat_id or ""))
+    if isinstance(row, dict) and row.get("model"):
+        return dict(row)
     return None
 
 
@@ -259,6 +263,46 @@ def table_runtime_fallback_choice(feature: str, primary: dict, failed: str, ids:
     if primary.get("category") == "masked" or "edit" in str(fb):
         # edit path callers may set edit_model
         pass
+    return out
+
+
+def dense_typography_row() -> dict | None:
+    """The image_edit.dense_typography config row, or None when it is not configured."""
+    row = (load_table().get("image_edit") or {}).get("dense_typography")
+    return dict(row) if isinstance(row, dict) and row.get("model") else None
+
+
+def dense_typography_choice(args: dict | None, user_text: str | None = None,
+                            catalog_ids: set | None = None) -> dict | None:
+    """Edit + reference images + dense typography → the configured edit model.
+
+    The model id is read from auto_models.json. The skill id is not consulted:
+    a skill argument is just another argument. No reference, or text that is
+    not dense typography, returns None so the normal pin / Auto path runs.
+    An exact pixel size the user asked for is handled earlier and does not reach here.
+    """
+    args = args or {}
+    if not (args.get("refs") or args.get("base")):
+        return None
+    row = dense_typography_row()
+    if not row:
+        return None
+    blob = "\n".join(str(part or "") for part in (args.get("prompt"), user_text))
+    if not _matches(row, _norm(blob)):
+        return None
+    if catalog_ids is None:
+        from .wavespeed import load_config
+        catalog_ids = {m["id"] for m in load_config()["features"]["image_edit"]["models"]}
+    model, failed = registered(row, catalog_ids, "image_edit/dense_typography")
+    out = {
+        "model": model,
+        "auto": True,
+        "category": "dense_typography",
+        "edit_model": model,
+        "reason": _tip_reason(row),
+    }
+    if failed:
+        out["fallback"] = failed
     return out
 
 

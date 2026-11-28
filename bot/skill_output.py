@@ -949,7 +949,7 @@ def apply_generate(args: dict | None, current_skill: str = "", user_text: str | 
         args["stage"] = plan["stage"]
     agent = _agent_plan_row(sid, plan)
     if agent is not None:
-        args = pin_exact_size(args, agent)
+        args = pin_exact_size(args, agent, user_text)
     if args.get("prompt"):
         # Internal lock labels never reach an image prompt, for any skill.
         args["prompt"] = scrub_internal_marks(str(args.get("prompt") or ""))
@@ -979,14 +979,24 @@ def scrub_internal_marks(text: str) -> str:
     return cleaned.strip()
 
 
-def pin_exact_size(args: dict, row: dict) -> dict:
-    """Submit the row's declared exact-size model (size=W*H), edit model when refs or a base exist.
+def pin_exact_size(args: dict, row: dict, user_text: str | None = None) -> dict:
+    """Honor a row's exact-size models only when the user asked for pixels.
 
-    Declared by the row (exact_size_models / opaque), not by the skill id.
+    The row declares ``exact_size_models`` (the models that can submit ``size=W*H``)
+    and ``opaque``. Neither field is a skill id. When the user did not give pixel
+    dimensions, the declared canvas is a ratio target: the shared router picks the
+    model, that model uses its native size, and delivery is accepted by ratio.
+    Pinning Qwen here would override that route.
     """
+    from ..api.skill_size import RATIO_MODE, USER_PIXELS_KEY, explicit_user_pixels
+
     models = row.get("exact_size_models") or {}
     args = dict(args)
-    if models:
+    pixels = explicit_user_pixels(user_text, args) if models else None
+    if models and pixels:
+        w, h = pixels
+        args["width"], args["height"] = w, h
+        args[USER_PIXELS_KEY] = f"{w}*{h}"
         if args.get("refs") or args.get("base"):
             args.pop("model", None)
             args["edit_model"] = models["edit"]
@@ -998,6 +1008,20 @@ def pin_exact_size(args: dict, row: dict) -> dict:
             args["size_candidates"] = [models["t2i"]]
         args["size_lock"] = True
         args["exact_size_pin"] = True
+        args.pop("size_lock_mode", None)
+    elif models:
+        # Drop a pin a previous pass wrote. Leave a different model the caller named.
+        pinned = {models.get("t2i"), models.get("edit")} - {None}
+        if args.get("model") in pinned:
+            args.pop("model", None)
+            args.pop("auto_model", None)
+        if args.get("edit_model") in pinned:
+            args.pop("edit_model", None)
+        args.pop("size_candidates", None)
+        args.pop("exact_size_pin", None)
+        args.pop(USER_PIXELS_KEY, None)
+        args["size_lock"] = True
+        args["size_lock_mode"] = RATIO_MODE
     if row.get("opaque"):
         args["opaque_output"] = True
     return args
