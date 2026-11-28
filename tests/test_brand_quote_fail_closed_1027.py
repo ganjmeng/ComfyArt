@@ -11,15 +11,15 @@ import json
 
 import pytest
 
-from ComfyArt.api import brand_identity as brand
 from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
 from ComfyArt.bot.local_llm import LocalLlmProvider
 from ComfyArt.bot.providers import TurnHandle
 from ComfyArt.bot.run_budget import resolve_policy
 from test_agent_budget_391 import Rig, calls, reply
-from test_brand_wrapup_1027 import _card1, _reach_finals
 
-SLOTS = ("spec", "cup", "bag", "storefront")
+SKILL = "brand-identity-director"
+# Any ratios from the skill row's table; the plan is the agent's, not a fixed slot list.
+FINAL_RATIOS = ("3:4", "3:4", "1:1", "16:9")
 
 
 class _Asking:
@@ -35,36 +35,24 @@ class _Asking:
 def _script_for(stage):
     def script(messages, n):
         if n == 0 and stage == "first":
-            return calls(("generate_image", {
-                "prompt": "board", "skill": brand.SKILL, "brand_slot": "moodboard"}))
+            return calls(("generate_image", {"prompt": "board", "skill": SKILL, "ratio": "16:9"}))
         if n == 0:
             return calls(*((
                 "generate_image",
-                {"prompt": slot, "skill": brand.SKILL, "brand_slot": slot},
-            ) for slot in SLOTS))
+                {"prompt": f"piece {i}", "skill": SKILL, "ratio": ratio},
+            ) for i, ratio in enumerate(FINAL_RATIOS)))
         return reply("不再生成")
     return script
 
 
-def _at_stage(stage):
-    if stage == "first":
-        brand.record_card_answer(_card1(), {
-            "bi_delivery": {"selected": ["A"]}, "bi_color": {"selected": ["A"]},
-            "bi_mark": {"selected": ["A"]}, "bi_source": {"selected": ["A"]}})
-    else:
-        _reach_finals()
-
-
 def _mcp(name, args, i):
     if name == "generate_image":
-        return json.dumps({"ids": [f"h-{args.get('brand_slot')}"]})
+        return json.dumps({"ids": [f"h-{i}"]})
     return json.dumps({})
 
 
 async def _run(monkeypatch, *, budget: bool, price: str, confirm: str, stage: str = "final"):
-    brand.reset_for_tests()
     BOT_CHAT_ID.set("c")
-    _at_stage(stage)
     rig = Rig(monkeypatch, _script_for(stage), mcp=_mcp)
     if not budget:
         pol = resolve_policy(env={"COMFYART_AGENT_BUDGET_LOOP": "0"})

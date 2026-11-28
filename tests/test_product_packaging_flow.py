@@ -509,7 +509,7 @@ PINNED_SHA256 = {
     "api/skill_size.py": "ec90c1098ad359dc017c4c470ab5ee0f16e12f5baff9924da2376a8b1153e312",
     "api/curated_models.json": "53c77b0a449f86b8b2aa9b48044678dddaf5aa3cdad40486f0c981386b8d2dce",
     "api/wavespeed_models.json": "3f70cc34de378fd675a2afffb7b7c15b533c67db424e1ae25b6ba3356dd082d1",
-    "bot/skill_output.py": "74534e82165ebe20a9c2026fba4b4538bdcfa934f4e6264fde77cc89c654b4a5",  # brand image prompts scrub Output lock and lock labels; template hint strings unchanged
+    "bot/skill_output.py": "fc10a201f388be358440646f81ed03cefc2a293f7f5e5f501a290aca55df1cbf",  # #1019: brand row is agent-planned (no fixed default); generic exact-size pin and LOCK scrub; template hint strings unchanged
     "api/portrait_studio.py": "61257848a9e23d13c066d01c103c565d6804e58c926d3905c6ed8b0890569224",
     "bot/self_check.py": "1a9b4f7eda7e915adf83df42ff31ccf3c27e83253d9636ba5c85aead447993b6",
 }

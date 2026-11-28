@@ -219,7 +219,7 @@ def _parse_question(raw: dict, index: int) -> dict:
             raise ValueError(f"questions[{index}] unknown default ids: {unknown}")
         if len(defaults) > max_selections:
             raise ValueError(f"questions[{index}] defaults exceed max_selections")
-    elif any(o.get("recommended") for o in options):
+    elif any(o.get("recommended") for o in options) and raw.get("preselect") is not False:
         defaults = [o["id"] for o in options if o.get("recommended")][:max_selections]
     page = int(raw["page"]) if raw.get("page") is not None else 1
     if page < 1:
@@ -237,6 +237,9 @@ def _parse_question(raw: dict, index: int) -> dict:
         q["defaults"] = defaults
     if raw.get("placeholder"):
         q["placeholder"] = str(raw["placeholder"])
+    if raw.get("preselect") is False:
+        # The recommended badge stays; nothing is selected until the user picks.
+        q["preselect"] = False
     return q
 
 
@@ -900,8 +903,6 @@ def _validate_spec(args: dict) -> dict:
     args = normalize_clothing_swap_card(args)
     args = normalize_studio_direction_card(args)
     args = normalize_youtube_banner_card(args)
-    from .brand_identity import normalize_card as normalize_brand_card
-    args = normalize_brand_card(args)
     allow_skip = bool(args["allow_skip"]) if "allow_skip" in args else True
     raw_questions = args.get("questions")
     if raw_questions is not None:
@@ -932,8 +933,7 @@ def _validate_spec(args: dict) -> dict:
         }
         if questions[0].get("defaults"):
             spec["defaults"] = questions[0]["defaults"]
-        from .brand_identity import unselect_recommended
-        return unselect_recommended(spec)
+        return spec
 
     # Legacy single-question shape.
     prompt = str(args.get("prompt") or "").strip()
@@ -960,7 +960,7 @@ def _validate_spec(args: dict) -> dict:
             raise ValueError(f"unknown default ids: {unknown}")
         if len(defaults) > max_selections:
             raise ValueError(f"defaults exceed max_selections ({max_selections})")
-    elif any(o.get("recommended") for o in options):
+    elif any(o.get("recommended") for o in options) and args.get("preselect") is not False:
         defaults = [o["id"] for o in options if o.get("recommended")][:max_selections]
     question = {
         "id": "_",
@@ -1028,16 +1028,34 @@ def abandon_ask(ask_id: str) -> None:
     _store_delete(ask_id)
 
 
+def confirm_expired(spec: object, now: Optional[float] = None) -> bool:
+    """A confirm card with a declared expires_at is expired at or after that time."""
+    if not isinstance(spec, dict):
+        return False
+    exp = spec.get("expires_at")
+    if isinstance(exp, bool) or not isinstance(exp, (int, float)):
+        return False
+    clock = time.time() if now is None else float(now)
+    return clock >= float(exp)
+
+
+def mark_expired_blocks(messages: list, now: Optional[float] = None) -> list:
+    """Show a still-pending confirm block past its deadline as expired (read path only)."""
+    for message in messages or []:
+        for block in (message.get("blocks") or []) if isinstance(message, dict) else []:
+            if (isinstance(block, dict) and block.get("type") == "ask"
+                    and block.get("status") == "pending" and confirm_expired(block, now)):
+                block["status"] = "expired"
+    return messages
+
+
 def resolve_confirm_answer(ask: PendingAsk, selected: Optional[list[str]],
                            other_text: Optional[str] = None,
                            answers: Optional[dict] = None, *,
                            now: Optional[float] = None) -> str:
-    """One winner for a brand Start. A Start at or after expires_at is expired."""
-    from .brand_identity import confirm_expired
-    clock = time.time() if now is None else float(now)
+    """'answered', 'expired' or 'lost'. A Start at or after expires_at is expired, not approval."""
     selected = list(selected or [])
-    if (isinstance(ask.spec, dict) and ask.spec.get("brand_confirm") is True
-            and "start" in selected and confirm_expired(ask.spec, clock)):
+    if "start" in selected and confirm_expired(ask.spec, now):
         if resolve_ask(ask.id, "expired") is None:
             return "lost"
         return "expired"

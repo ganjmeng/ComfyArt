@@ -2104,8 +2104,8 @@ async def submit(inputs: dict) -> str:
         _jobs[task]["model_choice"] = model_choice
     if svg_image.requests_svg(inputs):
         _jobs[task]["svg"] = True
-    if inputs.get("brand_opaque"):
-        _jobs[task]["brand_opaque"] = True
+    if inputs.get("opaque_output"):
+        _jobs[task]["opaque_output"] = True
     if inputs.get("size_lock"):
         # The provider payload is built from the schema only, so this flag stays on the job.
         _jobs[task]["size_lock"] = True
@@ -2579,8 +2579,8 @@ async def _download(session: aiohttp.ClientSession, task: str, index: int, url: 
             _write(os.path.join(root, SUBFOLDER, preview), verdict.preview_png)
         return {"filename": filename, "subfolder": SUBFOLDER, "type": "output",
                 "svg_preview": preview, "svg_state": verdict.status, "svg_message": verdict.message}
-    if (_jobs.get(task) or {}).get("brand_opaque"):
-        from .brand_identity import flatten_opaque
+    if (_jobs.get(task) or {}).get("opaque_output"):
+        from .image_delivery import flatten_opaque
         flat = flatten_opaque(data)
         if flat is not data:
             data = flat
@@ -2633,14 +2633,14 @@ def stamp_wait_charge(result: dict, task: str, cost, *, refunded: bool = False) 
 
 
 def completed_noise_failure(task: str, job: dict, blobs: list) -> dict | None:
-    """A finished brand image that is full-frame noise is a charged failure.
+    """A finished opaque-output image that is full-frame noise is a charged failure.
 
     The history is ``failed``, not completed. Outputs stay empty, so nothing is
     placed on the canvas. ``charged`` and ``refunded`` are fields on that payload.
     """
-    if not isinstance(job, dict) or not job.get("brand_opaque"):
+    if not isinstance(job, dict) or not job.get("opaque_output"):
         return None
-    from .brand_identity import image_is_full_frame_noise
+    from .image_delivery import image_is_full_frame_noise
     for blob in blobs or []:
         if blob and image_is_full_frame_noise(blob):
             cost = job.get("quoted")
@@ -2815,10 +2815,10 @@ async def _poll_once(task: str, job: dict, now: float) -> dict:
                                               502, kind="noOutput", charged=cost))
         # CDN URLs expire after 7 days: keep a local copy right away
         refs = [await _download(session, task, i, url) for i, url in enumerate(outputs) if isinstance(url, str)]
-    # A brand image that is full-frame noise is not a deliverable. The job already
+    # An opaque-output image that is full-frame noise is not a deliverable. The job already
     # completed, so the quoted charge stands and the caller must quote again.
     # A reviewable file is left untouched and is placed as usual.
-    if job.get("brand_opaque"):
+    if job.get("opaque_output"):
         failed = completed_noise_failure(task, job, [_ref_bytes(ref) for ref in refs])
         if failed is not None:
             return failed

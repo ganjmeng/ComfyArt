@@ -433,8 +433,6 @@ async def _run_turn(chat: dict, text: str, state: _TurnState, *,
     paid_guard.begin_turn(chat_id, text=text,
                           provider_text=provider_text if provider_text is not None else text,
                           lang=lang, on_stop=paid_guard.stop_later(provider, state.handle))
-    from .brand_identity import brand_progress_scope, reset_brand_progress_scope
-    progress_scope = brand_progress_scope(chat_id)
     try:
         result = await provider.send(
             TurnRequest(
@@ -465,8 +463,6 @@ async def _run_turn(chat: dict, text: str, state: _TurnState, *,
     else:
         error = result.error
         status = "aborted" if result.aborted else ("error" if error else "done")
-    finally:
-        reset_brand_progress_scope(progress_scope)
     paid_stop = paid_guard.end_turn(chat_id)
     if paid_stop:  # #142: the paid cap stopped this turn -> its notice, whatever the provider returned
         error, status = paid_stop, "error"

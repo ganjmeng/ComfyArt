@@ -1,5 +1,3 @@
-import asyncio
-
 from aiohttp import web
 
 from ..bot import get_provider, list_providers
@@ -11,17 +9,6 @@ from .bot_turns import ACTIVE_TURNS, QUEUED, broadcast
 from .settings import bot_disabled, bot_enabled, get_setting, mcp_enabled
 
 EXTERNAL_NEEDS_MCP = "external agents need MCP: turn on MCP in Agent settings"
-# One stored-card re-quote at a time per ask. The second waiter sees this set
-# or the written replaced_by and returns 409 instead of appending another card.
-_BRAND_REQUOTE_LOCK: asyncio.Lock | None = None
-_BRAND_REQUOTE_OPEN: set[str] = set()
-
-
-def _brand_requote_lock() -> asyncio.Lock:
-    global _BRAND_REQUOTE_LOCK
-    if _BRAND_REQUOTE_LOCK is None:
-        _BRAND_REQUOTE_LOCK = asyncio.Lock()
-    return _BRAND_REQUOTE_LOCK
 
 
 def _draft_local_llm_key(body: dict, url: str) -> str:
@@ -155,8 +142,7 @@ async def bot_get_chat(request: web.Request) -> web.Response:
         for m in messages:
             if m["id"] == state.message_id:
                 m["blocks"] = state.blocks
-    from .brand_identity import settle_restored_cards
-    settle_restored_cards(chat["id"], messages)
+    bot_asks.mark_expired_blocks(messages)
     chat["busy"] = state is not None
     return web.json_response({"chat": chat, "messages": messages})
 
@@ -345,11 +331,10 @@ async def bot_list_asks(request: web.Request) -> web.Response:
     if not bot_enabled():
         return bot_disabled()
     chat = _owned_chat(request)
-    from .brand_identity import confirm_expired, settle_restored_cards
-    settle_restored_cards(chat["id"])
     asks = []
     for pending in bot_asks.list_pending_for_chat(chat["id"]):
-        if confirm_expired(pending.spec):
+        # A confirm card past its declared lifetime cannot be started any more.
+        if bot_asks.confirm_expired(pending.spec):
             continue
         asks.append(bot_asks.pending_ask_to_block(pending))
     return web.json_response({"asks": asks})
@@ -433,74 +418,9 @@ async def bot_answer_ask(request: web.Request) -> web.Response:
                 payload["answers"] = answers
             broadcast("turn_ask_resolved", payload)
     if outcome == "expired":
-        from .brand_identity import expired_text
-        lang = str((ask.spec or {}).get("lang") or "zh")
-        return error(expired_text(lang), 409)
-    return web.json_response({"ok": True}, status=202)
-
-
-def _stored_brand_card(chat_id: str, ask_id: str) -> tuple[dict | None, dict | None]:
-    for message in chat_store.list_messages(chat_id):
-        for block in message.get("blocks") or []:
-            if (isinstance(block, dict) and block.get("type") == "ask"
-                    and block.get("ask_id") == ask_id and block.get("brand_confirm") is True):
-                return message, block
-    return None, None
-
-
-@routes.post("/comfyart/bot/chats/{cid}/brand-requote")
-async def bot_brand_requote(request: web.Request) -> web.Response:
-    """Re-quote a stored brand card. A live ask wakes the waiting turn.
-
-    An expired stored card uses the same quote and stamp path and appends the new card.
-    """
-    if not bot_enabled():
-        return bot_disabled()
-    chat = _owned_chat(request)
-    body = await json_body(request)
-    ask_id = str(body.get("ask_id") or "")
-    if not ask_id:
-        return error("ask_id required", 400)
-    ask = bot_asks.PENDING.get(ask_id)
-    if ask is not None and ask.chat_id == chat["id"]:
-        try:
-            bot_asks.validate_answer(ask.spec, ["requote"], "")
-        except ValueError as e:
-            return error(str(e), 422)
-        outcome = bot_asks.resolve_confirm_answer(ask, ["requote"])
-        if outcome == "lost":
-            return error("ask not found or already resolved", 409)
-        if outcome == "expired":
-            from .brand_identity import expired_text
-            lang = str((ask.spec or {}).get("lang") or "zh")
-            return error(expired_text(lang), 409)
-        return web.json_response({"ok": True}, status=202)
-    async with _brand_requote_lock():
-        message, block = _stored_brand_card(chat["id"], ask_id)
-        steps = (block or {}).get("brand_steps") if isinstance(block, dict) else None
-        if message is None or not isinstance(steps, list) or not steps:
-            return error("brand card not found", 404)
-        if str((block or {}).get("replaced_by") or "").strip():
-            return error("brand card already replaced", 409)
-        from .brand_identity import confirm_expired
-        if not confirm_expired(block):
-            return error("brand card is still valid", 409)
-        if ask_id in _BRAND_REQUOTE_OPEN:
-            return error("brand card already replaced", 409)
-        _BRAND_REQUOTE_OPEN.add(ask_id)
-        spec = dict(block or {})
-        spec["ask_id"] = str(spec.get("ask_id") or ask_id)
-    provider = get_provider(str(chat.get("provider") or ""))
-    if provider is None or not hasattr(provider, "_quote_steps"):
-        _BRAND_REQUOTE_OPEN.discard(ask_id)
-        return error("brand re-quote needs the local model", 409)
-    from ..bot.local_llm import continue_brand_requote
-    try:
-        await continue_brand_requote(provider, chat, message["id"], steps, spec)
-    except ValueError as e:
-        return error(str(e), 409)
-    finally:
-        _BRAND_REQUOTE_OPEN.discard(ask_id)
+        from ..bot.plan_quote import EXPIRED_TEXT
+        lang = "en" if str((ask.spec or {}).get("lang") or "zh") == "en" else "zh"
+        return error(EXPIRED_TEXT[lang], 409)
     return web.json_response({"ok": True}, status=202)
 
 

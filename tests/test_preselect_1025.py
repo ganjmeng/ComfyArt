@@ -2,7 +2,7 @@
 
 The client selects only an explicit defaults list. The server still copies a
 recommended flag into defaults, except where a skill normalizer strips it.
-Brand card 3 keeps the badge and clears defaults. Historical answers stay the
+A question sent with preselect=false keeps the badge and clears defaults. Historical answers stay the
 user's choice. No WaveSpeed call.
 """
 from __future__ import annotations
@@ -10,7 +10,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from ComfyArt.api import bot_asks, brand_identity, portrait_studio, product_packaging
+from ComfyArt.api import bot_asks, portrait_studio, product_packaging
 from ComfyArt.api.multi_angle import SOURCE, normalize_card
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -147,30 +147,24 @@ def test_youtube_banner_cards_do_not_preselect_either_language():
                 assert _selected({"questions": [q]}) == []
 
 
-def test_brand_card3_keeps_the_badge_and_clears_the_default():
-    brand_identity.reset_for_tests()
-    try:
-        for slot in ("logo_a", "logo_b", "logo_c"):
-            brand_identity.record_submitted({"brand_slot": slot}, {"ids": [f"holder-{slot}"]})
-            brand_identity.record_wait({"results": [{
-                "id": f"holder-{slot}",
-                "shapes": [f"shape:{slot}"],
-                "urls": [f"/view?f={slot}.png"],
-            }]})
-        spec = bot_asks.validate_spec({"questions": [{
-            "id": "bi_direction",
-            "prompt": "选定哪个 Logo 方向作为最终标识（logo_primary）？",
-            "options": [
-                {"id": "A", "label": "方向 A", "recommended": True},
-                {"id": "B", "label": "方向 B"},
-                {"id": "C", "label": "方向 C"},
-            ],
-        }]})
-        assert "defaults" not in spec["questions"][0]
-        assert spec["questions"][0]["options"][0]["recommended"] is True
-        assert _selected(spec) == []
-    finally:
-        brand_identity.reset_for_tests()
+def test_preselect_false_keeps_the_badge_and_clears_the_default():
+    """Generic ask_user: any card (e.g. a logo-direction pick with thumbnails) can show the
+    recommended badge without selecting it. No skill-specific normalizer is involved."""
+    spec = bot_asks.validate_spec({"questions": [{
+        "id": "direction",
+        "prompt": "选哪个方向？",
+        "preselect": False,
+        "options": [
+            {"id": "A", "label": "方向 A", "recommended": True, "image_url": "/view?f=a.png"},
+            {"id": "B", "label": "方向 B", "image_url": "/view?f=b.png"},
+            {"id": "C", "label": "方向 C", "image_url": "/view?f=c.png"},
+        ],
+    }]})
+    q = spec["questions"][0]
+    assert "defaults" not in q
+    assert q["options"][0]["recommended"] is True
+    assert q["options"][1]["image_url"] == "/view?f=b.png"
+    assert _selected(spec) == []
 
 
 def test_client_qdefaults_ignores_a_bare_recommended_flag():

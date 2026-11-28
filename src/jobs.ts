@@ -242,22 +242,6 @@ export function rowSpots(editor: Editor, holder: TLShape, sizes: [number, number
 const defaultPlacer: Placer = async (editor, holder, media, job) => {
   const w = (holder.props as { w: number }).w
   const gen = infoOf(holder, job)
-  const brandSlot = holder.meta.brand_slot
-  if (typeof brandSlot === 'string' && brandSlot && media[0]) {
-    let placedId: TLShapeId | null = null
-    editor.run(() => {
-      const parentId = holder.parentId
-      const x = holder.x
-      const y = holder.y
-      editor.deleteShape(holder.id)
-      const id = placeMedia(editor, media[0], job.name, x, y, w, parentId)
-      const placed = editor.getShape(id)
-      if (placed) editor.updateShape({ id, type: placed.type, meta: { ...placed.meta, gen: gen as any, brand_slot: brandSlot } })
-      placedId = id
-    }, { history: 'ignore' })
-    if (placedId) selectResults(editor, holder, [placedId])
-    return
-  }
   const b = editor.getShapePageBounds(holder)!
   const ids: TLShapeId[] = []
   editor.run(() => {

@@ -230,6 +230,7 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
     const sizeLock = shape.meta?.sizeLockModel
       ? { size_lock: true as const, ...(typeof shape.meta?.userRatio === 'string' ? { user_ratio: shape.meta.userRatio } : {}), ...(shape.meta?.sizeLockMode === 'ratio' ? { size_lock_mode: 'ratio' as const } : {}) }
       : {}
+    const opaque = shape.meta?.opaqueOutput ? { opaque_output: true as const } : {}
     const gif = gifSpec(shape.meta)
     const svg = svgSpec(shape.meta)
     if (svg) {
@@ -262,8 +263,8 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
     // Sunburst has no size/width/height; the submitted fields are resolution + aspect_ratio.
     const pinnedRes = typeof shape.meta.editResolution === 'string' ? { resolution: shape.meta.editResolution } : {}
     return images.length
-      ? wsBuilt({ feature: 'image_edit', model: editModel, prompt, images, width, height, ...pinnedRes, seed, negative_prompt, png: transparent, prep: refPrep.some(Boolean) ? refPrep : undefined, ...sizeLock })
-      : wsBuilt({ feature: 'text_to_image', model: model.auto ? undefined : model.id, prompt, params: imageParams(shape, model, null, svgSpec(shape.meta)), width, height, ...pinnedRes, seed: seedOf(shape) ?? undefined, negative_prompt, png: transparent, ...sizeLock })
+      ? wsBuilt({ feature: 'image_edit', model: editModel, prompt, images, width, height, ...pinnedRes, seed, negative_prompt, png: transparent, prep: refPrep.some(Boolean) ? refPrep : undefined, ...sizeLock, ...opaque })
+      : wsBuilt({ feature: 'text_to_image', model: model.auto ? undefined : model.id, prompt, params: imageParams(shape, model, null, svgSpec(shape.meta)), width, height, ...pinnedRes, seed: seedOf(shape) ?? undefined, negative_prompt, png: transparent, ...sizeLock, ...opaque })
   }
   // local diffusion models are gone: cloud image models are handled above
   throw new Error(model ? t('jobs.notInCloud') : 'unknown image model')

@@ -780,8 +780,6 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
     ctx.messages = messages
     ctx.current_skill = ctx.current_skill or current_skill_from_messages(messages)
     ctx.current_preset = ctx.current_preset or current_preset_from_messages(messages)
-    from ..api.brand_identity import ensure_run_budget
-    ensure_run_budget(ctx.tracker, ctx.current_skill, ctx.current_preset)
     ctx.pricer = getattr(provider, "_price_call", None)
     ctx.confirmer = getattr(provider, "_confirm_paid_over_quote", None)
     t_start = clock()
@@ -823,10 +821,6 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
         return sc_mod.check(ctx.goal, ctx.blocks, await canvas_ids())
 
     async def finish(stop: Stop, *, remaining: int = 0, extra_error: str = "") -> TurnResult:
-        from ..api.brand_identity import end_turn
-        flushed = end_turn(ctx.lang if ctx.lang in ("zh", "en") else "zh")
-        if flushed:
-            await rec_emit(BotEvent(t="delta", text=flushed))
         check = await goal_check()
         # Every stop except done can be continued / retried from its checkpoint.
         status = "done" if stop.reason == StopReason.DONE else "paused"
@@ -977,10 +971,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
             if reasoning.strip():
                 await emit(BotEvent(t="thinking", text=reasoning.strip()))
             if content:
-                from ..api.brand_identity import accept_assistant_text
-                shown = accept_assistant_text(content)
-                if shown:
-                    await rec_emit(BotEvent(t="delta", text=shown))
+                await rec_emit(BotEvent(t="delta", text=content))
             if not tool_calls:
                 check = await goal_check()
                 if check.applies and not check.passed:
@@ -1020,10 +1011,6 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
             finally:
                 if pure_wait:
                     ctx.budget.resume_wall()
-            from ..api.brand_identity import release_wrapup
-            released = release_wrapup(ctx.lang if ctx.lang in ("zh", "en") else "zh")
-            if released:
-                await rec_emit(BotEvent(t="delta", text=released))
             reason_next = reasoning_boost.wrote_memory(ctx.blocks[b_before:])
             # Tool results are charged as input of the next request (they are re-sent with it).
             ctx.budget.end_step()
@@ -1065,20 +1052,6 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
             if fatal is not None:  # #705: never let the model retry a call the tool says cannot succeed
                 _log.warning("[ComfyArt/agent] run %s non-retryable %s error, stopping", ctx.run_id, fatal.tool)
                 return await finish(Stop(StopReason.STUCK, "non_retryable", step=ctx.budget.used.steps))
-            for obs_row in obs:
-                if "generate_image" not in str(obs_row.tool or ""):
-                    continue
-                try:
-                    raw_args = json.loads(obs_row.args_key.split("\x00", 1)[1])
-                except (IndexError, ValueError):
-                    raw_args = {}
-                if isinstance(raw_args, dict) and raw_args.get("brand_slot"):
-                    # The default path is not named as "8 images" in the user text, so the
-                    # planned count would stay at the page default of 4 (cap 6) and stop
-                    # the run on the deliverables. A brand_slot call is that path.
-                    from ..api.brand_identity import ensure_run_budget
-                    ensure_run_budget(ctx.tracker, "brand-identity-director", "")
-                    break
             over = ctx.tracker.over_budget(obs)  # #705: hard cap, no nudge (e.g. every step a new image, never done)
             if ctx.tracker.confirmed_generates:
                 point = ""

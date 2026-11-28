@@ -31,7 +31,7 @@ BRAND_STAGES_979: tuple[dict, ...] = (
     # Stage 2: only after the user picks one direction (or says "you decide"):
     # one 16:9 guideline board. Never a landscape single board instead of the set.
     {"width": 2048, "height": 1152, "ratio": "16:9", "images": 1,
-     "label": "1 guideline board for the chosen direction"},
+     "label": "1 guideline board for the chosen direction", "pause_before": True},
 )
 PACKAGING_PLAYFUL_STAGES_979: tuple[dict, ...] = (
     {"width": 1536, "height": 2048, "ratio": "3:4", "images": 3,
@@ -294,6 +294,11 @@ TYPE_OUTPUTS_982: dict[str, dict] = {
 # SHORT side), never the old long-side interpretation that shrank wide/portrait
 # outputs; `size_lock` still makes a smaller provider file visible.
 FALLBACK_OUTPUT_982: dict[str, int | str] = {"width": 1024, "height": 1024, "ratio": "1:1"}
+# Provider 2K canvases an agent-planned row may pick from, one per ratio.
+AGENT_PLAN_RATIO_PIXELS: dict[str, tuple[int, int]] = {
+    "1:1": (2048, 2048), "16:9": (2048, 1152), "9:16": (1152, 2048),
+    "3:4": (1536, 2048), "4:3": (2048, 1536), "4:5": (1638, 2048),
+}
 OUTPUTS: dict[str, dict] = {
     "before-after": {
         "width": 1920, "height": 1080, "ratio": "16:9", "images": 1,
@@ -334,20 +339,20 @@ OUTPUTS: dict[str, dict] = {
                   "Realistic Human Character Design & Reference Sheets",
                   "角色设定表", "Character Sheet"),
     },
-    # #979: brand delivery is TWO stages, 4 images total. Flat fields = stage 1
-    # (the safe default when no stage is passed); stages carry the full contract.
-    # #1019: flat fields and `stages` are the no-template default path (8 images).
-    # Each industry preset keeps the #979 3+1 plan and is not this row.
+    # #979: an industry template keeps its declared stages (presets below).
+    # #1019: no template selected is the plaza default path. The skill brief and the
+    # user's card answers decide how many images and which ratio each one takes;
+    # the row only declares the constraints the shared tools enforce.
     "brand-identity-director": {
-        "width": 2048, "height": 1152, "ratio": "16:9", "images": 8,
-        "stages": (
-            {"width": 2048, "height": 1152, "ratio": "16:9", "images": 1,
-             "label": "1 moodboard, 3x3, 16:9"},
-            {"width": 2048, "height": 2048, "ratio": "1:1", "images": 3,
-             "label": "3 logo direction boards"},
-            {"width": 1536, "height": 2048, "ratio": "3:4", "images": 4,
-             "label": "spec, cup, bag at 3:4 and storefront at 16:9"},
-        ),
+        "width": 2048, "height": 2048, "ratio": "1:1", "images": 1,
+        "agent_plan": True,
+        "no_template_default": True,
+        "ratio_pixels": AGENT_PLAN_RATIO_PIXELS,
+        "exact_size_models": {"t2i": "wavespeed-ai/qwen-image-2.0/text-to-image",
+                              "edit": "wavespeed-ai/qwen-image-2.0/edit"},
+        "opaque": True,
+        "always_confirm": True,
+        "confirm_ttl_s": 600,
         "presets": {pid: {"stages": BRAND_STAGES_979, "images": 4,
                           "width": 1024, "height": 1024, "ratio": "1:1", **row}
                     for pid, row in BRAND_PRESETS_979.items()},
@@ -450,9 +455,9 @@ def _preset_row(sid: str, preset_id: object = "") -> tuple[str, dict, bool]:
     if not presets:
         return "", row, True
     key = str(preset_id or "").strip()
-    # #1019: an empty brand preset is the plaza default path (the skill row),
-    # not the first industry template. An unknown id still falls back to that template.
-    if sid == "brand-identity-director" and not key:
+    # #1019: a row that declares no_template_default runs its own row when no
+    # template is selected. An unknown id still falls back to the first template.
+    if row.get("no_template_default") and not key:
         return "", row, True
     if key in presets:
         return key, presets[key], False
@@ -590,9 +595,8 @@ def accepted_image_counts(name: object, preset_id: object = "") -> tuple[int, in
     sid = resolve(name)
     if not sid:
         return None
-    if sid == "brand-identity-director" and not str(preset_id or "").strip():
-        # Default path is eight images across three stages, never a one-image skill.
-        return int(plan_for(sid, "")["total_images"]), int(plan_for(sid, "")["total_images"])
+    if (OUTPUTS.get(sid) or {}).get("agent_plan") and not str(preset_id or "").strip():
+        return None  # count follows the plan the agent quotes from the brief and cards
     if sid in PRESET_PLAN_SKILLS:
         n = int(plan_for(sid, preset_id)["images"])
         return n, n
@@ -776,28 +780,6 @@ def ref_ratio(sid: str, data: bytes | None) -> str | None:
     return _nearest(list(table), size[0] / size[1])
 
 
-def fills_brand_default(args: dict | None, current_skill: str = "", user_text: str | None = None,
-                        current_preset: str = "") -> bool:
-    """Whether this generate will go through brand fill_default.
-
-    Same skill id and preset resolution as apply_generate. A named skill wins,
-    otherwise the run's current skill. An industry preset on the call, on the
-    lock line, or on the run does not take the default path. A call that already
-    names brand_slot does.
-    """
-    args = args or {}
-    raw = str(args.get("skill") or "").strip()
-    named = resolve(raw)
-    if raw and not named:
-        return False
-    sid = named or resolve(current_skill)
-    if sid != "brand-identity-director":
-        return False
-    preset_key = str(args.get("preset") or preset_from_text(user_text) or current_preset or "").strip()
-    # Unknown preset ids are not the default path; plan_for maps them to the first template.
-    return bool(args.get("brand_slot") or not preset_key)
-
-
 def apply_generate(args: dict | None, current_skill: str = "", user_text: str | None = None,
                    ref_image: bytes | None = None, current_preset: str = "") -> dict:
     """Fill the skill id and its declared pixels.
@@ -852,13 +834,6 @@ def apply_generate(args: dict | None, current_skill: str = "", user_text: str | 
     row = OUTPUTS[sid]
     if not named:
         args["skill"] = sid
-    # #1019: no industry template → the 8-image default path. A known preset keeps #979.
-    # An unknown preset id still falls through to the first template below.
-    if fills_brand_default(args, current_skill, user_text, current_preset):
-        from ..api.brand_identity import fill_default
-        filled = fill_default(args)
-        if filled.get("_brand_block") or filled.get("brand_slot"):
-            return filled
     # #982: a multi-call default (ratio pack / kit / screens) picks the call by
     # explicit ratio or by the pixels the relay already filled; otherwise call 1.
     call = None
@@ -941,8 +916,14 @@ def apply_generate(args: dict | None, current_skill: str = "", user_text: str | 
     if not picked:
         # #982: a call's own canvas; #979: a preset plan's stage size; otherwise the
         # row's flat default.
+        agent = _agent_plan_row(sid, plan)
+        asked_ratio = str(args.get("ratio") or "").strip()
         if call:
             width, height, ratio = call["width"], call["height"], call.get("ratio")
+        elif agent is not None and asked_ratio in (agent.get("ratio_pixels") or {}):
+            # Agent-planned path: each call names its ratio from the declared table.
+            width, height = agent["ratio_pixels"][asked_ratio]
+            ratio = asked_ratio
         elif plan:
             width, height, ratio = plan["width"], plan["height"], plan.get("ratio")
         else:
@@ -966,9 +947,59 @@ def apply_generate(args: dict | None, current_skill: str = "", user_text: str | 
         # (api/mcp_tools/canvas.py applies this a second time) is idempotent.
         args["preset"] = plan["preset"]
         args["stage"] = plan["stage"]
-    if sid == "brand-identity-director" and args.get("prompt"):
-        from ..api.brand_identity import scrub_internal_marks
+    agent = _agent_plan_row(sid, plan)
+    if agent is not None:
+        args = pin_exact_size(args, agent)
+    if args.get("prompt"):
+        # Internal lock labels never reach an image prompt, for any skill.
         args["prompt"] = scrub_internal_marks(str(args.get("prompt") or ""))
+    return args
+
+
+def _agent_plan_row(sid: str, plan: dict | None) -> dict | None:
+    """The row of an agent-planned default path (no template selected), else None."""
+    row = OUTPUTS.get(sid) or {}
+    if not row.get("agent_plan"):
+        return None
+    if plan is not None and str(plan.get("preset") or ""):
+        return None
+    return row
+
+
+_INTERNAL_MARK = re.compile(
+    r"(?i)(?:\b(?:STRUCTURE|GUIDELINE|LAYOUT|APPLICATION)\s+LOCK(?:\s*[ABC])?\s*:?|\bOutput lock:)"
+)
+
+
+def scrub_internal_marks(text: str) -> str:
+    """Remove internal lock labels (STRUCTURE LOCK:, Output lock:, ...) from an image prompt."""
+    cleaned = _INTERNAL_MARK.sub("", str(text or ""))
+    cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
+    cleaned = re.sub(r" *\n *", "\n", cleaned)
+    return cleaned.strip()
+
+
+def pin_exact_size(args: dict, row: dict) -> dict:
+    """Submit the row's declared exact-size model (size=W*H), edit model when refs or a base exist.
+
+    Declared by the row (exact_size_models / opaque), not by the skill id.
+    """
+    models = row.get("exact_size_models") or {}
+    args = dict(args)
+    if models:
+        if args.get("refs") or args.get("base"):
+            args.pop("model", None)
+            args["edit_model"] = models["edit"]
+            args["size_candidates"] = [models["edit"]]
+        else:
+            args.pop("edit_model", None)
+            args["model"] = models["t2i"]
+            args["auto_model"] = True
+            args["size_candidates"] = [models["t2i"]]
+        args["size_lock"] = True
+        args["exact_size_pin"] = True
+    if row.get("opaque"):
+        args["opaque_output"] = True
     return args
 
 
@@ -997,27 +1028,8 @@ def _preset_hint(sid: str, preset_id: str, user_text: str) -> str:
     stages = plan["stages"]
     total = plan["total_images"]
     default = " (skill default template: none was selected)" if plan["default_template"] else ""
-    if sid == "brand-identity-director" and not str(preset or "").strip():
-        from ..api.brand_identity import default_hint
-        # The eight measured sizes are the contract. A ratio word in the brief does not resize them.
-        return default_hint()
-    if sid == "brand-identity-director":
-        sizes = []
-        for i, s in enumerate(stages, 1):
-            sw, sh = (USER_RATIOS[sid][picked] if picked else (s["width"], s["height"]))
-            size = _size_text(sid, sw, sh, s.get("ratio"), picked)
-            sizes.append(f"stage {i} = {int(s['images'])} image(s) at {size}")
-        return (
-            f"Output lock: template={preset} ({name}){default} — brand delivery is 2 stages / "
-            f"{total} images total, and is NOT one landscape board. " + "; ".join(sizes) + ". "
-            "Stage 1 this run, before the user picks a direction: exactly 3 separate images, count=1, "
-            "one per distinct direction (different shape language, palette and type); then stop and ask "
-            "the user to choose one. Do not render stage 2 before they pick. Stage 2, only after they pick "
-            "a direction (or say you decide): exactly 1 guideline board with the main mark, horizontal and "
-            "stacked arrangements of the mark and the name, black-and-white versions and basic usage examples; pass stage=2. "
-            f"Every generate_image passes skill={sid!r} and preset={preset!r}, count=1; total exactly "
-            f"{total} images, never a 5th and never 4 in one round." + override
-        )
+    if row.get("agent_plan") and not str(preset or "").strip():
+        return _agent_plan_hint(sid, row, picked)
     if stages:
         parts = []
         call_at = 1
@@ -1026,10 +1038,15 @@ def _preset_hint(sid: str, preset_id: str, user_text: str) -> str:
             size = _size_text(sid, sw, sh, s.get("ratio"), picked)
             n = int(s["images"])
             part = f"stage {i} = {n} image(s) at {size}"
+            if s.get("label"):
+                part += f" ({s['label']})"
             if n > 1:
                 part += f" (pass stage={i} on calls {call_at}-{call_at + n - 1})"
             else:
                 part += f" (pass stage={i})"
+            if s.get("pause_before"):
+                part += (f"; before stage {i}, stop and ask the user to pick from stage {i - 1} "
+                         f"and do not render stage {i} until they answer")
             parts.append(part)
             call_at += n
         return (
@@ -1054,6 +1071,22 @@ def _preset_hint(sid: str, preset_id: str, user_text: str) -> str:
         f"{size}, count=1. Call generate_image exactly {n} times with a different prompt each time; "
         f"pass skill={sid!r}, preset={preset!r}, stage=1 and count=1 on every call. "
         "Do not repeat the same arguments. Do not use 1024x1024." + override
+    )
+
+
+def _agent_plan_hint(sid: str, row: dict, picked: str | None) -> str:
+    """No template on an agent-planned row: constraints only. The brief and the cards decide the plan."""
+    table = row.get("ratio_pixels") or {}
+    sizes = ", ".join(f"{r} = {w}x{h}" for r, (w, h) in table.items())
+    override = ""
+    if picked:
+        w, h = USER_RATIOS[sid][picked]
+        override = f" The user named ratio {picked}, so use width={w} height={h} ratio={picked} on every image."
+    return (
+        "Output lock: no template selected. Plan the images from the skill brief and the user's answers; "
+        "the number of images and each image's ratio follow that plan. "
+        f"Every generate_image passes skill={sid!r}, count=1 and one ratio from this table: {sizes}. "
+        "Quote each paid step with quote_plan before it runs and wait for Start." + override
     )
 
 

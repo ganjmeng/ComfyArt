@@ -11,11 +11,11 @@ import uuid
 
 import pytest
 
-from ComfyArt.api import brand_identity as brand
 from ComfyArt.api import paid_guard
 from ComfyArt.api.mcp_tools import canvas
 from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID, GUARD_CHAT_ID
 
+SKILL = "brand-identity-director"
 PRESETS = ("geometric", "handmade", "tech", "beauty", "foodbev", "pet")
 SENT: list[tuple[str, dict]] = []
 
@@ -23,7 +23,6 @@ SENT: list[tuple[str, dict]] = []
 @pytest.fixture
 def relay(monkeypatch):
     SENT.clear()
-    brand.reset_for_tests()
 
     async def submit(action, args, project, timeout, chat=""):
         SENT.append((action, dict(args)))
@@ -35,7 +34,6 @@ def relay(monkeypatch):
     monkeypatch.setattr(canvas, "submit_command", submit)
     monkeypatch.setattr(canvas, "maybe_ask_run_approval", no_approval)
     yield
-    brand.reset_for_tests()
 
 
 def _run(**args):
@@ -53,7 +51,7 @@ def _run(**args):
 def test_six_templates_submit_three_square_then_one_board(relay):
     for pid in PRESETS:
         SENT.clear()
-        stage1 = [_run(skill=brand.SKILL, preset=pid, prompt=f"{pid} direction {i}") for i in range(3)]
+        stage1 = [_run(skill=SKILL, preset=pid, prompt=f"{pid} direction {i}") for i in range(3)]
         assert len(SENT) == 3, (pid, stage1, SENT)
         for out, (_action, body) in zip(stage1, SENT):
             assert out.get("submitted") is not False and "brand_slot" not in body, (pid, out, body)
@@ -61,7 +59,7 @@ def test_six_templates_submit_three_square_then_one_board(relay):
                 1024, 1024, "1:1", 1, 1), (pid, body)
             assert body["preset"] == pid and body.get("size_lock") is True
         SENT.clear()
-        stage2 = _run(skill=brand.SKILL, preset=pid, stage=2, prompt=f"{pid} board")
+        stage2 = _run(skill=SKILL, preset=pid, stage=2, prompt=f"{pid} board")
         assert len(SENT) == 1, (pid, stage2)
         body = SENT[0][1]
         assert (body["width"], body["height"], body["ratio"], body["stage"], body["count"]) == (
@@ -70,15 +68,22 @@ def test_six_templates_submit_three_square_then_one_board(relay):
         assert "brand_slot" not in body
 
 
-def test_no_template_does_not_use_the_stub_as_a_1024_board(relay):
-    out = _run(skill=brand.SKILL, prompt="栖木咖啡")
-    assert SENT == []
-    assert out.get("submitted") is False
-    assert out.get("width") != 1024
+def test_no_template_submits_the_ratio_the_agent_planned(relay):
+    """No template: the call's own ratio picks the row's declared 2K canvas and exact-size model.
+    The relay does not refuse it for a missing card or slot and does not substitute 1024x1024."""
+    for ratio, size in (("16:9", (2048, 1152)), ("1:1", (2048, 2048)), ("3:4", (1536, 2048))):
+        SENT.clear()
+        out = _run(skill=SKILL, prompt="栖木咖啡", ratio=ratio)
+        assert len(SENT) == 1, out
+        body = SENT[0][1]
+        assert (body["width"], body["height"], body["ratio"], body["count"]) == (*size, ratio, 1), body
+        assert body["model"] == "wavespeed-ai/qwen-image-2.0/text-to-image"
+        assert body.get("size_lock") is True and body.get("opaque_output") is True
+        assert "brand_slot" not in body
 
 
 def test_unknown_preset_still_submits_the_first_template(relay):
-    out = _run(skill=brand.SKILL, preset="nope", prompt="direction")
+    out = _run(skill=SKILL, preset="nope", prompt="direction")
     assert len(SENT) == 1, out
     body = SENT[0][1]
     assert (body["width"], body["height"], body["preset"], body["stage"]) == (1024, 1024, "geometric", 1)

@@ -75,10 +75,16 @@ _PROMPT_ONE = {
     "zh": "这次生成预计约 {total} 积分，达到了你设置的 {threshold} 积分确认线。确定开始吗？",
     "en": "This generation will cost about {total} credits, at or above your {threshold} credits confirm limit. Start?",
 }
-# Official below-line brand template card only. Other cards keep _PROMPT_ONE.
-_BRAND_TEMPLATE_UNDER = {
-    "zh": "这次生成 {total} 积分。品牌阶段每次生成都需要你确认，确定开始吗？",
-    "en": "This generation is {total} credits. Every generation in the brand stage needs your confirmation. Start now?",
+# A skill whose output row declares always_confirm shows the card under the line too.
+# Below the line the card must not claim the confirm limit was reached.
+_PROMPT_ALWAYS = {
+    "zh": "这次生成 {total} 积分。这个技能每次付费生成都需要你确认，确定开始吗？",
+    "en": "This generation is {total} credits. Every paid generation in this skill needs your confirmation. Start now?",
+}
+# Shown when a confirm card passed its declared lifetime before Start.
+EXPIRED_TEXT = {
+    "zh": "报价已过期，请重新取价",
+    "en": "This quote has expired. Request a new price.",
 }
 # #968: an unpriced step forces a confirm card without claiming any amount (never "约 0 积分").
 _PROMPT_UNPRICED = {
@@ -358,6 +364,8 @@ class Quote:
     composition_plan: Optional[dict] = None
     currency: str = "USD"
     quote_id: str = ""
+    # Seconds a confirm card stays valid, from the skill output row. 0 = no deadline.
+    confirm_ttl_s: float = 0.0
 
     def ask_spec(self) -> dict:
         lang = _lang(self.lang)
@@ -378,6 +386,11 @@ class Quote:
         }
         if self.composition_plan:
             spec["composition_plan"] = self.composition_plan
+        if self.confirm_ttl_s > 0:
+            import time as _time
+            created = _time.time()
+            spec["created_at"] = created
+            spec["expires_at"] = created + float(self.confirm_ttl_s)
         return spec
 
     @property
@@ -602,7 +615,32 @@ def _forces_quote_card(prepared: list[dict]) -> bool:
         named = resolve(args.get("skill")) or str(args.get("skill") or "")
         if named == SKILL or applies(args):
             return True
+        if _skill_row_flag(args, "always_confirm"):
+            return True
     return False
+
+
+def _skill_row_flag(args: dict, key: str) -> object:
+    """A declarative field of the call's skill output row (bot/skill_output.OUTPUTS)."""
+    from .skill_output import output_of
+    row = output_of(args.get("skill")) if isinstance(args, dict) else None
+    return (row or {}).get(key)
+
+
+def _always_confirm(prepared: list[dict]) -> bool:
+    return any(step.get("tool") == "generate_image"
+               and _skill_row_flag(step.get("arguments") or {}, "always_confirm")
+               for step in prepared)
+
+
+def _confirm_ttl(prepared: list[dict]) -> float:
+    """Shortest declared confirm lifetime among the quoted skills. 0 = none declared."""
+    ttls = []
+    for step in prepared:
+        raw = _skill_row_flag(step.get("arguments") or {}, "confirm_ttl_s")
+        if isinstance(raw, (int, float)) and not isinstance(raw, bool) and raw > 0:
+            ttls.append(float(raw))
+    return min(ttls) if ttls else 0.0
 
 
 def _pixel(value: object) -> Optional[int]:
@@ -710,17 +748,6 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         if label:
             parts.append(label)
         text = " · ".join(parts)
-        raw_args = step.get("arguments") or {}
-        from ..api.brand_identity import is_brand_stage_template_call, template_quote_text
-        if step["tool"] == "generate_image" and is_brand_stage_template_call(raw_args):
-            text = template_quote_text(str(raw_args.get("preset") or ""), lang)
-        slot_id = str(raw_args.get("brand_slot") or "")
-        if slot_id and not is_brand_stage_template_call(raw_args):
-            from ..api.brand_identity import quote_line
-            named = quote_line(slot_id, lang)
-            if named:
-                # Material, pixels, ratio. The model-name reason is not a line item.
-                text = named
         if step["tool"] == "generate_image" and _gif().requests_gif(step["arguments"]):
             text = f"{text} · {_gif().gif_quote_label(step['arguments'].get('frame_count'), step['arguments'].get('frame_duration_ms'))}"
         if step["tool"] == "generate_image" and _svg().requests_svg(step["arguments"]):
@@ -738,17 +765,7 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
     ask = _needs_ask(total, threshold, unknown_price)
     if _forces_quote_card(prepared) and any(ln.units > 0 for ln in lines):
         ask = True
-    # #1019: each brand default-path stage shows its own quote card, even under
-    # the $0.50 gate. The gate itself is unchanged for every other request.
-    from ..api.brand_identity import steps_are_brand_stage, steps_include_brand_template
-    brand_stage = steps_are_brand_stage(prepared)
-    template_stage = steps_include_brand_template(prepared)
-    if brand_stage and any(ln.units > 0 for ln in lines):
-        ask = True
-    # A preset during an open brand stage is its own confirm, even under $0.50.
-    # A preset with no skill stays on the ordinary under-line gate.
-    if template_stage and any(ln.units > 0 for ln in lines):
-        ask = True
+    always = _always_confirm(prepared)
     if len(lines) == 1 and not ask and not lines[0].unpriced:
         # #904: a known 0-credit (or under-line) single call runs as before. A single refusal
         # line keeps the quote object it had before #904 (the line names the reason, #956).
@@ -776,31 +793,13 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
     else:
         prompt = (_PROMPT_ONE if len(lines) == 1 else _PROMPT)[lang].format(
             n=len(lines), total=total_credits, threshold=ui_credits(threshold))
-        # Brand template row, under the line, every row an official quote.
-        # An estimate or unpriced row keeps the sentence above. A brand-slot
-        # card keeps brand_prompt below.
-        if (not brand_stage and template_stage
-                and total < float(threshold) and lines
-                and all(ln.source == SOURCE_QUOTE and not ln.unpriced for ln in lines)):
-            prompt = _BRAND_TEMPLATE_UNDER[lang].format(total=total_credits)
+        # Under the line, an always_confirm skill does not claim the limit was reached.
+        if always and total < float(threshold) and lines and not any_estimate:
+            prompt = _PROMPT_ALWAYS[lang].format(total=total_credits)
     if any(ln.reason == "list_price" for ln in lines):
         question = "确定开始吗？" if lang == "zh" else "Start?"
         gap = "" if lang == "zh" else " "  # en: "…lower. Start?", never "…lower.Start?"
         prompt = prompt.replace(question, f"{LIST_PRICE_EXPLAIN[lang]}{gap}{question}")
-    if brand_stage and any_estimate and not any_unpriced:
-        prompt = (f"预计约 {total_credits} 积分，实时价暂不可用。" if lang == "zh"
-                  else f"About {total_credits} credits. The live price is unavailable.")
-    elif brand_stage and any_unpriced:
-        question = "确定开始吗？" if lang == "zh" else "Start?"
-        prompt = prompt.replace(question, "").strip()
-    elif brand_stage and not any_unpriced:
-        from ..api.brand_identity import brand_prompt, other_stage_credits, quoted_stage
-        from .run_budget import ui_credits as _ui_credits
-        stage = quoted_stage(prepared)
-        stage_credits = 0 if all_unpriced else _ui_credits(total)
-        cum_credits = stage_credits + (other_stage_credits(stage) if stage else 0)
-        under = total < float(threshold)
-        prompt = brand_prompt(stage_credits, cum_credits, len(lines), lang, under_gate=under)
     if quoted_plan is not None:
         from ..api.multi_angle import remember_quoted_plan
         remember_quoted_plan(quoted_plan, setup_snapshot=quoted_snapshot)
@@ -814,4 +813,5 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         currency=priced_currency or "USD",
         quote_id=(priced_keys[0] if priced_keys and all(key == priced_keys[0] for key in priced_keys)
                   else "|".join(priced_keys) if priced_keys else ""),
+        confirm_ttl_s=_confirm_ttl(prepared),
     )

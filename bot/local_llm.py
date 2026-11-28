@@ -809,37 +809,21 @@ _PLAN_REFUSE = {
     "zh": "[tool error] 这是多步付费任务。请先调用 quote_plan 列出每一个付费步骤，用户确认后再调用付费工具。这次调用没有执行。",
     "en": "[tool error] This is a multi-step paid task. Call quote_plan with every paid step and wait for the user before any paid tool. This call did not run.",
 }
-# The second block of the same paid call stops the run. It must not ask the model to quote again.
-_PLAN_GATE_STOP = {
-    "zh": "同一个付费调用被已确认的计划拦住了两次，本次运行已停止。没有重新报价，也没有提交。",
-    "en": "The same paid call was blocked by the confirmed plan twice, so this run stopped. It was not quoted again and nothing was submitted.",
-}
 # Shown in the chat. The stored quote_error and TurnResult.error keep their [error] marker.
 _QUOTE_FAIL_SHOWN = {
     "zh": "这次没能拿到报价，没有开始，也没有扣积分。请稍后重新取价。",
     "en": "Couldn't get a quote. Nothing started and nothing was charged. Please requote in a moment.",
-}
-_CONFIRM_UNSAVED_SHOWN = {
-    "zh": "确认没有保存成功，没有开始，也没有扣积分。请重新取价。",
-    "en": "Your confirmation wasn't saved. Nothing started and nothing was charged. Please requote.",
 }
 
 
 def _shown_quote_failure(internal: str, lang: str) -> str:
     """User sentence for a quote or confirm failure. Internal text stays on quote_error."""
     text = str(internal or "")
-    key = "zh" if lang == "zh" else "en"
-    if "BrandGrantPersistError" in text:
-        return _CONFIRM_UNSAVED_SHOWN[key]
     if text.startswith("[error]"):
-        return _QUOTE_FAIL_SHOWN[key]
+        return _QUOTE_FAIL_SHOWN["zh" if lang == "zh" else "en"]
     return text
 
 
-_SLOT_ALREADY = {
-    "zh": "这一张已经提交过了，不要再生成。请继续本阶段还没提交的图片。",
-    "en": "This image was already submitted. Do not generate it again. Continue with the images in this stage that have not been submitted.",
-}
 _QUOTE_PLAN_TOOL = {
     "type": "function",
     "function": {
@@ -1498,39 +1482,13 @@ class _PlanGate:
         self.strict = False
         self.keys: set[tuple] = set()
         self.chat_id = chat_id
-        # Brand stages match slot/model/size/count, not the prompt. Each row may submit once.
-        # The gate object lives for the whole turn, so this allowance survives the next model step.
-        self.brand_fp: tuple = ()
-        self.brand_left: dict[tuple, int] = {}
-        self._plan_blocks: dict[tuple, int] = {}
 
-    def allow(self, quote, strict: bool, steps=None, *, fresh: bool = True) -> None:
-        """Arm the quoted calls. A brand continue does not re-arm the same confirmation."""
-        from ..api.brand_identity import stage_fingerprint, steps_are_brand_stage, submitted_slots, quoted_stage
-        fp = ()
-        if steps and steps_are_brand_stage(steps):
-            fp = stage_fingerprint(steps)
-        if fp and not fresh and self.brand_fp == fp and self.brand_left:
-            return
+    def allow(self, quote, strict: bool) -> None:
         self.strict = strict
         self.keys = set(quote.keys)
-        if not fp:
-            return
-        submitted = submitted_slots(quoted_stage(steps))
-        self.brand_fp = fp
-        self.brand_left = {row: 0 if str(row[-1]) in submitted else 1 for row in fp}
 
     def blocks(self, name: str, args: dict) -> bool:
-        if name not in PAID_TOOLS:
-            return False
-        if name == "generate_image" and self.brand_left:
-            from ..api.brand_identity import brand_gate_row
-            row = brand_gate_row(args if isinstance(args, dict) else {})
-            if row is not None:
-                # Confirmed slot, model, size and count: allowed once. Prompt text is not compared.
-                # A different slot, size, model or count, or a second submit, is blocked.
-                return self.brand_left.get(row, 0) <= 0
-        if not self.strict:
+        if not self.strict or name not in PAID_TOOLS:
             return False
         # #963: plan keys compare a packaging anchor slot semantically -- the quote names a
         # future anchor, the submit names the shape placed by image 1 -- but the submit side
@@ -1541,27 +1499,6 @@ class _PlanGate:
             from ..api import product_packaging
             anchor = product_packaging.anchor_for(self.chat_id)
         return canon_key(name, args, plan=True, anchor=anchor) not in self.keys
-
-    def consume_brand(self, args: dict) -> None:
-        """The confirmed slot is being submitted. A later call of that slot is blocked."""
-        if not self.brand_left:
-            return
-        from ..api.brand_identity import brand_gate_row
-        row = brand_gate_row(args if isinstance(args, dict) else {})
-        if row is None or row not in self.brand_left:
-            return
-        self.brand_left[row] = max(0, self.brand_left[row] - 1)
-
-    def note_plan_block(self, name: str, args: dict) -> int:
-        """How many times this paid call has been blocked by the plan gate in this run."""
-        from ..api.brand_identity import brand_gate_row
-        row = brand_gate_row(args if isinstance(args, dict) else {}) if name == "generate_image" else None
-        if row is not None:
-            key = row
-        else:
-            key = canon_key(name, args if isinstance(args, dict) else {}, plan=True)
-        self._plan_blocks[key] = self._plan_blocks.get(key, 0) + 1
-        return self._plan_blocks[key]
 
 
 TEST_TIMEOUT_S = 10.0
@@ -2160,13 +2097,10 @@ class LocalLlmProvider(AgentProvider):
         return quote_route(tool, args, position=position)
 
     async def _confirm_plan(self, spec: dict, turn: TurnRequest, handle: TurnHandle, *,
-                            run=None, messages: Optional[list] = None,
-                            retire_previous: bool = False) -> str:
-        """'start', 'requote', 'cancel', 'expired', or 'unattended'.
-
-        A brand card waits until its own deadline. Every other confirm still waits.
-        The ask id is this confirmation. Repeating it must not add the plan again.
-        """
+                            run=None, messages: Optional[list] = None) -> str:
+        """'start', 'cancel' (the user's Cancel / dismiss) or 'unattended' (no live turn to ask: nothing
+        is charged and it is not a user stop). #418: an interactive card waits indefinitely, and the run
+        is checkpointed as 'awaiting_confirm' while it does."""
         if handle.stop_requested:
             return "cancel"
         from ..api.bot_turns import ACTIVE_TURNS
@@ -2180,26 +2114,17 @@ class LocalLlmProvider(AgentProvider):
                 run.checkpoint(messages, status="awaiting_confirm", detail="plan_quote")
             except Exception:
                 _log.warning("[ComfyArt/local-llm] awaiting_confirm checkpoint failed", exc_info=True)
+        # A card whose skill row declares a confirm lifetime carries expires_at.
+        # It waits until that deadline; every other confirm still waits forever.
+        deadline = spec.get("expires_at")
+        timed = isinstance(deadline, (int, float)) and not isinstance(deadline, bool)
         try:
-            deadline = None
-            if spec.get("brand_confirm") is True:
-                exp = spec.get("expires_at")
-                if not isinstance(exp, bool) and isinstance(exp, (int, float)):
-                    deadline = float(exp)
-            retire_ask_id = ""
-            if retire_previous:
-                for older in reversed(state.blocks):
-                    if (isinstance(older, dict) and older.get("type") == "ask"
-                            and older.get("brand_confirm") is True and not older.get("replaced_by")):
-                        retire_ask_id = str(older.get("ask_id") or "")
-                        break
-            if deadline is None:
-                outcome = await _await_ask(
-                    turn.chat_id, state, spec, wait_forever=True, retire_ask_id=retire_ask_id)
+            if timed:
+                import time as _time
+                outcome = await _await_ask(turn.chat_id, state, spec,
+                                           timeout=max(0.0, float(deadline) - _time.time()))
             else:
-                outcome = await _await_ask(
-                    turn.chat_id, state, spec, wait_forever=False,
-                    timeout=max(0.0, deadline - time.time()), retire_ask_id=retire_ask_id)
+                outcome = await _await_ask(turn.chat_id, state, spec, wait_forever=True)
         except Exception:
             _log.exception("[ComfyArt/local-llm] plan confirm failed")
             return "cancel"
@@ -2209,10 +2134,9 @@ class LocalLlmProvider(AgentProvider):
             return "expired"
         selected = outcome.get("selected") or []
         if outcome.get("status") == "answered" and "start" in selected:
+            # The ask id is this confirmation. Repeating it must not add the plan again.
             spec["confirmation_id"] = str(outcome.get("ask_id") or "")
             return "start"
-        if outcome.get("status") == "answered" and "requote" in selected:
-            return "requote"
         return "cancel"
 
     def _implicit_step(self, item: dict, lang: str) -> dict:
@@ -2343,105 +2267,6 @@ class LocalLlmProvider(AgentProvider):
             t="tool_result", name=name, text=text, id=tc_id, is_error=is_error, detail=detail))
         return [{"role": "tool", "tool_call_id": tc_id or name, "content": text}]
 
-    async def _dispatch_one_confirmed_brand(self, it, brand_steps, claimed, *, gate, session, turn,
-                                            emit, handle, done, lang, skill_cache, llm_model, run,
-                                            cache_hits: int) -> tuple[bool, list]:
-        """Bind, re-check, reserve, and pay one confirmed brand generate.
-
-        The second ``submit_block_reason`` runs after the slot is bound and before
-        ``reserve_brand_dispatch``. A prompt replaced during bind is a mismatch.
-        A grant that expires between the two checks does not reserve or submit.
-        The prompt must still be the assembled snapshot that was confirmed.
-        """
-        from ..api.brand_identity import (
-            BrandGrantPersistError, assembled_keeps_caller, bind_brand_generate,
-            note_brand_submitted, reserve_brand_dispatch, submit_block_reason,
-            submit_block_text, _drop_ref_hints, _drop_weak_mood_subject, guard_subject,
-        )
-        from .shot_plan import bind_generate
-        from .skill_output import is_single
-
-        lang_key = "zh" if lang == "zh" else "en"
-        incoming = str((it.get("args") or {}).get("prompt") or "")
-        reason = submit_block_reason(it["args"], turn)
-        if reason == "submitted":
-            messages = await self._emit_result(
-                it, _SLOT_ALREADY[lang_key], emit=emit, done=done, lang=lang, is_error=True)
-            return False, messages
-        if reason:
-            messages = await self._emit_result(
-                it, submit_block_text(reason, lang), emit=emit, done=done, lang=lang, is_error=True)
-            return False, messages
-        if it.get("refuse"):
-            messages = await self._emit_result(
-                it, it["refuse"], emit=emit, done=done, lang=lang, is_error=True)
-            return False, messages
-        bound, refuse = bind_generate(run, it["args"], consume=True)
-        if refuse:
-            messages = await self._emit_result(
-                it, refuse, emit=emit, done=done, lang=lang, is_error=True)
-            return False, messages
-        it["args"] = bound
-        if run is not None and is_single(bound.get("skill"), str(bound.get("preset") or "")):
-            run.single_image_gens = int(getattr(run, "single_image_gens", 0) or 0) + 1
-        prepared = bind_brand_generate(it["args"], brand_steps, claimed)
-        blocked = prepared.get("_brand_block") if isinstance(prepared, dict) else None
-        if blocked or not (isinstance(prepared, dict) and prepared.get("brand_slot")):
-            detail = ""
-            if isinstance(blocked, dict):
-                detail = str(blocked.get("error") or blocked.get("user_message") or "")
-            messages = await self._emit_result(
-                it, detail or "[error] quote failed", emit=emit, done=done, lang=lang, is_error=True)
-            return False, messages
-        it["args"] = prepared
-        filled = str(prepared.get("prompt") or "")
-        leads = prepared.pop("_server_leads", None)
-        if not isinstance(leads, list):
-            leads = []
-        if incoming and not assembled_keeps_caller(filled, incoming, leads):
-            caller_body = _drop_ref_hints(incoming)
-            mood_body = _drop_weak_mood_subject(caller_body)
-            slot_id = str(prepared.get("brand_slot") or "")
-            repaired = guard_subject(slot_id, incoming)
-            weak_dropped = mood_body != caller_body.strip()
-            repaired_ok = repaired != caller_body.strip() and (
-                not repaired or assembled_keeps_caller(filled, repaired, leads)
-            )
-            if (
-                not caller_body
-                or caller_body == incoming.strip()
-                or not assembled_keeps_caller(filled, caller_body, leads)
-            ) and not (
-                weak_dropped and assembled_keeps_caller(filled, mood_body, leads)
-            ) and not repaired_ok:
-                messages = await self._emit_result(
-                    it, submit_block_text("mismatch", lang), emit=emit, done=done, lang=lang, is_error=True)
-                return False, messages
-        claimed.add(str(prepared.get("brand_slot")))
-        reason = submit_block_reason(it["args"], turn)
-        if reason:
-            claimed.discard(str(it["args"].get("brand_slot") or ""))
-            text = _SLOT_ALREADY[lang_key] if reason == "submitted" else submit_block_text(reason, lang)
-            messages = await self._emit_result(
-                it, text, emit=emit, done=done, lang=lang, is_error=True)
-            return False, messages
-        try:
-            reserve_brand_dispatch(it["args"])
-        except BrandGrantPersistError as exc:
-            _log.exception("[ComfyArt/local-llm] brand reservation was not saved")
-            messages = await self._emit_result(
-                it, submit_block_text("unconfirmed", lang) or str(exc),
-                emit=emit, done=done, lang=lang, is_error=True)
-            return False, messages
-        if gate is not None:
-            gate.consume_brand(it["args"])
-        messages = await self._emit_mcp(
-            it, session=session, turn=turn, emit=emit, handle=handle, done=done,
-            lang=lang, skill_cache=skill_cache, llm_model=llm_model, run=run,
-            cache_hits=cache_hits)
-        note_brand_submitted(it["args"])
-        return True, messages
-
     async def _dispatch_tools(self, tool_calls, *, session, turn, emit, handle,
                               messages, done, lang, skill_cache, loop, gate, usage,
                               llm_model: str) -> Optional[TurnResult]:
@@ -2449,8 +2274,6 @@ class LocalLlmProvider(AgentProvider):
         parsed = []
         tripped = False
         accepted_single = 0  # #707: a second generate in the same step is still the extra call
-        from ..api.brand_identity import begin_batch
-        begin_batch()
         for tool_call in tool_calls:
             if handle.stop_requested:
                 return TurnResult(aborted=True, usage=usage)
@@ -2485,26 +2308,6 @@ class LocalLlmProvider(AgentProvider):
                 args = apply_generate(args, current_skill, user_text=_ut,
                                       ref_image=ref_image_bytes(args.get("refs"), _ut, getattr(turn, "attachments", None)),
                                       current_preset=getattr(run, "current_preset", "") if run is not None else "")
-                # The plan gate speaks first when this slot is outside the confirmed plan.
-                # Any other brand block, including card 1 and a missing base, stops here.
-                if args.get("_brand_block"):
-                    from ..api.brand_identity import _held_slots, brand_gate_row, stage_of
-                    slot = str(args.get("brand_slot") or "")
-                    held = bool(slot) and slot in _held_slots(stage_of(slot))
-                    outside_plan = False
-                    if gate.strict and gate.brand_left:
-                        row = brand_gate_row(args)
-                        outside_plan = row is not None and row not in gate.brand_left
-                    if held:
-                        args.pop("_brand_block", None)
-                    elif not outside_plan:
-                        block = args.pop("_brand_block")
-                        parsed.append({
-                            "name": name, "args": args, "id": tc_id,
-                            "skill_key": "", "cached": False,
-                            "reject": "[tool error] " + str(block.get("error") or block.get("user_message") or "blocked"),
-                        })
-                        continue
                 preview, early_refuse = bind_generate(run, args, consume=False)
                 if not early_refuse:
                     args = preview
@@ -2563,23 +2366,8 @@ class LocalLlmProvider(AgentProvider):
         for it in parsed:
             if it["name"] == "generate_image" and it["args"].get(RATIO_REFUSAL_994):
                 it["refuse"] = json.dumps(it["args"][RATIO_REFUSAL_994], ensure_ascii=False)
-        # #1019: one quote per brand stage. Later stages in the same step are not submitted.
-        from ..api.brand_identity import stage_of
-        first_stage = None
-        for it in parsed:
-            if it.get("reject") or it.get("name") != "generate_image":
-                continue
-            slot = (it.get("args") or {}).get("brand_slot")
-            if not slot:
-                continue
-            st = stage_of(slot)
-            if first_stage is None:
-                first_stage = st
-            elif st != first_stage:
-                it["reject"] = ("[tool error] Finish and quote the current brand stage before the next one. "
-                                "This call did not submit or charge.")
         quote_item = next((it for it in parsed if it["name"] == QUOTE_TOOL), None)
-        paid = [it for it in parsed if it["name"] in PAID_TOOLS and not it.get("refuse") and not it.get("reject") and not it.get("skip")]
+        paid = [it for it in parsed if it["name"] in PAID_TOOLS and not it.get("refuse") and not it.get("skip")]
         chunks: list[Optional[list]] = [None] * len(parsed)
 
         ran: list[int] = []
@@ -2608,10 +2396,7 @@ class LocalLlmProvider(AgentProvider):
         decision = ""
         quote = None
         quote_error = ""
-        brand_steps: list = []
-        repeat = "new"
         confirmation_id = ""
-        confirm_spec: dict = {}
         run = loop.get("run")
         if run is not None and turn is not None:
             from ..api import multi_angle as _ma_plan
@@ -2624,209 +2409,93 @@ class LocalLlmProvider(AgentProvider):
         if quote_item is not None or len(paid) >= 2 or (single and not gate.strict):
             steps = (quote_item["args"].get("steps") if quote_item is not None
                      else [self._implicit_step(it, lang) for it in paid])
-            if not isinstance(steps, list):
-                steps = []
-            from ..api.brand_identity import annotate_quote_steps, release_preset_stamp, stage_base_block
-            run_for_quote = loop.get("run")
-            steps = release_preset_stamp(annotate_quote_steps(
-                steps, [it["args"] for it in paid if it["name"] == "generate_image"],
-                current_skill=getattr(run_for_quote, "current_skill", "") if run_for_quote is not None else "",
-                user_text=getattr(turn, "user_text", "") if turn is not None else "",
-                current_preset=getattr(run_for_quote, "current_preset", "") if run_for_quote is not None else ""))
-            brand_steps = steps if isinstance(steps, list) else []
-            base_block = stage_base_block(brand_steps)
-            if base_block:
-                quote_error = base_block
+            try:
+                quote = await self._quote_steps(steps if isinstance(steps, list) else [], lang)
+            except Exception as e:
+                _log.exception("[ComfyArt/local-llm] plan quote failed")
+                quote_error = f"[error] {type(e).__name__}: {e}"
                 decision = "error"
             else:
-                try:
-                    quote = await self._quote_steps(steps, lang)
-                except Exception as e:
-                    _log.exception("[ComfyArt/local-llm] plan quote failed")
-                    quote_error = f"[error] {type(e).__name__}: {e}"
-                    decision = "error"
+                if quote is None:
+                    decision = "passthrough"
+                elif not quote.ask:
+                    gate.allow(quote, False)
+                    decision = "start"
                 else:
-                    from ..api.brand_identity import stage_repeat, submits_match_confirmed_plan
-                    # Same confirmed plan: no second card. A changed plan asks again.
-                    # An already-submitted plan does not dispatch.
-                    repeat = stage_repeat(brand_steps)
-                    submit_args = [it["args"] for it in paid if it["name"] == "generate_image"]
-                    # continue may skip the card only when every submit names a slot
-                    # in the confirmed plan. A quote that was stamped without that
-                    # slot on the submit args has to ask again.
-                    continue_ok = repeat == "continue" and submits_match_confirmed_plan(
-                        brand_steps, submit_args)
-                    from ..api.brand_identity import (
-                        grant_still_authorizes, only_reconcile_left, steps_are_brand_stage,
-                        steps_include_brand_template, unsubmitted_steps,
-                    )
-                    if steps_are_brand_stage(brand_steps):
-                        opened = unsubmitted_steps(brand_steps)
-                        still = grant_still_authorizes(
-                            brand_steps, turn, amount=float(quote.total or 0) if quote is not None else None,
-                            currency=str(getattr(quote, "currency", "") or "USD") if quote is not None else None,
-                            quote_id=str(getattr(quote, "quote_id", "") or "") or None)
-                        if opened and opened != brand_steps and quote is not None and not still:
-                            requoted = await self._quote_steps(opened, lang)
-                            if requoted is not None:
-                                quote = requoted
-                                brand_steps = opened
-                                steps = opened
-                    if steps_include_brand_template(brand_steps) and not steps_are_brand_stage(brand_steps):
-                        # A template call has no brand_slot, so continue cannot skip the card.
-                        continue_ok = False
-                        if repeat == "continue":
-                            repeat = "new"
-                    elif steps_are_brand_stage(brand_steps) and continue_ok and quote is not None:
-                        if not grant_still_authorizes(
-                                brand_steps, turn, amount=float(quote.total or 0),
-                                currency=str(getattr(quote, "currency", "") or "USD"),
-                                quote_id=str(getattr(quote, "quote_id", "") or "") or None):
-                            continue_ok = False
-                            repeat = "new"
-                    if steps_are_brand_stage(brand_steps) and only_reconcile_left(brand_steps):
-                        decision = "reconcile"
-                    elif quote is None:
-                        decision = "passthrough"
-                    elif repeat == "done":
-                        decision = "done"
-                    elif continue_ok:
-                        # Arm once per confirmation. A later continue must not reset the remaining slots.
-                        gate.allow(quote, not single, brand_steps, fresh=False)
-                        decision = "start"
-                    elif not quote.ask and repeat != "continue":
-                        gate.allow(quote, False)
+                    from .run_budget import Stop, StopReason
+                    run = loop.get("run")
+                    unattended = run is not None and run.mode == "unattended"
+                    # #418 ruling: unattended (routine / headless / no live client) never waits: the
+                    # card is not approved -> zero paid calls, turn ends normally as awaiting_confirm:not_approved.
+                    spec = quote.ask_spec()
+                    try:
+                        choice = "unattended" if unattended else await self._confirm_plan(
+                            spec, turn, handle, run=run, messages=messages)
+                    except Exception as e:
+                        # A confirm that raises is not approval. Do not submit the paid tools.
+                        _log.exception("[ComfyArt/local-llm] plan confirm failed")
+                        quote_error = f"[error] {type(e).__name__}: {e}"
+                        choice = "error"
+                    confirmation_id = str(spec.get("confirmation_id") or "")
+                    if handle.stop_requested:
+                        return TurnResult(aborted=True, usage=usage)
+                    if choice == "error":
+                        decision = "error"
+                    elif choice == "expired":
+                        # Start after the card's lifetime is not approval. Nothing is submitted.
+                        from .plan_quote import EXPIRED_TEXT
+                        quote_error = EXPIRED_TEXT["zh" if lang == "zh" else "en"]
+                        decision = "error"
+                    elif choice == "start":
+                        if not single:  # #418: one OK covers this call only; don't arm the plan gate
+                            gate.allow(quote, True)
                         decision = "start"
                     else:
-                        if repeat == "continue":
-                            # This confirm is a new approval. It replaces the plan
-                            # the submits did not match.
-                            repeat = "new"
-                        from .run_budget import Stop, StopReason
-                        run = loop.get("run")
-                        unattended = run is not None and run.mode == "unattended"
-                        # #418 ruling: unattended (routine / headless / no live client) never waits: the
-                        # card is not approved -> zero paid calls, turn ends normally as awaiting_confirm:not_approved.
-                        requote_again = True
-                        retiring = False
-                        while requote_again:
-                            requote_again = False
-                            try:
-                                spec = quote.ask_spec()
-                                from ..api.brand_identity import (
-                                    stamp_confirm_spec, steps_are_brand_stage, steps_include_brand_template,
-                                    supersede_brand_card,
-                                )
-                                if steps_are_brand_stage(brand_steps) or steps_include_brand_template(brand_steps):
-                                    spec = stamp_confirm_spec(
-                                        spec, brand_steps, turn, amount=float(quote.total or 0), lang=lang,
-                                        currency=str(getattr(quote, "currency", "") or "USD"),
-                                        quote_id=str(getattr(quote, "quote_id", "") or ""))
-                                confirm_spec = spec
-                                choice = "unattended" if unattended else await self._confirm_plan(
-                                    spec, turn, handle, run=run, messages=messages,
-                                    retire_previous=retiring)
-                                confirmation_id = str(spec.get("confirmation_id") or "")
-                            except Exception as e:
-                                # A confirm that raises is not approval. Do not submit the paid tools.
-                                _log.exception("[ComfyArt/local-llm] plan confirm failed")
-                                quote_error = f"[error] {type(e).__name__}: {e}"
-                                decision = "error"
-                                break
-                            if handle.stop_requested:
-                                return TurnResult(aborted=True, usage=usage)
-                            if choice == "requote" and steps_are_brand_stage(brand_steps):
-                                opened = supersede_brand_card(brand_steps, spec)
-                                if not opened:
-                                    quote_error = ("没有尚未提交的槽位，没有开始，也没有扣费。"
-                                                   if lang == "zh" else
-                                                   "No slot is still open. Nothing started and nothing was charged.")
-                                    decision = "error"
-                                    break
-                                brand_steps = opened
-                                quote = await self._quote_steps(opened, lang)
-                                if quote is None:
-                                    decision = "error"
-                                    quote_error = "[error] brand re-quote returned no price"
-                                    break
-                                retiring = True
-                                requote_again = True
-                                continue
-                            if choice == "start":
-                                if not single:  # #418: one OK covers this call only; don't arm the plan gate
-                                    gate.allow(quote, True, brand_steps, fresh=True)
-                                decision = "start"
-                            elif choice == "expired":
-                                decision = "expired"
-                            elif choice == "requote":
-                                decision = "requote"
-                            else:
-                                decision = "cancel"
-                                if run is not None:
-                                    step = run.budget.used.steps
-                                    # only the user's own Cancel is a user stop
-                                    run.pending_stop = (Stop(StopReason.USER_STOP, "quote_declined", step=step)
-                                                        if choice == "cancel" else
-                                                        Stop(StopReason.AWAITING_CONFIRM, "not_approved", step=step))
-                            break
+                        decision = "cancel"
+                        if run is not None:
+                            step = run.budget.used.steps
+                            # only the user's own Cancel is a user stop
+                            run.pending_stop = (Stop(StopReason.USER_STOP, "quote_declined", step=step)
+                                                if choice == "cancel" else
+                                                Stop(StopReason.AWAITING_CONFIRM, "not_approved", step=step))
 
         if quote is not None and decision == "start":
-            from ..api.brand_identity import (
-                BrandGrantPersistError, commit_confirmed_grant, note_confirmed, quoted_stage,
-                remember_stage_plan, remember_template_grants, steps_are_brand_stage,
-                steps_include_brand_template, turn_identity,
-            )
-            if confirm_spec.get("brand_confirm") and repeat != "continue":
+            # #909: no whole-group count in the user's message -> the plan the card
+            # showed sets the paid-guard cap (an explicit "做 3 张" still wins).
+            from ..api import paid_guard
+            paid_guard.allow_planned_cap(turn.chat_id, quote.units)
+            final_ids, slot_amounts = _confirmed_final_plan(paid, quote)
+            # A confirmed plan raises the run's image budget to what the card authorized,
+            # on top of what this run already generated. Any skill, any number of stages.
+            # Only raises: a small card never lowers the default cap. A confirmed final
+            # plan (below) sets its own exact cap instead.
+            budget_run = loop.get("run")
+            if budget_run is not None and quote.units and not final_ids:
+                from .run_budget import DEFAULT_PLANNED_IMAGES
+                tracker = budget_run.tracker
+                need = int(tracker.gen_calls or 0) + int(quote.units)
+                if need > int(tracker.planned_images or DEFAULT_PLANNED_IMAGES):
+                    tracker.planned_images = need
+            if final_ids and confirmation_id and run is not None:
+                from ..api import multi_angle as _ma_plan
                 try:
-                    if steps_are_brand_stage(brand_steps):
-                        commit_confirmed_grant(
-                            brand_steps, confirm_spec, turn, amount=float(quote.total or 0))
-                    if steps_include_brand_template(brand_steps):
-                        remember_template_grants(
-                            brand_steps,
-                            identity=turn_identity(turn),
-                            amount=float(confirm_spec.get("amount") or quote.total or 0),
-                            currency=str(confirm_spec.get("currency") or "USD"),
-                            quote_id=str(confirm_spec.get("quote_id") or ""),
-                            created_at=float(confirm_spec.get("created_at") or 0),
-                            expires_at=float(confirm_spec.get("expires_at") or 0),
-                        )
-                except BrandGrantPersistError as exc:
-                    _log.exception("[ComfyArt/local-llm] brand confirmation was not saved")
-                    quote_error = f"[error] {type(exc).__name__}: {exc}"
-                    decision = "error"
-            if decision == "start" and steps_are_brand_stage(brand_steps):
-                note_confirmed(quote.total, quote.units, stage=quoted_stage(brand_steps))
-                # continue keeps the fingerprint and the not-yet-dispatched flag.
-                # A human confirm of a new or changed plan replaces both.
-                if repeat != "continue":
-                    remember_stage_plan(brand_steps, fresh=True)
-            if decision == "start":
-                # #909: no whole-group count in the user's message -> the plan the card
-                # showed sets the paid-guard cap (an explicit "做 3 张" still wins).
-                from ..api import paid_guard
-                paid_guard.allow_planned_cap(turn.chat_id, quote.units)
-                final_ids, slot_amounts = _confirmed_final_plan(paid, quote)
-                if final_ids and confirmation_id and run is not None:
-                    from ..api import multi_angle as _ma_plan
-                    try:
-                        selected = set(_ma_plan.selection(turn.chat_id))
-                    except ValueError:
-                        selected = set()
-                    # A panel the composition card did not answer is not authorized,
-                    # even if this quote also listed it.
-                    final_ids = [panel for panel in final_ids if panel in selected]
-                    slot_amounts = {panel: slot_amounts.get(panel, 0.0) for panel in final_ids}
-                if final_ids and confirmation_id and run is not None:
-                    # Before the plan is bound, gen_cap is still the global default.
-                    run.tracker.note_counts("before_confirm")
-                    from ..api import multi_angle as _ma_plan
-                    bound = _ma_plan.register_confirmed_finals(
-                        turn.chat_id, confirmation_id, final_ids,
-                        round(sum(slot_amounts.values()), 6), len(final_ids), slot_amounts)
-                    run.tracker.apply_confirmed_plan(bound)
-                    run.tracker.note_counts("after_confirm")
-                    _ma_plan.persist_counts(turn.chat_id, run.tracker.count_log)
+                    selected = set(_ma_plan.selection(turn.chat_id))
+                except ValueError:
+                    selected = set()
+                # A panel the composition card did not answer is not authorized,
+                # even if this quote also listed it.
+                final_ids = [panel for panel in final_ids if panel in selected]
+                slot_amounts = {panel: slot_amounts.get(panel, 0.0) for panel in final_ids}
+            if final_ids and confirmation_id and run is not None:
+                # Before the plan is bound, gen_cap is still the global default.
+                run.tracker.note_counts("before_confirm")
+                from ..api import multi_angle as _ma_plan
+                bound = _ma_plan.register_confirmed_finals(
+                    turn.chat_id, confirmation_id, final_ids,
+                    round(sum(slot_amounts.values()), 6), len(final_ids), slot_amounts)
+                run.tracker.apply_confirmed_plan(bound)
+                run.tracker.note_counts("after_confirm")
+                _ma_plan.persist_counts(turn.chat_id, run.tracker.count_log)
 
         if run is not None and run.tracker.confirmed_generates and any(
                 it["name"] == "generate_image" and chunks[i] is None and not it.get("refuse")
@@ -2849,7 +2518,6 @@ class LocalLlmProvider(AgentProvider):
                         decision_row["refuse"], ensure_ascii=False)
 
         lang_key = "zh" if lang == "zh" else "en"
-        claimed_brand: set[str] = set()
         for i, it in enumerate(parsed):
             if chunks[i] is not None:
                 continue
@@ -2857,111 +2525,34 @@ class LocalLlmProvider(AgentProvider):
             if name == QUOTE_TOOL:
                 if decision == "error":
                     chunks[i] = await self._emit_result(
-                        it, _shown_quote_failure(quote_error, lang), emit=emit, done=done,
-                        lang=lang, is_error=True)
-                elif decision == "requote":
-                    text = ("实时价暂不可用，没有开始，也没有扣费。" if lang_key == "zh"
-                            else "The live price is unavailable. Nothing started and nothing was charged.")
-                    chunks[i] = await self._emit_result(
-                        it, text, emit=emit, done=done, lang=lang, is_error=True)
-                elif decision == "expired":
-                    from ..api.brand_identity import expired_text
-                    chunks[i] = await self._emit_result(
-                        it, expired_text(lang), emit=emit, done=done, lang=lang, is_error=True)
-                elif decision == "reconcile":
-                    from ..api.brand_identity import submit_block_text
-                    chunks[i] = await self._emit_result(
-                        it, submit_block_text("reconcile", lang), emit=emit, done=done,
-                        lang=lang, is_error=True)
+                        it, quote_error, emit=emit, done=done, lang=lang, is_error=True)
                 elif decision == "cancel":
                     text = quote.cancel_text if quote else CANCEL_TEXT[lang_key]
                     chunks[i] = await self._emit_result(
                         it, text, emit=emit, done=done, lang=lang, detail="cancelled")
-                elif decision == "done":
-                    from ..api.brand_identity import stage_done_text
-                    chunks[i] = await self._emit_result(
-                        it, stage_done_text(lang), emit=emit, done=done, lang=lang)
                 else:
                     text = quote.started_result() if quote else json.dumps({"ok": True, "start": True})
                     chunks[i] = await self._emit_result(it, text, emit=emit, done=done, lang=lang)
                 continue
             if name in PAID_TOOLS and decision == "error":
-                # Quote or confirm failed. Do not call the tool and do not leave a
-                # result that a model-fallback could resubmit.
+                # Quote or confirm failed or expired. Do not call the tool and do not leave a
+                # result that a model fallback could resubmit.
                 chunks[i] = await self._emit_result(
-                    it, _shown_quote_failure(quote_error or "[error] quote failed", lang),
-                    emit=emit, done=done, lang=lang, is_error=True)
-                continue
-            if name in PAID_TOOLS and decision == "expired":
-                from ..api.brand_identity import expired_text
-                chunks[i] = await self._emit_result(
-                    it, expired_text(lang), emit=emit, done=done, lang=lang, is_error=True)
-                continue
-            if name in PAID_TOOLS and decision == "reconcile":
-                from ..api.brand_identity import submit_block_text
-                chunks[i] = await self._emit_result(
-                    it, submit_block_text("reconcile", lang), emit=emit, done=done,
+                    it, quote_error or "[error] quote failed", emit=emit, done=done,
                     lang=lang, is_error=True)
                 continue
-            if name in PAID_TOOLS and decision in ("cancel", "requote"):
+            if name in PAID_TOOLS and decision == "cancel":
                 continue  # do not emit a paid row: the user stopped before anything ran
-            if name in PAID_TOOLS and decision == "done":
-                # This exact plan was already submitted. Do not call WaveSpeed again.
-                from ..api.brand_identity import stage_done_text
-                chunks[i] = await self._emit_result(
-                    it, stage_done_text(lang), emit=emit, done=done, lang=lang)
-                continue
             if name in PAID_TOOLS and handle.stop_requested:
                 continue  # #419: stopped before this step was submitted: skip it, no row, no charge, no placeholder
-            if name in PAID_TOOLS and getattr(loop.get("run"), "pending_stop", None) is not None:
-                continue  # the plan gate already stopped this run; do not submit the rest
             if name in PAID_TOOLS and gate.blocks(name, it["args"]):
-                # First block explains why. The same call blocked again stops the run
-                # instead of handing the model another "please quote_plan" result.
-                # A slot already submitted on this or an earlier turn is not a new quote.
-                from ..api.brand_identity import slot_already_submitted
-                already = name == "generate_image" and slot_already_submitted(it["args"])
-                if gate.note_plan_block(name, it["args"]) >= 2:
-                    detail = _PLAN_GATE_STOP[lang_key]
-                    run = loop.get("run")
-                    if run is not None:
-                        from .run_budget import Stop, StopReason
-                        run.pending_stop = Stop(
-                            StopReason.ERROR, "tool", step=run.budget.used.steps, detail=detail)
-                    chunks[i] = await self._emit_result(
-                        it, detail, emit=emit, done=done, lang=lang, is_error=True)
-                elif already:
-                    chunks[i] = await self._emit_result(
-                        it, _SLOT_ALREADY[lang_key], emit=emit, done=done, lang=lang, is_error=True)
-                else:
-                    chunks[i] = await self._emit_result(
-                        it, _PLAN_REFUSE[lang_key], emit=emit, done=done, lang=lang, is_error=True)
+                chunks[i] = await self._emit_result(
+                    it, _PLAN_REFUSE[lang_key], emit=emit, done=done, lang=lang, is_error=True)
                 continue
             if it.get("refuse"):
                 chunks[i] = await self._emit_result(
                     it, it["refuse"], emit=emit, done=done, lang=lang, is_error=True)
                 continue
-            if name == "generate_image":
-                from ..api.brand_identity import (
-                    is_brand_stage_template_call, mark_template_grant_used,
-                    submit_block_text, template_submit_block,
-                )
-                if it["args"].get("brand_slot"):
-                    sent, chunks[i] = await self._dispatch_one_confirmed_brand(
-                        it, brand_steps, claimed_brand, gate=gate, session=session, turn=turn,
-                        emit=emit, handle=handle, done=done, lang=lang, skill_cache=skill_cache,
-                        llm_model=llm_model, run=run_for_plan, cache_hits=loop["cache_hits"])
-                    if sent:
-                        ran.append(i)
-                    continue
-                if is_brand_stage_template_call(it["args"]):
-                    reason = template_submit_block(it["args"], turn)
-                    if reason:
-                        text = (_SLOT_ALREADY[lang_key] if reason == "submitted"
-                                else submit_block_text(reason, lang))
-                        chunks[i] = await self._emit_result(
-                            it, text, emit=emit, done=done, lang=lang, is_error=True)
-                        continue
             if name == "generate_image":
                 bound, refuse = bind_generate(run_for_plan, it["args"], consume=True)
                 if refuse:
@@ -2973,26 +2564,13 @@ class LocalLlmProvider(AgentProvider):
                 if run_for_plan is not None and is_single(
                         bound.get("skill"), str(bound.get("preset") or "")):
                     run_for_plan.single_image_gens = int(getattr(run_for_plan, "single_image_gens", 0) or 0) + 1
-            if name == "generate_image":
-                gate.consume_brand(it["args"])
             await run_mcp(i)
-            if name == "generate_image":
-                from ..api.brand_identity import (
-                    is_brand_stage_template_call, mark_template_grant_used, note_brand_submitted,
-                )
-                if is_brand_stage_template_call(it["args"]):
-                    mark_template_grant_used(it["args"])
-                note_brand_submitted(it["args"])
-
-        if decision == "start" and any(parsed[i]["name"] in PAID_TOOLS for i in ran):
-            from ..api.brand_identity import mark_stage_dispatched
-            mark_stage_dispatched(brand_steps)
 
         for ch in chunks:
             if ch:
                 messages.extend(ch)
         if decision == "error":
-            # Fail closed: no paid fallback after a quote or confirm exception.
+            # Fail closed: no paid fallback after a quote or confirm failure.
             note = quote_error or "[error] quote failed"
             await emit(BotEvent(t="delta", text=_shown_quote_failure(note, lang)))
             return TurnResult(usage=usage, error=note)
@@ -3270,10 +2848,7 @@ class LocalLlmProvider(AgentProvider):
                     if reasoning.strip():
                         await emit(BotEvent(t="thinking", text=reasoning.strip()))
                     if content:
-                        from ..api.brand_identity import accept_assistant_text
-                        shown = accept_assistant_text(content)
-                        if shown:
-                            await emit(BotEvent(t="delta", text=shown))
+                        await emit(BotEvent(t="delta", text=content))
                     if not tool_calls:
                         return TurnResult(usage=usage)
 
@@ -3283,10 +2858,6 @@ class LocalLlmProvider(AgentProvider):
                         tool_calls, session=session, turn=turn, emit=emit, handle=handle,
                         messages=messages, done=done, lang=lang, skill_cache=skill_cache,
                         loop=loop, gate=gate, usage=usage, llm_model=model)
-                    from ..api.brand_identity import release_wrapup
-                    released = release_wrapup(lang if lang in ("zh", "en") else "zh")
-                    if released:
-                        await emit(BotEvent(t="delta", text=released))
                     if stopped is not None:
                         return stopped
                     from ..api.mcp_commands import mandatory_browser_stop
@@ -3326,10 +2897,6 @@ class LocalLlmProvider(AgentProvider):
             _log.exception("[ComfyArt/local-llm] turn failed")
             return TurnResult(error=str(e) or type(e).__name__)
         finally:
-            from ..api.brand_identity import end_turn
-            flushed = end_turn(lang if lang in ("zh", "en") else "zh")
-            if flushed:
-                await emit(BotEvent(t="delta", text=flushed))
             reset_llm_project(project_token)
             handle.process = None
 
@@ -3338,168 +2905,3 @@ class LocalLlmProvider(AgentProvider):
         session = handle.process
         if isinstance(session, aiohttp.ClientSession):
             await session.close()
-class _CardTurn:
-    """Identity for a re-quote that is not riding an open model turn."""
-
-    def __init__(self, chat: dict):
-        self.owner_id = str(chat.get("user") or "local")
-        self.project_id = str(chat.get("project") or "local")
-        self.chat_id = str(chat.get("id") or "")
-
-
-def _mark_brand_card_replaced(chat_id: str, message_id: str, ask_id: str, replaced_by: str) -> None:
-    """Collapse the old card only after the new one is stored. Refresh reads this row."""
-    from ..api import chat_store
-    from ..api.bot_turns import broadcast
-
-    if not chat_id or not message_id or not ask_id or not replaced_by:
-        return
-    row = next((m for m in chat_store.list_messages(chat_id) if m["id"] == message_id), None)
-    if row is None:
-        return
-    blocks = []
-    found = False
-    for block in row.get("blocks") or []:
-        if isinstance(block, dict) and block.get("ask_id") == ask_id:
-            blocks.append({**block, "status": "answered", "selected": ["requote"], "replaced_by": replaced_by})
-            found = True
-        else:
-            blocks.append(block)
-    if not found:
-        return
-    chat_store.update_message(chat_id, message_id, blocks=blocks)
-    broadcast("turn_ask_resolved", {
-        "chat_id": chat_id, "message_id": message_id, "ask_id": ask_id,
-        "status": "answered", "selected": ["requote"], "replaced_by": replaced_by,
-    })
-
-
-async def continue_brand_requote(provider, chat: dict, message_id: str, steps: list, spec: dict) -> dict:
-    """Quote the still-open slots and show that card. Does not call the model.
-
-    The progress bucket is ``_chat()``, the same key a live turn already uses.
-    Start on the new card commits, then pays through ``_dispatch_one_confirmed_brand``.
-    """
-    from ..api import bot_asks, chat_store
-    from ..api.bot_turns import _mcp_endpoint, broadcast
-    from ..api.brand_identity import (
-        BRAND_CURRENCY, BrandGrantPersistError, commit_confirmed_grant, mark_stage_dispatched,
-        note_confirmed, quoted_stage, remember_stage_plan, stage_base_block,
-        stamp_confirm_spec, supersede_brand_card,
-    )
-
-    lang = "zh" if str((spec or {}).get("lang") or "zh") == "zh" else "en"
-    turn = _CardTurn(chat)
-    from ..api.brand_identity import brand_progress_scope, reset_brand_progress_scope
-    progress_scope = brand_progress_scope(str(chat.get("id") or ""))
-    try:
-        # Same chain as a live card: base check, open slots, build_quote, stamp.
-        # The progress scope is this chat, the same binding a live turn sets.
-        # Do not pin BOT_CHAT_ID. An empty bot-chat context stays anonymous.
-        blocked = stage_base_block(steps)
-        if blocked:
-            raise ValueError(blocked)
-        opened = supersede_brand_card(steps, spec)
-        if not opened:
-            raise ValueError("no open brand slot")
-        quote = await provider._quote_steps(opened, lang)
-        if quote is None:
-            raise ValueError("brand re-quote returned no price")
-        new_spec = stamp_confirm_spec(
-            quote.ask_spec(), opened, turn, amount=quote.total, lang=lang,
-            currency=getattr(quote, "currency", "") or BRAND_CURRENCY,
-            quote_id=getattr(quote, "quote_id", "") or "")
-        # A new assistant message, so the card is at the end of the conversation.
-        # The previous message keeps the old card in its original place.
-        holder = chat_store.create_message(
-            chat_id=chat["id"], role="assistant", blocks=[], status="done")
-        ask = bot_asks.create_ask(chat["id"], holder["id"], new_spec)
-        ask.future  # bind the waiter to this loop before the response returns
-        shown = {"type": "ask", "ask_id": ask.id, "status": "pending", **new_spec}
-        stored = chat_store.update_message(chat["id"], holder["id"], blocks=[shown]) or {
-            **holder, "blocks": [shown],
-        }
-        broadcast("messages_logged", {"chat_id": chat["id"], "messages": [stored]})
-        _mark_brand_card_replaced(
-            chat["id"], message_id, str((spec or {}).get("ask_id") or ""), ask.id)
-
-        async def _hold() -> None:
-            outcome = await ask.future
-            selected = list(outcome.get("selected") or [])
-            status = "expired" if outcome.get("status") == "expired" else str(outcome.get("status") or "answered")
-            fresh = chat_store.list_messages(chat["id"])
-            row = next((m for m in fresh if m["id"] == holder["id"]), None)
-            if row is not None:
-                updated = []
-                for block in row.get("blocks") or []:
-                    if isinstance(block, dict) and block.get("ask_id") == ask.id:
-                        nxt = {**block, "status": status}
-                        if status == "answered":
-                            nxt["selected"] = selected
-                        updated.append(nxt)
-                    else:
-                        updated.append(block)
-                chat_store.update_message(chat["id"], holder["id"], blocks=updated)
-            broadcast("turn_ask_resolved", {
-                "chat_id": chat["id"], "message_id": holder["id"], "ask_id": ask.id,
-                "status": status, "selected": selected if status == "answered" else None,
-            })
-            if status != "answered":
-                return
-            if "requote" in selected:
-                await continue_brand_requote(
-                    provider, chat, holder["id"], opened, {**new_spec, "ask_id": ask.id})
-                return
-            if "start" in selected:
-                # The same post-confirm sequence a live turn runs after Start:
-                # note, remember, commit, then one reserved paid call per open slot.
-                try:
-                    note_confirmed(quote.total, quote.units, stage=quoted_stage(opened))
-                    remember_stage_plan(opened, fresh=True)
-                    saved = commit_confirmed_grant(
-                        opened, new_spec, turn, amount=float(new_spec.get("amount") or 0))
-                    if saved is None:
-                        raise BrandGrantPersistError("brand quote snapshot was not frozen")
-                except BrandGrantPersistError:
-                    _log.exception("[ComfyArt/local-llm] brand confirmation was not saved")
-                    return
-                from ..api import paid_guard
-                paid_guard.allow_planned_cap(turn.chat_id, quote.units)
-                gate = _PlanGate(turn.chat_id)
-                gate.allow(quote, True, opened, fresh=True)
-                turn.mcp_endpoint = _mcp_endpoint(turn.chat_id)
-                claimed: set[str] = set()
-                paid_any = False
-
-                async def _quiet(_ev) -> None:
-                    return None
-
-                session = aiohttp.ClientSession()
-                try:
-                    for step in opened:
-                        args = step.get("arguments") if isinstance(step, dict) else None
-                        if not isinstance(args, dict):
-                            continue
-                        item = {
-                            "name": "generate_image",
-                            "args": dict(args),
-                            "id": "brand-" + str(args.get("brand_slot") or ""),
-                            "skill_key": "",
-                            "cached": False,
-                        }
-                        if gate.blocks(item["name"], item["args"]):
-                            continue
-                        sent, _messages = await provider._dispatch_one_confirmed_brand(
-                            item, opened, claimed, gate=gate, session=session, turn=turn,
-                            emit=_quiet, handle=TurnHandle(), done=[], lang=lang,
-                            skill_cache={}, llm_model="", run=None, cache_hits=0)
-                        paid_any = paid_any or sent
-                finally:
-                    await session.close()
-                if paid_any:
-                    mark_stage_dispatched(opened)
-
-        asyncio.create_task(_hold(), name=f"comfyart-brand-requote-{ask.id[:8]}")
-        return new_spec
-    finally:
-        reset_brand_progress_scope(progress_scope)

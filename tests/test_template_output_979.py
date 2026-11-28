@@ -80,9 +80,9 @@ def test_templates_are_declared_in_the_existing_tables():
     # Flat row = the skill's default template, never a square 1024 placeholder.
     assert (OUTPUTS[PACKAGING]["width"], OUTPUTS[PACKAGING]["height"],
             OUTPUTS[PACKAGING]["ratio"], OUTPUTS[PACKAGING]["images"]) == (1536, 2048, "3:4", 1)
-    # #1019: the flat row is the no-template default path (8 images), not the 3+1 template.
-    assert (OUTPUTS[BRAND]["width"], OUTPUTS[BRAND]["height"],
-            OUTPUTS[BRAND]["ratio"], OUTPUTS[BRAND]["images"]) == (2048, 1152, "16:9", 8)
+    # #1019: no template is agent-planned. The row lists canvases; it fixes no count or stage list.
+    assert OUTPUTS[BRAND]["agent_plan"] is True and not OUTPUTS[BRAND].get("stages")
+    assert OUTPUTS[BRAND]["ratio_pixels"]["16:9"] == (2048, 1152)
 
 
 @needs_node
@@ -186,12 +186,12 @@ def test_unselected_and_unknown_template_use_the_skill_default_and_say_so():
     assert (unknown["width"], unknown["height"], unknown["preset"]) == (1536, 2048, "eco")
     hint = run_hint(PACKAGING, "做包装")
     assert "skill default template" in hint and "template=eco" in hint
-    # #1019: no template is the 8-image default path. An unknown template id stays on geometric.
+    # #1019: no template is agent-planned (no fixed count). An unknown template id stays on geometric.
     bare_hint = run_hint(BRAND, "", preset_id="")
-    assert "no industry template" in bare_hint and "2048x1152" in bare_hint and "eight images" in bare_hint
+    assert "no template selected" in bare_hint and "2048x1152" in bare_hint and "quote_plan" in bare_hint
     assert "template=geometric" not in bare_hint
     unknown_hint = run_hint(BRAND, "", preset_id="nope")
-    assert "template=geometric" in unknown_hint and "3 separate images" in unknown_hint
+    assert "template=geometric" in unknown_hint and "stage 1 = 3 image(s)" in unknown_hint
     unknown_stage2 = apply_generate({"skill": BRAND, "preset": "nope", "stage": 2, "prompt": "board"}, BRAND)
     assert (unknown_stage2["width"], unknown_stage2["height"], unknown_stage2["preset"]) == (2048, 1152, "geometric")
 
@@ -208,10 +208,12 @@ def test_run_hint_states_each_templates_count_and_size():
     playful = run_hint(PACKAGING, "", preset_id="playful")
     assert "stage 2" in playful and "4 separate images" in playful and "2048" in playful
     brand = run_hint(BRAND, "", preset_id="tech")
-    assert "NOT one landscape board" in brand
-    assert "3 separate images" in brand and "width=1024 height=1024 ratio=1:1" in brand
+    # The template's declared stages, said by the shared stages hint (no brand-only wording).
+    assert "exactly 4 separate images in 2 stages" in brand
+    assert "3 image(s) at width=1024 height=1024 ratio=1:1" in brand
     assert "width=2048 height=1152 ratio=16:9" in brand
-    assert "never a 5th" in brand and "stage=2" in brand
+    assert "Call generate_image exactly 4 times" in brand and "stage=2" in brand
+    assert "before stage 2, stop and ask the user to pick from stage 1" in brand
 
 
 def test_uploaded_reference_does_not_override_the_template_size():

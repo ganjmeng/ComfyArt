@@ -29,6 +29,8 @@ export interface WsInputs {
   size_lock?: boolean
   /** P1 hotfix (#911): 'ratio' for Sunburst pins (ratio <= 1%, long side >= target). Not sent to the provider. */
   size_lock_mode?: 'ratio'
+  /** The skill row declares opaque output: flatten alpha onto white, void full-frame noise. Not sent to the provider. */
+  opaque_output?: boolean
   ratio?: string
   seed?: number
   /** #201: sent only for models whose schema has negative_prompt. */

@@ -18,8 +18,7 @@ def bot_turn_state():
 
 async def _await_ask(chat_id: str, state, spec: dict, *,
                      timeout: float | None = None,
-                     keep_pending_on_timeout: bool = False, wait_forever: bool = False,
-                     retire_ask_id: str = "") -> dict:
+                     keep_pending_on_timeout: bool = False, wait_forever: bool = False) -> dict:
     ask = bot_asks.create_ask(chat_id, state.message_id, spec)
     block = {"type": "ask", "ask_id": ask.id, "status": "pending", **spec}
     state.blocks.append(block)
@@ -28,18 +27,6 @@ async def _await_ask(chat_id: str, state, spec: dict, *,
         "chat_id": chat_id, "message_id": state.message_id,
         "ask_id": ask.id, **spec,
     })
-    if retire_ask_id:
-        for older in state.blocks:
-            if isinstance(older, dict) and older.get("ask_id") == retire_ask_id:
-                older["status"] = "answered"
-                older["selected"] = ["requote"]
-                older["replaced_by"] = ask.id
-        chat_store.update_message(chat_id, state.message_id, blocks=state.blocks)
-        broadcast("turn_ask_resolved", {
-            "chat_id": chat_id, "message_id": state.message_id,
-            "ask_id": retire_ask_id, "status": "answered",
-            "selected": ["requote"], "replaced_by": ask.id,
-        })
     try:
         outcome = await asyncio.wait_for(
             asyncio.shield(ask.future),
@@ -116,8 +103,6 @@ async def ask_user(args: dict) -> dict:
     # product-to-packaging: images 2-4 follow the card's scope answer (skipped -> core three).
     from .. import product_packaging
     plan = product_packaging.record_card_answer(spec, answers)
-    from .. import brand_identity
-    brand_identity.record_card_answer(spec, answers)
     if plan is not None:
         result["image_plan"] = plan
     return result
@@ -208,6 +193,8 @@ ASK_USER_SCHEMA = {
                     "label": {"type": "string"},
                     "description": {"type": "string"},
                     "recommended": {"type": "boolean"},
+                    "image_url": {"type": "string",
+                                  "description": "Thumbnail for this option, e.g. the result URL of an image it names."},
                 },
                 "required": ["id", "label"],
                 "additionalProperties": False,
@@ -217,6 +204,7 @@ ASK_USER_SCHEMA = {
         "max_selections": {"type": "integer"},
         "allow_other": {"type": "boolean"},
         "allow_skip": {"type": "boolean"},
+        "preselect": {"type": "boolean"},
         "defaults": {
             "type": "array",
             "items": {"type": "string"},
@@ -239,6 +227,8 @@ ASK_USER_SCHEMA = {
                     "label": {"type": "string"},
                     "description": {"type": "string"},
                     "recommended": {"type": "boolean"},
+                    "image_url": {"type": "string",
+                                  "description": "Thumbnail for this option, e.g. the result URL of an image it names."},
                 },
                 "required": ["id", "label"],
                 "additionalProperties": False,
@@ -253,6 +243,8 @@ ASK_USER_SCHEMA = {
                     },
                     "page": {"type": "integer"},
                     "placeholder": {"type": "string"},
+                    "preselect": {"type": "boolean",
+                                  "description": "false keeps the recommended badge but selects nothing."},
                 },
                 "required": ["id", "prompt"],
                 "additionalProperties": False,
