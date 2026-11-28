@@ -10,7 +10,8 @@ locks everything else.
 
 $0: no WaveSpeed call. submit_command and the run approval are mocked. Pins and the untouched
 files are locked by literal sha256 values (no historical git objects, so a depth-1 clone works);
-bot/skill_output.py is pinned to the #905 revision.
+bot/skill_output.py is pinned to the #1019 revision (an empty brand preset is the
+default path; packaging's own plan is unchanged).
 """
 from __future__ import annotations
 
@@ -504,11 +505,11 @@ def test_self_check_still_reports_a_failed_set(lang, goal, warn):
 # read e8c4a855:<path> from history and compared bytes; they are now literal sha256 values
 # computed once from those same pinned bytes. A one-byte edit still fails.
 PINNED_SHA256 = {
-    "api/auto_models.json": "9ef106b6133d427f04347d0c31c31931e641e1cd47d2a86c0d0769cde48c5d7b",
-    "api/skill_size.py": "ec90c1098ad359dc017c4c470ab5ee0f16e12f5baff9924da2376a8b1153e312",
+    "api/auto_models.json": "70c1e5ebcc2a877e8b9a93c3e69b218e9efc615edf67151df40f8c53fa03f9a4",
+    "api/skill_size.py": "1d4efa799c7c85ae3d219d15476eec5aff04a17cbb9f7c1e4f04308482c9884e",
     "api/curated_models.json": "53c77b0a449f86b8b2aa9b48044678dddaf5aa3cdad40486f0c981386b8d2dce",
     "api/wavespeed_models.json": "3f70cc34de378fd675a2afffb7b7c15b533c67db424e1ae25b6ba3356dd082d1",
-    "bot/skill_output.py": "02d74b0260d4e494bbc922f79a373014eff98748245364fdfb56028636597569",  # #1003 source question stays when a reference is attached; content, 9:16 preview, and unrelated locks preserved
+    "bot/skill_output.py": "8506a7d2f831078096e3a65954ed6051d4cabbc2da580ce14fe107b121dabba6",  # #1019: exact-size pin only when the user named pixels; ratio otherwise
     "api/portrait_studio.py": "61257848a9e23d13c066d01c103c565d6804e58c926d3905c6ed8b0890569224",
     "bot/self_check.py": "1a9b4f7eda7e915adf83df42ff31ccf3c27e83253d9636ba5c85aead447993b6",
 }
@@ -567,6 +568,8 @@ QUOTE_LINE_LOCALE = {
         "quote.lineartPreviewSize": "Line-art preview · {0}×{1} · {2}",
     },
 }
+# #1019: brand dialog with no tile selected. Not the first template's name.
+DEFAULT_WORKFLOW_LOCALE = {"zh": "默认流程", "en": "Default workflow"}
 ANGLE_PROGRESS_LOCALE = {
     "zh": {
         "bot.angleSummary": "预览 {0} + 成品 {1}/{2}",
@@ -604,6 +607,7 @@ LOCALE_EXTRAS = {
            "runStop.stillGenerating": RUN_STOP_LOCALE[lang],
            "wsErr.userRatioUnsupported": RATIO_REFUSAL_LOCALE_994[lang],
            "models.minimaxH3Image": H3_IMAGE_LOCALE[lang],
+           "skillRun.defaultWorkflow": DEFAULT_WORKFLOW_LOCALE[lang],
            **QUOTE_LINE_LOCALE[lang], **ANGLE_PROGRESS_LOCALE[lang]}
     for lang in ("zh", "en")
 }

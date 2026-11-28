@@ -33,6 +33,7 @@ def source(fn):
 
 @pytest.mark.parametrize("branch", ["ordinary_first_request", "post_memory_thinking"])
 async def test_default_builder_zero_send_preflight(tmp_path, monkeypatch, branch):
+    monkeypatch.setenv("COMFYART_LLM_USD_GATE", "1")
     # Preserve a genuinely valid image fixture, not merely a PNG-looking URL.
     png_bytes = base64.b64decode(PNG, validate=True)
     with Image.open(io.BytesIO(png_bytes)) as image:

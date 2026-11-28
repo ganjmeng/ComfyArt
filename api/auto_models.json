@@ -317,6 +317,47 @@
     "zh": "这是通用图片编辑的默认模型",
     "en": "the default model for general image editing"
    },
+   "dense_typography": {
+    "model": "openai/gpt-image-2/edit",
+    "fallback": "google/nano-banana-pro/edit",
+    "zh": "这是带参考图的密集排版编辑（规范页、品牌板、密排标签）",
+    "en": "this is a dense-typography edit with reference images, such as a guideline sheet, a brand board, or packed labels",
+    "keywords": [
+     "guideline",
+     "guidelines",
+     "guideline sheet",
+     "brand guideline",
+     "brand board",
+     "brand boards",
+     "style guide",
+     "spec sheet",
+     "specification sheet",
+     "packed label",
+     "packed labels",
+     "label sheet",
+     "nutrition label",
+     "type specimen",
+     "typography sheet",
+     "dense typography",
+     "dense type",
+     "typography",
+     "规范",
+     "规范卡",
+     "规范页",
+     "品牌规范",
+     "品牌板",
+     "视觉规范",
+     "设计规范",
+     "密集排版",
+     "密排",
+     "包装标签",
+     "字体规范"
+    ],
+    "tip": {
+     "zh": "密集排版",
+     "en": "dense typography"
+    }
+   },
    "categories": [
     {
      "id": "keep_identity",

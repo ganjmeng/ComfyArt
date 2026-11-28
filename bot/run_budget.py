@@ -589,9 +589,53 @@ def _charged_result(obs: StepObservation) -> bool:
         payload = json.loads(obs.result)
     except (TypeError, ValueError):
         return True
+    if isinstance(payload, dict) and isinstance(payload.get("charged"), bool):
+        return bool(payload["charged"])  # mirror paid_guard.charged: the explicit flag wins
     return not (isinstance(payload, dict) and (
         payload.get("cancelled") or payload.get("error")
         or payload.get("status") in ("declined", "cancelled", "failed")))
+
+
+_NOTHING_CHARGED = re.compile(r"nothing was charged|not charged|未扣费|没有扣")
+_REFUNDED = re.compile(r"refunded|已退款")
+
+
+def _payload(result: object) -> object:
+    if isinstance(result, dict):
+        return result
+    try:
+        return json.loads(result)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
+
+
+def generation_ids(result: object) -> list[str]:
+    """Holder ids a submitted generate call returned ({"ids": [...]}); empty when none."""
+    payload = _payload(result)
+    ids = payload.get("ids") if isinstance(payload, dict) else None
+    return [str(i) for i in ids if isinstance(i, str) and i] if isinstance(ids, list) else []
+
+
+def void_ids(result: object) -> list[str]:
+    """Ids a wait_generation result reports as failed or cancelled with no charge kept.
+
+    Void only when the page says so: refunded, or the error text says nothing was charged,
+    or the user declined it. A failure that kept a charge, and a failure that says nothing
+    about money, are not void (fail closed: the unit stays counted)."""
+    payload = _payload(result)
+    rows = payload.get("results") if isinstance(payload, dict) else None
+    out: list[str] = []
+    for row in rows if isinstance(rows, list) else []:
+        if not isinstance(row, dict) or not row.get("id"):
+            continue
+        text = str(row.get("error") or "")
+        if row.get("charged") is True and row.get("refunded") is not True:
+            continue  # the page says a charge was kept: never void it
+        if row.get("status") == "declined" or (
+                row.get("status") in ("error", "failed")
+                and (row.get("refunded") is True or _REFUNDED.search(text) or _NOTHING_CHARGED.search(text))):
+            out.append(str(row["id"]))
+    return out
 
 
 def _generate_units(obs: StepObservation) -> int:
@@ -644,6 +688,11 @@ class ProgressTracker:
     confirmed_final_ids: list = field(default_factory=list)
     confirmed_amount: float = 0.0
     confirmed_units: int = 0
+    # Delivery ledger keyed by generation id: units a submitted generate counted, and the ids that
+    # later failed with no charge kept. A void id gives its unit back once, so one retry fits.
+    submitted: dict = field(default_factory=dict)
+    voided: list = field(default_factory=list)
+    voided_new: list = field(default_factory=list)
     count_log: list = field(default_factory=list)
     # wait_generation is outside the 30-call cap; each task may wait up to 30 min or 120 polls.
     wait_max_s: float = 30 * 60
@@ -786,7 +835,19 @@ class ProgressTracker:
                 text = str((step or {}).get("text") or "") if isinstance(step, dict) else ""
                 if text and text not in self.plan_items:
                     self.plan_items.append(text)
-        self.gen_calls += sum(_generate_units(o) for o in obs)
+        released = 0
+        for o in obs:
+            units = _generate_units(o)
+            ids = generation_ids(o.result) if units else []
+            for gid in ids:
+                self.submitted.setdefault(gid, max(1, units // len(ids)))
+            if re.sub(r"^mcp__\w+__", "", o.tool or "") == "wait_generation":
+                for gid in void_ids(o.result):
+                    if gid in self.submitted and gid not in self.voided:
+                        self.voided.append(gid)
+                        self.voided_new.append(gid)
+                        released += self.submitted[gid]
+        self.gen_calls = max(0, self.gen_calls + sum(_generate_units(o) for o in obs) - released)
         return (self.paid_calls >= self.tool_calls_max or self.total_calls >= self.all_calls_max
                 or self.image_over())
 

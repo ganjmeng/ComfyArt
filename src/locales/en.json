@@ -1682,6 +1682,7 @@
   "skillRun.start": "Start making",
   "skillRun.templates": "Templates",
   "skillRun.currentTemplate": "Current template",
+  "skillRun.defaultWorkflow": "Default workflow",
   "skillRun.pickLeft": "Select on the left",
   "skillRun.select": "Select",
   "skillRun.templateCount": "{0} templates",

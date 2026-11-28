@@ -53,6 +53,8 @@ export interface Skill {
   activePreset?: string
   /** #494 built-in metadata. Imported / personal skills have none of these and need no migration. */
   category?: SkillCategory; cover?: string; video?: string; presets?: SkillPreset[]; inputs?: SkillInput[]; media?: SkillMediaItem[]
+  /** The form when no template is selected. A skill that sets it opens with no template chosen. */
+  defaultInputs?: SkillInput[]
   /** #541/#575 「效果示例」 carousel media (commit-pinned stills and/or short mp4). Unset → the section is not rendered.
    *  #641: an explicit empty list renders 「暂无示例」 when `presetChips` is set. */
   examples?: string[]
@@ -257,6 +259,11 @@ export const PORTRAIT_SHOTS_708 = '\nShot rules (#708): when the user does not n
 /** #687-2 — poster / banner / interior: EFFECT_INPUTS structure, English copy = the reference card (Upload Files / Additional Details / Anything else to add?). */
 /** #687-1 — reference-card Upload Files + Additional Details (max 500), both optional. */
 const REF_CARD_INPUTS_687: SkillInput[] = [I('file', ['上传文件', 'Upload Files'], 'image'), { ...I('note', ['补充描述', 'Additional Details'], 'textarea', false, ['还有什么想补充的吗？', 'Anything else to add?']), maxLength: 500 }]
+/** #1019 plaza default path: text required, one optional image. Shown only when no industry template is selected. */
+export const BRAND_DEFAULT_INPUTS: SkillInput[] = [
+  { ...I('user_requirement', ['品牌需求', 'Brand brief'], 'textarea', true, ['写下品牌名、品类和想要的视觉系统', 'Brand name, category, and the visual system you want']), maxLength: 500 },
+  { ...I('user_image', ['参考图', 'Reference image'], 'image'), maxCount: 1, maxSizeMb: 10 },
+]
 /** #806 — 动态海报. Both templates: source_image* / motion_brief / visual_direction. 首尾帧动画 also optional start_frame. */
 const MOTION_BRIEF_PH: L = ['写下哪些要动、哪些保持不动；不填则自动规划。', 'Say what should move and what should stay still. Leave blank to plan it automatically.']
 const MOTION_LOOK_PH: L = ['描述想要的画面效果，或附上参考；没有可不填。', 'Describe the look you want or attach a reference. Optional.']
@@ -423,13 +430,20 @@ export interface SkillOutput extends SkillOutputStage {
   lock?: 'ratio'
   /** #982: default material studies for logo-material-explorer. */
   materials?: readonly string[]
+  /** No template selected: the agent plans count and ratios from the brief; ratio_pixels lists the canvases. */
+  agent_plan?: boolean
+  ratio_pixels?: Record<string, [number, number]>
 }
-/** #979: product ruling #911 comment 6872615903 — brand is a two-step 4-image set:
- *  3×1024×1024 (1:1) direction proposals, then 1×2048×1152 (16:9) guideline board. */
+/** #979: industry templates only — 3×1024×1024 direction proposals, then 1×2048×1152 guideline board. */
 export const BRAND_STAGES_979: SkillOutputStage[] = [
   { width: 1024, height: 1024, ratio: '1:1', images: 3 },
   { width: 2048, height: 1152, ratio: '16:9', images: 1 },
 ]
+/** Provider 2K canvases an agent-planned row may pick from. Mirror bot/skill_output.py::AGENT_PLAN_RATIO_PIXELS. */
+export const AGENT_PLAN_RATIO_PIXELS: Record<string, [number, number]> = {
+  '1:1': [2048, 2048], '16:9': [2048, 1152], '9:16': [1152, 2048],
+  '3:4': [1536, 2048], '4:3': [2048, 1536], '4:5': [1638, 2048],
+}
 /** #979: packaging multi-SKU t3 = 3×1536×2048 (3:4) + 1×2048×1152 (16:9). */
 export const PACKAGING_PLAYFUL_STAGES_979: SkillOutputStage[] = [
   { width: 1536, height: 2048, ratio: '3:4', images: 3 },
@@ -482,18 +496,19 @@ export const SKILL_OUTPUT: Record<string, SkillOutput> = {
     width: 2048, height: 2048, ratio: '1:1', images: 1,
     presets: CHARACTER_PRESETS_982,
   },
-  // #979: template-level output contract (#911 comment 6872615903). The six brand
-  // templates share one staged plan; brand is never a single landscape board.
+  // #1019: no template is an agent-planned path. The brief and the cards decide the
+  // count and each image's ratio; the row only lists the canvases. Presets keep #979.
   'brand-identity-director': {
-    width: 1024, height: 1024, ratio: '1:1', images: 4,
-    stages: BRAND_STAGES_979,
+    width: 2048, height: 2048, ratio: '1:1', images: 1,
+    agent_plan: true,
+    ratio_pixels: AGENT_PLAN_RATIO_PIXELS,
     presets: {
-      geometric: { stages: BRAND_STAGES_979 },
-      handmade: { stages: BRAND_STAGES_979 },
-      tech: { stages: BRAND_STAGES_979 },
-      beauty: { stages: BRAND_STAGES_979 },
-      foodbev: { stages: BRAND_STAGES_979 },
-      pet: { stages: BRAND_STAGES_979 },
+      geometric: { stages: BRAND_STAGES_979, width: 1024, height: 1024, ratio: '1:1', images: 4 },
+      handmade: { stages: BRAND_STAGES_979, width: 1024, height: 1024, ratio: '1:1', images: 4 },
+      tech: { stages: BRAND_STAGES_979, width: 1024, height: 1024, ratio: '1:1', images: 4 },
+      beauty: { stages: BRAND_STAGES_979, width: 1024, height: 1024, ratio: '1:1', images: 4 },
+      foodbev: { stages: BRAND_STAGES_979, width: 1024, height: 1024, ratio: '1:1', images: 4 },
+      pet: { stages: BRAND_STAGES_979, width: 1024, height: 1024, ratio: '1:1', images: 4 },
     },
   },
   // #979: five packaging templates, five plans. Flat fields = the default 主款 (eco/t1).
@@ -551,8 +566,9 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
     category: 'social', cover: cover687('rednote-cover-maker'), quickStartCover: quickStartCover('rednote-cover-maker'), featured: feat687('rednote-cover-maker', [1, 2, 3, 4, 5]), video: video687('rednote-cover-maker'),
     presets: [P('ugc-feed', '时尚UGC信息流 1:1', 'Fashion UGC feed 1:1', 'Style: candid off-duty fashion UGC still, 1:1 feed crop, real-person feel, product clearly in frame, never staged studio look, natural everyday light.'), P('ugc-story', '时尚UGC故事 9:16', 'Fashion UGC story 9:16', 'Style: candid off-duty fashion UGC still, 9:16 story crop, real-person energy, product in hand or worn, never staged studio backdrop, mobile-first.')],
     inputs: REF_CARD_INPUTS_687 },
-  { id: 'brand-identity-director', name: t('skills.brandIdentity'), instructions: 'You are a production brand-identity designer. Deliver a usable VI kit, not a single decorative mark.\n1) Discover: brand name, category, positioning and any elements to keep from the provided files and Additional Details.\n2) Mark: design a primary logo mark on a plain background (1:1). State shape language, hex colors and type style precisely.\n3) System board: color palette swatches, primary + secondary lockups, and a clear typography specimen.\n4) Applications: at least one stationery or object mockup applying the mark; keep geometry identical across frames.\n5) Scope: when a template is selected, follow that template focus (logo system board vs mockup). Do not invent a new category.\n6) Refs: when files are uploaded, pass each shape id in refs (ref_modes content) on every generate_image call.',
-    category: 'branding', cover: cover('brand-identity-director'), quickStartCover: quickStartCover('brand-identity-director'), featured: feedCovers('brand-identity-director'), video: video('brand-identity-director'), presets: [P('geometric', '极简几何', 'Minimal geometric', 'Style: minimal geometric mark built from simple shapes, strict grid, two-color palette; deliver primary mark, lockup and palette board production-ready.', wash541(WASH_541.brand, 'brand-identity-director', 'geometric')), P('handmade', '手作温暖', 'Handmade warmth', 'Style: hand-drawn warm mark, organic lines, earthy palette, craft paper textures; deliver primary mark plus warm stationery application.', wash541(WASH_541.brand, 'brand-identity-director', 'handmade')), P('tech', '科技未来', 'Tech future', 'Style: futuristic tech identity, precise linework, gradient-free electric blue accents, monospace details; deliver mark, lockup and UI-ready glyph.', wash541(WASH_541.brand, 'brand-identity-director', 'tech')), P('beauty', '美妆个护', 'Beauty & personal care', 'Style: beauty and personal care logo system presentation board, soft refined mark with primary and secondary lockups, monogram, color swatches and typography specimen laid out on a clean board, no product mockups.', wash541(WASH_541.brand, 'brand-identity-director', 'beauty')), P('foodbev', '食品饮料', 'Food & beverage', 'Style: food and beverage logo system presentation board, lively mark with primary and stacked lockups, icon variant, color swatches and typography specimen laid out on a clean board, no product mockups.', wash541(WASH_541.brand, 'brand-identity-director', 'foodbev')), P('pet', '宠物用品', 'Pet supplies', 'Style: pet supplies logo system presentation board, friendly playful mark with primary and secondary lockups, mascot icon, color swatches and typography specimen laid out on a clean board, no product mockups.', wash541(WASH_541.brand, 'brand-identity-director', 'pet'))],
+  { id: 'brand-identity-director', name: t('skills.brandIdentity'), instructions: 'You are a production brand-identity designer. Work like a brand studio: understand the brand, agree a direction with the user, then deliver a usable identity system, not a single decorative mark.\nTEMPLATE PATH: when an industry template is selected, follow that template prompt and the declared output plan in the Output lock.\nDEFAULT PATH (no template):\n1) Brief: read the brand name, category, audience and anything to keep from Additional Details and the provided files. Before any image, ask_user one card (several pages are fine) for what is still missing: which pieces to deliver, color direction, logo construction, and which real photos or assets exist. Write the questions and options for this brand, keep a free-text row, and do not preselect.\n2) Visual baseline: generate a moodboard that sets palette, type feel, materials and imagery for this brand, then ask_user whether it is the baseline. Regenerate it when the user asks.\n3) Logo directions: generate a few clearly different directions, each its own image, built on the approved moodboard (pass it in refs, ref_modes style). Then ask_user which direction to take; set the image_url of each option to the result of that direction and preselect false.\n4) Deliverables: produce the pieces the user chose in step 1 for the chosen mark, usually a guideline sheet plus applications. Pass the chosen mark in refs (ref_modes content). Decide layout, panels, headings and copy from this brand, not from a fixed template.\n5) Constraints: every generate_image passes skill brand-identity-director, count 1, and the ratio from the Output lock table that fits that piece. Show the stages with update_plan, quote each stage with quote_plan and wait for Start before it runs. Keep the mark geometry, the names and the palette consistent across images. Copy brand names character for character; no invented copy, fake UI or hex text on images.\n6) Close after the images are placed: what was delivered, honest limits (vector redraw recommended, colors are screen estimates) and a next step.',
+    category: 'branding', cover: cover('brand-identity-director'), quickStartCover: quickStartCover('brand-identity-director'), featured: feedCovers('brand-identity-director'), video: video('brand-identity-director'), presets: [P('geometric', '极简几何', 'Minimal geometric', 'Style: minimal geometric mark built from simple shapes, strict grid, two-color palette; deliver the primary mark, the mark with its name, and a palette board, production-ready.', wash541(WASH_541.brand, 'brand-identity-director', 'geometric')), P('handmade', '手作温暖', 'Handmade warmth', 'Style: hand-drawn warm mark, organic lines, earthy palette, craft paper textures; deliver primary mark plus warm stationery application.', wash541(WASH_541.brand, 'brand-identity-director', 'handmade')), P('tech', '科技未来', 'Tech future', 'Style: futuristic tech identity, precise linework, gradient-free electric blue accents, monospace details; deliver the mark, the mark with its name, and a UI-ready glyph.', wash541(WASH_541.brand, 'brand-identity-director', 'tech')), P('beauty', '美妆个护', 'Beauty & personal care', 'Style: beauty and personal care logo system presentation board, soft refined mark with primary and secondary arrangements of the mark and the name, monogram, color swatches and typography specimen laid out on a clean board, no product mockups.', wash541(WASH_541.brand, 'brand-identity-director', 'beauty')), P('foodbev', '食品饮料', 'Food & beverage', 'Style: food and beverage logo system presentation board, lively mark with primary and stacked arrangements of the mark and the name, icon variant, color swatches and typography specimen laid out on a clean board, no product mockups.', wash541(WASH_541.brand, 'brand-identity-director', 'foodbev')), P('pet', '宠物用品', 'Pet supplies', 'Style: pet supplies logo system presentation board, friendly playful mark with primary and secondary arrangements of the mark and the name, mascot icon, color swatches and typography specimen laid out on a clean board, no product mockups.', wash541(WASH_541.brand, 'brand-identity-director', 'pet'))],
+    defaultInputs: BRAND_DEFAULT_INPUTS,
     inputs: REF_CARD_INPUTS_687 },
   { id: 'packaging-design-director', name: t('skills.packagingDesign'), instructions: 'You are a production packaging designer. Deliver shelf-ready concepts through structure, not flat posters.\n1) Brief: product, size, pack form and brand cues from Additional Details and the provided file.\n2) Front: package front view on a clean studio background; call out material, finish and label layout.\n3) Structure: when relevant, show dieline / panel logic or a clear 3/4 mockup in context.\n4) Shelf: ensure the design reads at eye level in a retail row; keep logo and claims legible.\n5) Apply the selected packaging style focus (eco, foil, playful, panels, shelf).\n6) Refs: when files are uploaded, pass shape ids in refs (ref_modes content) on every generate_image call.',
     category: 'ecommerce', cover: cover777('packaging-design-director'), quickStartCover: quickStartCover('packaging-design-director'), featured: feedCovers('packaging-design-director'), video: video('packaging-design-director'), presets: [P('eco', '自然环保', 'Natural eco', 'Style: natural eco packaging, kraft and recycled paper, botanical line art, muted greens; show front label hierarchy and material callouts.', pinned(`777/wash/packaging/examples`, WASH_777, '01.webp') /* #777: 主款 AURELIA */), P('gold', '奢华烫金', 'Luxury gold foil', 'Style: luxury packaging, deep matte color with gold foil stamping, embossed logo; keep foil readable at shelf distance.', pinned(`777/wash/packaging/examples`, WASH_777, '02.webp') /* #777: 包装视觉方向 AURELIA */), P('playful', '潮玩插画', 'Playful illustration', 'Style: playful illustrated packaging, bright characters, bold outlines, pop colors; keep character on-pack consistent across panels.', pinned(`777/wash/packaging/examples`, WASH_777, '03.webp') /* #777: 多SKU AURELIA */), P('panels', '展开结构图', 'Panels & structure', 'Style: packaging panels and structural dieline, flat unfolded box with front, back and side panels laid out.', pinned(`777/wash/packaging/examples`, WASH_777, '04.webp') /* #777: 面板结构 AURELIA */), P('shelf', '货架陈列', 'Shelf display', 'Style: packaging shelf display, the product repeated in rows on a retail shelf, eye-level store lighting.', pinned(`777/wash/packaging/examples`, WASH_777, '05.webp') /* #777: 货架 AURELIA */)],

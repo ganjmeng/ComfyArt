@@ -74,6 +74,14 @@ export function wsBodyError(body: any, fallback: string): string {
 
 export const RELAY_NOTE = 'user_message is already in the user\'s language; reply with it word for word (keep any link), do not paraphrase or quote a raw error'
 
+/** Whether the failure text says this attempt kept a charge, or that the charge was refunded. */
+export function deliveryCharge(message: string): { charged: boolean; refunded: boolean } {
+  const refunded = /refunded|已退款/.test(message)
+  const nothing = /nothing was charged|未扣费|没有扣/.test(message)
+  const charged = !nothing && (/may have been charged|charged about|可能已扣费/.test(message) || refunded)
+  return { charged, refunded }
+}
+
 /** Agent tool result for a failed generation: the agent must relay our zh/en copy verbatim (#155 follow-up). */
 export function agentError(message: string) {
   return { error: message, user_message: message, note: RELAY_NOTE }

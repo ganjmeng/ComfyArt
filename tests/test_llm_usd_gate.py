@@ -76,6 +76,12 @@ ROUTE = {
 
 
 @pytest.fixture(autouse=True)
+def _opt_in_llm_usd_gate(monkeypatch):
+    """The production default is off. These cases keep today's opted-in behavior."""
+    monkeypatch.setenv("COMFYART_LLM_USD_GATE", "1")
+
+
+@pytest.fixture(autouse=True)
 def _restore_prices():
     saved = {key: dict(value) for key, value in PRICES.items()}
     yield
@@ -2796,3 +2802,43 @@ def test_r1_incomplete_write_never_replaces_target_or_sends(tmp_path, monkeypatc
         assert state["accounted_nano"] > before["accounted_nano"]
         assert len(state["reservations"]) == 2
         assert not marker.exists()
+
+
+async def test_default_off_lets_text_only_official_chat_reach_http(monkeypatch):
+    """No COMFYART_LLM_USD_GATE: a text-only official body is sent, not blocked."""
+    monkeypatch.delenv("COMFYART_LLM_USD_GATE", raising=False)
+    calls = []
+
+    async def transport(session, method, url, *, headers, json_body=None, timeout=120):
+        calls.append(json_body)
+        return _usage(1, 1)
+
+    token = provider_admin._llm_lock.set(_route())
+    try:
+        await provider_admin.gated_llm_http(
+            None, "POST", URL, headers={}, json_body=_text(), transport=transport)
+    finally:
+        provider_admin._llm_lock.reset(token)
+    assert len(calls) == 1
+    assert calls[0]["messages"] == [{"role": "user", "content": "hi"}]
+    assert calls[0]["model"] == "deepseek-flash"
+
+
+async def test_opt_in_still_blocks_unbounded_text_with_unbounded_billed_input(monkeypatch):
+    """COMFYART_LLM_USD_GATE=1 keeps the text-only official refusal before HTTP."""
+    monkeypatch.setenv("COMFYART_LLM_USD_GATE", "1")
+    calls = []
+
+    async def transport(session, method, url, *, headers, json_body=None, timeout=120):
+        calls.append(json_body)
+        return _usage(1, 1)
+
+    token = provider_admin._llm_lock.set(_route())
+    try:
+        with pytest.raises(LlmBudgetBlocked) as blocked:
+            await provider_admin.gated_llm_http(
+                None, "POST", URL, headers={}, json_body=_text(), transport=transport)
+    finally:
+        provider_admin._llm_lock.reset(token)
+    assert blocked.value.code == "unbounded_billed_input"
+    assert calls == []

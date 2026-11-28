@@ -75,6 +75,27 @@ _PROMPT_ONE = {
     "zh": "这次生成预计约 {total} 积分，达到了你设置的 {threshold} 积分确认线。确定开始吗？",
     "en": "This generation will cost about {total} credits, at or above your {threshold} credits confirm limit. Start?",
 }
+# A skill whose output row declares always_confirm shows the card under the line too.
+# Below the line the card must not claim the confirm limit was reached.
+_PROMPT_ALWAYS = {
+    "zh": "这次生成 {total} 积分。这个技能每次付费生成都需要你确认，确定开始吗？",
+    "en": "This generation is {total} credits. Every paid generation in this skill needs your confirmation. Start now?",
+}
+# Shown when a confirm card passed its declared lifetime before Start.
+EXPIRED_TEXT = {
+    "zh": "报价已过期，请重新取价",
+    "en": "This quote has expired. Request a new price.",
+}
+REQUOTED_TEXT = {
+    "zh": "报价已过期，已按最新价格重新报价，请在新卡片上确认。",
+    "en": "That quote expired. Here is a fresh price; confirm on the new card.",
+}
+ALREADY_SENT_TEXT = {
+    "zh": "这些步骤已经提交，无需重新报价。",
+    "en": "Those steps were already submitted; nothing is left to quote.",
+}
+# A card that expires while someone is waiting is re-issued at most this many times in one turn.
+MAX_REQUOTES = 2
 # #968: an unpriced step forces a confirm card without claiming any amount (never "约 0 积分").
 _PROMPT_UNPRICED = {
     "zh": "这个任务共 {n} 步，价格暂未确定，需要你确认后按实际价格执行。确定开始吗？",
@@ -154,6 +175,15 @@ def credit_alloc(amounts: list[Optional[float]], total_credits: int) -> list[int
         for i in order[:abs(need)]:
             credits[i] -= 1
     return credits
+
+
+def _pricer_quote_identity(answer: object) -> tuple[str, str]:
+    """Optional ``(currency, quote_id)`` carried after ``(amount, source, reason)``."""
+    if not isinstance(answer, tuple):
+        return "", ""
+    quote_id = str(answer[3] or "") if len(answer) >= 4 else ""
+    currency = str(answer[4] or "") if len(answer) >= 5 else ""
+    return currency, quote_id
 
 
 def price_source(answer: object) -> tuple[Optional[float], str, str]:
@@ -342,6 +372,10 @@ class Quote:
     total_credits: int = 0
     # Validated multi-angle preview plan, stored with the pending quote. Prompt prose is not this.
     composition_plan: Optional[dict] = None
+    currency: str = "USD"
+    quote_id: str = ""
+    # Seconds a confirm card stays valid, from the skill output row. 0 = no deadline.
+    confirm_ttl_s: float = 0.0
 
     def ask_spec(self) -> dict:
         lang = _lang(self.lang)
@@ -358,10 +392,24 @@ class Quote:
             "lines": [{"text": ln.text, "price": ln.price, "source": ln.source} for ln in self.lines],
             "total_label": self.total_label,
             "total": self.total_text,
+            "price_state": self.price_state,
         }
         if self.composition_plan:
             spec["composition_plan"] = self.composition_plan
+        if self.confirm_ttl_s > 0:
+            import time as _time
+            created = _time.time()
+            spec["created_at"] = created
+            spec["expires_at"] = created + float(self.confirm_ttl_s)
         return spec
+
+    @property
+    def price_state(self) -> str:
+        if any(ln.unpriced for ln in self.lines):
+            return "unpriced"
+        if any(ln.source == SOURCE_ESTIMATE for ln in self.lines):
+            return "estimate"
+        return "quote"
 
     def started_result(self) -> str:
         """No prices: the card already showed them, and an under-threshold start shows none."""
@@ -487,6 +535,8 @@ class _StepPrice:
     ratio: str = ""
     quoted_plan: Optional[dict] = None
     quoted_snapshot: Optional[dict] = None
+    currency: str = ""
+    quote_key: str = ""
 
 
 async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
@@ -532,8 +582,10 @@ async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
     show = model
     source, reason = SOURCE_QUOTE, ""
     amount: Optional[float] = None
+    currency, quote_key = "", ""
     if model:
         answer = await pricer(model, inputs)
+        currency, quote_key = _pricer_quote_identity(answer)
         amount, source, reason = price_source(answer)
         if amount is None and answer is None:
             # #235 legacy: a pricer with no answer at all prices the dearest model of that type, labelled 约.
@@ -552,12 +604,14 @@ async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
         return _StepPrice(None, True, show, choice, None, units, SOURCE_UNPRICED, reason,
                           stage_width, stage_height, stage_ratio,
                           quoted_plan if isinstance(quoted_plan, dict) else None,
-                          quoted_snapshot if isinstance(quoted_snapshot, dict) else None)
+                          quoted_snapshot if isinstance(quoted_snapshot, dict) else None,
+                          currency, quote_key)
     return _StepPrice(round(float(amount) * units, 6),
                       approx or source == SOURCE_ESTIMATE, show, choice, None, units, source, reason,
                       stage_width, stage_height, stage_ratio,
                       quoted_plan if isinstance(quoted_plan, dict) else None,
-                      quoted_snapshot if isinstance(quoted_snapshot, dict) else None)
+                      quoted_snapshot if isinstance(quoted_snapshot, dict) else None,
+                      currency, quote_key)
 
 
 def _forces_quote_card(prepared: list[dict]) -> bool:
@@ -571,7 +625,32 @@ def _forces_quote_card(prepared: list[dict]) -> bool:
         named = resolve(args.get("skill")) or str(args.get("skill") or "")
         if named == SKILL or applies(args):
             return True
+        if _skill_row_flag(args, "always_confirm"):
+            return True
     return False
+
+
+def _skill_row_flag(args: dict, key: str) -> object:
+    """A declarative field of the call's skill output row (bot/skill_output.OUTPUTS)."""
+    from .skill_output import output_of
+    row = output_of(args.get("skill")) if isinstance(args, dict) else None
+    return (row or {}).get(key)
+
+
+def _always_confirm(prepared: list[dict]) -> bool:
+    return any(step.get("tool") == "generate_image"
+               and _skill_row_flag(step.get("arguments") or {}, "always_confirm")
+               for step in prepared)
+
+
+def _confirm_ttl(prepared: list[dict]) -> float:
+    """Shortest declared confirm lifetime among the quoted skills. 0 = none declared."""
+    ttls = []
+    for step in prepared:
+        raw = _skill_row_flag(step.get("arguments") or {}, "confirm_ttl_s")
+        if isinstance(raw, (int, float)) and not isinstance(raw, bool) and raw > 0:
+            ttls.append(float(raw))
+    return min(ttls) if ttls else 0.0
 
 
 def _pixel(value: object) -> Optional[int]:
@@ -615,6 +694,8 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
     lines: list[Line] = []
     quoted_plan = None
     quoted_snapshot = None
+    priced_currency = ""
+    priced_keys: list[str] = []
     positions = _plan_positions(prepared)
     for step, position in zip(prepared, positions):
         if step.get("svg_blocked"):
@@ -636,6 +717,10 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
             ))
             continue
         amount, approx, source, reason = priced.amount, priced.approx, priced.source, priced.reason
+        if priced.currency:
+            priced_currency = priced.currency
+        if priced.quote_key:
+            priced_keys.append(priced.quote_key)
         unpriced = amount is None
         name = step["text"] or step["tool"]
         if step["tool"] == "generate_image":
@@ -690,6 +775,7 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
     ask = _needs_ask(total, threshold, unknown_price)
     if _forces_quote_card(prepared) and any(ln.units > 0 for ln in lines):
         ask = True
+    always = _always_confirm(prepared)
     if len(lines) == 1 and not ask and not lines[0].unpriced:
         # #904: a known 0-credit (or under-line) single call runs as before. A single refusal
         # line keeps the quote object it had before #904 (the line names the reason, #956).
@@ -717,6 +803,9 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
     else:
         prompt = (_PROMPT_ONE if len(lines) == 1 else _PROMPT)[lang].format(
             n=len(lines), total=total_credits, threshold=ui_credits(threshold))
+        # Under the line, an always_confirm skill does not claim the limit was reached.
+        if always and total < float(threshold) and lines and not any_estimate:
+            prompt = _PROMPT_ALWAYS[lang].format(total=total_credits)
     if any(ln.reason == "list_price" for ln in lines):
         question = "确定开始吗？" if lang == "zh" else "Start?"
         gap = "" if lang == "zh" else " "  # en: "…lower. Start?", never "…lower.Start?"
@@ -731,4 +820,8 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         keys=[ln.key for ln in lines], cancel_text=CANCEL_TEXT[lang],
         units=sum(ln.units for ln in lines), total_credits=total_credits,
         composition_plan=quoted_plan,
+        currency=priced_currency or "USD",
+        quote_id=(priced_keys[0] if priced_keys and all(key == priced_keys[0] for key in priced_keys)
+                  else "|".join(priced_keys) if priced_keys else ""),
+        confirm_ttl_s=_confirm_ttl(prepared),
     )

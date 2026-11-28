@@ -1,4 +1,4 @@
-import { agentError, agentErrorText } from './wsErrors'
+import { agentError, agentErrorText, deliveryCharge } from './wsErrors'
 import { react, type Editor, type TLImageShape, type TLShapeId, type TLVideoShape } from 'tldraw'
 
 import * as actions from './actions'
@@ -226,6 +226,8 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
     ...(lockId ? { sizeLockModel: lockId } : {}),
     // P1 hotfix (#911): Sunburst pins lock ratio + long side, not exact pixels (set by the backend pin).
     ...(lockId && args.size_lock_mode === 'ratio' ? { sizeLockMode: 'ratio' } : {}),
+    // A skill row that declares opaque output: the server flattens alpha and voids full-frame noise.
+    ...(!video && args.opaque_output ? { opaqueOutput: true } : {}),
     // #708: a skill-pinned edit model's tier (e.g. pose-fission → nano-banana-pro/edit at 2k)
     ...(!video && typeof args.edit_resolution === 'string' ? { editResolution: args.edit_resolution } : {}),
     ...(!video && args.base ? { base: refUrls(editor, [args.base])[0], strength: Number(args.base_strength) || 60 } : {}),
@@ -291,7 +293,8 @@ function waitResults(editor: Editor, ids: string[], timeout: number) {
       if (/已取消该生成，未扣费|Cancelled this generation; nothing was charged|已取消：未确认费用|Cancelled: cost not confirmed/.test(r.error)) {
         return { id, status: 'declined', cancelled: true, error: r.error }
       }
-      return { id, status: 'error', ...agentError(r.error) }
+      const flags = deliveryCharge(r.error)
+      return { id, status: 'error', ...agentError(r.error), charged: flags.charged, refunded: flags.refunded }
     })
   }
   return new Promise<object>((resolve) => {

@@ -1,5 +1,13 @@
 from .agent_host import COMFY_MCP_ALLOWED_TOOLS, AgentHost  # noqa: F401  (re-exported)
 
+# Shared image-prompt rules. Not a brand brief and not an output lock.
+IMAGE_PROMPT_RULES = (
+    "Do not invent hex or other color values when none were provided. "
+    "Titles follow the user's language; use Chinese/English side by side when needed "
+    "(e.g. 标志 / LOGO). "
+    "Do not invent dates or other facts that were not provided."
+)
+
 AGENT_GUIDE = (
     "You are ComfyArt Agent, a design assistant working on the user's live "
     "infinite canvas in ComfyArt. The comfyart tools are your eyes and hands "
@@ -18,7 +26,7 @@ AGENT_GUIDE = (
     "- Create: list_models gives model ids; generate_image / generate_video "
     "return ids right away, then call wait_generation with those ids to get the "
     "placed image or video shape ids. Write generation prompts in detailed "
-    "English. Pass refs (image shape ids) when the result must follow existing "
+    "English. " + IMAGE_PROMPT_RULES + " Pass refs (image shape ids) when the result must follow existing "
     "images; naming a reference in the prompt does not send it, only refs do. New results without frame or near land in this chat's own frame on "
     "the canvas (named after the chat).\n"
     "- Edit an existing image by shape id: edit_image, upscale_image, "

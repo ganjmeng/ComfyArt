@@ -26,6 +26,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Optional
 
 from ..bot.guide import PAID_TOOLS
+from ..bot.run_budget import generation_ids, void_ids
 from ..bot.external_context import clip_image_blocks
 from ..bot.local_llm import (
     _MAX_STEPS_ENV,
@@ -287,6 +288,9 @@ def charged(payload: Any) -> bool:
             payload = json.loads(payload)
         except ValueError:
             return True
+    if isinstance(payload, dict) and isinstance(payload.get("charged"), bool):
+        # An explicit charged flag wins: a failure that kept a charge still counts.
+        return bool(payload["charged"])
     return not (isinstance(payload, dict) and (
         payload.get("cancelled") or payload.get("error")
         or payload.get("status") in ("declined", "cancelled", "failed")))
@@ -323,6 +327,9 @@ class TurnGuard:
     # #909: the explicit group total from the user, 0 when they named none.
     # The plan quote may raise the cap only in that second case.
     user_count: int = 0
+    # Delivery ledger by generation id: (plan item, units) it counted, and ids already given back.
+    submitted: dict[str, tuple[str, int]] = field(default_factory=dict)
+    voided: set[str] = field(default_factory=set)
 
     def summary(self) -> str:
         counts: dict[str, int] = {}
@@ -489,6 +496,20 @@ def before_call(chat_id: str, name: str, args: dict, *, external: bool = False) 
     return None
 
 
+def _release_void(guard: TurnGuard, payload: Any) -> None:
+    """A submitted image that failed with no charge kept gives its unit back, once.
+
+    The cap then has room for exactly that image's retry and nothing else; a failure that kept
+    a charge stays counted."""
+    for gid in void_ids(payload):
+        entry = guard.submitted.get(gid)
+        if entry is None or gid in guard.voided:
+            continue
+        guard.voided.add(gid)
+        item, units = entry
+        guard.used[item] = max(0, guard.used.get(item, 0) - units)
+
+
 def after_call(chat_id: str, name: str, args: dict, payload: Any,
                ok: bool) -> None:
     guard = TURNS.get(chat_id)
@@ -502,10 +523,15 @@ def after_call(chat_id: str, name: str, args: dict, payload: Any,
         item = active_plan_item(args)
         if item is not None:
             guard.plan_item = item
+    elif name == "wait_generation":
+        _release_void(guard, payload)
     elif name in PAID_TOOLS:
         if charged(payload):
-            guard.used[guard.plan_item] = (guard.used.get(guard.plan_item, 0)
-                                           + gen_units(name, args))
+            units = gen_units(name, args)
+            guard.used[guard.plan_item] = guard.used.get(guard.plan_item, 0) + units
+            ids = generation_ids(payload) if name == "generate_image" else []
+            for gid in ids:
+                guard.submitted.setdefault(gid, (guard.plan_item, max(1, units // len(ids))))
         elif user_declined(payload):
             # At most one cost-confirm dialog per plan item this turn (#127).
             guard.declined_items.add(guard.plan_item)

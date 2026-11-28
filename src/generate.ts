@@ -171,10 +171,13 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
     ? viewUrl(await uploadImage(await paletteImage(colors), `palette-mosaic-${colors.join('').replace(/#/g, '')}.png`))
     : null
   const used = palette ? [...picked, { src: palette, mode: PALETTE_MODE }] : picked
-  const hints = refHints(used)
+  const head = [shape.props.prompt, suffix, transparent && 'isolated subject on a plain white background'].filter(Boolean).join(', ')
+  const hints = refHints(used).filter((hint) => hint && !head.includes(hint))
+  const brandLead = head.startsWith('Use only the visual style') || head.startsWith('Use image 1 as the content reference')
   const prompt = [
-    [shape.props.prompt, suffix, transparent && 'isolated subject on a plain white background'].filter(Boolean).join(', '),
-    ...hints,
+    ...(brandLead ? hints : []),
+    head,
+    ...(brandLead ? [] : hints),
     colors.length > 0 && palettePrompt(colors),
   ].filter(Boolean).join(' ')
   if (isVideo(workflow) && isCloudModel(workflow)) {
@@ -227,6 +230,7 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
     const sizeLock = shape.meta?.sizeLockModel
       ? { size_lock: true as const, ...(typeof shape.meta?.userRatio === 'string' ? { user_ratio: shape.meta.userRatio } : {}), ...(shape.meta?.sizeLockMode === 'ratio' ? { size_lock_mode: 'ratio' as const } : {}) }
       : {}
+    const opaque = shape.meta?.opaqueOutput ? { opaque_output: true as const } : {}
     const gif = gifSpec(shape.meta)
     const svg = svgSpec(shape.meta)
     if (svg) {
@@ -259,8 +263,8 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
     // Sunburst has no size/width/height; the submitted fields are resolution + aspect_ratio.
     const pinnedRes = typeof shape.meta.editResolution === 'string' ? { resolution: shape.meta.editResolution } : {}
     return images.length
-      ? wsBuilt({ feature: 'image_edit', model: editModel, prompt, images, width, height, ...pinnedRes, seed, negative_prompt, png: transparent, prep: refPrep.some(Boolean) ? refPrep : undefined, ...sizeLock })
-      : wsBuilt({ feature: 'text_to_image', model: model.auto ? undefined : model.id, prompt, params: imageParams(shape, model, null, svgSpec(shape.meta)), width, height, ...pinnedRes, seed: seedOf(shape) ?? undefined, negative_prompt, png: transparent, ...sizeLock })
+      ? wsBuilt({ feature: 'image_edit', model: editModel, prompt, images, width, height, ...pinnedRes, seed, negative_prompt, png: transparent, prep: refPrep.some(Boolean) ? refPrep : undefined, ...sizeLock, ...opaque })
+      : wsBuilt({ feature: 'text_to_image', model: model.auto ? undefined : model.id, prompt, params: imageParams(shape, model, null, svgSpec(shape.meta)), width, height, ...pinnedRes, seed: seedOf(shape) ?? undefined, negative_prompt, png: transparent, ...sizeLock, ...opaque })
   }
   // local diffusion models are gone: cloud image models are handled above
   throw new Error(model ? t('jobs.notInCloud') : 'unknown image model')

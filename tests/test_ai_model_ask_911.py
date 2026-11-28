@@ -338,7 +338,8 @@ def test_auto_models_ai_model_is_sunburst_and_rest_matches_fixed_snapshot():
     (Lovart 98af4eee), youtube-channel-banner (Lovart d7672d03), and
     portrait-studio (Lovart 7fc60c86) are the Angela 07:27 Sunburst pins.
     Every other skills row, features, and the file comment match the fixed
-    snapshot (dbed74e11 plus those allowed pins).
+    snapshot (dbed74e11 plus those allowed pins). features.image_edit.dense_typography
+    is an allowed Auto-router category, not a skill pin.
     """
     ours = json.loads(AUTO_MODELS.read_text(encoding="utf-8"))
     snap = json.loads(AUTO_MODELS_LOCK.read_text(encoding="utf-8"))
@@ -378,8 +379,14 @@ def test_auto_models_ai_model_is_sunburst_and_rest_matches_fixed_snapshot():
     assert ours_rest == snap_rest
     assert ours["skills"]["pose-fission"] == snap["skills"]["pose-fission"]
     assert ours["skills"]["_comment"] == snap["skills"]["_comment"]
-    assert ours["features"] == snap["features"]
-    assert json.dumps(ours["features"], ensure_ascii=False, sort_keys=True) == json.dumps(
+    assert "dense_typography" not in ours["skills"]
+    ours_features = json.loads(json.dumps(ours["features"]))
+    dense = ours_features["image_edit"].pop("dense_typography")
+    assert dense["model"] == "openai/gpt-image-2/edit"
+    assert dense["fallback"] == "google/nano-banana-pro/edit"
+    assert "dense_typography" not in snap["features"]["image_edit"]
+    assert ours_features == snap["features"]
+    assert json.dumps(ours_features, ensure_ascii=False, sort_keys=True) == json.dumps(
         snap["features"], ensure_ascii=False, sort_keys=True
     )
     assert ours.get("_comment") == snap.get("_comment")

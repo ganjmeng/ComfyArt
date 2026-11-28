@@ -25,6 +25,7 @@ from test_llm_usd_gate import _route, _usage, URL
 
 @pytest.fixture(autouse=True)
 def offline(monkeypatch):
+    monkeypatch.setenv("COMFYART_LLM_USD_GATE", "1")
     gate.clear_authorized_scope()
     gate._write_fault = None
     for name in list(os.environ):

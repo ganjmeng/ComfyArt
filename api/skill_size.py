@@ -11,6 +11,7 @@ No WaveSpeed call lives here.
 """
 from __future__ import annotations
 
+import re
 from fractions import Fraction
 
 from .wavespeed import _nearest, _resolution, _schema, _size_value, submits_size_field
@@ -23,6 +24,48 @@ VERIFIED = {
     "text_to_image": "wavespeed-ai/qwen-image-2.0/text-to-image",
     "image_edit": "wavespeed-ai/qwen-image-2.0/edit",
 }
+
+# A later pass (the canvas relay) no longer has the user's message. The chat
+# pass records the pixels they asked for here so both passes pin the same way.
+USER_PIXELS_KEY = "_user_pixels"
+# 3–5 digits so a ratio like 16:9 or a small grid like 3x3 is not a pixel size.
+_PIXEL_PAIR = re.compile(r"(?<!\d)(\d{3,5})\s*[x×*]\s*(\d{3,5})(?!\d)", re.IGNORECASE)
+_PIXEL_WH = re.compile(
+    r"(?i)(?:\bwidth\b|宽)\s*[=:：]?\s*(\d{3,5}).{0,40}?(?:\bheight\b|高)\s*[=:：]?\s*(\d{3,5})"
+)
+
+
+def _pixel_pair(text: str) -> tuple[int, int] | None:
+    m = _PIXEL_PAIR.search(text) or _PIXEL_WH.search(text)
+    if not m:
+        return None
+    w, h = int(m.group(1)), int(m.group(2))
+    if w < 64 or h < 64:
+        return None
+    return w, h
+
+
+def explicit_user_pixels(user_text: str | None, args: dict | None = None) -> tuple[int, int] | None:
+    """Pixels the user asked for. A skill table, or a size copied into the image prompt, is not one.
+
+    Only the user's own message counts, plus the ``_user_pixels`` marker a previous
+    pass stored so the relay agrees. ``2048x1152`` inside the prompt does not.
+    App-injected turn text (the skill start line and Output lock, which may list
+    ``1:1 = 2048x2048``) is stripped first: those are skill-table sizes, not a
+    user request.
+    """
+    args = args or {}
+    text = str(user_text or "")
+    try:
+        from ..bot.skill_output import own_user_text
+        text = own_user_text(text)
+    except Exception:
+        pass
+    for blob in (str(args.get(USER_PIXELS_KEY) or ""), text):
+        found = _pixel_pair(blob)
+        if found:
+            return found
+    return None
 
 
 def running_feature(args: dict) -> str:

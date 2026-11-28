@@ -120,6 +120,11 @@ class Rig:
         async def price(name, args):
             return (prices or {}).get(name)
         mon.setattr(self.p, "_price_call", price)
+        # The plan quote prices through _price_one, which otherwise calls the live
+        # WaveSpeed price API and raises when no key is configured. A known 0 is
+        # not an ask, so the per-call gate still uses `prices` above. This does
+        # not replace _confirm_plan and does not approve a paid confirm.
+        pin_offline_plan_quote(mon, self.p)
 
         async def ask(turn, handle, lang, name, p, left):
             self.confirms.append((name, p, left))

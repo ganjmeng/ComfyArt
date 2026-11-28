@@ -285,6 +285,8 @@ class TestLoopGuard:
 
         monkeypatch.setattr(provider, "_request_json", fake_request)
         monkeypatch.setattr(provider, "_mcp_call_tool", fake_call)
+        from test_agent_budget_391 import pin_offline_plan_quote
+        pin_offline_plan_quote(monkeypatch, provider)
         events: list[BotEvent] = []
         result = await provider.send(
             TurnRequest(chat_id="c", user_text=user_text, lang=lang,
@@ -454,6 +456,8 @@ class TestRetry232:
 
         monkeypatch.setattr(provider, "_request_json", fake_request)
         monkeypatch.setattr(provider, "_mcp_call_tool", fake_call)
+        from test_agent_budget_391 import pin_offline_plan_quote
+        pin_offline_plan_quote(monkeypatch, provider)
         events: list[BotEvent] = []
         result = await provider.send(TurnRequest(chat_id="c", user_text="画猫", lang=lang,
                                                  mcp_endpoint="http://x/mcp", model="m"),
@@ -496,6 +500,8 @@ class TestRetry232:
 
         monkeypatch.setattr(provider, "_request_json", fake_request)
         monkeypatch.setattr(provider, "_mcp_call_tool", fake_call)
+        from test_agent_budget_391 import pin_offline_plan_quote
+        pin_offline_plan_quote(monkeypatch, provider)
         events: list[BotEvent] = []
         await provider.send(TurnRequest(chat_id="c", user_text="画", mcp_endpoint="http://x/mcp", model="m"),
                             _collect(events), TurnHandle())

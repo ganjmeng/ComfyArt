@@ -202,6 +202,8 @@ def _parse_question(raw: dict, index: int) -> dict:
         options = [_parse_option(o, i, seen) for i, o in enumerate(raw_options)]
     min_selections = int(raw.get("min_selections") or (0 if not options else 1))
     max_selections = int(raw.get("max_selections") or (0 if not options else 1))
+    if options and max_selections <= 1 and wants_multi(raw.get("multi_select"), prompt):
+        max_selections = len(options)
     if options:
         if not (0 <= min_selections <= max_selections <= len(options)):
             raise ValueError(f"questions[{index}] min/max_selections out of range")
@@ -219,7 +221,7 @@ def _parse_question(raw: dict, index: int) -> dict:
             raise ValueError(f"questions[{index}] unknown default ids: {unknown}")
         if len(defaults) > max_selections:
             raise ValueError(f"questions[{index}] defaults exceed max_selections")
-    elif any(o.get("recommended") for o in options):
+    elif any(o.get("recommended") for o in options) and raw.get("preselect") is not False:
         defaults = [o["id"] for o in options if o.get("recommended")][:max_selections]
     page = int(raw["page"]) if raw.get("page") is not None else 1
     if page < 1:
@@ -237,6 +239,9 @@ def _parse_question(raw: dict, index: int) -> dict:
         q["defaults"] = defaults
     if raw.get("placeholder"):
         q["placeholder"] = str(raw["placeholder"])
+    if raw.get("preselect") is False:
+        # The recommended badge stays; nothing is selected until the user picks.
+        q["preselect"] = False
     return q
 
 
@@ -943,6 +948,8 @@ def _validate_spec(args: dict) -> dict:
     options = [_parse_option(raw, i, seen_ids) for i, raw in enumerate(raw_options)]
     min_selections = int(args.get("min_selections") or 1)
     max_selections = int(args.get("max_selections") or 1)
+    if max_selections <= 1 and wants_multi(args.get("multi_select"), prompt):
+        max_selections = len(options)
     if not (0 <= min_selections <= max_selections <= len(options)):
         raise ValueError("min/max_selections out of range")
     allow_other = bool(args.get("allow_other"))
@@ -957,7 +964,7 @@ def _validate_spec(args: dict) -> dict:
             raise ValueError(f"unknown default ids: {unknown}")
         if len(defaults) > max_selections:
             raise ValueError(f"defaults exceed max_selections ({max_selections})")
-    elif any(o.get("recommended") for o in options):
+    elif any(o.get("recommended") for o in options) and args.get("preselect") is not False:
         defaults = [o["id"] for o in options if o.get("recommended")][:max_selections]
     question = {
         "id": "_",
@@ -1023,6 +1030,58 @@ def abandon_ask(ask_id: str) -> None:
     # AC4: abandoned asks must not resurrect after restart — delete store row,
     # keep PENDING so an in-process answer (e.g. late run_approval) still works.
     _store_delete(ask_id)
+
+
+_MULTI_MARK = re.compile(r"可多选|可以多选|[（(]多选[)）]|多选题|select all that apply|choose all that apply|"
+                         r"select (?:one or )?(?:more|several|multiple)|pick (?:one or )?(?:more|several|multiple)|"
+                         r"\(multi(?:ple)?[- ]?(?:select|choice)\)", re.I)
+
+
+def wants_multi(flag: object, prompt: str) -> bool:
+    """A question is multi-select when the card says so: `multi_select: true`, or its own prompt
+    tells the user they may pick several (可多选 / select all that apply). The card then allows
+    every option instead of silently keeping one, so the label and the control agree."""
+    if flag is True:
+        return True
+    if flag is False:
+        return False
+    return bool(_MULTI_MARK.search(str(prompt or "")))
+
+
+def confirm_expired(spec: object, now: Optional[float] = None) -> bool:
+    """A confirm card with a declared expires_at is expired at or after that time."""
+    if not isinstance(spec, dict):
+        return False
+    exp = spec.get("expires_at")
+    if isinstance(exp, bool) or not isinstance(exp, (int, float)):
+        return False
+    clock = time.time() if now is None else float(now)
+    return clock >= float(exp)
+
+
+def mark_expired_blocks(messages: list, now: Optional[float] = None) -> list:
+    """Show a still-pending confirm block past its deadline as expired (read path only)."""
+    for message in messages or []:
+        for block in (message.get("blocks") or []) if isinstance(message, dict) else []:
+            if (isinstance(block, dict) and block.get("type") == "ask"
+                    and block.get("status") == "pending" and confirm_expired(block, now)):
+                block["status"] = "expired"
+    return messages
+
+
+def resolve_confirm_answer(ask: PendingAsk, selected: Optional[list[str]],
+                           other_text: Optional[str] = None,
+                           answers: Optional[dict] = None, *,
+                           now: Optional[float] = None) -> str:
+    """'answered', 'expired' or 'lost'. A Start at or after expires_at is expired, not approval."""
+    selected = list(selected or [])
+    if "start" in selected and confirm_expired(ask.spec, now):
+        if resolve_ask(ask.id, "expired") is None:
+            return "lost"
+        return "expired"
+    if resolve_ask(ask.id, "answered", selected, other_text, answers) is None:
+        return "lost"
+    return "answered"
 
 
 def resolve_ask(ask_id: str, status: str,

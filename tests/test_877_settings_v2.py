@@ -22,6 +22,13 @@ FORBIDDEN_SOURCE = ("官方默认", "官方模型", "切回官方默认", "Offic
 AUTO_MODELS_BASE_SHA256 = "6de88e5372e16d6381cf58da5faacc4d7a859e197cd00578023a4647c85d1c0d"
 ALLOWED_PIN_SKILLS = ("ai-model", "clothing-swap", "studio-model", "product-to-packaging",
                       "cover-design-director", "youtube-channel-banner", "portrait-studio")
+# Auto-router config, not a skill pin. Stripped before the baseline digest.
+ALLOWED_AUTO_ROUTER = {
+    ("image_edit", "dense_typography"): {
+        "model": "openai/gpt-image-2/edit",
+        "fallback": "google/nano-banana-pro/edit",
+    },
+}
 
 
 def _locales():
@@ -39,17 +46,26 @@ def test_ac18_pins_and_auto_untouched():
     # studio-model, product-to-packaging (Lovart e304e2fa7),
     # cover-design-director (Lovart 98af4eee), youtube-channel-banner
     # (Lovart d7672d03), and portrait-studio (Lovart 7fc60c86) to
-    # GPT Image 2.6 Sunburst. Everything else — features, pose-fission, and
-    # every other skills row — stays byte-identical to the pinned baseline.
+    # GPT Image 2.6 Sunburst. features.image_edit.dense_typography is an
+    # Auto-router category (not a skill pin). Everything else — the other
+    # features, pose-fission, and every other skills row — stays byte-identical
+    # to the pinned baseline.
     current = json.loads((ROOT / "api/auto_models.json").read_text(encoding="utf-8"))
     normalized = dict(current)
     normalized["skills"] = {k: v for k, v in (current.get("skills") or {}).items()
                             if k not in ALLOWED_PIN_SKILLS}
+    features = json.loads(json.dumps(normalized["features"]))
+    for (feature, key), expected in ALLOWED_AUTO_ROUTER.items():
+        assert key not in (current.get("skills") or {}), f"{key} must stay an Auto route, not a skill pin"
+        row = features[feature].pop(key)
+        assert row["model"] == expected["model"]
+        assert row["fallback"] == expected["fallback"]
+    normalized["features"] = features
     digest = hashlib.sha256(json.dumps(normalized, ensure_ascii=False, sort_keys=True,
                                        separators=(",", ":")).encode()).hexdigest()
     assert digest == AUTO_MODELS_BASE_SHA256, (
-        "only skills.ai-model, clothing-swap, studio-model, product-to-packaging, "
-        "cover-design-director, youtube-channel-banner, and portrait-studio may differ from the baseline"
+        "only the Sunburst skill pins and features.image_edit.dense_typography "
+        "(Auto-router category) may differ from the baseline"
     )
 
 

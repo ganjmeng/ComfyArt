@@ -2071,6 +2071,15 @@ async def submit(inputs: dict) -> str:
             # #159: no price for the submitted tier: never guess one, always ask (no amount, the tier is named)
             raise WaveSpeedError(f"{model}: no price for this tier; confirm to continue", 409, unpriced=True,
                                  tier=tier_label(await priced_inputs(model, inputs)), gif_note=gif_note, model=model, gif=gif_body, model_choice=model_choice)
+    from .prompt_cap import PROMPT_CHAR_CAP, finalize_qwen_prompt
+    if str(inputs.get("prompt") or "") and model in PROMPT_CHAR_CAP:
+        hints = inputs.get("ref_hints") if isinstance(inputs.get("ref_hints"), list) else []
+        final, blocked = finalize_qwen_prompt(model, str(inputs.get("prompt") or ""), hints)
+        if blocked:
+            raise WaveSpeedError(blocked, 400)
+        inputs = dict(inputs)
+        inputs["prompt"] = final
+        inputs.pop("ref_hints", None)
     async with aiohttp.ClientSession(headers=_headers()) as session:
         payload = await build_payload(session, _schema(meta), await _prepare(session, model, inputs), model)
         _submits.append(time.time())
@@ -2095,6 +2104,8 @@ async def submit(inputs: dict) -> str:
         _jobs[task]["model_choice"] = model_choice
     if svg_image.requests_svg(inputs):
         _jobs[task]["svg"] = True
+    if inputs.get("opaque_output"):
+        _jobs[task]["opaque_output"] = True
     if inputs.get("size_lock"):
         # The provider payload is built from the schema only, so this flag stays on the job.
         _jobs[task]["size_lock"] = True
@@ -2568,6 +2579,13 @@ async def _download(session: aiohttp.ClientSession, task: str, index: int, url: 
             _write(os.path.join(root, SUBFOLDER, preview), verdict.preview_png)
         return {"filename": filename, "subfolder": SUBFOLDER, "type": "output",
                 "svg_preview": preview, "svg_state": verdict.status, "svg_message": verdict.message}
+    if (_jobs.get(task) or {}).get("opaque_output"):
+        from .image_delivery import flatten_opaque
+        flat = flatten_opaque(data)
+        if flat is not data:
+            data = flat
+            ctype = "image/png"
+            url = url.split("?", 1)[0] + ".png"
     filename = f"ws_{task[:12]}_{index}{output_ext(url, data, ctype)}"
     path = os.path.join(root, SUBFOLDER, filename)
     if not os.path.isfile(path):
@@ -2587,6 +2605,51 @@ def _history(task: str, status: str, messages: list, outputs: dict) -> dict:
     if job.get("model") and "model" not in entry:
         entry["model"] = job["model"]
     return {f"ws:{task}": entry}
+
+
+def stamp_wait_charge(result: dict, task: str, cost, *, refunded: bool = False) -> dict:
+    """Put the completed attempt's charge on the wait payload as fields.
+
+    ``charged`` is true because the job finished. ``refunded`` is explicit.
+    The amount is the quoted cost when one was recorded.
+    """
+    if not isinstance(result, dict):
+        return result
+    entry = result.get(f"ws:{task}")
+    if not isinstance(entry, dict):
+        return result
+    entry["charged"] = True
+    entry["refunded"] = bool(refunded)
+    if cost is not None:
+        entry["charged_usd"] = cost
+    messages = (entry.get("status") or {}).get("messages") or []
+    for message in messages:
+        if isinstance(message, (list, tuple)) and len(message) > 1 and isinstance(message[1], dict):
+            message[1]["charged"] = True
+            message[1]["refunded"] = bool(refunded)
+            if cost is not None:
+                message[1]["charged_usd"] = cost
+    return result
+
+
+def completed_noise_failure(task: str, job: dict, blobs: list) -> dict | None:
+    """A finished opaque-output image that is full-frame noise is a charged failure.
+
+    The history is ``failed``, not completed. Outputs stay empty, so nothing is
+    placed on the canvas. ``charged`` and ``refunded`` are fields on that payload.
+    """
+    if not isinstance(job, dict) or not job.get("opaque_output"):
+        return None
+    from .image_delivery import image_is_full_frame_noise
+    for blob in blobs or []:
+        if blob and image_is_full_frame_noise(blob):
+            cost = job.get("quoted")
+            result = _fail(task, WaveSpeedError(
+                "full-frame noise is not a deliverable",
+                502, kind="noOutput", charged=cost,
+            ))
+            return stamp_wait_charge(result, task, cost, refunded=False)
+    return None
 
 
 def _fail(task: str, message: "str | WaveSpeedError") -> dict:
@@ -2752,6 +2815,13 @@ async def _poll_once(task: str, job: dict, now: float) -> dict:
                                               502, kind="noOutput", charged=cost))
         # CDN URLs expire after 7 days: keep a local copy right away
         refs = [await _download(session, task, i, url) for i, url in enumerate(outputs) if isinstance(url, str)]
+    # An opaque-output image that is full-frame noise is not a deliverable. The job already
+    # completed, so the quoted charge stands and the caller must quote again.
+    # A reviewable file is left untouched and is placed as usual.
+    if job.get("opaque_output"):
+        failed = completed_noise_failure(task, job, [_ref_bytes(ref) for ref in refs])
+        if failed is not None:
+            return failed
     # #707: the saved file's pixels are checked against the lock. No stretch, crop, or second submit.
     # P1 hotfix (#911): the job completed, so it was charged. A failed size check never drops the
     # image: it is delivered as returned, logged, and carries a zh/en size_notice for the user.

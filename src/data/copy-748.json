@@ -682,7 +682,7 @@
         },
         "prompt": {
           "zh": "按已确认的品牌方向，为餐饮服务品牌生成 3 张标志方向提案；选定一个后，再生成 1 张标志规范板，包含主标志、横竖组合、黑白稿和基础使用示例。品牌文字须一字不差，沿用已有标志时不超出授权范围，品牌名与资料以实际项目为准。 {{brand_info}} {{visual_direction}}",
-          "en": "Following the confirmed brand direction, generate 3 logo direction boards for a food service brand. Once one is chosen, generate 1 logo guideline board with the main mark, horizontal and stacked lockups, black-and-white versions and basic usage examples. Spell the brand name exactly, reuse existing marks only within their license, and use the real project's name and details. {{brand_info}} {{visual_direction}}"
+          "en": "Following the confirmed brand direction, generate 3 logo direction boards for a food service brand. Once one is chosen, generate 1 logo guideline board with the main mark, horizontal and stacked arrangements of the mark and the name, black-and-white versions and basic usage examples. Spell the brand name exactly, reuse existing marks only within their license, and use the real project's name and details. {{brand_info}} {{visual_direction}}"
         }
       },
       "2": {
@@ -702,7 +702,7 @@
         },
         "prompt": {
           "zh": "按已确认的品牌方向，为服饰配件品牌生成 3 张标志方向提案；选定一个后，再生成 1 张标志规范板，包含主标志、横竖组合、黑白稿和基础使用示例。品牌文字须一字不差，沿用已有标志时不超出授权范围，品牌名与资料以实际项目为准。 {{brand_info}} {{visual_direction}}",
-          "en": "Following the confirmed brand direction, generate 3 logo direction boards for a fashion and accessories brand. Once one is chosen, generate 1 logo guideline board with the main mark, horizontal and stacked lockups, black-and-white versions and basic usage examples. Spell the brand name exactly, reuse existing marks only within their license, and use the real project's name and details. {{brand_info}} {{visual_direction}}"
+          "en": "Following the confirmed brand direction, generate 3 logo direction boards for a fashion and accessories brand. Once one is chosen, generate 1 logo guideline board with the main mark, horizontal and stacked arrangements of the mark and the name, black-and-white versions and basic usage examples. Spell the brand name exactly, reuse existing marks only within their license, and use the real project's name and details. {{brand_info}} {{visual_direction}}"
         }
       },
       "3": {
@@ -722,7 +722,7 @@
         },
         "prompt": {
           "zh": "按已确认的品牌方向，为美妆个护品牌生成 3 张标志方向提案；选定一个后，再生成 1 张标志规范板，包含主标志、横竖组合、黑白稿和基础使用示例。品牌文字须一字不差，沿用已有标志时不超出授权范围，品牌名与资料以实际项目为准。 {{brand_info}} {{visual_direction}}",
-          "en": "Following the confirmed brand direction, generate 3 logo direction boards for a beauty and personal care brand. Once one is chosen, generate 1 logo guideline board with the main mark, horizontal and stacked lockups, black-and-white versions and basic usage examples. Spell the brand name exactly, reuse existing marks only within their license, and use the real project's name and details. {{brand_info}} {{visual_direction}}"
+          "en": "Following the confirmed brand direction, generate 3 logo direction boards for a beauty and personal care brand. Once one is chosen, generate 1 logo guideline board with the main mark, horizontal and stacked arrangements of the mark and the name, black-and-white versions and basic usage examples. Spell the brand name exactly, reuse existing marks only within their license, and use the real project's name and details. {{brand_info}} {{visual_direction}}"
         }
       },
       "4": {
@@ -742,7 +742,7 @@
         },
         "prompt": {
           "zh": "按已确认的品牌方向，为食品饮料品牌生成 3 张标志方向提案；选定一个后，再生成 1 张标志规范板，包含主标志、横竖组合、黑白稿和基础使用示例。品牌文字须一字不差，沿用已有标志时不超出授权范围，品牌名与资料以实际项目为准。 {{brand_info}} {{visual_direction}}",
-          "en": "Following the confirmed brand direction, generate 3 logo direction boards for a food and beverage brand. Once one is chosen, generate 1 logo guideline board with the main mark, horizontal and stacked lockups, black-and-white versions and basic usage examples. Spell the brand name exactly, reuse existing marks only within their license, and use the real project's name and details. {{brand_info}} {{visual_direction}}"
+          "en": "Following the confirmed brand direction, generate 3 logo direction boards for a food and beverage brand. Once one is chosen, generate 1 logo guideline board with the main mark, horizontal and stacked arrangements of the mark and the name, black-and-white versions and basic usage examples. Spell the brand name exactly, reuse existing marks only within their license, and use the real project's name and details. {{brand_info}} {{visual_direction}}"
         }
       },
       "5": {
@@ -762,7 +762,7 @@
         },
         "prompt": {
           "zh": "按已确认的品牌方向，为宠物用品品牌生成 3 张标志方向提案；选定一个后，再生成 1 张标志规范板，包含主标志、横竖组合、黑白稿和基础使用示例。品牌文字须一字不差，沿用已有标志时不超出授权范围，品牌名与资料以实际项目为准。 {{brand_info}} {{visual_direction}}",
-          "en": "Following the confirmed brand direction, generate 3 logo direction boards for a pet supplies brand. Once one is chosen, generate 1 logo guideline board with the main mark, horizontal and stacked lockups, black-and-white versions and basic usage examples. Spell the brand name exactly, reuse existing marks only within their license, and use the real project's name and details. {{brand_info}} {{visual_direction}}"
+          "en": "Following the confirmed brand direction, generate 3 logo direction boards for a pet supplies brand. Once one is chosen, generate 1 logo guideline board with the main mark, horizontal and stacked arrangements of the mark and the name, black-and-white versions and basic usage examples. Spell the brand name exactly, reuse existing marks only within their license, and use the real project's name and details. {{brand_info}} {{visual_direction}}"
         }
       },
       "6": {
@@ -782,7 +782,7 @@
         },
         "prompt": {
           "zh": "按已确认的品牌方向，为家居生活品牌生成 3 张标志方向提案；选定一个后，再生成 1 张标志规范板，包含主标志、横竖组合、黑白稿和基础使用示例。品牌文字须一字不差，沿用已有标志时不超出授权范围，品牌名与资料以实际项目为准。 {{brand_info}} {{visual_direction}}",
-          "en": "Following the confirmed brand direction, generate 3 logo direction boards for a home and lifestyle brand. Once one is chosen, generate 1 logo guideline board with the main mark, horizontal and stacked lockups, black-and-white versions and basic usage examples. Spell the brand name exactly, reuse existing marks only within their license, and use the real project's name and details. {{brand_info}} {{visual_direction}}"
+          "en": "Following the confirmed brand direction, generate 3 logo direction boards for a home and lifestyle brand. Once one is chosen, generate 1 logo guideline board with the main mark, horizontal and stacked arrangements of the mark and the name, black-and-white versions and basic usage examples. Spell the brand name exactly, reuse existing marks only within their license, and use the real project's name and details. {{brand_info}} {{visual_direction}}"
         }
       }
     }

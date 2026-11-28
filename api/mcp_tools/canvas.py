@@ -1,6 +1,7 @@
 import logging
 
-from ..auto_models import UnregisteredModel, choose, load_table, named_or_none, note, registered, relabel_agent_filled_choice, skill_pin, skill_pin_reason, table_runtime_fallback_choice, tool_feature
+from ..auto_models import UnregisteredModel, choose, dense_typography_choice, load_table, named_or_none, note, registered, relabel_agent_filled_choice, skill_pin, skill_pin_reason, table_runtime_fallback_choice, tool_feature
+from ...bot.guide import IMAGE_PROMPT_RULES
 from ..gif_image import choice as gif_choice, ensure_args as ensure_gif_args, requests_gif, still_block
 from ..svg_image import block_reason as svg_block, choice as svg_choice, ensure_args as ensure_svg_args, requests_svg
 from ..mcp_commands import submit_command
@@ -222,6 +223,15 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
                 args["auto_model"] = True
         elif choice and choice["auto"] and choice["category"] != "references" and "model" not in args and choice["model"] != load_config()["features"][tool_feature(action)]["default"]:
             args = {**args, "model": choice["model"], "auto_model": True} if "edit_model" not in choice else {**args, "edit_model": choice["edit_model"]}
+        if choice and choice.get("category") == "dense_typography" and choice.get("edit_model"):
+            # Same model the quote priced. Native size for the ratio: no exact-pixel pin.
+            from ..skill_size import RATIO_MODE
+            args = {k: v for k, v in args.items() if k != "model"}
+            args["edit_model"] = choice["edit_model"]
+            args["auto_model"] = True
+            args["size_lock_mode"] = RATIO_MODE
+            args.pop("exact_size_pin", None)
+            args.pop("size_candidates", None)
     if choice and choice.get("category") == "references" and choice.get("edit_model") and "model" not in args:
         # #974: keep the edit model on a size-locked refs call (see _auto_table_choice).
         args = {**args, "edit_model": choice["edit_model"], "auto_model": True}
@@ -579,6 +589,9 @@ def registered_ids(action: str) -> set[str]:
 
 def unregistered_model(action: str, args: dict) -> str:
     """#734: the agent-passed model when the catalog does not register it for this tool, else ''."""
+    # A skill row's declared exact-size model is not on the curated dropdown; keep it.
+    if args.get("exact_size_pin"):
+        return ""
     model = named_or_none(args.get("model")) or ""
     if not model or not tool_feature(action):
         return ""
@@ -618,6 +631,17 @@ def select_model(action: str, args: dict, catalog: dict | None = None, cfg: dict
 def _select_model(action: str, args: dict, catalog: dict | None = None, cfg: dict | None = None,
                   user_text: str | None = None) -> dict | None:
     text = user_text if user_text is not None else _current_user_text()
+    if action == "generate_image" and args.get("exact_size_pin"):
+        # bot/skill_output.pin_exact_size filled the row's declared exact-size model.
+        edit = named_or_none(args.get("edit_model"))
+        model = edit or named_or_none(args.get("model")) or ""
+        if model:
+            choice = {"model": model, "auto": True, "category": "skill_size",
+                      "skill": str(args.get("skill") or ""),
+                      "reason": {"zh": "技能按精确像素提交", "en": "the skill submits the exact pixel size"}}
+            if edit:
+                choice["edit_model"] = edit
+            return relabel_agent_filled_choice(choice, args, text)
     if action == "generate_image" and _exact_skill_missing_ref(args):
         return {"block": _need_person_photo_block(), "category": "need_person_photo", "auto": True}
     named = named_or_none(args.get("model"))
@@ -632,6 +656,12 @@ def _select_model(action: str, args: dict, catalog: dict | None = None, cfg: dic
         if blocked:
             return {"model": "", "auto": True, "category": "svg_rejected", "svg_error": blocked, "reason": blocked["reason"]}
         return relabel_agent_filled_choice(svg_choice(named or ""), args, text)
+    if action == "generate_image" and not args.get("exact_size_pin"):
+        # Before a skill pin and before the 2+ ref shortcut, so every skill follows
+        # the same rule. An exact-pixel pin (the user asked for pixels) already returned.
+        dense = dense_typography_choice(args, text)
+        if dense:
+            return relabel_agent_filled_choice(dense, args, text)
     pin = _skill_row(action, args)
     if pin:
         return relabel_agent_filled_choice(_skill_choice(args, pin), args, text)
@@ -823,7 +853,8 @@ SPECS: dict[str, dict] = {
         "with roles, fonts, logo and reference image URLs, and which kit this project is linked to.", {}),
     "generate_image": _tool(
         "Start generating images on the canvas. Returns ids at once; call wait_generation with them. "
-        "prompt: detailed English description (put exact text to render in quotes). ratio like 1:1, "
+        "prompt: detailed English description (put exact text to render in quotes). "
+        + IMAGE_PROMPT_RULES + " ratio like 1:1, "
         "3:4, 16:9. width and height are pixels when a skill declares an exact canvas "
         "(linkedin-banner 1584x396, before-after 1920x1080, game-art 1024x1824, pose-fission 1536x2048); "
         "pass them so the result is not the skill's type default. Known unpinned skills carry a typed "
@@ -854,9 +885,8 @@ SPECS: dict[str, dict] = {
                                    "playful/panels/shelf). The output contract is per template; omit only when the "
                                    "user did not pick one (the skill's default template is used)."},
          "stage": {"type": "integer",
-                   "description": "1-based delivery stage of the template's output contract (brand: stage 1 = "
-                                  "3×1024×1024 direction proposals, stage 2 = 1×2048×1152 guideline board; "
-                                  "multi-SKU packaging: stage 1 = 3×1536×2048, stage 2 = 1×2048×1152). Default 1."},
+                   "description": "1-based delivery stage of the selected template's output contract; "
+                                  "the Output lock names each stage's count and size. Default 1."},
          "multi_angle_stage": {"type": "string", "enum": ["preview", "final"],
                                "description": "multi-angle only: preview lineart, then final after composition answer"},
          "composition_id": {"type": "string", "description": "multi-angle final: one answered panel number 1..9"},

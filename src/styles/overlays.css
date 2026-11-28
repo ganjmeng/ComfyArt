@@ -1079,6 +1079,13 @@
 .ca-process__row[data-error] .ca-process__label { color: #dc2626; }
 /* #825 Design: Auto · model label stays muted gray — failure is the 生成失败 reply only */
 .ca-process__row[data-error] .ca-process__label[data-testid="auto-model-label"] { color: var(--ca-muted); }
+/* The failed row's own sentence. The label stays 「失败」; this is the plan-gate or model text. */
+.ca-process__errtext {
+  margin: -2px 0 2px calc(var(--ca-process-col) + 6px);
+  color: #dc2626;
+  font: 400 12px/16px var(--ca-font);
+  white-space: normal;
+}
 
 /* #442 v6 (designer): 24px flex rows, gap 6, column gap 8 → icon-to-icon 32; card is a sibling at the icon x */
 .ca-process { --ca-process-row-gap: 8px; --ca-process-gutter: 6px; --ca-process-card-ink: #000; }

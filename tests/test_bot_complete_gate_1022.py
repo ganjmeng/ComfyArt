@@ -63,6 +63,11 @@ def _close_tabs() -> None:
 
 
 @pytest.fixture(autouse=True)
+def _opt_in_llm_usd_gate(monkeypatch):
+    monkeypatch.setenv("COMFYART_LLM_USD_GATE", "1")
+
+
+@pytest.fixture(autouse=True)
 def _tabs():
     _close_tabs()
     yield

@@ -42,6 +42,7 @@ def response(cid=None, name=None, args=None, reasoning=None):
 
 @pytest.fixture
 def protocol_db(tmp_path, monkeypatch):
+    monkeypatch.setenv("COMFYART_LLM_USD_GATE", "1")
     # A distinct physical database, not the shared application data.db.
     path = str(tmp_path / "protocol.sqlite")
     monkeypatch.setattr(db, "app_path", lambda _name: path)

@@ -21,7 +21,7 @@ AUTO_MODELS = ROOT / "api/auto_models.json"
 # #935: literal hashes of the base bytes; no git object is opened.
 PORTRAIT_SHOTS_708_CONST_SHA256 = "97edb7c18215e4a283b86633908872f3b3c4146d9bb748d71c0d3510798cfc8b"
 STUDIO_MODEL_TAIL_SHA256 = "ae5a43e7574fd1939edcb7217d8f434e07ffc094cd3d14d217e0f1b3b7090cf2"
-AUTO_MODELS_SHA256 = "9ef106b6133d427f04347d0c31c31931e641e1cd47d2a86c0d0769cde48c5d7b"
+AUTO_MODELS_SHA256 = "70c1e5ebcc2a877e8b9a93c3e69b218e9efc615edf67151df40f8c53fa03f9a4"
 
 STUDIO_EXAMPLES = "examples: ex643('studio-model', [1, 2], '9ca3c35db7868e9fe73fb98bf85058c8fa2e048e')"
 STUDIO_VIDEO = "video: pinned('805/reuse/studio-model', '44a5caa051ad8c4bd51152afba8ef853e9c77fd8', 'cover.mp4')"

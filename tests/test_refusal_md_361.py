@@ -1,6 +1,7 @@
 """#361 Content refusal: chat polite refuse + exactly 3 markdown bullets; no pills/toast; 0 charge."""
 from __future__ import annotations
 
+import ast
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -12,16 +13,35 @@ AGENT = (ROOT / "src/ui/AgentPanel.tsx").read_text()
 COMPOSER = (ROOT / "src/ui/Composer.tsx").read_text()
 
 
-def _guide_joined() -> str:
-    """AGENT_GUIDE is adjacent string literals — join for phrase checks."""
-    import ast
-    mod = ast.parse(GUIDE)
+def _assigned_strings(mod: ast.Module) -> dict[str, ast.AST]:
+    out: dict[str, ast.AST] = {}
     for node in mod.body:
-        if isinstance(node, ast.Assign):
-            for t in node.targets:
-                if isinstance(t, ast.Name) and t.id == "AGENT_GUIDE":
-                    return ast.literal_eval(node.value)
-    raise AssertionError("AGENT_GUIDE not found")
+        if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+            out[node.targets[0].id] = node.value
+    return out
+
+
+def _string_expr(node: ast.AST, assigned: dict[str, ast.AST]) -> str:
+    """Join string constants, including ``+ NAME`` when NAME is also a string constant."""
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        return _string_expr(node.left, assigned) + _string_expr(node.right, assigned)
+    if isinstance(node, ast.Name):
+        target = assigned.get(node.id)
+        if target is None:
+            raise AssertionError(f"{node.id} is not a string assignment in bot/guide.py")
+        return _string_expr(target, assigned)
+    raise AssertionError(f"AGENT_GUIDE is not a string expression ({type(node).__name__})")
+
+
+def _guide_joined() -> str:
+    """AGENT_GUIDE text, including a concatenated IMAGE_PROMPT_RULES constant."""
+    mod = ast.parse(GUIDE)
+    assigned = _assigned_strings(mod)
+    if "AGENT_GUIDE" not in assigned:
+        raise AssertionError("AGENT_GUIDE not found")
+    return _string_expr(assigned["AGENT_GUIDE"], assigned)
 
 
 def test_guide_requires_chat_refuse_and_three_markdown_bullets() -> None:

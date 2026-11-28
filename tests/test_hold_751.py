@@ -85,7 +85,7 @@ def test_wash_map_matches_raw_slots():
 
 
 def test_brand_zh_display_name():
-    assert RAW["brand-identity-director"]["title"]["zh"] == "品牌视觉识别"
+    assert RAW["brand-identity-director"]["title"]["zh"] == "品牌识别"
 
 
 def test_copy_single_form_prompt_is_user_requirement_only():

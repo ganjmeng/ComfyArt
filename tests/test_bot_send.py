@@ -119,7 +119,8 @@ def _view_file(base, name: str, data: bytes, kind: str = "input") -> str:
     return f"/api/view?filename={name}&type={kind}"
 
 
-async def test_chat_send_downscales_a_16384_jpeg_into_the_llm_request(fresh_user_dir, tmp_path):
+async def test_chat_send_downscales_a_16384_jpeg_into_the_llm_request(fresh_user_dir, tmp_path, monkeypatch):
+    monkeypatch.setenv("COMFYART_LLM_USD_GATE", "1")
     """The chat attachment path drafts the JPEG, then the planner request carries that copy."""
     import base64
     import io

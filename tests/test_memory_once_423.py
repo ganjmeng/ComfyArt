@@ -230,6 +230,9 @@ def test_locales_only_add_memory_retrieved_430():
         # #1003: quote-card face for the pending line-art preview. The visible
         # line is the size template with the call's width, height and ratio.
         "quote.lineartPreview", "quote.lineartPreviewSize",
+        # #1019: no-template brand dialog names the default workflow. The pin below
+        # stays the previous normalized hash; this key is an additive locale line.
+        "skillRun.defaultWorkflow",
         # confirmed multi-angle progress card (not memory copy)
         "bot.angleSummary", "bot.angleGenerating", "bot.angleInterrupted",
         "bot.anglePreview", "bot.angleFinal",
@@ -262,6 +265,8 @@ def test_locales_only_add_memory_retrieved_430():
     assert en["quote.lineartPreview"] == "Line-art preview"
     assert zh["quote.lineartPreviewSize"] == "线稿预览 · {0}×{1} · {2}"
     assert en["quote.lineartPreviewSize"] == "Line-art preview · {0}×{1} · {2}"
+    assert zh["skillRun.defaultWorkflow"] == "默认流程"
+    assert en["skillRun.defaultWorkflow"] == "Default workflow"
     # Same substitution the quote card uses ({0} width, {1} height, {2} ratio).
     for template, face in (
         (zh["quote.lineartPreviewSize"], "线稿预览 · 1152×2048 · 9:16"),
