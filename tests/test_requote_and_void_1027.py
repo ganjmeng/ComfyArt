@@ -366,3 +366,110 @@ async def test_fallback_model_switch_gets_a_new_card_and_submits_only_after_star
     assert [a.get("model") for a in _gens(page)] == models
     assert len(cards) == 2, "the failed call's confirmation is not reused for the switched model"
     assert cards[0].get("confirmation_id") is None or cards[0] is not cards[1]
+
+
+# ---------------------------------------------------------------- approved quote_plan releases its calls
+
+@pytest.mark.parametrize("budget", [True, False], ids=["agent_loop", "local_llm"])
+async def test_approved_quote_plan_releases_exactly_the_quoted_calls(monkeypatch, budget):
+    """QA ff7386b2 loop: quote_plan lists the model's own arguments; the tool call gets the skill's
+    sizes and model pin filled in. The approved plan must still match that call (no refusal, no
+    second identical card), and a call that was not quoted is still refused."""
+    from ComfyArt.bot.local_llm import _PLAN_REFUSE
+    from test_agent_budget_391 import calls, reply
+    mood, logo1, logo2, stray = _call("16:9"), _call("1:1"), _call("1:1"), _call("1:1")
+
+    def plan(*items):
+        return {"steps": [{"text": f"step {i}", "tool": "generate_image", "arguments": a}
+                          for i, a in enumerate(items)]}
+
+    def script(messages, n):
+        steps = [
+            [("quote_plan", plan(mood))],
+            [("generate_image", mood)],
+            [("quote_plan", plan(logo1, logo2))],
+            [("generate_image", logo1), ("generate_image", logo2)],
+            [("generate_image", stray)],  # never quoted: the strict gate refuses it
+        ]
+        if n < len(steps):
+            out = calls(*steps[n])
+            for tc in out["choices"][0]["message"]["tool_calls"]:
+                tc["id"] = f"p{n}-{tc['id']}"
+            return out
+        return reply("完成")
+
+    rig, cards = _rig(monkeypatch, [], budget=budget)
+    rig.script = script
+    priced = []
+    real = rig.p._quote_steps
+
+    async def spy(steps, lang):
+        priced.append([s.get("model") for s in steps])
+        return await real(steps, lang)
+
+    monkeypatch.setattr(rig.p, "_quote_steps", spy)
+    _res, events = await rig.send("做一个品牌", goal="")
+    sent = [args["prompt"] for _n, args in rig.paid_mcp()]
+    assert sent == [mood["prompt"], logo1["prompt"], logo2["prompt"]], "approved calls run; the unquoted one does not"
+    assert len(cards) == 2, "one card per quote_plan, never re-issued in a loop"
+    results = [e.text for e in events if e.t == "tool_result" and e.text]
+    assert sum(_PLAN_REFUSE["zh"] in r or _PLAN_REFUSE["en"] in r for r in results) == 1
+    # The card prices the model the call will really use (the skill's exact-size pin), not a guess.
+    from ComfyArt.bot.skill_output import OUTPUTS
+    pinned = OUTPUTS[SKILL]["exact_size_models"]["t2i"]
+    assert all(m == pinned for models in priced for m in models), priced
+
+
+@pytest.mark.parametrize("budget", [True, False], ids=["agent_loop", "local_llm"])
+async def test_staged_task_quotes_and_releases_one_segment_at_a_time(monkeypatch, budget):
+    """Product ruling (#1027): a staged task is not forced to quote the whole run. Segment 1
+    (moodboard) is quoted, started and dispatched on the next LLM step; the user answers a card;
+    segment 2 (three directions) is quoted, started and dispatched. Two different cards, no
+    repeated card, no plan-gate refusal. The calls carry `skill` like the real agent's do."""
+    import json as _json
+    from ComfyArt.bot.local_llm import _PLAN_REFUSE
+    from test_agent_budget_391 import calls, reply
+    mood = _call("16:9")
+    logos = [_call("1:1"), _call("1:1"), _call("1:1")]
+    ask = {"questions": [{"id": "pick", "prompt": "情绪板方向可以吗？", "page": 1,
+                          "options": [{"id": "A", "label": "可以"}, {"id": "B", "label": "再调"}]}]}
+
+    def plan(*items):
+        return {"steps": [{"text": f"step {i}", "tool": "generate_image", "arguments": a}
+                          for i, a in enumerate(items)]}
+
+    def script(messages, n):
+        steps = [
+            [("quote_plan", plan(mood))],                       # segment 1 quote
+            [("generate_image", mood)],                         # next LLM step after Start
+            [("ask_user", ask)],                                # the card that segment 2 depends on
+            [("quote_plan", plan(*logos))],                     # segment 2 quote
+            [(("generate_image", a)) for a in logos],           # next LLM step after Start
+        ]
+        if n < len(steps):
+            out = calls(*steps[n])
+            for tc in out["choices"][0]["message"]["tool_calls"]:
+                tc["id"] = f"s{n}-{tc['id']}"
+            return out
+        return reply("完成")
+
+    rig, cards = _rig(monkeypatch, [], budget=budget)
+    rig.script = script
+
+    async def fake_call(session, endpoint, name, arguments):
+        rig.mcp.append((name, dict(arguments)))
+        if name == "ask_user":
+            return _json.dumps({"status": "answered", "answers": {"pick": {"selected": ["A"]}}}), []
+        return _json.dumps({"ids": [f"h-{len(rig.mcp)}"]}), []
+
+    monkeypatch.setattr(rig.p, "_mcp_call_tool", fake_call)
+    _res, events = await rig.send("做一个品牌", goal="")
+    names = [n for n, _a in rig.mcp]
+    sent = [args["prompt"] for _n, args in rig.paid_mcp()]
+    assert sent == [mood["prompt"]] + [a["prompt"] for a in logos]
+    assert names.index("ask_user") < [i for i, n in enumerate(names) if n == "generate_image"][1], \
+        "segment 2 runs only after the card is answered"
+    assert len(cards) == 2, "one card per segment"
+    assert _json.dumps(cards[0], sort_keys=True, default=str) != _json.dumps(cards[1], sort_keys=True, default=str)
+    results = [e.text for e in events if e.t == "tool_result" and e.text]
+    assert not any(_PLAN_REFUSE["zh"] in r or _PLAN_REFUSE["en"] in r for r in results)

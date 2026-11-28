@@ -202,6 +202,7 @@ ASK_USER_SCHEMA = {
         },
         "min_selections": {"type": "integer"},
         "max_selections": {"type": "integer"},
+        "multi_select": {"type": "boolean"},
         "allow_other": {"type": "boolean"},
         "allow_skip": {"type": "boolean"},
         "preselect": {"type": "boolean"},
@@ -236,6 +237,8 @@ ASK_USER_SCHEMA = {
                     },
                     "min_selections": {"type": "integer"},
                     "max_selections": {"type": "integer"},
+                    "multi_select": {"type": "boolean",
+                                     "description": "true when the user may pick several options; the card then allows all of them."},
                     "allow_other": {"type": "boolean"},
                     "defaults": {
                         "type": "array",

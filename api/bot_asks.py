@@ -202,6 +202,8 @@ def _parse_question(raw: dict, index: int) -> dict:
         options = [_parse_option(o, i, seen) for i, o in enumerate(raw_options)]
     min_selections = int(raw.get("min_selections") or (0 if not options else 1))
     max_selections = int(raw.get("max_selections") or (0 if not options else 1))
+    if options and max_selections <= 1 and wants_multi(raw.get("multi_select"), prompt):
+        max_selections = len(options)
     if options:
         if not (0 <= min_selections <= max_selections <= len(options)):
             raise ValueError(f"questions[{index}] min/max_selections out of range")
@@ -946,6 +948,8 @@ def _validate_spec(args: dict) -> dict:
     options = [_parse_option(raw, i, seen_ids) for i, raw in enumerate(raw_options)]
     min_selections = int(args.get("min_selections") or 1)
     max_selections = int(args.get("max_selections") or 1)
+    if max_selections <= 1 and wants_multi(args.get("multi_select"), prompt):
+        max_selections = len(options)
     if not (0 <= min_selections <= max_selections <= len(options)):
         raise ValueError("min/max_selections out of range")
     allow_other = bool(args.get("allow_other"))
@@ -1026,6 +1030,22 @@ def abandon_ask(ask_id: str) -> None:
     # AC4: abandoned asks must not resurrect after restart — delete store row,
     # keep PENDING so an in-process answer (e.g. late run_approval) still works.
     _store_delete(ask_id)
+
+
+_MULTI_MARK = re.compile(r"可多选|可以多选|[（(]多选[)）]|多选题|select all that apply|choose all that apply|"
+                         r"select (?:one or )?(?:more|several|multiple)|pick (?:one or )?(?:more|several|multiple)|"
+                         r"\(multi(?:ple)?[- ]?(?:select|choice)\)", re.I)
+
+
+def wants_multi(flag: object, prompt: str) -> bool:
+    """A question is multi-select when the card says so: `multi_select: true`, or its own prompt
+    tells the user they may pick several (可多选 / select all that apply). The card then allows
+    every option instead of silently keeping one, so the label and the control agree."""
+    if flag is True:
+        return True
+    if flag is False:
+        return False
+    return bool(_MULTI_MARK.search(str(prompt or "")))
 
 
 def confirm_expired(spec: object, now: Optional[float] = None) -> bool:

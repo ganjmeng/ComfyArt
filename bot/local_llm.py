@@ -791,7 +791,10 @@ _PLAN_QUOTE_RULE = (
     "selected model (do not include a fallback model). quote_plan estimates the "
     "total and does not generate or charge. If it asks the user, wait. If they "
     "decline, stop and do not retry. If it says to start, call each paid tool "
-    "with the same arguments. A single paid generation does not use quote_plan. "
+    "with the same arguments. A staged task is quoted one segment at a time: "
+    "quote only the paid steps you will run now (for example a moodboard), and "
+    "quote the next segment after the user answers the card that depends on it. "
+    "A single paid generation does not use quote_plan. "
     "Do not tell the user a per-step or running cost; the confirm card is the "
     "only cost display, and only when the total reaches the threshold."
 )
@@ -806,8 +809,8 @@ def system_prompt_for_turn(goal_text: str = "", ui_lang: str = "") -> str:
 
 
 _PLAN_REFUSE = {
-    "zh": "[tool error] 这是多步付费任务。请先调用 quote_plan 列出每一个付费步骤，用户确认后再调用付费工具。这次调用没有执行。",
-    "en": "[tool error] This is a multi-step paid task. Call quote_plan with every paid step and wait for the user before any paid tool. This call did not run.",
+    "zh": "[tool error] 这个付费调用不在已确认的报价里。请先用 quote_plan 报价这一段要运行的付费步骤（分阶段任务每段单独报价即可），用户确认后再调用付费工具。这次调用没有执行。",
+    "en": "[tool error] This paid call is not in the approved quote. Call quote_plan with the paid steps of the segment you are about to run (a staged task quotes one segment at a time) and wait for the user before any paid tool. This call did not run.",
 }
 # Shown in the chat. The stored quote_error and TurnResult.error keep their [error] marker.
 _QUOTE_FAIL_SHOWN = {
@@ -837,7 +840,9 @@ _QUOTE_PLAN_TOOL = {
             "tool). Call it after update_plan and before any paid tool when the "
             "task needs two or more paid generations. A single paid generation "
             "does not use this. If the result says start, call each paid tool "
-            "with the same arguments. If the user declines, stop and do not retry."
+            "with the same arguments. A staged task may quote one segment at a time "
+            "(only the paid steps run before the next user choice). If the user "
+            "declines, stop and do not retry."
         ),
         "parameters": {
             "type": "object",
@@ -1470,6 +1475,10 @@ def _prune_screenshots(messages: list[dict], keep: int = KEEP_SCREENSHOTS) -> li
     return out
 
 
+def _raw_keys(steps) -> set:
+    return {st["_raw_key"] for st in (steps or []) if isinstance(st, dict) and st.get("_raw_key")}
+
+
 class _PlanGate:
     """#235: after the user presses 开始, only the quoted calls may run.
 
@@ -1481,13 +1490,17 @@ class _PlanGate:
     def __init__(self, chat_id: str = "") -> None:
         self.strict = False
         self.keys: set[tuple] = set()
+        self.raw_keys: set[tuple] = set()
         self.chat_id = chat_id
 
-    def allow(self, quote, strict: bool) -> None:
+    def allow(self, quote, strict: bool, raw_keys=()) -> None:
         self.strict = strict
         self.keys = set(quote.keys)
+        # The same steps as the model wrote them. A quoted step and its tool call carry the model's
+        # arguments; the skill then fills sizes and models on the call, so both forms identify it.
+        self.raw_keys = set(raw_keys or ())
 
-    def blocks(self, name: str, args: dict) -> bool:
+    def blocks(self, name: str, args: dict, model_args: Optional[dict] = None) -> bool:
         if not self.strict or name not in PAID_TOOLS:
             return False
         # #963: plan keys compare a packaging anchor slot semantically -- the quote names a
@@ -1498,7 +1511,10 @@ class _PlanGate:
         if self.chat_id and name == "generate_image":
             from ..api import product_packaging
             anchor = product_packaging.anchor_for(self.chat_id)
-        return canon_key(name, args, plan=True, anchor=anchor) not in self.keys
+        if canon_key(name, args, plan=True, anchor=anchor) in self.keys:
+            return False
+        return not (model_args is not None and self.raw_keys
+                    and canon_key(name, model_args, plan=True, anchor=anchor) in self.raw_keys)
 
 
 TEST_TIMEOUT_S = 10.0
@@ -2139,6 +2155,40 @@ class LocalLlmProvider(AgentProvider):
             return "start"
         return "cancel"
 
+    def _prepared_plan_steps(self, raw_steps, turn, run) -> list:
+        """quote_plan steps as they will be submitted: an image step gets the same skill sizing and
+        model pin as its tool call, so the card prices what runs. Each keeps the key of the model's
+        own arguments (`_raw_key`) for the plan gate."""
+        if not isinstance(raw_steps, list):
+            return []
+        out = []
+        for position, st in enumerate(raw_steps):
+            if not isinstance(st, dict):
+                out.append(st)
+                continue
+            tool = str(st.get("tool") or "")
+            raw_args = st.get("arguments") if isinstance(st.get("arguments"), dict) else {}
+            new = dict(st)
+            new["_raw_key"] = canon_key(tool, raw_args, "", plan=True, plan_position=position)
+            if _tool_base(tool) == "generate_image":
+                try:
+                    from .skill_output import apply_generate
+                    from .ref_orientation import ref_image_bytes
+                    _ut = getattr(turn, "user_text", "") or ""
+                    prepared = apply_generate(
+                        dict(raw_args), getattr(run, "current_skill", "") if run is not None else "",
+                        user_text=_ut,
+                        ref_image=ref_image_bytes(raw_args.get("refs"), _ut, getattr(turn, "attachments", None)),
+                        current_preset=getattr(run, "current_preset", "") if run is not None else "")
+                except Exception:
+                    _log.warning("[ComfyArt/local-llm] quote step prep failed; pricing as written", exc_info=True)
+                    prepared = dict(raw_args)
+                new["arguments"] = prepared
+                if prepared.get("model"):
+                    new["model"] = prepared["model"]
+            out.append(new)
+        return out
+
     def _implicit_step(self, item: dict, lang: str) -> dict:
         args = item["args"]
         return {
@@ -2287,6 +2337,7 @@ class LocalLlmProvider(AgentProvider):
                 args = {}
             if not isinstance(args, dict):
                 args = {}
+            model_args = dict(args)  # what the model sent, before the skill fills sizes and models
             run = loop.get("run")
             current_skill = getattr(run, "current_skill", "") if run is not None else ""
             if run is not None:  # #705: empty skill read in a skill run -> the run's skill
@@ -2348,7 +2399,7 @@ class LocalLlmProvider(AgentProvider):
             if skip is None and _tool_base(name) == "generate_image" and is_single(
                     args.get("skill") or current_skill, call_preset):
                 accepted_single += 1
-            parsed.append({"name": name, "args": args, "id": tc_id,
+            parsed.append({"name": name, "args": args, "model_args": model_args, "id": tc_id,
                            "skill_key": skill_key, "cached": cached, "reject": reject,
                            **({"skip": skip} if skip else {})})
 
@@ -2406,9 +2457,21 @@ class LocalLlmProvider(AgentProvider):
         # #418: a single paid call is quoted too (build_quote returns None under the confirm line,
         # so cheap calls run as before). Not after a strict 开始: there the gate refuses unquoted calls.
         single = quote_item is None and len(paid) == 1
-        if quote_item is not None or len(paid) >= 2 or (single and not gate.strict):
-            steps = (quote_item["args"].get("steps") if quote_item is not None
-                     else [self._implicit_step(it, lang) for it in paid])
+        # Calls the user already started under an approved plan are not quoted again: a second card
+        # for the same steps is what looped (Start -> same card). Anything outside the plan still is.
+        covered = (quote_item is None and bool(paid) and gate.strict
+                   and not any(gate.blocks(it["name"], it["args"], it.get("model_args")) for it in paid))
+        if covered:
+            decision = "start"
+        elif quote_item is not None or len(paid) >= 2 or (single and not gate.strict):
+            if quote_item is not None:
+                steps = self._prepared_plan_steps(quote_item["args"].get("steps"), turn, loop.get("run"))
+            else:
+                steps = []
+                for it in paid:
+                    st = self._implicit_step(it, lang)
+                    st["_raw_key"] = canon_key(it["name"], it.get("model_args") or it["args"], plan=True)
+                    steps.append(st)
             try:
                 quote = await self._quote_steps(steps if isinstance(steps, list) else [], lang)
             except Exception as e:
@@ -2419,7 +2482,7 @@ class LocalLlmProvider(AgentProvider):
                 if quote is None:
                     decision = "passthrough"
                 elif not quote.ask:
-                    gate.allow(quote, False)
+                    gate.allow(quote, False, _raw_keys(steps))
                     decision = "start"
                 else:
                     from .run_budget import Stop, StopReason
@@ -2429,6 +2492,7 @@ class LocalLlmProvider(AgentProvider):
                     # card is not approved -> zero paid calls, turn ends normally as awaiting_confirm:not_approved.
                     requotes = 0
                     narrowed = False
+                    rest = steps
                     while True:
                         spec = quote.ask_spec()
                         try:
@@ -2476,7 +2540,7 @@ class LocalLlmProvider(AgentProvider):
                                 break
                             quote = fresh
                             if not quote.ask:
-                                gate.allow(quote, narrowed)
+                                gate.allow(quote, narrowed, _raw_keys(rest if narrowed else steps))
                                 decision = "start"
                                 break
                             continue
@@ -2489,7 +2553,7 @@ class LocalLlmProvider(AgentProvider):
                             decision = "error"
                         elif choice == "start":
                             if not single or narrowed:  # #418: one OK covers this call only; don't arm the plan gate
-                                gate.allow(quote, True)
+                                gate.allow(quote, True, _raw_keys(rest if narrowed else steps))
                             decision = "start"
                         else:
                             decision = "cancel"
@@ -2587,7 +2651,7 @@ class LocalLlmProvider(AgentProvider):
                 continue  # do not emit a paid row: the user stopped before anything ran
             if name in PAID_TOOLS and handle.stop_requested:
                 continue  # #419: stopped before this step was submitted: skip it, no row, no charge, no placeholder
-            if name in PAID_TOOLS and gate.blocks(name, it["args"]):
+            if name in PAID_TOOLS and gate.blocks(name, it["args"], it.get("model_args")):
                 chunks[i] = await self._emit_result(
                     it, _PLAN_REFUSE[lang_key], emit=emit, done=done, lang=lang, is_error=True)
                 continue
